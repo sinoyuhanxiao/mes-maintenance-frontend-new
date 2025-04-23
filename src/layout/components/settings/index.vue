@@ -2,7 +2,7 @@
   <div class="settings-container">
     <el-drawer :size="315" v-model="showSettings" direction="rtl" :append-to-body="false" :close-on-click-modal="true">
       <template #header>
-        <h4 class="drawer-title">项目配置</h4>
+        <h4 class="drawer-title">维护系统配置</h4>
       </template>
       <template #default>
         <div>
@@ -63,11 +63,11 @@
       </template>
       <template #footer>
         <div style="flex: auto">
-          <el-alert type="success">
-            <template #title>
-              <el-link type="primary" href="https://github.com/mvpyb/vite-element-admin">点我前往github</el-link>
-            </template>
-          </el-alert>
+<!--          <el-alert type="success">-->
+<!--            <template #title>-->
+<!--              <el-link type="primary" href="https://github.com/mvpyb/vite-element-admin">点我前往github</el-link>-->
+<!--            </template>-->
+<!--          </el-alert>-->
         </div>
       </template>
     </el-drawer>

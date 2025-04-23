@@ -2,7 +2,7 @@
   <div class="dashboard-editor-container">
     <el-row :gutter="20">
       <el-col :xs="12" :sm="12" :lg="6" v-for="item in cardList" :key="item.id">
-        <YuCard :end="item.end" :duration="item.duration" :title="item.title" :prefix="item.prefix">
+        <YuCard :end="item.end" :duration="item.duration" :title="item.title" :prefix="item.prefix" :postfix="item.postfix">
           <template #icon>
             <i class="fr" :class="item.icon"></i>
           </template>
@@ -41,17 +41,17 @@
       </el-col>
     </el-row>
 
-    <el-row :gutter="20" class="user-info">
-      <el-col :span="12">
-        <YuWeather />
-      </el-col>
-      <el-col :span="6">
-        <TodoList />
-      </el-col>
-      <el-col :span="6">
-        <BoxCard />
-      </el-col>
-    </el-row>
+<!--    <el-row :gutter="20" class="user-info">-->
+<!--      <el-col :span="12">-->
+<!--        <YuWeather />-->
+<!--      </el-col>-->
+<!--      <el-col :span="6">-->
+<!--        <TodoList />-->
+<!--      </el-col>-->
+<!--      <el-col :span="6">-->
+<!--        <BoxCard />-->
+<!--      </el-col>-->
+<!--    </el-row>-->
   </div>
 </template>
 
@@ -62,9 +62,9 @@ import PieChart from './components/PieChart.vue'
 import BarChart from './components/BarChart.vue'
 import TransactionTable from './components/TransactionTable.vue'
 import YuStreetMap from '@/components/YuStreetMap'
-import YuWeather from './components/YuWeather'
-import TodoList from './components/TodoList/index.vue'
-import BoxCard from './components/BoxCard'
+// import YuWeather from './components/YuWeather'
+// import TodoList from './components/TodoList/index.vue'
+// import BoxCard from './components/BoxCard'
 
 import { ref } from 'vue'
 
@@ -73,7 +73,7 @@ const cardList = ref( [
     id : 1,
     end : 6666,
     duration : 3000,
-    title : 'Order',
+    title : 'Work Orders',
     icon : 'yu-icon-lifangti',
     badge : {
       className : 'bg-info',
@@ -86,7 +86,7 @@ const cardList = ref( [
     end : 95270,
     duration : 3000,
     prefix : '￥',
-    title : 'Income',
+    title : 'Maintenance Cost',
     icon : 'yu-icon-chanpin1',
     badge : {
       className : 'bg-danger',
@@ -96,10 +96,10 @@ const cardList = ref( [
   },
   {
     id : 3,
-    end : 666,
+    end : 4.5,
     duration : 1000,
-    prefix : '￥',
-    title : 'Average Price',
+    postfix : 'hrs',
+    title : 'Average Downtime',
     icon : 'yu-icon-jiagebiaoqian',
     badge : {
       className : 'bg-warning',
@@ -109,9 +109,9 @@ const cardList = ref( [
   },
   {
     id : 4,
-    end : 9527,
+    end : 67,
     duration : 3000,
-    title : 'Product Sold',
+    title : 'Equipment Inspected',
     icon : 'yu-icon-icon_xinyong_xianxing_jijin-129',
     badge : {
       className : 'bg-info',

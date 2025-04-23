@@ -6,11 +6,10 @@
       <div class="copyright-items">条款</div>
     </div>
     <span>
-      <i>copyright</i>
       <svg-icon icon-class="copyright" class="icon" />
-      <i>{{ currentYear }} 沪ICP备XXXXXXXX号</i>
+      <i>copyright © {{ currentYear }} 富浦思食品设备(广东)有限公司</i>
     </span>
-    <span style="margin-top: 5px"> XXXXXXXXX </span>
+    <span style="margin-top: 5px"> 设备管理软件 </span>
   </div>
 </template>
 

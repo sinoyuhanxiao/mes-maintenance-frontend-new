@@ -13,8 +13,8 @@ defineOptions( {
 
 <style lang="scss" scoped>
 .logo-contanier {
-  width: 120px;
-  height: 120px;
+  width: 400px;
+  height: 110px;
   vertical-align: middle;
 }
 img {

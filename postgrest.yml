@@ -1,0 +1,19 @@
+services:
+  postgrest_maintenance:
+    image: postgrest/postgrest
+    ports:
+      - "3002:3000"
+    environment:
+      PGRST_DB_URI: postgres://postgres:postgres@10.10.12.12:5432/mes_dev
+      PGRST_DB_ANON_ROLE: postgres
+      PGRST_DB_SCHEMA: maintenance_management
+      PGRST_DB_EXTRA_SEARCH_PATH: general_common
+
+  postgrest_general:
+    image: postgrest/postgrest
+    ports:
+      - "3003:3000"
+    environment:
+      PGRST_DB_URI: postgres://postgres:postgres@10.10.12.12:5432/mes_dev
+      PGRST_DB_ANON_ROLE: postgres
+      PGRST_DB_SCHEMA: general_common

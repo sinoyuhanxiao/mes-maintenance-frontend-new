@@ -8,6 +8,7 @@
         <h6 class="text-uppercase text-white">{{ title }}</h6>
         <h2 class="text-white mb24">
           <yu-count-to :start-val="start" :end-val="end" :duration="duration" :prefix="prefix" class="card-panel-num" />
+          <span v-if="postfix">{{ ' ' + postfix }}</span>
         </h2>
         <div class="badge-box">
           <slot name="badge"></slot>
@@ -41,6 +42,10 @@ defineProps( {
     default : 'Title'
   },
   prefix : {
+    type : String,
+    default : ''
+  },
+  postfix : {
     type : String,
     default : ''
   }

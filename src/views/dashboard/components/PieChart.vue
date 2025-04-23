@@ -34,7 +34,7 @@ const initChart = () => {
     legend : {
       left : 'center',
       bottom : '10',
-      data : ['Industries', 'Technology', 'Forex', 'Gold', 'Forecasts']
+      data : ['Labor', 'Spare Parts', 'Tools', 'Inspections', 'Others']
     },
     series : [
       {
@@ -44,11 +44,11 @@ const initChart = () => {
         radius : [15, 95],
         center : ['50%', '38%'],
         data : [
-          { value : 320, name : 'Industries' },
-          { value : 240, name : 'Technology' },
-          { value : 149, name : 'Forex' },
-          { value : 100, name : 'Gold' },
-          { value : 59, name : 'Forecasts' }
+          { value : 320, name : 'Labor' },
+          { value : 240, name : 'Spare Parts' },
+          { value : 149, name : 'Tools' },
+          { value : 100, name : 'Inspections' },
+          { value : 59, name : 'Others' }
         ],
         animationEasing : 'cubicInOut',
         animationDuration : 2600

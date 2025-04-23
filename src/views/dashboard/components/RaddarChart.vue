@@ -51,18 +51,18 @@ const initChart = () => {
         }
       },
       indicator : [
-        { name : 'Sales', max : 10000 },
-        { name : 'Administration', max : 20000 },
-        { name : 'Information Technology', max : 20000 },
-        { name : 'Customer Support', max : 20000 },
-        { name : 'Development', max : 20000 },
-        { name : 'Marketing', max : 20000 }
+        { name : 'Low', max : 10000 },
+        { name : 'Medium', max : 20000 },
+        { name : 'High', max : 20000 },
+        { name : 'Urgent', max : 20000 },
+        { name : 'Others', max : 20000 },
+        { name : 'None', max : 20000 }
       ]
     },
     legend : {
       left : 'center',
       bottom : '10',
-      data : ['Allocated Budget', 'Expected Spending', 'Actual Spending']
+      data : ['Preventive', 'Reactive', 'Others']
     },
     series : [
       {
@@ -78,15 +78,15 @@ const initChart = () => {
         data : [
           {
             value : [5000, 7000, 12000, 11000, 15000, 14000],
-            name : 'Allocated Budget'
+            name : 'Preventive'
           },
           {
             value : [4000, 9000, 15000, 15000, 13000, 11000],
-            name : 'Expected Spending'
+            name : 'Reactive'
           },
           {
             value : [5500, 11000, 12000, 15000, 12000, 12000],
-            name : 'Actual Spending'
+            name : 'Others'
           }
         ],
         animationDuration

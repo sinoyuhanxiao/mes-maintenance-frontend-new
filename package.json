@@ -16,8 +16,8 @@
     "prepare": "husky install"
   },
   "author": {
-    "name": "灰是小灰灰的灰",
-    "email": "454539387@qq.com",
+    "name": "Erik Yu",
+    "email": "",
     "url": ""
   },
   "dependencies": {
@@ -46,6 +46,7 @@
     "lodash-unified": "^1.0.3",
     "mitt": "^3.0.0",
     "mockjs": "^1.1.0",
+    "moment": "^2.30.1",
     "nprogress": "^0.2.0",
     "ol": "^7.4.0",
     "path": "^0.12.7",
@@ -64,6 +65,7 @@
     "vue-i18n": "^9.2.2",
     "vue-router": "^4.2.2",
     "vue3-lottie": "^2.7.4",
+    "vuedraggable": "^4.1.0",
     "vxe-table": "^4.4.2",
     "xe-utils": "^3.5.11",
     "xlsx": "^0.18.5"

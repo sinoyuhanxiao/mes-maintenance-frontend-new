@@ -90,3 +90,8 @@ export function downloadByBase64( buf, filename, mime, bom ) {
   const base64Buf = base64ToBlob( buf )
   downloadByData( base64Buf, filename, mime, bom )
 }
+
+export function getFileName( url ) {
+  if ( !url ) return ''
+  return url.split( '/' ).pop().replace( /\d{17}(?=\.\w+$)/, '' )
+}
