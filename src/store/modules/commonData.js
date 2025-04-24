@@ -1,13 +1,7 @@
 // store/modules/commonData.js
 import { defineStore } from 'pinia'
-import {
-  getAllPriorities,
-  getAllWorkTypes,
-  getAllCategories
-} from '@/api/common'
-import {
-  getAllProductionLines
-} from '@/api/equipment'
+import { getAllPriorities, getAllWorkTypes, getAllCategories } from '@/api/common'
+import { getAllProductionLines } from '@/api/equipment'
 
 export const useCommonDataStore = defineStore( 'commonData', {
   state : () => ( {

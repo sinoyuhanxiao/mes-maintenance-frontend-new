@@ -32,7 +32,7 @@ export async function uploadToMinio( file ) {
  */
 export async function uploadMultipleToMinio( files ) {
   const formData = new FormData()
-  files.forEach( ( file ) => {
+  files.forEach( file => {
     formData.append( 'files', file )
   } )
 
@@ -47,4 +47,3 @@ export async function uploadMultipleToMinio( files ) {
 
   return await response.json()
 }
-

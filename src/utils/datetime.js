@@ -34,4 +34,3 @@ export function convertToUTC( localDateString ) {
   const utcDateString = date.toISOString()
   return utcDateString
 }
-

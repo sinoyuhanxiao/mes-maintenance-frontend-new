@@ -32,10 +32,10 @@ let list = ref( [] )
 const set = reactive( {
   newList : computed( () => {
     const statusMap = {
-      '准备就绪' : 'success',
-      '进行中' : 'warning',
-      '已完成' : 'info',
-      '待审核' : 'danger'
+      准备就绪 : 'success',
+      进行中 : 'warning',
+      已完成 : 'info',
+      待审核 : 'danger'
     }
     if ( list.value && list.value.length > 0 ) {
       // eslint-disable-next-line vue/no-side-effects-in-computed-properties

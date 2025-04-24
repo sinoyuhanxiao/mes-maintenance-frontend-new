@@ -2,7 +2,13 @@
   <div class="dashboard-editor-container">
     <el-row :gutter="20">
       <el-col :xs="12" :sm="12" :lg="6" v-for="item in cardList" :key="item.id">
-        <YuCard :end="item.end" :duration="item.duration" :title="item.title" :prefix="item.prefix" :postfix="item.postfix">
+        <YuCard
+          :end="item.end"
+          :duration="item.duration"
+          :title="item.title"
+          :prefix="item.prefix"
+          :postfix="item.postfix"
+        >
           <template #icon>
             <i class="fr" :class="item.icon"></i>
           </template>
@@ -41,17 +47,17 @@
       </el-col>
     </el-row>
 
-<!--    <el-row :gutter="20" class="user-info">-->
-<!--      <el-col :span="12">-->
-<!--        <YuWeather />-->
-<!--      </el-col>-->
-<!--      <el-col :span="6">-->
-<!--        <TodoList />-->
-<!--      </el-col>-->
-<!--      <el-col :span="6">-->
-<!--        <BoxCard />-->
-<!--      </el-col>-->
-<!--    </el-row>-->
+    <!--    <el-row :gutter="20" class="user-info">-->
+    <!--      <el-col :span="12">-->
+    <!--        <YuWeather />-->
+    <!--      </el-col>-->
+    <!--      <el-col :span="6">-->
+    <!--        <TodoList />-->
+    <!--      </el-col>-->
+    <!--      <el-col :span="6">-->
+    <!--        <BoxCard />-->
+    <!--      </el-col>-->
+    <!--    </el-row>-->
   </div>
 </template>
 

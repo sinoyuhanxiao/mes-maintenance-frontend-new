@@ -10,24 +10,24 @@
             <div class="image-list">
               <template v-if="mode === 'view'">
                 <el-image
-                    v-for="(img, index) in imageListUrlComputed"
-                    :key="index"
-                    :src="img"
-                    style="width: 100px; height: 100px; margin-right: 10px"
-                    fit="cover"
-                    :preview-src-list="imageListUrlComputed"
+                  v-for="(img, index) in imageListUrlComputed"
+                  :key="index"
+                  :src="img"
+                  style="width: 100px; height: 100px; margin-right: 10px"
+                  fit="cover"
+                  :preview-src-list="imageListUrlComputed"
                 />
               </template>
               <template v-else>
                 <el-upload
-                    action="#"
-                    list-type="picture-card"
-                    :auto-upload="false"
-                    :file-list="imageFileList"
-                    :on-preview="handlePictureCardPreview"
-                    :on-remove="handleImageRemove"
-                    :on-change="handleImageChange"
-                    accept="image/*"
+                  action="#"
+                  list-type="picture-card"
+                  :auto-upload="false"
+                  :file-list="imageFileList"
+                  :on-preview="handlePictureCardPreview"
+                  :on-remove="handleImageRemove"
+                  :on-change="handleImageChange"
+                  accept="image/*"
                 >
                   <el-icon><Plus /></el-icon>
                 </el-upload>
@@ -49,13 +49,13 @@
               </template>
               <template v-else>
                 <el-upload
-                    action="#"
-                    list-type="text"
-                    :auto-upload="false"
-                    :file-list="fileFileList"
-                    :on-remove="handleFileRemove"
-                    :on-change="handleFileChange"
-                    accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar,.csv,.json,.xml,.ppt,.pptx"
+                  action="#"
+                  list-type="text"
+                  :auto-upload="false"
+                  :file-list="fileFileList"
+                  :on-remove="handleFileRemove"
+                  :on-change="handleFileChange"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar,.csv,.json,.xml,.ppt,.pptx"
                 >
                   <el-button size="small" type="success">点击上传</el-button>
                 </el-upload>
@@ -94,7 +94,7 @@ const fileFileList = ref( [] )
 const dialogVisible = ref( false )
 const dialogImageUrl = ref( '' )
 
-const handlePictureCardPreview = ( file ) => {
+const handlePictureCardPreview = file => {
   dialogImageUrl.value = file.url
   dialogVisible.value = true
 }
@@ -111,15 +111,15 @@ const handleFileChange = ( file, newFileList ) => {
   emit( 'update:fileListMultipartAdded', addedFiles )
 }
 
-const handleImageRemove = ( file ) => {
+const handleImageRemove = file => {
   emit( 'update:imageListUrlDeleted', [...props.imageListUrlDeleted, file.url] )
 }
 
-const handleFileRemove = ( file ) => {
+const handleFileRemove = file => {
   emit( 'update:fileListUrlDeleted', [...props.fileListUrlDeleted, file.url] )
 }
 
-const getFileName = ( fileUrl ) => {
+const getFileName = fileUrl => {
   return fileUrl.split( '/' ).pop()
 }
 
@@ -137,16 +137,31 @@ watch(
     () => props.imageListUrlDeleted,
     () => props.fileListUrlDeleted
   ],
-  ( [mode, imageListUrl, fileListUrl, imageListMultipartAdded, fileListMultipartAdded, imageListUrlDeleted, fileListUrlDeleted] ) => {
-    console.log( 'ImagesAndFiles Component State:', JSON.stringify( {
-      mode,
-      imageListUrl,
-      fileListUrl,
-      imageListMultipartAdded,
-      fileListMultipartAdded,
-      imageListUrlDeleted,
-      fileListUrlDeleted
-    }, null, 2 ) )
+  ( [
+    mode,
+    imageListUrl,
+    fileListUrl,
+    imageListMultipartAdded,
+    fileListMultipartAdded,
+    imageListUrlDeleted,
+    fileListUrlDeleted
+  ] ) => {
+    console.log(
+      'ImagesAndFiles Component State:',
+      JSON.stringify(
+        {
+          mode,
+          imageListUrl,
+          fileListUrl,
+          imageListMultipartAdded,
+          fileListMultipartAdded,
+          imageListUrlDeleted,
+          fileListUrlDeleted
+        },
+        null,
+        2
+      )
+    )
   },
   { deep : true, immediate : true }
 )
@@ -156,7 +171,7 @@ watch(
   [() => props.imageListUrl, () => props.mode],
   ( [newUrls, mode] ) => {
     if ( mode === 'edit' ) {
-      imageFileList.value = newUrls.map( ( url ) => ( {
+      imageFileList.value = newUrls.map( url => ( {
         name : getFileName( url ),
         url
       } ) )
@@ -170,7 +185,7 @@ watch(
   [() => props.fileListUrl, () => props.mode],
   ( [newUrls, mode] ) => {
     if ( mode === 'edit' ) {
-      fileFileList.value = newUrls.map( ( url ) => ( {
+      fileFileList.value = newUrls.map( url => ( {
         name : getFileName( url ),
         url
       } ) )
@@ -178,7 +193,6 @@ watch(
   },
   { immediate : true }
 )
-
 </script>
 
 <style scoped>

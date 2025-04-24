@@ -11,15 +11,15 @@
         </div>
         <div class="el-card__body">
           <el-descriptions border :column="2">
-            <el-descriptions-item label="工单名称" :width="labelWidth">
+            <el-descriptions-item label="工单名称" :width="labelWidth" :span="1">
               <template #default>
-                <div style="display: flex; align-items: center;">
+                <div style="display: flex; align-items: center">
                   <el-input v-if="editing" v-model="workOrder.name" ref="nameInputRef" size="default" />
                   <template v-else>
                     <span>{{ workOrder.name }}</span>
                     <el-icon
-                        style="cursor: pointer; margin-left: 8px; color: var(--el-color-primary);"
-                        @click="copyToClipboard(workOrder.name)"
+                      style="cursor: pointer; margin-left: 8px; color: var(--el-color-primary)"
+                      @click="copyToClipboard(workOrder.name)"
                     >
                       <CopyDocument />
                     </el-icon>
@@ -27,21 +27,34 @@
                 </div>
               </template>
             </el-descriptions-item>
-            <el-descriptions-item label="是否停机" :width="labelWidth">
+            <el-descriptions-item label="工单号" :width="labelWidth" :span="1">
+              <template #default>
+                <div style="display: flex; align-items: center">
+                  <span>{{ workOrder.code }}</span>
+                  <el-icon
+                      style="cursor: pointer; margin-left: 8px; color: var(--el-color-primary)"
+                      @click="copyToClipboard(workOrder.code)"
+                  >
+                    <CopyDocument />
+                  </el-icon>
+                </div>
+              </template>
+            </el-descriptions-item>
+            <el-descriptions-item label="是否停机" :width="labelWidth" :span="2">
               <template #default>
                 <el-switch
-                    v-if="editing"
-                    v-model="workOrder.halt_type"
-                    :active-value="1"
-                    :inactive-value="0"
-                    inline-prompt
-                    active-text="是"
-                    inactive-text="否"
+                  v-if="editing"
+                  v-model="workOrder.halt_type"
+                  :active-value="1"
+                  :inactive-value="0"
+                  inline-prompt
+                  active-text="是"
+                  inactive-text="否"
                 />
                 <span v-else>{{ workOrder.halt_type === 1 ? '是' : '否' }}</span>
               </template>
             </el-descriptions-item>
-            <el-descriptions-item label="描述" :width="labelWidth">
+            <el-descriptions-item label="描述" :width="labelWidth" :span="2">
               <template #default>
                 <el-input v-if="editing" v-model="workOrder.description" type="textarea" />
                 <span v-else>{{ workOrder.description }}</span>
@@ -63,7 +76,12 @@
             <el-descriptions-item label="生产线" :width="labelWidth">
               <template #default>
                 <el-select v-if="editing" v-model="workOrder.production_line.id" placeholder="生产线">
-                  <el-option v-for="item in commonDataStore.productionLines" :key="item.id" :label="item.name" :value="item.id" />
+                  <el-option
+                    v-for="item in commonDataStore.productionLines"
+                    :key="item.id"
+                    :label="item.name"
+                    :value="item.id"
+                  />
                 </el-select>
                 <span v-else>{{ workOrder.production_line?.name }}</span>
               </template>
@@ -108,7 +126,12 @@
             <el-descriptions-item label="优先级" :width="labelWidth">
               <template #default>
                 <el-select v-if="editing" v-model="workOrder.priority.id" placeholder="优先级" style="width: 100%">
-                  <el-option v-for="item in commonDataStore.priorities" :key="item.id" :label="item.name" :value="item.id" />
+                  <el-option
+                    v-for="item in commonDataStore.priorities"
+                    :key="item.id"
+                    :label="item.name"
+                    :value="item.id"
+                  />
                 </el-select>
                 <el-tag v-else type="danger">{{ workOrder.priority?.name }}</el-tag>
               </template>
@@ -117,7 +140,12 @@
             <el-descriptions-item label="工单类别" :width="labelWidth">
               <template #default>
                 <el-select v-if="editing" v-model="workOrder.category.id" placeholder="工单类别" style="width: 100%">
-                  <el-option v-for="item in commonDataStore.categories" :key="item.id" :label="item.name" :value="item.id" />
+                  <el-option
+                    v-for="item in commonDataStore.categories"
+                    :key="item.id"
+                    :label="item.name"
+                    :value="item.id"
+                  />
                 </el-select>
                 <el-tag v-else>{{ workOrder.category?.name }}</el-tag>
               </template>
@@ -126,7 +154,12 @@
             <el-descriptions-item label="工作类型" :width="labelWidth">
               <template #default>
                 <el-select v-if="editing" v-model="workOrder.work_type.id" placeholder="工作类型" style="width: 100%">
-                  <el-option v-for="item in commonDataStore.workTypes" :key="item.id" :label="item.name" :value="item.id" />
+                  <el-option
+                    v-for="item in commonDataStore.workTypes"
+                    :key="item.id"
+                    :label="item.name"
+                    :value="item.id"
+                  />
                 </el-select>
                 <el-tag v-else type="success">{{ workOrder.work_type?.name }}</el-tag>
               </template>
@@ -137,57 +170,57 @@
     </div>
 
     <!-- 附件信息卡片 -->
-<!--    <div class="el-col el-col-24 is-guttered card-container">-->
-<!--      <el-card class="card-shadow">-->
-<!--        <div class="el-card__header">-->
-<!--          <div class="card-header"><span>附件信息</span></div>-->
-<!--        </div>-->
-<!--        <div class="el-card__body">-->
-<!--          <el-descriptions border :column="1">-->
-<!--            <el-descriptions-item label="图片预览">-->
-<!--              <div class="image-list">-->
-<!--                <el-image-->
-<!--                    v-for="(img, index) in workOrder.image_path"-->
-<!--                    :key="index"-->
-<!--                    :src="img"-->
-<!--                    style="width: 100px; height: 100px; margin-right: 10px"-->
-<!--                    fit="cover"-->
-<!--                    :preview-src-list="workOrder.image_path"-->
-<!--                />-->
-<!--              </div>-->
-<!--            </el-descriptions-item>-->
-<!--            <el-descriptions-item label="文件下载" >-->
-<!--              <div class="file-list">-->
-<!--                <div-->
-<!--                    v-for="(file, index) in workOrder.file_path"-->
-<!--                    :key="index"-->
-<!--                    style="margin-bottom: 8px"-->
-<!--                >-->
-<!--                  <el-link-->
-<!--                      :href="file"-->
-<!--                      target="_blank"-->
-<!--                      type="primary"-->
-<!--                  >-->
-<!--                    {{ getFileName(file) }}-->
-<!--                  </el-link>-->
-<!--                </div>-->
-<!--              </div>-->
-<!--            </el-descriptions-item>-->
-<!--          </el-descriptions>-->
-<!--        </div>-->
-<!--      </el-card>-->
-<!--    </div>-->
+    <!--    <div class="el-col el-col-24 is-guttered card-container">-->
+    <!--      <el-card class="card-shadow">-->
+    <!--        <div class="el-card__header">-->
+    <!--          <div class="card-header"><span>附件信息</span></div>-->
+    <!--        </div>-->
+    <!--        <div class="el-card__body">-->
+    <!--          <el-descriptions border :column="1">-->
+    <!--            <el-descriptions-item label="图片预览">-->
+    <!--              <div class="image-list">-->
+    <!--                <el-image-->
+    <!--                    v-for="(img, index) in workOrder.image_path"-->
+    <!--                    :key="index"-->
+    <!--                    :src="img"-->
+    <!--                    style="width: 100px; height: 100px; margin-right: 10px"-->
+    <!--                    fit="cover"-->
+    <!--                    :preview-src-list="workOrder.image_path"-->
+    <!--                />-->
+    <!--              </div>-->
+    <!--            </el-descriptions-item>-->
+    <!--            <el-descriptions-item label="文件下载" >-->
+    <!--              <div class="file-list">-->
+    <!--                <div-->
+    <!--                    v-for="(file, index) in workOrder.file_path"-->
+    <!--                    :key="index"-->
+    <!--                    style="margin-bottom: 8px"-->
+    <!--                >-->
+    <!--                  <el-link-->
+    <!--                      :href="file"-->
+    <!--                      target="_blank"-->
+    <!--                      type="primary"-->
+    <!--                  >-->
+    <!--                    {{ getFileName(file) }}-->
+    <!--                  </el-link>-->
+    <!--                </div>-->
+    <!--              </div>-->
+    <!--            </el-descriptions-item>-->
+    <!--          </el-descriptions>-->
+    <!--        </div>-->
+    <!--      </el-card>-->
+    <!--    </div>-->
 
     <!-- 附件信息Common卡片 -->
     <div class="el-col el-col-24 is-guttered">
       <ImagesAndFiles
-          :mode="editing ? 'edit' : 'view'"
-          :imageListUrl="workOrder.image_path"
-          :fileListUrl="workOrder.file_path"
-          v-model:image_list_multipart_added="imageListMultipartAdded"
-          v-model:file_list_multipart_added="fileListMultipartAdded"
-          v-model:image_list_url_deleted="imageListUrlDeleted"
-          v-model:file_list_url_deleted="fileListUrlDeleted"
+        :mode="editing ? 'edit' : 'view'"
+        :imageListUrl="workOrder.image_path"
+        :fileListUrl="workOrder.file_path"
+        v-model:image_list_multipart_added="imageListMultipartAdded"
+        v-model:file_list_multipart_added="fileListMultipartAdded"
+        v-model:image_list_url_deleted="imageListUrlDeleted"
+        v-model:file_list_url_deleted="fileListUrlDeleted"
       />
     </div>
 
@@ -199,14 +232,10 @@
         </div>
         <div class="el-card__body progress-body">
           <div class="progress-left">
-            <el-progress
-                type="circle"
-                :percentage="taskProgress"
-                :stroke-width="8"
-                status="success"
-            />
+            <el-progress type="circle" :percentage="taskProgress" :stroke-width="8" status="success" />
             <div class="progress-text">
-              已完成 {{ workOrder.work_order_progress.completed_task_amount || 0 }} / {{ workOrder.work_order_progress.total_task_amount || 0 }}
+              已完成 {{ workOrder.work_order_progress.completed_task_amount || 0 }} /
+              {{ workOrder.work_order_progress.total_task_amount || 0 }}
             </div>
           </div>
           <el-descriptions border :column="1" class="progress-descriptions">
@@ -216,9 +245,7 @@
             <el-descriptions-item label="截止时间">
               {{ convertToLocalTime(workOrder.end_date) }}
             </el-descriptions-item>
-            <el-descriptions-item label="状态">
-              进行中
-            </el-descriptions-item>
+            <el-descriptions-item label="状态"> 进行中 </el-descriptions-item>
           </el-descriptions>
         </div>
       </el-card>
@@ -232,17 +259,17 @@
         </div>
         <div class="el-card__body">
           <el-input
-              v-model="newComment"
-              placeholder="写下评论..."
-              type="textarea"
-              :autosize="{ minRows: 3, maxRows: 5 }"
-              style="margin-bottom: 10px;"
+            v-model="newComment"
+            placeholder="写下评论..."
+            type="textarea"
+            :autosize="{ minRows: 3, maxRows: 5 }"
+            style="margin-bottom: 10px"
           />
-          <div style="text-align: right;">
+          <div style="text-align: right">
             <el-button type="primary" size="default" @click="addComment">发送</el-button>
           </div>
-          <div v-for="(comment, index) in comments" :key="index" style="margin-top: 15px;">
-            <div style="font-weight: bold;">Erik Yu <span style="color: #999; font-size: 12px;">2:15 PM</span></div>
+          <div v-for="(comment, index) in comments" :key="index" style="margin-top: 15px">
+            <div style="font-weight: bold">Erik Yu <span style="color: #999; font-size: 12px">2:15 PM</span></div>
             <div>{{ comment }}</div>
           </div>
         </div>
@@ -250,28 +277,23 @@
     </div>
   </div>
   <div v-else>
-    <el-skeleton :rows="8" animated /> <!-- optional skeleton UI -->
+    <el-skeleton :rows="8" animated />
+    <!-- optional skeleton UI -->
   </div>
   <el-tooltip :content="editing ? '保存修改' : '编辑工单'" placement="top">
     <el-button
-        class="floating-edit-button"
-        :type="editing ? 'success' : 'primary'"
-        circle
-        size="large"
-        :icon="editing ? 'Check' : 'Edit'"
-        @click="editing = !editing"
+      class="floating-edit-button"
+      :type="editing ? 'success' : 'primary'"
+      circle
+      size="large"
+      :icon="editing ? 'Check' : 'Edit'"
+      @click="editing = !editing"
     />
   </el-tooltip>
 
   <transition name="slide-fade">
     <el-tooltip v-if="editing" content="删除工单" placement="bottom">
-      <el-button
-          class="floating-delete-button"
-          type="danger"
-          circle
-          size="large"
-          icon="Delete"
-      />
+      <el-button class="floating-delete-button" type="danger" circle size="large" icon="Delete" />
     </el-tooltip>
   </transition>
 </template>
@@ -301,6 +323,8 @@ const workOrder = ref( {
   image_path : [],
   file_path : []
 } )
+const originalWorkOrder = ref( {} )
+const updatedWorkOrder = ref( {} )
 const loading = ref( true )
 const labelWidth = ref( '100' )
 const editing = ref( false )
@@ -318,7 +342,7 @@ const imageListMultipartAdded = ref( [] )
 const fileListMultipartAdded = ref( [] )
 const imageListUrlDeleted = ref( [] )
 const fileListUrlDeleted = ref( [] )
-const comments = ref( ['郭郝每一天，喝口腌笃鲜', '工单工单，非同一般。要想吃饱，先得不堪。'] ) // initial mock comments
+const comments = ref( ['喝口腌笃鲜，郭郝每一天', '工单工单，非同一般。要想吃饱，先得不堪。'] ) // initial mock comments
 const newComment = ref( '' )
 const addComment = () => {
   if ( newComment.value.trim() ) {
@@ -326,7 +350,7 @@ const addComment = () => {
     newComment.value = ''
   }
 }
-const copyToClipboard = ( text ) => {
+const copyToClipboard = text => {
   navigator.clipboard.writeText( text ).then( () => {
     ElMessage.success( '已复制到剪贴板' )
   } )
@@ -340,6 +364,7 @@ onMounted( async() => {
   await commonDataStore.fetchWorkTypes()
   await commonDataStore.fetchCategories()
   await commonDataStore.fetchProductionLines()
+  originalWorkOrder.value = JSON.parse( JSON.stringify( workOrder.value ) ) // snapshot
 
   workOrder.value = {
     id : data.id,
@@ -375,6 +400,39 @@ onMounted( async() => {
   updateTabTitle( route, `工单#${workOrder.value.id} - ${shortName}` )
 } )
 
+function calculateUpdatedWorkOrder() {
+  const updated = {}
+
+  for ( const key in workOrder.value ) {
+    if ( typeof workOrder.value[key] === 'object' && workOrder.value[key] !== null ) {
+      if ( 'id' in workOrder.value[key] ) {
+        const originalId = originalWorkOrder.value[key]?.id
+        const currentId = workOrder.value[key]?.id
+        if ( originalId !== currentId ) {
+          updated[key + '_id'] = currentId
+        }
+      } else if ( Array.isArray( workOrder.value[key] ) ) {
+        // skip array fields (or handle as needed)
+      } else {
+        // nested object without 'id' (skip or handle)
+      }
+    } else {
+      if ( workOrder.value[key] !== originalWorkOrder.value[key] ) {
+        updated[key] = workOrder.value[key]
+      }
+    }
+  }
+
+  // Add updated_by and updated_at
+  updated.updated_by = 37
+  updated.updated_at = new Date().toISOString()
+  delete updated.created_by
+  delete updated.created_at
+
+  updatedWorkOrder.value = updated
+  console.log( 'updatedWorkOrder:', JSON.stringify( updated, null, 2 ) )
+}
+
 function highlightAllInputs() {
   nextTick( () => {
     const inputWrappers = document.querySelectorAll( '.el-input__wrapper, .el-textarea__inner, .el-select__wrapper' )
@@ -389,48 +447,132 @@ function highlightAllInputs() {
   } )
 }
 
-watch( editing, ( newVal ) => {
+watch( editing, newVal => {
   if ( newVal ) {
     highlightAllInputs()
   }
 } )
 
-watch( () => workOrder.value.production_line?.id, async( val ) => {
-  if ( val ) {
-    const { data } = await getEquipmentGroups( val )
-    equipmentGroups.value = data.data
-  }
-} )
+watch(
+  workOrder,
+  ( newVal ) => {
+    console.log( 'workOrder changed:', JSON.stringify( newVal, null, 2 ) )
+  },
+  { deep : true }
+)
 
-watch( () => workOrder.value.equipment_group?.id, async( val ) => {
-  if ( val ) {
-    const { data } = await getEquipments( val )
-    equipments.value = data.data
+watch(
+  () => workOrder.value.production_line?.id,
+  async val => {
+    if ( val ) {
+      const { data } = await getEquipmentGroups( val )
+      equipmentGroups.value = data.data
+    }
   }
-} )
+)
 
-watch( () => workOrder.value.equipment?.id, async( val ) => {
-  if ( val ) {
-    const { data } = await getEquipmentComponents( val )
-    components.value = data.data
+watch(
+  () => workOrder.value.equipment_group?.id,
+  async val => {
+    if ( val ) {
+      const { data } = await getEquipments( val )
+      equipments.value = data.data
+    }
+  }
+)
+
+watch(
+  () => workOrder.value.equipment?.id,
+  async val => {
+    if ( val ) {
+      const { data } = await getEquipmentComponents( val )
+      components.value = data.data
+    }
+  }
+)
+
+watch( editing, ( newVal ) => {
+  if ( !newVal ) {
+    calculateUpdatedWorkOrder() // when exiting edit mode
   }
 } )
 
 watch(
-  [imageListMultipartAdded, fileListMultipartAdded, imageListUrlDeleted, fileListUrlDeleted, () => workOrder.value.image_path, () => workOrder.value.file_path, editing],
+  [
+    imageListMultipartAdded,
+    fileListMultipartAdded,
+    imageListUrlDeleted,
+    fileListUrlDeleted,
+    () => workOrder.value.image_path,
+    () => workOrder.value.file_path,
+    editing
+  ],
   ( [newImagesAdded, newFilesAdded, deletedImages, deletedFiles, imageListUrl, fileListUrl, mode] ) => {
-    console.log( 'Images and Files State:', JSON.stringify( {
-      mode : mode ? 'edit' : 'view',
-      imageListMultipartAdded : newImagesAdded,
-      fileListMultipartAdded : newFilesAdded,
-      imageListUrlDeleted : deletedImages,
-      fileListUrlDeleted : deletedFiles,
-      image_list_url : imageListUrl,
-      file_list_url : fileListUrl
-    }, null, 2 ) )
+    console.log(
+      'Images and Files State:',
+      JSON.stringify(
+        {
+          mode : mode ? 'edit' : 'view',
+          imageListMultipartAdded : newImagesAdded,
+          fileListMultipartAdded : newFilesAdded,
+          imageListUrlDeleted : deletedImages,
+          fileListUrlDeleted : deletedFiles,
+          image_list_url : imageListUrl,
+          file_list_url : fileListUrl
+        },
+        null,
+        2
+      )
+    )
   },
   { deep : true }
 )
+
+watch(
+  () => workOrder.value.production_line?.id,
+  async val => {
+    if ( val ) {
+      const { data } = await getEquipmentGroups( val )
+      equipmentGroups.value = data.data
+    }
+    // 清空下级选择
+    workOrder.value.equipment_group.id = null
+    workOrder.value.equipment.id = null
+    workOrder.value.component.id = null
+  }
+)
+
+watch(
+  () => workOrder.value.equipment_group?.id,
+  async val => {
+    if ( val ) {
+      const { data } = await getEquipments( val )
+      equipments.value = data.data
+    }
+    // 清空下级选择
+    workOrder.value.equipment.id = null
+    workOrder.value.component.id = null
+  }
+)
+
+watch(
+  () => workOrder.value.equipment?.id,
+  async val => {
+    if ( val ) {
+      const { data } = await getEquipmentComponents( val )
+      components.value = data.data
+    }
+    // 清空下级选择
+    workOrder.value.component.id = null
+  }
+)
+
+defineExpose( {
+  workOrderExpose : {
+    id : workOrder.value.id,
+    name : workOrder.value.name
+  }
+} )
 
 </script>
 
@@ -480,10 +622,12 @@ watch(
 }
 
 /* Slide down animation */
-.slide-fade-enter-active, .slide-fade-leave-active {
+.slide-fade-enter-active,
+.slide-fade-leave-active {
   transition: all 0.4s ease;
 }
-.slide-fade-enter-from, .slide-fade-leave-to {
+.slide-fade-enter-from,
+.slide-fade-leave-to {
   opacity: 0;
   transform: translateY(-10px);
 }
@@ -511,7 +655,7 @@ watch(
 }
 
 .progress-descriptions {
-  flex-grow: 1;  /* only take remaining space */
+  flex-grow: 1; /* only take remaining space */
   max-width: 300px; /* limit descriptions width */
 }
 
@@ -519,5 +663,4 @@ watch(
 :deep(.el-textarea__inner.highlight-border) {
   box-shadow: 0 0 0 2px var(--el-color-primary) !important;
 }
-
 </style>

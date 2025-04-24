@@ -1,31 +1,32 @@
 <template>
   <div class="new-work-order">
-    <h1>新建工单</h1> <!-- 添加标题 -->
-    <el-form
-        ref="formRef"
-        :model="form"
-        :rules="rules"
-        label-width="150px"
-        class="work-order-form"
-    >
-    <!-- 工单名称与描述 -->
+    <h1>新建工单</h1>
+    <!-- 添加标题 -->
+    <el-form ref="formRef" :model="form" :rules="rules" label-width="150px" class="work-order-form">
+      <!-- 工单名称与描述 -->
       <el-form-item label="工单名称" prop="name" required :show-message="false">
         <el-input v-model="form.name" placeholder="请输入工单名称" clearable></el-input>
       </el-form-item>
 
       <el-form-item label="描述">
-        <el-input v-model="form.description" type="textarea" placeholder="请输入描述" style="width: 500px" clearable></el-input>
+        <el-input
+          v-model="form.description"
+          type="textarea"
+          placeholder="请输入描述"
+          style="width: 500px"
+          clearable
+        ></el-input>
       </el-form-item>
 
       <el-form-item label="是否停机" required>
         <el-switch
-            v-model="form.halt_type"
-            :active-value="1"
-            :inactive-value="0"
-            inline-prompt
-            active-text="是"
-            inactive-text="否"
-            style="--el-switch-on-color: #f65650; width: 70px;"
+          v-model="form.halt_type"
+          :active-value="1"
+          :inactive-value="0"
+          inline-prompt
+          active-text="是"
+          inactive-text="否"
+          style="--el-switch-on-color: #f65650; width: 70px"
         />
       </el-form-item>
 
@@ -35,14 +36,29 @@
           <el-row gutter="5">
             <el-col :span="20">
               <el-form-item label="" class="form-item" prop="production_line_id" :show-message="false" required>
-                <el-select class="equipment-fields" v-model="form.production_line_id" placeholder="生产线 (层级 1)" clearable>
-                  <el-option v-for="item in commonDataStore.productionLines" :key="item.id" :label="item.name" :value="item.id" />
+                <el-select
+                  class="equipment-fields"
+                  v-model="form.production_line_id"
+                  placeholder="生产线 (层级 1)"
+                  clearable
+                >
+                  <el-option
+                    v-for="item in commonDataStore.productionLines"
+                    :key="item.id"
+                    :label="item.name"
+                    :value="item.id"
+                  />
                 </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="20">
               <el-form-item label="" class="form-item">
-                <el-select class="equipment-fields" v-model="form.equipment_group_id" placeholder="设备组 (层级 2)" clearable>
+                <el-select
+                  class="equipment-fields"
+                  v-model="form.equipment_group_id"
+                  placeholder="设备组 (层级 2)"
+                  clearable
+                >
                   <el-option v-for="item in equipmentGroups" :key="item.id" :label="item.name" :value="item.id" />
                 </el-select>
               </el-form-item>
@@ -67,45 +83,55 @@
 
       <div class="categorization">
         <el-form-item label="具体分类" required>
-            <!-- 新增三个下拉菜单 -->
-            <el-col :span="20">
-              <el-form-item label="" class="form-item" placeholder="优先级" prop="priority_id" :show-message="false">
-                <el-select v-model="form.priority_id" placeholder="优先级" clearable>
-                  <el-option v-for="item in commonDataStore.priorities" :key="item.id" :label="item.name" :value="item.id" />
-                </el-select>
-              </el-form-item>
-            </el-col>
-            <el-col :span="20">
-              <el-form-item label="" class="form-item" prop="category_id" :show-message="false">
-                <el-select v-model="form.category_id" placeholder="工单类别" clearable>
-                  <el-option v-for="item in commonDataStore.categories" :key="item.id" :label="item.name" :value="item.id" />
-                </el-select>
-              </el-form-item>
-            </el-col>
-            <el-col :span="20">
-              <el-form-item label="" class="form-item" prop="work_type_id" :show-message="false">
-                <el-select v-model="form.work_type_id" placeholder="工作类型" clearable>
-                  <el-option v-for="item in commonDataStore.workTypes" :key="item.id" :label="item.name" :value="item.id" />
-                </el-select>
-              </el-form-item>
-            </el-col>
+          <!-- 新增三个下拉菜单 -->
+          <el-col :span="20">
+            <el-form-item label="" class="form-item" placeholder="优先级" prop="priority_id" :show-message="false">
+              <el-select v-model="form.priority_id" placeholder="优先级" clearable>
+                <el-option
+                  v-for="item in commonDataStore.priorities"
+                  :key="item.id"
+                  :label="item.name"
+                  :value="item.id"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="20">
+            <el-form-item label="" class="form-item" prop="category_id" :show-message="false">
+              <el-select v-model="form.category_id" placeholder="工单类别" clearable>
+                <el-option
+                  v-for="item in commonDataStore.categories"
+                  :key="item.id"
+                  :label="item.name"
+                  :value="item.id"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="20">
+            <el-form-item label="" class="form-item" prop="work_type_id" :show-message="false">
+              <el-select v-model="form.work_type_id" placeholder="工作类型" clearable>
+                <el-option
+                  v-for="item in commonDataStore.workTypes"
+                  :key="item.id"
+                  :label="item.name"
+                  :value="item.id"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
         </el-form-item>
       </div>
-      <RecurrenceEditor
-          v-model:recurrenceSetting="form.recurrence_setting"
-      />
-      <UploadEditor
-          v-model:imageList="form.image_list"
-          v-model:filesList="form.files_list"
-      />
+      <RecurrenceEditor v-model:recurrenceSetting="form.recurrence_setting" />
+      <UploadEditor v-model:imageList="form.image_list" v-model:filesList="form.files_list" />
       <!-- 提交按钮 -->
       <el-form-item>
         <el-button type="primary" @click="submitForm">创建工单</el-button>
       </el-form-item>
 
-<!--      <el-form-item>-->
-<!--        <el-button type="primary" @click="uploadFilesToServer">上传到服务器</el-button>-->
-<!--      </el-form-item>-->
+      <!--      <el-form-item>-->
+      <!--        <el-button type="primary" @click="uploadFilesToServer">上传到服务器</el-button>-->
+      <!--      </el-form-item>-->
     </el-form>
   </div>
 </template>
@@ -117,11 +143,7 @@ import { uploadMultipleToMinio } from '@/api/minio'
 import { useTagsViewStore } from '@/store'
 import { useCommonDataStore } from '@/store/modules/commonData'
 
-import {
-  getEquipmentGroups,
-  getEquipments,
-  getEquipmentComponents
-} from '@/api/equipment'
+import { getEquipmentGroups, getEquipments, getEquipmentComponents } from '@/api/equipment'
 
 // import {
 //   getEquipmentGroups
@@ -184,10 +206,8 @@ export default {
       }
     }
   },
-  mounted() {
-  },
+  mounted() {},
   methods : {
-
     async fetchEquipmentGroups() {
       const { data } = await getEquipmentGroups( this.form.production_line_id )
       this.equipmentGroups = data.data
@@ -240,7 +260,7 @@ export default {
     },
 
     async submitForm() {
-      this.$refs.formRef.validate( async( valid ) => {
+      this.$refs.formRef.validate( async valid => {
         if ( !valid ) return
 
         // 先上传图片和文件
@@ -291,27 +311,27 @@ export default {
       deep : true
     }
   }
-
 }
 </script>
 
 <style scoped>
-  .new-work-order {
-    padding: 20px;
-  }
-  .work-order-form {
-    max-width: 800px;
-    margin: 0 auto;
-  }
-  .equipment, .categorization {
-    max-width: 800px;
-  }
-  .form-item {
-    padding-bottom: 10px;
-  }
-  .equipment-fields,
-  .el-input,
-  .el-select {
-    width: 500px;
-  }
+.new-work-order {
+  padding: 20px;
+}
+.work-order-form {
+  max-width: 800px;
+  margin: 0 auto;
+}
+.equipment,
+.categorization {
+  max-width: 800px;
+}
+.form-item {
+  padding-bottom: 10px;
+}
+.equipment-fields,
+.el-input,
+.el-select {
+  width: 500px;
+}
 </style>

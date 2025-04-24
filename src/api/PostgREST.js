@@ -17,6 +17,6 @@ export const getPriorities = ( filter = '' ) => {
 }
 
 // 你可以在 PostgREST.js 或单独的文件中定义这个方法：
-export const getEquipmentGroups = ( productionLineId ) => {
+export const getEquipmentGroups = productionLineId => {
   return axios.get( `http://localhost:3002/equipment_group?production_line_id=eq.${productionLineId}` )
 }

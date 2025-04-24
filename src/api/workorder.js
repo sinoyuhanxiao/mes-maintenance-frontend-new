@@ -37,9 +37,8 @@ export const getWorkOrdersByRecurrence = (
   sortField = 'createdAt',
   direction = 'DESC'
 ) => {
-  return api.get( `${BASE_URL}/recurrence`, {
+  return api.get( `${BASE_URL}/recurrence/${recurrenceId}`, {
     params : {
-      recurrenceId,
       page,
       size,
       sortField,
@@ -53,7 +52,7 @@ export const getWorkOrdersByRecurrence = (
  * @param {Object} data - The request payload containing full work order info.
  * @returns {Promise} API response from the server.
  */
-export const createWorkOrder = ( data ) => {
+export const createWorkOrder = data => {
   return api.post( `${BASE_URL}`, data )
 }
 
@@ -62,7 +61,6 @@ export const createWorkOrder = ( data ) => {
  * @param {string} id - The ID of the work order to fetch.
  * @returns {Promise} API response containing the work order data.
  */
-export const getWorkOrderById = ( id ) => {
+export const getWorkOrderById = id => {
   return api.get( `/api/work-order/${id}` )
 }
-

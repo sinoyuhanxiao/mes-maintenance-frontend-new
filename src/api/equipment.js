@@ -6,7 +6,7 @@ export const getAllProductionLines = () => {
   return api.get( `${BASE_URL}/production_lines` )
 }
 
-export const getEquipmentGroups = ( productionLineId ) => {
+export const getEquipmentGroups = productionLineId => {
   return api.post( `${BASE_URL}/equipment_groups`, {
     production_line_ids : [productionLineId] // 需要数组格式
     // equipment_group_ids : [0],
@@ -17,13 +17,13 @@ export const getEquipmentGroups = ( productionLineId ) => {
   } )
 }
 
-export const getEquipments = ( equipmentGroupId ) => {
+export const getEquipments = equipmentGroupId => {
   return api.get( `${BASE_URL}/equipment`, {
     params : { equipmentGroupId }
   } )
 }
 
-export const getEquipmentComponents = ( equipmentId ) => {
+export const getEquipmentComponents = equipmentId => {
   return api.get( `${BASE_URL}/equipment_component`, {
     params : { equipmentId }
   } )

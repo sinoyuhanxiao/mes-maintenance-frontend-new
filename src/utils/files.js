@@ -93,5 +93,8 @@ export function downloadByBase64( buf, filename, mime, bom ) {
 
 export function getFileName( url ) {
   if ( !url ) return ''
-  return url.split( '/' ).pop().replace( /\d{17}(?=\.\w+$)/, '' )
+  return url
+    .split( '/' )
+    .pop()
+    .replace( /\d{17}(?=\.\w+$)/, '' )
 }

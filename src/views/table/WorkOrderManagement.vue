@@ -5,45 +5,54 @@
         <div class="filter-container">
           <div class="filter-left">
             <el-input
-                v-model="set.listQuery.title"
-                placeholder="工单名称"
-                style="width: 120px; margin-right: 20px;"
-                class="filter-item"
-                @keyup.enter="handleFilter"
+              v-model="set.listQuery.title"
+              placeholder="工单名称"
+              style="width: 120px; margin-right: 20px"
+              class="filter-item"
+              @keyup.enter="handleFilter"
             />
             <el-select
-                v-model="set.listQuery.importance"
-                placeholder="维护类型"
-                clearable
-                style="width: 120px; margin-right: 20px;"
-                class="filter-item"
+              v-model="set.listQuery.importance"
+              placeholder="维护类型"
+              clearable
+              style="width: 120px; margin-right: 20px"
+              class="filter-item"
             >
               <el-option v-for="item in importanceOptions" :key="item" :label="item" :value="item" />
             </el-select>
-            <el-select v-model="set.listQuery.type" placeholder="优先级" clearable class="filter-item" style="width: 130px; margin-right: 20px;">
+            <el-select
+              v-model="set.listQuery.type"
+              placeholder="优先级"
+              clearable
+              class="filter-item"
+              style="width: 130px; margin-right: 20px"
+            >
               <el-option
-                  v-for="item in calendarTypeOptions"
-                  :key="item.key"
-                  :label="item.display_name + '(' + item.key + ')'"
-                  :value="item.key"
+                v-for="item in calendarTypeOptions"
+                :key="item.key"
+                :label="item.display_name + '(' + item.key + ')'"
+                :value="item.key"
               />
             </el-select>
-            <el-select v-model="set.listQuery.sort" style="width: 140px; margin-right: 20px;" class="filter-item" @change="handleFilter">
+            <el-select
+              v-model="set.listQuery.sort"
+              style="width: 140px; margin-right: 20px"
+              class="filter-item"
+              @change="handleFilter"
+            >
               <el-option v-for="item in sortOptions" :key="item.key" :label="item.label" :value="item.key" />
             </el-select>
             <el-button v-wave class="filter-item" type="default" :icon="Search" @click="handleFilter"> 搜索 </el-button>
           </div>
           <div class="filter-right">
-            <el-button class="filter-item" type="primary" :icon="EditPen" @click="handleCreate">
-              新增
-            </el-button>
+            <el-button class="filter-item" type="primary" :icon="EditPen" @click="handleCreate"> 新增 </el-button>
             <el-button
-                v-wave
-                :loading="downloadLoading"
-                class="filter-item"
-                type="success"
-                :icon="Download"
-                @click="handleDownload"
+              v-wave
+              :loading="downloadLoading"
+              class="filter-item"
+              type="success"
+              :icon="Download"
+              @click="handleDownload"
             >
               导出
             </el-button>
@@ -51,30 +60,24 @@
         </div>
 
         <el-table
-            v-loading="listLoading"
-            :data="list"
-            border
-            fit
-            highlight-current-row
-            style="width: 100%;"
-            :height="tableHeight"
-            row-key="id"
-            :tree-props="{ children: 'children'}"
-            :lazy="true"
-            :load="loadChildren"
-            @expand-change="toggleRowHighlight"
-            :row-class-name="getRowClass"
+          v-loading="listLoading"
+          :data="list"
+          border
+          fit
+          highlight-current-row
+          style="width: 100%"
+          :height="tableHeight"
+          row-key="id"
+          :tree-props="{ children: 'children' }"
+          :lazy="true"
+          :load="loadChildren"
+          @expand-change="toggleRowHighlight"
+          :row-class-name="getRowClass"
         >
           <!-- Work Order Name -->
-          <el-table-column
-              label="工单名称"
-              prop="name"
-              align="left"
-              width="300"
-              fixed="left"
-          >
+          <el-table-column label="工单名称" prop="name" align="left" width="300" fixed="left">
             <template #default="{ row }">
-              <span style="color: black;">{{ row.name }}</span>
+              <span style="color: black">{{ row.name }}</span>
             </template>
           </el-table-column>
 
@@ -97,11 +100,11 @@
           <el-table-column label="工单预览图" align="center" width="150">
             <template #default="{ row }">
               <el-image
-                  v-if="row.image_path && row.image_path.length"
-                  style="width: 50px; height: 50px"
-                  :src="row.image_path[0]"
-                  :preview-src-list="[row.image_path[0]]"
-                  loading="lazy"
+                v-if="row.image_path && row.image_path.length"
+                style="width: 50px; height: 50px"
+                :src="row.image_path[0]"
+                :preview-src-list="[row.image_path[0]]"
+                loading="lazy"
               >
                 <template #error>
                   <div class="image-slot">
@@ -109,10 +112,7 @@
                   </div>
                 </template>
               </el-image>
-              <el-image
-                  v-else
-                  style="width: 50px; height: 50px"
-              >
+              <el-image v-else style="width: 50px; height: 50px">
                 <template #error>
                   <el-tooltip>
                     <template #content>
@@ -130,7 +130,10 @@
           <!-- Priority -->
           <el-table-column label="优先级" prop="priority.name" align="center" width="120">
             <template #default="{ row }">
-              <span :title="row.priority.description" style="display: flex; align-items: center; justify-content: center;">
+              <span
+                :title="row.priority.description"
+                style="display: flex; align-items: center; justify-content: center"
+              >
                 <el-icon :style="{ color: getPriorityColor(row.priority.name), marginRight: '4px' }">
                   <Flag />
                 </el-icon>
@@ -160,7 +163,11 @@
           <!-- Recurrence Type -->
           <el-table-column label="重复类型" prop="recurrence_type.name" align="center" width="150">
             <template #default="{ row }">
-              <el-tag :type="getRecurrenceTagType(row.recurrence_type.id)" :title="row.recurrence_type.description || 'Does not repeat'" effect="dark">
+              <el-tag
+                :type="getRecurrenceTagType(row.recurrence_type.id)"
+                :title="row.recurrence_type.description || 'Does not repeat'"
+                effect="dark"
+              >
                 {{ row.recurrence_type.name }}
               </el-tag>
             </template>
@@ -197,7 +204,19 @@
           <!-- State -->
           <el-table-column label="状态" prop="state.name" align="center" width="150">
             <template #default="{ row }">
-              <el-tag :type="row.state.name === 'Failed' ? 'danger' : row.state.name === 'Completed' ? 'success' : row.state.name === 'In Progress' ? 'warning' : 'info'" effect="dark" round>
+              <el-tag
+                :type="
+                  row.state.name === 'Failed'
+                    ? 'danger'
+                    : row.state.name === 'Completed'
+                    ? 'success'
+                    : row.state.name === 'In Progress'
+                    ? 'warning'
+                    : 'info'
+                "
+                effect="dark"
+                round
+              >
                 {{ row.state.name }}
               </el-tag>
             </template>
@@ -222,11 +241,11 @@
 
           <!-- Actions -->
           <el-table-column
-              label="操作"
-              align="center"
-              width="250"
-              class-name="small-padding fixed-width action-column"
-              fixed="right"
+            label="操作"
+            align="center"
+            width="250"
+            class-name="small-padding fixed-width action-column"
+            fixed="right"
           >
             <template #default="{ row, $index }">
               <el-button type="info" size="small" @click="handleView(row)">查看</el-button>
@@ -239,14 +258,14 @@
         </el-table>
 
         <el-pagination
-            class="pagination-center"
-            :total="total"
-            :hide-on-single-page="true"
-            v-model:currentPage="set.listQuery.page"
-            v-model:page-size="set.listQuery.limit"
-            layout="total, sizes, prev, pager, next, jumper"
-            @size-change="handleSizeChange"
-            @current-change="handleCurrentChange"
+          class="pagination-center"
+          :total="total"
+          :hide-on-single-page="true"
+          v-model:currentPage="set.listQuery.page"
+          v-model:page-size="set.listQuery.limit"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
         />
 
         <el-dialog :title="set.textMap[dialogStatus]" v-model="dialogFormVisible">
@@ -334,12 +353,7 @@ import { Search, EditPen, Download, Picture as IconPicture, Flag } from '@elemen
 import YuLayout from '@/components/YuLayout'
 import { getAllWorkOrders, getWorkOrdersByRecurrence } from '@/api/workorder'
 import { convertToLocalTime } from '../../utils/datetime'
-import {
-  getPriorityColor,
-  getWorkTypeTagType,
-  getCategoryTagType,
-  getRecurrenceTagType
-} from '@/utils/general'
+import { getPriorityColor, getWorkTypeTagType, getCategoryTagType, getRecurrenceTagType } from '@/utils/general'
 
 const tableHeight = ref( window.innerHeight - 300 )
 const expandedRows = ref( new Set() )
@@ -348,7 +362,7 @@ const updateTableHeight = () => {
   tableHeight.value = window.innerHeight - 300
 }
 
-const handleView = ( row ) => {
+const handleView = row => {
   router.push( { name : 'ViewWorkOrder', params : { id : row.id }} )
 }
 
@@ -391,12 +405,12 @@ const calendarTypeOptions = ref( [
 
 const router = useRouter()
 
-const handleSizeChange = ( val ) => {
+const handleSizeChange = val => {
   set.listQuery.limit = val
   getList() // 重新加载数据
 }
 
-const handleCurrentChange = ( val ) => {
+const handleCurrentChange = val => {
   set.listQuery.page = val
   getList() // 重新加载数据
 }
@@ -509,10 +523,7 @@ const getList = async() => {
   list.value = null
 
   try {
-    const response = await getAllWorkOrders(
-      set.listQuery.page,
-      set.listQuery.limit
-    )
+    const response = await getAllWorkOrders( set.listQuery.page, set.listQuery.limit )
     const data = response.data.data.content
     total.value = response.data.data.totalElements
 
@@ -752,7 +763,7 @@ defineOptions( {
 }
 
 .el-table__expand-icon > .el-icon {
-    font-size: 15px !important;
+  font-size: 15px !important;
 }
 
 ::v-deep(.el-table__body-wrapper .expanded-highlight td),
@@ -761,5 +772,4 @@ defineOptions( {
 ::v-deep(.el-table__fixed-right .el-table__row.expanded-highlight td) {
   background-color: #e0f3ff !important;
 }
-
 </style>
