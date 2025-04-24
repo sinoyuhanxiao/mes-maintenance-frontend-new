@@ -32,8 +32,8 @@
                 <div style="display: flex; align-items: center">
                   <span>{{ workOrder.code }}</span>
                   <el-icon
-                      style="cursor: pointer; margin-left: 8px; color: var(--el-color-primary)"
-                      @click="copyToClipboard(workOrder.code)"
+                    style="cursor: pointer; margin-left: 8px; color: var(--el-color-primary)"
+                    @click="copyToClipboard(workOrder.code)"
                   >
                     <CopyDocument />
                   </el-icon>
@@ -455,7 +455,7 @@ watch( editing, newVal => {
 
 watch(
   workOrder,
-  ( newVal ) => {
+  newVal => {
     console.log( 'workOrder changed:', JSON.stringify( newVal, null, 2 ) )
   },
   { deep : true }
@@ -491,7 +491,7 @@ watch(
   }
 )
 
-watch( editing, ( newVal ) => {
+watch( editing, newVal => {
   if ( !newVal ) {
     calculateUpdatedWorkOrder() // when exiting edit mode
   }
@@ -573,7 +573,6 @@ defineExpose( {
     name : workOrder.value.name
   }
 } )
-
 </script>
 
 <style scoped>
