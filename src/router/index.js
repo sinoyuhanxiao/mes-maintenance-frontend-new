@@ -1,15 +1,20 @@
-import {
-  createRouter,
-  // createWebHistory,
-  createWebHashHistory
-} from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 
 import Layout from '@/layout/index.vue'
 // import nested from './modules/nested'
 // import customComponents from './modules/customComponents'
+import { getCurrentUser } from '@/api/auth'
+import { gotoCognitoLogin } from '@/utils/cognito'
 
 // 配置路由信息
 export const constantRoutes = [
+
+  {
+    path : '/callback',
+    name : 'Callback',
+    component : () => import( '@/views/callback/index.vue' ),
+    meta : { requiresAuth : false }
+  },
   {
     path : '/redirect',
     name : 'Redirect',
@@ -30,7 +35,7 @@ export const constantRoutes = [
       }
     ]
   },
-  {
+  /*  {
     path : '/login',
     name : 'Login',
     component : () => import( '@/views/login/index.vue' ),
@@ -38,7 +43,7 @@ export const constantRoutes = [
       hidden : true,
       title : '登录'
     }
-  },
+  },*/
   {
     path : '/404',
     name : 'Error404',
@@ -80,10 +85,11 @@ export const asyncRoutes = [
     children : [
       {
         path : 'dashboard',
-        name : 'Dashboard',
+        name : 'DashboardPage',
         component : () => import( '@/views/dashboard/index.vue' ),
         meta : {
           title : '主页',
+          requiresAuth : true,
           icon : 'dashboard',
           noCache : true,
           affix : true
@@ -322,16 +328,26 @@ export const asyncRoutes = [
     redirect : '/404',
     name : 'Redirect404',
     meta : {
-      title : '404',
-      hidden : true
+      requiresAuth : false
     }
   }
 ]
 
 const router = createRouter( {
-  history : createWebHashHistory( './' ),
+  history : createWebHistory(),
   routes : constantRoutes.concat( asyncRoutes ),
   scrollBehavior : () => ( { left : 0, top : 0 } )
+} )
+
+router.beforeEach( async( to, from, next ) => {
+  if ( !to.meta.requiresAuth ) return next()
+  try {
+    await getCurrentUser()
+    next()
+  } catch ( error ) {
+    console.warn( '未登录或登录失效，跳 Cognito', error )
+    gotoCognitoLogin()
+  }
 } )
 
 export function resetRouter() {
