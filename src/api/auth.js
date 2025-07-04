@@ -5,7 +5,7 @@ export const refresh = () => {
 }
 
 export const callback = ( code ) => {
-  return authApi.get( '/auth/callback', { prarams : { code }} )
+  return authApi.post( '/auth/callback', { code } )
 }
 
 export const getCurrentUser = () => {

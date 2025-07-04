@@ -5,7 +5,7 @@ import getPageTitle from '@/utils/getPageTitle'
 import { useUserStore, usePermissionStore } from '@/store'
 import NProgress from '@/utils/progress'
 
-const whiteList = ['/login']
+const whiteList = ['/login', '/callback']
 router.beforeEach( async( to, from, next ) => {
   NProgress.start()
   document.title = getPageTitle( to.meta?.title )
