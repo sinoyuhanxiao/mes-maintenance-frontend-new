@@ -88,7 +88,7 @@ export const asyncRoutes = [
         component : () => import( '@/views/dashboard/index.vue' ),
         meta : {
           title : '主页',
-          requiresAuth : true,
+          requiresAuth : false,
           icon : 'dashboard',
           noCache : true,
           affix : true
