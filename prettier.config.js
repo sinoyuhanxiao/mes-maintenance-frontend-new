@@ -11,6 +11,5 @@ module.exports = {
   arrowParens: 'avoid', // 箭头函数的参数能省略括号的时候就省略
   jsxBracketSameLine: true, // 设置为true时,将多行JSX元素的 > 放在最后一行的末尾，而不是单独放在下一行
   bracketSameLine: false, //
-  endOfLine: 'lf',
 }
 
