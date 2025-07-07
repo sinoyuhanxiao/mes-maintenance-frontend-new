@@ -28,28 +28,24 @@ export const authApi = axios.create( {
   withCredentials : true
 } )
 
-const WHITELIST_URLS = [
-  '/auth/callback',
-  '/auth/refresh',
-  '/auth/logout'
-]
+const WHITELIST_URLS = ['/auth/callback', '/auth/refresh', '/auth/logout']
 
 authApi.interceptors.request.use(
-  ( config ) => {
+  config => {
     const isWhitelisted = WHITELIST_URLS.some( url => config.url.includes( url ) )
     if ( isWhitelisted ) {
       console.log( `Request to auth whitelist: ${config.url}` )
     }
     return config
   },
-  ( error ) => {
+  error => {
     return Promise.reject( error )
   }
 )
 
 authApi.interceptors.response.use(
   response => response,
-  async( error ) => {
+  async error => {
     const originalRequest = error.config
     if (
       error.response &&

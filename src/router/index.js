@@ -8,7 +8,6 @@ import { gotoCognitoLogin } from '@/utils/cognito'
 
 // 配置路由信息
 export const constantRoutes = [
-
   {
     path : '/callback',
     name : 'Callback',

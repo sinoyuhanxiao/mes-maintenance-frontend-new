@@ -6,33 +6,18 @@
       </template>
 
       <!-- Loading 状态 -->
-      <el-result
-        v-if="loading"
-        icon="loading"
-        title="正在校验Cognito登录"
-        sub-title="请稍候……"
-      />
+      <el-result v-if="loading" icon="loading" title="正在校验Cognito登录" sub-title="请稍候……" />
 
       <!-- 错误状态 -->
-      <el-result
-        v-else-if="error"
-        icon="error"
-        title="回调失败"
-        :sub-title="errorMsg"
-      >
+      <el-result v-else-if="error" icon="error" title="回调失败" :sub-title="errorMsg">
         <template #extra>
           <el-button type="primary" @click="retry" :loading="loading">重试</el-button>
-          <el-button @click="goHome" style="margin-left: 1rem;">返回首页</el-button>
+          <el-button @click="goHome" style="margin-left: 1rem">返回首页</el-button>
         </template>
       </el-result>
 
       <!-- 成功状态 -->
-      <el-result
-        v-else
-        icon="success"
-        title="登录成功"
-        sub-title="正在跳转主页面……"
-      />
+      <el-result v-else icon="success" title="登录成功" sub-title="正在跳转主页面……" />
     </el-card>
   </div>
 </template>
@@ -88,9 +73,7 @@ const doCallback = async() => {
   } catch ( err ) {
     loading.value = false
     error.value = true
-    errorMsg.value =
-      err?.response?.data?.message ||
-      '登录回调失败，请重试或联系管理员。'
+    errorMsg.value = err?.response?.data?.message || '登录回调失败，请重试或联系管理员。'
   }
 }
 
