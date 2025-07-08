@@ -34,7 +34,7 @@ export const constantRoutes = [
       }
     ]
   },
-  /*  {
+  {
     path : '/login',
     name : 'Login',
     component : () => import( '@/views/login/index.vue' ),
@@ -42,7 +42,7 @@ export const constantRoutes = [
       hidden : true,
       title : '登录'
     }
-  },*/
+  },
   {
     path : '/404',
     name : 'Error404',
