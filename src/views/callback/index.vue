@@ -79,7 +79,7 @@ const doCallback = async() => {
     await callback( code )
     const resp = await getCurrentUser()
     console.log( 'User username: ', resp.data.data.username )
-    store.commit( 'SET_USER', resp.data )
+    store.user = resp.data
     loading.value = false
     error.value = false
     setTimeout( () => {
