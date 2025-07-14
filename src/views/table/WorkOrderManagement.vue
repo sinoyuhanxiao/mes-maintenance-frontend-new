@@ -597,7 +597,7 @@ const createData = () => {
   dataForm.value &&
     dataForm.value.validate( valid => {
       if ( valid ) {
-        set.temp.id = parseInt( Math.random() * 100 ) + 1024 // mock a id
+        set.temp.id = parseInt( Math.random() * 100 ) + 1024 // generate a temporary id
         set.temp.author = 'vite element admin'
         createArticle( unref( set.temp ) ).then( () => {
           list.value.unshift( unref( set.temp ) )

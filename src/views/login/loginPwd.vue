@@ -83,9 +83,9 @@
 
 <script setup>
 import { ref, onBeforeMount, reactive, computed } from 'vue'
-import { login } from '@/api/user'
 import { useUserStore } from '@/store'
 import { useRouter, useRoute } from 'vue-router'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const route = useRoute()
@@ -107,7 +107,6 @@ const rules = {
 const bindToken = ref( '' )
 const showCaptcha = ref( false )
 const captchaImg = ref( '' )
-const captchaId = ref( '' )
 const loading = ref( false )
 
 const disabledLogin = computed( () => {
@@ -161,19 +160,27 @@ function loginHandle() {
   ruleForm.value.validate( async valid => {
     if ( valid ) {
       try {
-        const params = {
-          username : formState.account,
-          password : formState.password
+        // Hardcoded login credentials
+        const validCredentials = [
+          { username : 'admin', password : 'admin' },
+          { username : 'user', password : 'user' }
+        ]
+
+        const isValidLogin = validCredentials.some( cred =>
+          cred.username === formState.account && cred.password === formState.password
+        )
+
+        if ( isValidLogin ) {
+          // Simulate successful login
+          const token = 'hardcoded-token-' + Date.now()
+          userStore.SET_TOKEN( token )
+          router.push( '/' )
+        } else {
+          // Show error message for invalid credentials
+          ElMessage.error( '用户名或密码错误！请使用 admin/admin 登录' )
         }
-        if ( showCaptcha.value ) {
-          params.captchaId = captchaId.value
-          params.captchaValue = formState.captcha
-        }
-        const { data } = await login( { params } )
-        const { token } = data
-        userStore.SET_TOKEN( token )
-        router.push( '/' )
       } catch ( e ) {
+        ElMessage.error( '登录失败，请重试' )
       } finally {
         loading.value = false
         if ( showCaptcha.value ) {
