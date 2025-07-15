@@ -27,6 +27,8 @@ import { setupI18n } from '@/locale'
 // 注册所有element icons
 import { setupElementIcons } from '@/plugins/elementIcons'
 import { useTable } from '@/plugins/vxeTable'
+// Debug API configuration in development
+import '@/utils/debug-api'
 
 // https://lottiefiles.com/web-player?lottie_url=https%3A%2F%2Fassets6.lottiefiles.com%2Fpackages%2Flf20_Kr2vAt3caT.json
 import Vue3Lottie from 'vue3-lottie'

@@ -104,13 +104,13 @@
         />
 
         <!-- Element 基础table -->
-        <!--<el-table
+        <!--<el-workOrder
             :data="tableData"
-            ref="table"
+            ref="workOrder"
             height="210"
             style="width: 100%"
         >
-          <el-table-column
+          <el-workOrder-column
               prop="method"
               label="登录方式"
               width="106"
@@ -119,36 +119,36 @@
             <template #default="{ row }">
               {{ LoginMethod[row.method] }}
             </template>
-          </el-table-column>
-          <el-table-column
+          </el-workOrder-column>
+          <el-workOrder-column
               prop="deviceType"
               label="设备名称"
               width="231"
               align="center"
           >
-          </el-table-column>
-          <el-table-column
+          </el-workOrder-column>
+          <el-workOrder-column
               prop="deviceOs"
               label="系统"
               width="110"
               align="center"
           >
-          </el-table-column>
-          <el-table-column
+          </el-workOrder-column>
+          <el-workOrder-column
               prop="loginAddr"
               label="登录地点"
               width="231"
               align="center"
           >
-          </el-table-column>
-          <el-table-column
+          </el-workOrder-column>
+          <el-workOrder-column
               prop="loginTime"
               label="最后登录时间"
               width="231"
               align="center"
           >
-          </el-table-column>
-        </el-table>-->
+          </el-workOrder-column>
+        </el-workOrder>-->
       </div>
 
       <!--  -->
@@ -173,7 +173,7 @@ import { loginHistory } from '@/api/user'
 import { encryptionPhone } from '@/utils'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import YuThumb from '@/components/YuThumb'
+import YuThumb from 'src/components/MesThumb'
 
 const router = useRouter()
 

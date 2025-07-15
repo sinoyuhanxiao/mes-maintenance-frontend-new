@@ -97,7 +97,7 @@ const formState = reactive( {
   country : '86',
   captcha : '',
   account : 'admin',
-  password : 'admin9527'
+  password : 'admin'
 } )
 const rules = {
   account : [{ required : true, message : '请输入手机或邮箱账号', trigger }],

@@ -67,10 +67,7 @@ import RaddarChart from './components/RaddarChart.vue'
 import PieChart from './components/PieChart.vue'
 import BarChart from './components/BarChart.vue'
 import TransactionTable from './components/TransactionTable.vue'
-import YuStreetMap from '@/components/YuStreetMap'
-// import YuWeather from './components/YuWeather'
-// import TodoList from './components/TodoList/index.vue'
-// import BoxCard from './components/BoxCard'
+import YuStreetMap from 'src/components/MesStreetMap'
 
 import { ref } from 'vue'
 

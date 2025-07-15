@@ -78,7 +78,7 @@
               <div
                 class="water-marker h200"
                 v-waterMarker="{
-                  text: '小灰灰版权所有',
+                  text: 'FPS ©',
                   textColor: 'rgba(239,53,54,0.4)',
                 }"
               ></div>
@@ -150,7 +150,7 @@
 import { ref, unref } from 'vue'
 import { usePermissionStore } from '@/store'
 import { ElMessage } from 'element-plus/lib'
-import YuLayout from '@/components/YuLayout'
+import YuLayout from 'src/components/MesLayout'
 
 const permissionStore = usePermissionStore()
 

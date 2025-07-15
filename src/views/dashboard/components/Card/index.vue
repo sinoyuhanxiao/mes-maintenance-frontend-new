@@ -22,8 +22,6 @@
 </template>
 
 <script setup>
-import YuCountTo from '@/components/YuCountTo'
-
 defineProps( {
   start : {
     type : Number,

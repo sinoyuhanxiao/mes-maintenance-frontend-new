@@ -39,8 +39,8 @@
 
 <script setup>
 import { reactive, computed } from 'vue'
-import YuThumb from '@/components/YuThumb'
-import TextHover from '@/components/YuTextHover'
+import YuThumb from 'src/components/MesThumb'
+import TextHover from 'src/components/MesTextHover'
 import { useUserStore } from '@/store'
 
 const userStore = useUserStore()

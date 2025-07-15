@@ -10,6 +10,7 @@
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
 import { getEnvs } from './envs'
+import { ENV_CONFIG } from './env'
 import cookies from '@/utils/cookies'
 import router from '@/router'
 import { useUserStore } from '@/store'
@@ -26,7 +27,8 @@ class HttpRequest {
 
   getBaseUrl() {
     const { envStr } = getEnvs()
-    const baseUrlStr = envStr === 'dev' ? import.meta.env.VITE_PROXY_DOMAIN : GLOBAL_DATA[envStr].baseUrl
+    // Use direct backend URL instead of proxy in development
+    const baseUrlStr = envStr === 'dev' ? ENV_CONFIG.BACKEND_URL : GLOBAL_DATA[envStr].baseUrl
     return baseUrlStr
   }
 
@@ -138,9 +140,9 @@ class HttpRequest {
         if ( type === '[object Blob]' || type === '[object ArrayBuffer]' ) {
           return result
         } else {
-          const { code, message } = result
-          const isErrorToken = LOGIN_ERROR_CODE.find( item => item.code == code )
-          const isWhiteCode = WHITE_CODE_LIST.find( item => item.code == code )
+          const { status, message } = result
+          const isErrorToken = LOGIN_ERROR_CODE.find( item => item.status == status )
+          const isWhiteCode = WHITE_CODE_LIST.find( item => item.status == status )
 
           const userStore = useUserStore()
 

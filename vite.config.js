@@ -18,7 +18,8 @@ export default defineConfig( ( { command, mode } ) => {
     base : './', //
     resolve : {
       alias : {
-        '@' : resolve( 'src' )
+        '@' : resolve( 'src' ),
+        'src' : resolve( 'src' )
       },
       extensions : ['.js', '.json', '.ts', '.vue']
     },
