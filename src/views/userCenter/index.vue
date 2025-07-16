@@ -169,7 +169,6 @@
 <script setup lang="jsx">
 import { ref, reactive, computed } from 'vue'
 import { useUserStore } from '@/store'
-import { loginHistory } from '@/api/user'
 import { encryptionPhone } from '@/utils'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
@@ -255,7 +254,7 @@ const getHistory = async() => {
   loading.value = true
   try {
     // 模拟了10w条数据，使用element 虚拟表格渲染
-    const { code, data } = await loginHistory()
+    const { code, data } = { code : 200, data : [] }
     if ( code == 200 ) {
       tableData.value = data
     }
