@@ -1,7 +1,7 @@
-import YuThumb from './src/index.vue'
-export const Thumb = Object.assign( YuThumb, {
+import MesThumb from './src/index.vue'
+export const Thumb = Object.assign( MesThumb, {
   install( app ) {
-    app.component( YuThumb.name, YuThumb )
+    app.component( MesThumb.name, MesThumb )
   }
 } )
 

@@ -166,8 +166,8 @@ function loginHandle() {
           { username : 'user', password : 'user' }
         ]
 
-        const isValidLogin = validCredentials.some( cred =>
-          cred.username === formState.account && cred.password === formState.password
+        const isValidLogin = validCredentials.some(
+          cred => cred.username === formState.account && cred.password === formState.password
         )
 
         if ( isValidLogin ) {

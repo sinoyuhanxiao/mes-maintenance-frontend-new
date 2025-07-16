@@ -1,46 +1,47 @@
 <template>
   <div class="new-work-order">
-    <h1>新建工单</h1>
-    <!-- 添加标题 -->
+    <h1>{{ $t('workOrder.newWorkOrder') }}</h1>
+
     <el-form ref="formRef" :model="form" :rules="rules" label-width="150px" class="work-order-form">
-      <!-- 工单名称与描述 -->
-      <el-form-item label="工单名称" prop="name" required :show-message="false">
-        <el-input v-model="form.name" placeholder="请输入工单名称" clearable></el-input>
+      <!-- Work Order Name and Description -->
+      <el-form-item :label="$t('workOrder.form.name')" prop="name" required :show-message="false">
+        <el-input v-model="form.name" :placeholder="$t('workOrder.placeholder.workOrderName')" clearable />
       </el-form-item>
 
-      <el-form-item label="描述">
+      <el-form-item :label="$t('workOrder.form.description')">
         <el-input
           v-model="form.description"
           type="textarea"
-          placeholder="请输入描述"
+          :placeholder="$t('workOrder.placeholder.description')"
           style="width: 500px"
           clearable
-        ></el-input>
+        />
       </el-form-item>
 
-      <el-form-item label="是否停机" required>
+      <el-form-item :label="$t('workOrder.form.haltType')" required>
         <el-switch
           v-model="form.halt_type"
           :active-value="1"
           :inactive-value="0"
           inline-prompt
-          active-text="是"
-          inactive-text="否"
+          :active-text="$t('common.yes')"
+          :inactive-text="$t('common.no')"
           style="--el-switch-on-color: #f65650; width: 70px"
         />
       </el-form-item>
 
-      <!-- 目标设备选择 -->
+      <!-- Equipment Selection -->
       <div class="equipment">
-        <el-form-item label="涉及资产" required>
+        <el-form-item :label="$t('workOrder.form.assets')" required>
           <el-row gutter="5">
             <el-col :span="20">
               <el-form-item label="" class="form-item" prop="production_line_id" :show-message="false" required>
                 <el-select
                   class="equipment-fields"
-                  v-model="form.production_line_id"
-                  placeholder="生产线 (层级 1)"
+                  v-model="selectedValues.productionLineId"
+                  :placeholder="$t('workOrder.form.productionLine')"
                   clearable
+                  @change="handleProductionLineChange"
                 >
                   <el-option
                     v-for="item in commonDataStore.productionLines"
@@ -55,9 +56,11 @@
               <el-form-item label="" class="form-item">
                 <el-select
                   class="equipment-fields"
-                  v-model="form.equipment_group_id"
-                  placeholder="设备组 (层级 2)"
+                  v-model="selectedValues.equipmentGroupId"
+                  :placeholder="$t('workOrder.form.equipmentGroup')"
                   clearable
+                  :disabled="!hasEquipmentGroups"
+                  @change="handleEquipmentGroupChange"
                 >
                   <el-option v-for="item in equipmentGroups" :key="item.id" :label="item.name" :value="item.id" />
                 </el-select>
@@ -65,14 +68,28 @@
             </el-col>
             <el-col :span="20">
               <el-form-item label="" class="form-item">
-                <el-select class="equipment-fields" v-model="form.equipment_id" placeholder="设备 (层级 3)" clearable>
+                <el-select
+                  class="equipment-fields"
+                  v-model="selectedValues.equipmentId"
+                  :placeholder="$t('workOrder.form.equipment')"
+                  clearable
+                  :disabled="!hasEquipments"
+                  @change="handleEquipmentChange"
+                >
                   <el-option v-for="item in equipments" :key="item.id" :label="item.name" :value="item.id" />
                 </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="20">
               <el-form-item label="" class="form-item">
-                <el-select class="equipment-fields" v-model="form.component_id" placeholder="组件 (层级 4)" clearable>
+                <el-select
+                  class="equipment-fields"
+                  v-model="selectedValues.componentId"
+                  :placeholder="$t('workOrder.form.component')"
+                  clearable
+                  :disabled="!hasComponents"
+                  @change="handleComponentChange"
+                >
                   <el-option v-for="item in components" :key="item.id" :label="item.name" :value="item.id" />
                 </el-select>
               </el-form-item>
@@ -81,12 +98,12 @@
         </el-form-item>
       </div>
 
+      <!-- Classification Section -->
       <div class="categorization">
-        <el-form-item label="具体分类" required>
-          <!-- 新增三个下拉菜单 -->
+        <el-form-item :label="$t('workOrder.form.classification')" required>
           <el-col :span="20">
-            <el-form-item label="" class="form-item" placeholder="优先级" prop="priority_id" :show-message="false">
-              <el-select v-model="form.priority_id" placeholder="优先级" clearable>
+            <el-form-item label="" class="form-item" prop="priority_id" :show-message="false">
+              <el-select v-model="form.priority_id" :placeholder="$t('workOrder.placeholder.selectPriority')" clearable>
                 <el-option
                   v-for="item in commonDataStore.priorities"
                   :key="item.id"
@@ -98,7 +115,7 @@
           </el-col>
           <el-col :span="20">
             <el-form-item label="" class="form-item" prop="category_id" :show-message="false">
-              <el-select v-model="form.category_id" placeholder="工单类别" clearable>
+              <el-select v-model="form.category_id" :placeholder="$t('workOrder.placeholder.selectCategory')" clearable>
                 <el-option
                   v-for="item in commonDataStore.categories"
                   :key="item.id"
@@ -110,7 +127,11 @@
           </el-col>
           <el-col :span="20">
             <el-form-item label="" class="form-item" prop="work_type_id" :show-message="false">
-              <el-select v-model="form.work_type_id" placeholder="工作类型" clearable>
+              <el-select
+                v-model="form.work_type_id"
+                :placeholder="$t('workOrder.placeholder.selectWorkType')"
+                clearable
+              >
                 <el-option
                   v-for="item in commonDataStore.workTypes"
                   :key="item.id"
@@ -122,210 +143,234 @@
           </el-col>
         </el-form-item>
       </div>
-      <RecurrenceEditor v-model:recurrenceSetting="form.recurrence_setting" />
-      <UploadEditor v-model:imageList="form.image_list" v-model:filesList="form.files_list" />
-      <!-- 提交按钮 -->
-      <el-form-item>
-        <el-button type="primary" @click="submitForm">创建工单</el-button>
-      </el-form-item>
 
-      <!--      <el-form-item>-->
-      <!--        <el-button type="primary" @click="uploadFilesToServer">上传到服务器</el-button>-->
-      <!--      </el-form-item>-->
+      <!-- Recurrence and Upload Sections -->
+      <RecurrenceEditor v-model:recurrence-setting="form.recurrence_setting" />
+      <UploadEditor v-model:image-list="form.image_list" v-model:files-list="form.files_list" />
+
+      <!-- Submit Button -->
+      <el-form-item>
+        <el-button type="primary" @click="submitForm" :loading="loading">
+          {{ $t('workOrder.actions.submit') }}
+        </el-button>
+      </el-form-item>
     </el-form>
   </div>
 </template>
 
-<script>
+<script setup>
+import { ref, watch, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import RecurrenceEditor from '@/views/workOrder/components/recurrenceEditor.vue'
 import UploadEditor from '@/views/workOrder/components/upload.vue'
 import { uploadMultipleToMinio } from '@/api/minio'
 import { useTagsViewStore } from '@/store'
 import { useCommonDataStore } from '@/store/modules/commonData'
-
-import { getEquipmentGroups, getEquipments, getEquipmentComponents } from '@/api/equipment'
-
-// import {
-//   getEquipmentGroups
-// } from '@/api/PostgREST'
-
-import { getTimeZone } from '@/utils/datetime'
 import { createWorkOrder } from '@/api/workorder'
+import { useWorkOrderForm } from '@/composables/useWorkOrder'
+import { useEquipment } from '@/composables/useEquipment'
+import { useErrorHandler } from '@/composables/useErrorHandler'
 
-export default {
-  components : { RecurrenceEditor, UploadEditor },
-  setup() {
-    const commonDataStore = useCommonDataStore()
+// Composables
+const router = useRouter()
+const { t } = useI18n()
+const tagsViewStore = useTagsViewStore()
+const commonDataStore = useCommonDataStore()
+const { handleAsync, showSuccess } = useErrorHandler()
 
-    // 加载数据 (只需在页面加载时调用一次)
-    commonDataStore.fetchPriorities()
-    commonDataStore.fetchWorkTypes()
-    commonDataStore.fetchCategories()
-    commonDataStore.fetchProductionLines()
+// Form composable
+const { form, rules, validateForm } = useWorkOrderForm()
 
-    return {
-      commonDataStore
+// Equipment composable
+const {
+  equipmentGroups,
+  equipments,
+  components,
+  selectedValues,
+  hasEquipmentGroups,
+  hasEquipments,
+  hasComponents,
+  handleProductionLineChange,
+  handleEquipmentGroupChange,
+  handleEquipmentChange,
+  handleComponentChange
+} = useEquipment()
+
+// Refs
+const formRef = ref( null )
+const loading = ref( false )
+// Methods
+const uploadFilesToServer = async() => {
+  try {
+    let uploadedImages = []
+    let uploadedFiles = []
+
+    // Upload images if they exist
+    if ( form.image_list.length > 0 ) {
+      const imageRes = await uploadMultipleToMinio( form.image_list )
+      uploadedImages = imageRes.data.uploadedFiles || []
+      console.log( '🖼 Images uploaded successfully:', uploadedImages )
+      form.image_list = uploadedImages.map( file => file.url )
     }
-  },
-  data() {
-    return {
-      widthControl : '500px',
-      form : {
-        name : '',
-        description : '',
-        estimated_minutes : 30,
-        production_line_id : null,
-        equipment_group_id : null,
-        equipment_id : null,
-        component_id : null,
-        priority_id : null,
-        category_id : null,
-        work_type_id : null,
-        state_id : 1,
-        halt_type : 0,
-        time_zone : getTimeZone(),
-        created_by : 37,
-        recurrence_type : null,
-        image_list : [],
-        files_list : [],
-        recurrence_setting : {}
-      },
-      equipmentGroups : [],
-      equipments : [],
-      components : [],
-      rules : {
-        name : [{ required : true, message : '请输入工单名称', trigger : 'blur' }],
-        halt_type : [{ required : true, message : '请选择是否停机', trigger : 'change' }],
-        production_line_id : [{ required : true, message : '请选择生产线', trigger : 'change' }],
-        priority_id : [{ required : true, message : '请选择优先级', trigger : 'change' }],
-        category_id : [{ required : true, message : '请选择工单类别', trigger : 'change' }],
-        work_type_id : [{ required : true, message : '请选择工作类型', trigger : 'change' }],
-        recurrence_type : [{ required : true, message : '请选择重复设置', trigger : 'change' }],
-        'recurrence_setting.start_date_time' : [{ required : true, message : '请选择开始时间', trigger : 'change' }],
-        'recurrence_setting.end_date_time' : [{ required : true, message : '请选择结束时间', trigger : 'change' }]
-      }
+
+    // Upload files if they exist
+    if ( form.files_list.length > 0 ) {
+      const fileRes = await uploadMultipleToMinio( form.files_list )
+      uploadedFiles = fileRes.data.uploadedFiles || []
+      console.log( '📄 Files uploaded successfully:', uploadedFiles )
+      form.files_list = uploadedFiles.map( file => file.url )
     }
-  },
-  mounted() {},
-  methods : {
-    async fetchEquipmentGroups() {
-      const { data } = await getEquipmentGroups( this.form.production_line_id )
-      this.equipmentGroups = data.data
-    },
 
-    async fetchEquipments() {
-      const { data } = await getEquipments( this.form.equipment_group_id )
-      this.equipments = data.data
-    },
-
-    async fetchComponents() {
-      const { data } = await getEquipmentComponents( this.form.equipment_id )
-      this.components = data.data
-    },
-
-    async uploadFilesToServer() {
-      try {
-        let uploadedImages = []
-        let uploadedFiles = []
-
-        // 如果存在图片才上传
-        if ( this.form.image_list.length > 0 ) {
-          const imageRes = await uploadMultipleToMinio( this.form.image_list )
-          uploadedImages = imageRes.data.uploadedFiles || []
-          console.log( '🖼 上传图片成功:', uploadedImages )
-          this.form.image_list = uploadedImages.map( file => file.url )
-        }
-
-        // 如果存在文件才上传
-        if ( this.form.files_list.length > 0 ) {
-          const fileRes = await uploadMultipleToMinio( this.form.files_list )
-          uploadedFiles = fileRes.data.uploadedFiles || []
-          console.log( '📄 上传文件成功:', uploadedFiles )
-          this.form.files_list = uploadedFiles.map( file => file.url )
-        }
-
-        console.log( '✅ 当前上传后的图片列表:', this.form.image_list )
-        console.log( '✅ 当前上传后的文件列表:', this.form.files_list )
-        this.$message.success( '文件上传成功！' )
-      } catch ( err ) {
-        console.error( '❌ 文件上传失败:', err )
-        this.$message.error( '文件上传失败' )
-      }
-    },
-
-    async submitForm() {
-      this.$refs.formRef.validate( async valid => {
-        if ( !valid ) return
-
-        // 先上传图片和文件
-        await this.uploadFilesToServer()
-
-        const payload = {
-          ...this.form
-        }
-
-        try {
-          const { data } = await createWorkOrder( payload )
-          console.log( '✅ 工单创建成功:', data )
-          this.$message.success( '工单创建成功！' )
-
-          // Close current tab by navigating to another route
-          const tagsViewStore = useTagsViewStore()
-          tagsViewStore.DEL_VIEW( this.$route )
-          this.$router.push( '/workOrder/complex' )
-        } catch ( error ) {
-          console.error( '❌ 工单创建失败:', error )
-          this.$message.error( '工单创建失败' )
-        }
-      } )
-    }
-  },
-  watch : {
-    'form.production_line_id'( val ) {
-      this.form.equipment_group_id = null
-      this.form.equipment_id = null
-      this.form.component_id = null
-      if ( val ) this.fetchEquipmentGroups()
-    },
-    'form.equipment_group_id'( val ) {
-      this.form.equipment_id = null
-      this.form.component_id = null
-      if ( val ) this.fetchEquipments()
-    },
-    'form.equipment_id'( val ) {
-      this.form.component_id = null
-      if ( val ) this.fetchComponents()
-    },
-    form : {
-      handler( val ) {
-        val.recurrence_type = val.recurrence_setting.recurrence_type
-        console.log( 'form changed:', val )
-        console.log( '📅 recurrence_setting changed:', val.recurrence_setting )
-      },
-      deep : true
-    }
+    console.log( '✅ Current image list after upload:', form.image_list )
+    console.log( '✅ Current file list after upload:', form.files_list )
+    showSuccess( t( 'workOrder.messages.uploadSuccess' ) )
+  } catch ( err ) {
+    console.error( '❌ File upload failed:', err )
+    throw new Error( t( 'workOrder.messages.uploadFailed' ) )
   }
 }
+
+const submitForm = async() => {
+  try {
+    const isValid = await validateForm( formRef.value )
+    if ( !isValid ) return
+
+    loading.value = true
+
+    await handleAsync(
+      async() => {
+        // Upload files first
+        await uploadFilesToServer()
+
+        // Sync equipment selections to form
+        form.production_line_id = selectedValues.productionLineId
+        form.equipment_group_id = selectedValues.equipmentGroupId
+        form.equipment_id = selectedValues.equipmentId
+        form.component_id = selectedValues.componentId
+
+        const payload = { ...form }
+
+        const { data } = await createWorkOrder( payload )
+        console.log( '✅ Work order created successfully:', data )
+
+        showSuccess( t( 'workOrder.messages.createSuccess' ) )
+
+        // Close current tab and navigate
+        tagsViewStore.DEL_VIEW( router.currentRoute.value )
+        router.push( '/workOrder/complex' )
+      },
+      {
+        context : 'createWorkOrder',
+        customMessage : t( 'workOrder.messages.createFailed' ),
+        loadingRef : loading
+      }
+    )
+  } catch ( error ) {
+    console.error( '❌ Work order creation failed:', error )
+    loading.value = false
+  }
+}
+// Watchers
+watch(
+  () => form.recurrence_setting,
+  newVal => {
+    form.recurrence_type = newVal.recurrence_type
+    console.log( '📅 recurrence_setting changed:', newVal )
+  },
+  { deep : true }
+)
+
+// Lifecycle
+onMounted( async() => {
+  try {
+    await Promise.all( [
+      commonDataStore.fetchPriorities(),
+      commonDataStore.fetchWorkTypes(),
+      commonDataStore.fetchCategories(),
+      commonDataStore.fetchProductionLines()
+    ] )
+  } catch ( error ) {
+    console.error( 'Failed to initialize form data:', error )
+  }
+} )
+
+defineOptions( {
+  name : 'NewWorkOrder'
+} )
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .new-work-order {
   padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  h1 {
+    color: var(--el-text-color-primary);
+    margin-bottom: 24px;
+    font-weight: 600;
+  }
 }
+
 .work-order-form {
   max-width: 800px;
   margin: 0 auto;
+
+  .equipment,
+  .categorization {
+    max-width: 100%;
+
+    .form-item {
+      padding-bottom: 10px;
+      margin-bottom: 0;
+    }
+  }
+
+  .equipment-fields,
+  .el-input,
+  .el-select {
+    width: 100%;
+    max-width: 500px;
+  }
+
+  // Form sections spacing
+  .equipment,
+  .categorization {
+    margin-bottom: 20px;
+    padding: 16px;
+    background: var(--el-bg-color-page);
+    border-radius: 8px;
+    border: 1px solid var(--el-border-color-light);
+  }
 }
-.equipment,
-.categorization {
-  max-width: 800px;
+
+// Responsive design
+@media (max-width: 768px) {
+  .new-work-order {
+    padding: 10px;
+  }
+
+  .work-order-form {
+    .equipment-fields,
+    .el-input,
+    .el-select {
+      max-width: 100%;
+    }
+  }
 }
-.form-item {
-  padding-bottom: 10px;
+
+// Accessibility improvements
+.el-form-item {
+  &:focus-within {
+    .el-form-item__label {
+      color: var(--el-color-primary);
+    }
+  }
 }
-.equipment-fields,
-.el-input,
-.el-select {
-  width: 500px;
+
+// Loading state
+.el-button.is-loading {
+  pointer-events: none;
 }
 </style>

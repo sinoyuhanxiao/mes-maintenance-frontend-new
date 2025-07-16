@@ -55,7 +55,7 @@ defineOptions( {
   width: 100%;
   position: relative;
   overflow: hidden;
-  background: #f0f2f5;
+  background: white;
 }
 .fixed-header + .app-main {
   padding-top: 50px;

@@ -1,5 +1,5 @@
 <template>
-  <div ref="wrapperRef" class="yu-layout">
+  <div ref="wrapperRef" class="mes-layout">
     <div class="header">
       <div class="header-tt ellipsis">{{ title }}</div>
       <div class="header-desc ellipsis-col ellipsis-col2" v-html="subtitle"></div>
@@ -18,7 +18,7 @@
 import { defineComponent, ref } from 'vue'
 
 export default defineComponent( {
-  name : 'YuLayout',
+  name : 'MesLayout',
   props : {
     title : {
       type : String,
@@ -31,26 +31,26 @@ export default defineComponent( {
   },
   setup() {
     const wrapperRef = ref()
-    return {
-      wrapperRef
-    }
+    return { wrapperRef }
   }
 } )
 </script>
 
 <style lang="scss" scoped>
-.yu-layout {
+.mes-layout {
+  flex-direction: column;
+  height: calc(100vh - 90px);
+  display: grid;
+  grid-template-rows: 15% auto 10%;
+
   .header {
+    display: grid;
+    grid-template-rows: 55% 35% auto;
     box-sizing: border-box;
-    margin: 0;
-    font-size: 14px;
-    line-height: 1.6;
-    position: relative;
-    padding: 15px 25px;
+    padding: 15px;
     background: #fff;
     .header-tt {
       margin-right: 12px;
-      margin-bottom: 0;
       color: #181818;
       font-weight: 600;
       font-size: 20px;
@@ -58,23 +58,28 @@ export default defineComponent( {
     }
     .header-desc {
       color: #29282b;
-      padding-top: 12px;
       line-height: 20px;
     }
   }
+
   .body {
+    flex: 1 1 auto;
     padding: 16px;
     overflow: hidden;
     box-sizing: border-box;
-    .section-container {
-    }
   }
+
   .footer {
+    flex: 0 0 auto;
     background: #fff;
-    padding-left: 16px;
-    line-height: 1.6;
-    color: #29282b;
-    font-size: 14px;
+    padding: 20px;
+    box-sizing: border-box;
+  }
+}
+
+@media (max-width: 1600px) {
+  .mes-layout {
+    grid-template-rows: 20% auto 10%;
   }
 }
 </style>

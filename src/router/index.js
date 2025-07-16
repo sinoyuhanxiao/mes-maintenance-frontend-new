@@ -35,7 +35,7 @@ export const constantRoutes = [
     component : () => import( '@/views/login/index.vue' ),
     meta : {
       hidden : true,
-      title : '登录'
+      title : 'router.login'
     }
   },
   {
@@ -74,7 +74,7 @@ export const asyncRoutes = [
     component : Layout,
     redirect : '/dashboard',
     meta : {
-      title : '主页'
+      title : 'router.dashboard'
     },
     children : [
       {
@@ -82,7 +82,7 @@ export const asyncRoutes = [
         name : 'Dashboard',
         component : () => import( '@/views/dashboard/index.vue' ),
         meta : {
-          title : '主页',
+          title : 'router.dashboard',
           icon : 'dashboard',
           noCache : true,
           affix : true
@@ -95,14 +95,14 @@ export const asyncRoutes = [
     name : 'Icon',
     component : Layout,
     meta : {
-      title : '图标'
+      title : 'router.icons'
     },
     children : [
       {
         path : 'index',
         component : () => import( '@/views/icons/index.vue' ),
         name : 'Icons',
-        meta : { title : '图标', icon : 'image', noCache : true }
+        meta : { title : 'router.icons', icon : 'image', noCache : true }
       }
     ]
   },
@@ -112,14 +112,14 @@ export const asyncRoutes = [
     name : 'Directive',
     component : Layout,
     meta : {
-      title : '指令'
+      title : 'router.directive'
     },
     children : [
       {
         path : 'index',
         component : () => import( '@/views/directive/index.vue' ),
         name : 'Index',
-        meta : { title : '指令', icon : 'directive', noCache : true }
+        meta : { title : 'router.directive', icon : 'directive', noCache : true }
       }
     ]
   },
@@ -127,30 +127,30 @@ export const asyncRoutes = [
   nested,
 
   {
-    path : '/workOrder',
+    path : '/work-order',
     name : 'Table',
     component : Layout,
-    redirect : '/workOrder/dynamic',
-    meta : { title : '工单中心', icon : 'table', noCache : true },
+    redirect : '/work-order/table',
+    meta : { title : 'router.workOrderCenter', icon : 'table', noCache : true },
     children : [
       {
-        path : 'complex',
+        path : 'table',
         component : () => import( '@/views/workOrder/index.vue' ),
-        name : 'ComplexTable',
-        meta : { title : '工单管理', noCache : true }
+        name : 'WorkOrderTable',
+        meta : { title : 'router.workOrderManagement', noCache : true }
       },
       {
-        path : '/new-work-order',
+        path : 'new',
         component : () => import( '@/views/workOrder/components/NewWorkOrder.vue' ),
         name : 'NewWorkOrder',
-        meta : { title : '新增工单', noCache : true, hidden : true }
+        meta : { title : 'router.newWorkOrder', noCache : true, hidden : true }
       },
       {
-        path : '/view-work-order/:id',
+        path : 'view/:id',
         component : () => import( '@/views/workOrder/components/ViewWorkOrder.vue' ),
         name : 'ViewWorkOrder',
         props : true,
-        meta : { title : '查看工单', noCache : true, hidden : true }
+        meta : { title : 'router.viewWorkOrder', noCache : true, hidden : true }
       }
     ]
   },
@@ -159,13 +159,13 @@ export const asyncRoutes = [
     name : 'User',
     component : Layout,
     redirect : '/user/index',
-    meta : { title : '个人中心', icon : 'about', noCache : true },
+    meta : { title : 'router.userCenter', icon : 'about', noCache : true },
     children : [
       {
         path : 'index',
-        component : () => import( '@/views/page/userCenter/index.vue' ),
+        component : () => import( '@/views/userCenter/index.vue' ),
         name : 'UserCenter',
-        meta : { title : '我的账号', noCache : true }
+        meta : { title : 'router.myAccount', noCache : true }
       }
     ]
   },

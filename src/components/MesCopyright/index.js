@@ -1,7 +1,7 @@
-import YuCopyright from './src/index.vue'
-export const Copyright = Object.assign( YuCopyright, {
+import MesCopyright from './src/index.vue'
+export const Copyright = Object.assign( MesCopyright, {
   install( app ) {
-    app.component( YuCopyright.name, YuCopyright )
+    app.component( MesCopyright.name, MesCopyright )
   }
 } )
 

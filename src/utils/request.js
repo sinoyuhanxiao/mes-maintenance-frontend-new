@@ -1,21 +1,12 @@
-/**
- * @Description: axios封装
- * @Author: 灰是小灰灰的灰
- * @Email: 454539387@qq.com
- * @Date: 2021-07-06 11:49:40
- * @LastEditors: 灰是小灰灰的灰
- * @LastEditTime: 2021-07-06 11:49:40
- */
 'use strict'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
-import { getEnvs } from './envs'
-import { ENV_CONFIG } from './env'
+import { ENV_UTILS } from './env'
 import cookies from '@/utils/cookies'
 import router from '@/router'
 import { useUserStore } from '@/store'
 
-import { TOKEN, WHITE_CODE_LIST, LOGIN_ERROR_CODE, GLOBAL_DATA } from '@/config/constant'
+import { TOKEN, WHITE_CODE_LIST, LOGIN_ERROR_CODE } from '@/config/constant'
 // import qs from 'qs'
 class HttpRequest {
   // #baseUrl
@@ -26,10 +17,8 @@ class HttpRequest {
   }
 
   getBaseUrl() {
-    const { envStr } = getEnvs()
-    // Use direct backend URL instead of proxy in development
-    const baseUrlStr = envStr === 'dev' ? ENV_CONFIG.BACKEND_URL : GLOBAL_DATA[envStr].baseUrl
-    return baseUrlStr
+    // Use the environment utility for consistent API base URL logic
+    return ENV_UTILS.getApiBaseUrl()
   }
 
   getConfig() {

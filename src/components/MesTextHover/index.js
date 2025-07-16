@@ -1,7 +1,7 @@
-import YuTextHover from './src/index.vue'
-export const TextHover = Object.assign( YuTextHover, {
+import MesTextHover from './src/index.vue'
+export const TextHover = Object.assign( MesTextHover, {
   install( app ) {
-    app.component( YuTextHover.name, YuTextHover )
+    app.component( MesTextHover.name, MesTextHover )
   }
 } )
 

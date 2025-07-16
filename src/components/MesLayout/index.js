@@ -1,7 +1,7 @@
-import YuLayout from './src/index.vue'
-export const Layout = Object.assign( YuLayout, {
+import MesLayout from './src/index.vue'
+export const Layout = Object.assign( MesLayout, {
   install( app ) {
-    app.component( YuLayout.name, YuLayout )
+    app.component( MesLayout.name, MesLayout )
   }
 } )
 

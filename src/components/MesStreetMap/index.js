@@ -1,7 +1,7 @@
-import YuStreetMap from './src/index.vue'
-export const StreetMap = Object.assign( YuStreetMap, {
+import MesStreetMap from './src/index.vue'
+export const StreetMap = Object.assign( MesStreetMap, {
   install( app ) {
-    app.component( YuStreetMap.name, YuStreetMap )
+    app.component( MesStreetMap.name, MesStreetMap )
   }
 } )
 

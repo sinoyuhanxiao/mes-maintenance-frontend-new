@@ -7,7 +7,7 @@
     </template>
 
     <div style="position: relative">
-      <YuThumb :image="set.avatar" class="yuThumb" />
+      <MesThumb :image="set.avatar" class="MesThumb" />
       <TextHover class-name="mallki-text" />
       <div style="padding-top: 35px" class="progress-item">
         <span>Vue</span>
@@ -39,7 +39,7 @@
 
 <script setup>
 import { reactive, computed } from 'vue'
-import YuThumb from 'src/components/MesThumb'
+import MesThumb from 'src/components/MesThumb'
 import TextHover from 'src/components/MesTextHover'
 import { useUserStore } from '@/store'
 
@@ -93,7 +93,7 @@ defineOptions( {
     font-size: 20px;
     font-weight: bold;
   }
-  .yuThumb {
+  .MesThumb {
     z-index: 100;
     height: 70px !important;
     width: 70px !important;

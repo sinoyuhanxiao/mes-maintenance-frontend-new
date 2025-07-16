@@ -1,5 +1,5 @@
 const defaultSetting = {
-  title : 'FPS设备管理系统',
+  title : 'title',
   showSettings : true,
   tagsView : true,
   fixedHeader : true,

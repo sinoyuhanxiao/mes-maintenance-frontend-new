@@ -59,12 +59,14 @@ export const ENV_UTILS = {
 
   /**
    * Get API base URL based on environment
+   * In development: uses proxy (/api) to avoid CORS issues
+   * In production: uses direct backend URL
    */
   getApiBaseUrl : () => {
     if ( ENV_CONFIG.MODE === 'development' ) {
-      return ENV_CONFIG.PROXY_DOMAIN
+      return ENV_CONFIG.PROXY_DOMAIN // '/api' - proxied by Vite
     }
-    return ENV_CONFIG.BACKEND_URL
+    return ENV_CONFIG.BACKEND_URL // Direct backend URL in production
   },
 
   /**
@@ -77,7 +79,7 @@ export const ENV_UTILS = {
   /**
    * Get environment-specific configuration
    */
-  getEnvConfig : ( key ) => {
+  getEnvConfig : key => {
     return ENV_CONFIG[key]
   },
 
@@ -88,7 +90,27 @@ export const ENV_UTILS = {
     if ( ENV_CONFIG.DEBUG ) {
       console.group( '🔧 Environment Configuration' )
       console.table( ENV_CONFIG )
+      console.log( '🌐 API Base URL:', ENV_UTILS.getApiBaseUrl() )
+      console.log( '🔄 Using Proxy:', ENV_CONFIG.MODE === 'development' )
       console.groupEnd()
+    }
+  },
+
+  /**
+   * Validate proxy configuration
+   */
+  validateProxyConfig : () => {
+    if ( ENV_CONFIG.MODE === 'development' ) {
+      if ( !ENV_CONFIG.PROXY_DOMAIN ) {
+        console.warn( '⚠️ VITE_PROXY_DOMAIN not configured for development' )
+      }
+      if ( !ENV_CONFIG.PROXY_DOMAIN_REAL ) {
+        console.warn( '⚠️ VITE_PROXY_DOMAIN_REAL not configured for development' )
+      }
+    } else {
+      if ( !ENV_CONFIG.BACKEND_URL ) {
+        console.warn( '⚠️ VITE_BACKEND_URL not configured for production' )
+      }
     }
   }
 }
@@ -115,8 +137,9 @@ export const getEnvs = () => {
   return { envStr }
 }
 
-// Initialize environment logging in development
+// Initialize environment logging and validation in development
 if ( ENV_UTILS.isDev() ) {
+  ENV_UTILS.validateProxyConfig()
   ENV_UTILS.logConfig()
 }
 

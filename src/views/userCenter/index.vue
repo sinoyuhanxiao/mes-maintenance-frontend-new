@@ -156,7 +156,7 @@
     </div>
     <!--  -->
     <div class="avatar-box flex-column flex-level-center flex-vertical-center">
-      <YuThumb width="150px" height="150px" :image="set.avatar">Vite Element Admin Admin Admin Admin</YuThumb>
+      <MesThumb width="150px" height="150px" :image="set.avatar">Vite Element Admin Admin Admin Admin</MesThumb>
       <span class="user-name ellipsis"> Hi,{{ set.name || '小灰灰' }} </span>
       <span class="phone">
         <span v-if="set.phone">{{ encryptionPhone(set.phone) }}</span>
@@ -173,7 +173,7 @@ import { loginHistory } from '@/api/user'
 import { encryptionPhone } from '@/utils'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import YuThumb from 'src/components/MesThumb'
+import MesThumb from '@/components/MesThumb'
 
 const router = useRouter()
 
