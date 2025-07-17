@@ -139,6 +139,10 @@ export default {
       endDateRequired : 'Please select end date'
     }
   },
+  maintenanceEquipment : {
+    title : 'Maintenance Equipment',
+    subtitle : 'Equipment Hierarchy View'
+  },
   common : {
     success : 'Success',
     error : 'Error',
@@ -176,6 +180,7 @@ export default {
     directive : 'Directive',
     workOrderCenter : 'Work Order Center',
     workOrderManagement : 'Work Order',
+    maintenanceEquipment : 'Maintenance Equipment',
     newWorkOrder : 'New Work Order',
     viewWorkOrder : 'View Work Order',
     userCenter : 'User Center',

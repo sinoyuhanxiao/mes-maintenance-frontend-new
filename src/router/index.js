@@ -123,9 +123,21 @@ export const asyncRoutes = [
       }
     ]
   },
-
   nested,
-
+  {
+    path : '/maintenance',
+    name : 'Equipment',
+    component : Layout,
+    meta : { title : 'router.maintenanceEquipment', icon : 'table', noCache : true },
+    children : [
+      {
+        path : 'equipment',
+        component : () => import( '@/views/maintenanceEquipment/index.vue' ),
+        name : 'Maintenance Test',
+        meta : { title : 'router.maintenanceEquipment', noCache : true }
+      }
+    ]
+  },
   {
     path : '/work-order',
     name : 'Table',
