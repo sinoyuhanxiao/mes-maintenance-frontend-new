@@ -5,11 +5,7 @@
     <el-radio value="small">Small</el-radio>
   </el-radio-group>
 
-  <el-descriptions
-    title="Vertical list with border"
-    direction="vertical"
-    :column="4"
-  >
+  <el-descriptions title="Vertical list with border" direction="vertical" :column="4">
     <el-descriptions-item label="Username">kooriookami</el-descriptions-item>
     <el-descriptions-item label="Telephone">18100000000</el-descriptions-item>
     <el-descriptions-item label="Place" :span="2">Suzhou</el-descriptions-item>
@@ -21,11 +17,7 @@
     </el-descriptions-item>
   </el-descriptions>
 
-  <el-descriptions
-    title="Vertical list without border"
-    :column="4"
-    direction="vertical"
-  >
+  <el-descriptions title="Vertical list without border" :column="4" direction="vertical">
     <el-descriptions-item label="Username">kooriookami</el-descriptions-item>
     <el-descriptions-item label="Telephone">18100000000</el-descriptions-item>
     <el-descriptions-item label="Place" :span="2">Suzhou</el-descriptions-item>
