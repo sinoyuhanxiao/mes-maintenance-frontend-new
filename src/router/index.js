@@ -145,6 +145,13 @@ export const asyncRoutes = [
         name : 'ViewWorkOrder',
         props : true,
         meta : { title : 'router.viewWorkOrder', noCache : true, hidden : true }
+      },
+      {
+        path : 'test-view',
+        component : () => import( '@/views/workOrder/test_view.vue' ),
+        name : 'TestView',
+        props : true,
+        meta : { title : 'router.viewWorkOrder', noCache : true, hidden : false }
       }
     ]
   },
