@@ -50,7 +50,6 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { parseTime } from '@/utils'
 import MesLayout from 'src/components/MesLayout'
 import WorkOrderFilters from '@/components/WorkOrder/WorkOrderFilters.vue'
 import WorkOrderTable from '@/components/WorkOrder/WorkOrderTable.vue'
@@ -105,30 +104,7 @@ const handleDelete = async( row, index ) => {
 }
 
 const handleDownload = () => {
-  downloadLoading.value = true
-  import( '@/vendor/Export2Excel' ).then( excel => {
-    const tHeader = ['timestamp', 'title', 'type', 'importance', 'status']
-    const filterVal = ['timestamp', 'title', 'type', 'importance', 'status']
-    const data = formatJson( filterVal )
-    excel.export_json_to_excel( {
-      header : tHeader,
-      data,
-      filename : 'workOrder-list'
-    } )
-    downloadLoading.value = false
-  } )
-}
-
-const formatJson = filterVal => {
-  return list.value.map( v =>
-    filterVal.map( j => {
-      if ( j === 'timestamp' ) {
-        return parseTime( v[j] )
-      } else {
-        return v[j]
-      }
-    } )
-  )
+  console.log( 'Download work orders' )
 }
 
 // Lifecycle

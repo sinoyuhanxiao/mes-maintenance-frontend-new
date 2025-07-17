@@ -43,7 +43,7 @@
       <!-- Work Order Image -->
       <el-table-column :label="$t('workOrder.table.preview')" align="center" width="150">
         <template #default="{ row }">
-          <WorkOrderImage :image-path="row.image_path" />
+          <WorkOrderImage :image-path="row.image_list" />
         </template>
       </el-table-column>
 

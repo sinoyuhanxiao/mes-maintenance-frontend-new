@@ -180,19 +180,19 @@
     <!--            <el-descriptions-item label="图片预览">-->
     <!--              <div class="image-list">-->
     <!--                <el-image-->
-    <!--                    v-for="(img, index) in workOrder.image_path"-->
+    <!--                    v-for="(img, index) in workOrder.image_list"-->
     <!--                    :key="index"-->
     <!--                    :src="img"-->
     <!--                    style="width: 100px; height: 100px; margin-right: 10px"-->
     <!--                    fit="cover"-->
-    <!--                    :preview-src-list="workOrder.image_path"-->
+    <!--                    :preview-src-list="workOrder.image_list"-->
     <!--                />-->
     <!--              </div>-->
     <!--            </el-descriptions-item>-->
     <!--            <el-descriptions-item label="文件下载" >-->
     <!--              <div class="file-list">-->
     <!--                <div-->
-    <!--                    v-for="(file, index) in workOrder.file_path"-->
+    <!--                    v-for="(file, index) in workOrder.file_list"-->
     <!--                    :key="index"-->
     <!--                    style="margin-bottom: 8px"-->
     <!--                >-->
@@ -215,8 +215,8 @@
     <div class="el-col el-col-24 is-guttered">
       <ImagesAndFiles
         :mode="editing ? 'edit' : 'view'"
-        :imageListUrl="workOrder.image_path"
-        :fileListUrl="workOrder.file_path"
+        :imageListUrl="workOrder.image_list"
+        :fileListUrl="workOrder.file_list"
         v-model:image_list_multipart_added="imageListMultipartAdded"
         v-model:file_list_multipart_added="fileListMultipartAdded"
         v-model:image_list_url_deleted="imageListUrlDeleted"
@@ -380,8 +380,8 @@ onMounted( async() => {
     equipment_group : data.equipment_group || {},
     equipment : data.equipment || {},
     component : data.component || {},
-    image_path : data.image_path || [],
-    file_path : data.file_path || [],
+    image_path : data.image_list || [],
+    file_path : data.file_list || [],
     start_date : data.start_date,
     end_date : data.end_date,
     due_date : data.due_date,
@@ -503,8 +503,8 @@ watch(
     fileListMultipartAdded,
     imageListUrlDeleted,
     fileListUrlDeleted,
-    () => workOrder.value.image_path,
-    () => workOrder.value.file_path,
+    () => workOrder.value.image_list,
+    () => workOrder.value.file_list,
     editing
   ],
   ( [newImagesAdded, newFilesAdded, deletedImages, deletedFiles, imageListUrl, fileListUrl, mode] ) => {

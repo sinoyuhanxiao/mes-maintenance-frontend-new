@@ -26,7 +26,6 @@ import registerDirective from '@/directive'
 import { setupI18n } from '@/locale'
 // 注册所有element icons
 import { setupElementIcons } from '@/plugins/elementIcons'
-import { useTable } from '@/plugins/vxeTable'
 // Debug API configuration in development
 import '@/utils/debug-api'
 
@@ -49,7 +48,6 @@ const initApp = async() => {
 
   app.use( globalEmitter )
   app.use( ElementPlus )
-  app.use( useTable )
   app.mount( '#app' )
 }
 initApp()

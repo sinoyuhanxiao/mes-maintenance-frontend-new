@@ -61,7 +61,7 @@ export const testProxyConfiguration = async() => {
     if ( ENV_CONFIG.MODE === 'development' ) {
       console.log( '\n🔧 Debugging Tips:' )
       console.log( '  1. Check if backend server is running on:', ENV_CONFIG.PROXY_DOMAIN_REAL )
-      console.log( '  2. Verify Vite proxy configuration in vite.config.js' )
+      console.log( '  2. Verify Vite proxy configuration in vite.config.mjs' )
       console.log( '  3. Check browser Network tab for actual request URLs' )
       console.log( '  4. Ensure VITE_PROXY_DOMAIN and VITE_PROXY_DOMAIN_REAL are set correctly' )
     } else {
