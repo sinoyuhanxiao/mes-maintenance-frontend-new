@@ -106,7 +106,7 @@ onBeforeUnmount( () => {
 
 watch(
   () => props.data,
-  ( newData ) => {
+  newData => {
     if ( myChart.value ) {
       myChart.value.setOption( {
         color : newData.map( item => item.color ),
@@ -118,7 +118,7 @@ watch(
 
 watch(
   () => props.title,
-  ( newTitle ) => {
+  newTitle => {
     if ( myChart.value ) {
       myChart.value.setOption( {
         title : { text : newTitle }

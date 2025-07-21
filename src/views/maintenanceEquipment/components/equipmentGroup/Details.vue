@@ -1,23 +1,15 @@
 <template>
   <div class="t2-details">
     <div class="general-information">
-      <el-descriptions
-        :column="2"
-        direction="vertical"
-      >
+      <el-descriptions :column="2" direction="vertical">
         <el-descriptions-item label="Name">Conveyor</el-descriptions-item>
         <el-descriptions-item label="Code">18100000000</el-descriptions-item>
-        <el-descriptions-item label="Description" class="highlighted-item">
-          Test Description
-        </el-descriptions-item>
+        <el-descriptions-item label="Description" class="highlighted-item"> Test Description </el-descriptions-item>
       </el-descriptions>
     </div>
     <el-divider />
     <div class="location">
-      <el-descriptions
-        :column="1"
-        direction="vertical"
-      >
+      <el-descriptions :column="1" direction="vertical">
         <el-descriptions-item label="Location Path">
           <el-breadcrumb :separator-icon="ArrowRight">
             <el-breadcrumb-item>SGB Richmond</el-breadcrumb-item>
@@ -29,10 +21,7 @@
     </div>
     <el-divider />
     <div class="image">
-      <el-descriptions
-        :column="1"
-        direction="vertical"
-      >
+      <el-descriptions :column="1" direction="vertical">
         <el-descriptions-item label="Images">
           <el-image :src="src" />
         </el-descriptions-item>

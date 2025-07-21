@@ -17,7 +17,7 @@
         borderRadius: '10px',
         display: 'block',
         width: '100%',
-        textAlign: 'center'
+        textAlign: 'center',
       }"
     >
       {{ name }}
@@ -49,6 +49,6 @@ defineProps( {
   display: flex;
   flex-direction: column;
   padding: 10px;
-  width: 80px
+  width: 80px;
 }
 </style>
