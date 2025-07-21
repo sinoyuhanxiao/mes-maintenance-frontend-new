@@ -16,7 +16,7 @@
         <el-tab-pane label="Sub Items" name="subItems">
           <SubItemsTab />
         </el-tab-pane>
-        <!-- <el-tab-pane label="Work Orders" name="workOrders">
+        <el-tab-pane label="Work Orders" name="workOrders">
           <WorkOrderTab />
         </el-tab-pane>
         <el-tab-pane label="Tasks" name="tasks">
@@ -24,7 +24,7 @@
         </el-tab-pane>
         <el-tab-pane label="Personnel" name="personnel">
           <PersonnelTab />
-        </el-tab-pane> -->
+        </el-tab-pane>
       </el-tabs>
     </div>
   </div>
@@ -34,9 +34,9 @@
 import { ref } from 'vue'
 import DetailsTab from './Details.vue'
 import SubItemsTab from './SubItems.vue'
-// import WorkOrderTab from './workOrders.vue'
-// import TasksTab from './tasks.vue'
-// import PersonnelTab from './personnel.vue'
+import WorkOrderTab from './WorkOrders.vue'
+import TasksTab from './Tasks.vue'
+import PersonnelTab from './Personnel.vue'
 
 defineProps( {
   node : {

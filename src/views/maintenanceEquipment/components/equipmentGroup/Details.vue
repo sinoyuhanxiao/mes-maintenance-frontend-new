@@ -1,43 +1,66 @@
 <template>
-  <el-descriptions
-    title="Vertical list without border"
-    :column="4"
-    :size="size"
-    direction="vertical"
-    :style="blockMargin"
-  >
-    <el-descriptions-item label="Username">kooriookami</el-descriptions-item>
-    <el-descriptions-item label="Telephone">18100000000</el-descriptions-item>
-    <el-descriptions-item label="Place" :span="2">Suzhou</el-descriptions-item>
-    <el-descriptions-item label="Remarks">
-      <el-tag size="small">School</el-tag>
-    </el-descriptions-item>
-    <el-descriptions-item label="Address">
-      No.1188, Wuzhong Avenue, Wuzhong District, Suzhou, Jiangsu Province
-    </el-descriptions-item>
-  </el-descriptions>
+  <div class="t2-details">
+    <div class="general-information">
+      <el-descriptions
+        :column="2"
+        direction="vertical"
+      >
+        <el-descriptions-item label="Name">Conveyor</el-descriptions-item>
+        <el-descriptions-item label="Code">18100000000</el-descriptions-item>
+        <el-descriptions-item label="Description" class="highlighted-item">
+          Test Description
+        </el-descriptions-item>
+      </el-descriptions>
+    </div>
+    <el-divider />
+    <div class="location">
+      <el-descriptions
+        :column="1"
+        direction="vertical"
+      >
+        <el-descriptions-item label="Location Path">
+          <el-breadcrumb :separator-icon="ArrowRight">
+            <el-breadcrumb-item>SGB Richmond</el-breadcrumb-item>
+            <el-breadcrumb-item>Rheon Line 1</el-breadcrumb-item>
+            <el-breadcrumb-item>Freezing</el-breadcrumb-item>
+          </el-breadcrumb>
+        </el-descriptions-item>
+      </el-descriptions>
+    </div>
+    <el-divider />
+    <div class="image">
+      <el-descriptions
+        :column="1"
+        direction="vertical"
+      >
+        <el-descriptions-item label="Images">
+          <el-image :src="src" />
+        </el-descriptions-item>
+      </el-descriptions>
+    </div>
+  </div>
 </template>
 
 <script setup>
-// import { ArrowRight } from '@element-plus/icons-vue'
-// defineProps( {
-//   data : {
-//     type : Array,
-//     default : () => []
-//   }
-// } )
+import { ArrowRight } from '@element-plus/icons-vue'
+defineProps( {
+  data : {
+    type : Array,
+    default : () => []
+  }
+} )
 
-// const src = 'https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg'
+const src = 'https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg'
 </script>
 
 <style scoped>
-.t2-main-container {
+.t2-details {
   flex: 0;
   display: flex;
   flex-direction: column;
 }
 
-.general-info {
+.general-information {
   flex: 0;
   display: flex;
   flex-direction: column;

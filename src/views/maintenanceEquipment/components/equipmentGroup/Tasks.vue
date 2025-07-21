@@ -1,15 +1,15 @@
 <template>
-  <div class="main-container">
+  <div class="t2-tasks-container">
     <el-descriptions :column="1" direction="vertical">
       <el-descriptions-item label="Task Library">
-        <InfoCardTable :data="taskData" :pageSize="6" :rows="5" :heightOffset="'435px'" />
+        <InfoCardTable :data="taskData" :pageSize="6" :rows="5" :heightOffset="'405px'" />
       </el-descriptions-item>
     </el-descriptions>
   </div>
 </template>
 
 <script setup>
-import InfoCardTable from '../components/InfoCardTable/index.vue'
+import InfoCardTable from '../../../../components/Common/InfoCardTable.vue'
 
 const taskData = [
   { id : 1, title : 'Fix Bug #12', description : 'Fix the UI layout issue on login page.' },
@@ -24,7 +24,7 @@ const taskData = [
 </script>
 
 <style scoped>
-.main-container {
+.t2-tasks-container {
   flex: 1;
   display: flex;
   flex-direction: column;

@@ -48,7 +48,7 @@ function onNodeClick( node, nodePath ) {
 
 <style scoped>
 .maintenance-equipment-container {
-  height: 100vh;
+  height: calc(100vh - 84px);
   display: flex;
   flex-direction: column;
   overflow: auto;

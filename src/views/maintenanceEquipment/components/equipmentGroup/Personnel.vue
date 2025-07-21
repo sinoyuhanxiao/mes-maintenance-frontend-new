@@ -1,5 +1,5 @@
 <template>
-  <div class="main-container">
+  <div class="t2-personnel-container">
     <div class="table">
       <el-descriptions :column="1" direction="vertical">
         <el-descriptions-item label="Associated Personnel Work Order Statistics">
@@ -11,7 +11,7 @@
               :data="paginatedData"
               :default-sort="{ prop: 'active', order: 'descending' }"
               style="width: 100%"
-              height="calc(100vh - 425px)"
+              height="calc(100vh - 395px)"
             >
               <el-table-column prop="name" label="Name" sortable />
               <el-table-column prop="active" label="Active" sortable />
@@ -100,7 +100,7 @@ function handlePageChange( page ) {
 </script>
 
 <style scoped>
-.main-container {
+.t2-personnel-container {
   display: flex;
   flex-direction: column;
   flex: 1;

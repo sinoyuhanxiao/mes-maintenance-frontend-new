@@ -71,7 +71,7 @@ defineProps( {
 }
 
 .image {
-  height: calc(100vh - 310px);
+  height: calc(100vh - 280px);
   align-content: center;
 }
 
@@ -83,7 +83,7 @@ defineProps( {
 
 .label-cards {
   flex: 0 0 300px;
-  height: calc(100vh - 310px);
+  height: calc(100vh - 280px);
   overflow-y: auto;
   padding-right: 5px;
 }

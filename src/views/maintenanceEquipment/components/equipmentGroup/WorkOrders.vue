@@ -21,7 +21,7 @@
 <script setup>
 import { ref, markRaw } from 'vue'
 import { GridLayout, GridItem } from 'vue3-grid-layout'
-import WidgetPie from '@/components/widgets/PieChart.vue'
+import WidgetPie from '../../../../components/Widgets/PieChart.vue'
 
 const layout = ref( [
   {
