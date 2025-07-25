@@ -1,23 +1,11 @@
 <template>
   <div class="main-container">
     <div class="search-bar">
-      <el-input
-        v-model="searchQuery"
-        placeholder="Search by Spare Part..."
-        clearable
-        prefix-icon="el-icon-search"
-      />
+      <el-input v-model="searchQuery" placeholder="Search by Spare Part..." clearable prefix-icon="el-icon-search" />
     </div>
     <div class="card-scroll-container">
       <el-row :gutter="0">
-        <el-col
-          v-for="item in paginatedData"
-          :key="item.id"
-          :xs="24"
-          :sm="24"
-          :md="24"
-          :lg="24"
-        >
+        <el-col v-for="item in paginatedData" :key="item.id" :xs="24" :sm="24" :md="24" :lg="24">
           <CardItem :item="item" />
         </el-col>
       </el-row>
@@ -25,7 +13,7 @@
     <div class="pagination-wrapper">
       <el-pagination
         background
-layout="prev, pager, next"
+        layout="prev, pager, next"
         :current-page="currentPage"
         :page-size="cardsPerPage"
         :total="filteredData.length"
@@ -63,9 +51,7 @@ const cardsPerPage = computed( () => props.rows * 1 )
 
 const filteredData = computed( () => {
   if ( !searchQuery.value.trim() ) return props.data
-  return props.data.filter( item =>
-    item.title.toLowerCase().includes( searchQuery.value.toLowerCase() )
-  )
+  return props.data.filter( item => item.title.toLowerCase().includes( searchQuery.value.toLowerCase() ) )
 } )
 
 const paginatedData = computed( () => {

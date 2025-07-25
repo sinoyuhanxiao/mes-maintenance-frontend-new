@@ -11,7 +11,7 @@
       </el-image>
     </div>
     <div class="spare-parts-table">
-      <SparePartsTable :data="taskData" :pageSize="6" :rows="10" :heightOffset="'400px'"/>
+      <SparePartsTable :data="taskData" :pageSize="6" :rows="10" :heightOffset="'400px'" />
     </div>
   </div>
 </template>

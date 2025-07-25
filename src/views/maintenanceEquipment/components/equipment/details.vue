@@ -1,24 +1,16 @@
 <template>
   <div class="t3-details">
     <div class="general-information">
-      <el-descriptions
-        :column="3"
-        direction="vertical"
-      >
+      <el-descriptions :column="3" direction="vertical">
         <el-descriptions-item label="Name">Conveyor</el-descriptions-item>
         <el-descriptions-item label="Code">18100000000</el-descriptions-item>
         <el-descriptions-item label="Model">18100000000</el-descriptions-item>
-        <el-descriptions-item label="Description" class="highlighted-item">
-          Test Description
-        </el-descriptions-item>
+        <el-descriptions-item label="Description" class="highlighted-item"> Test Description </el-descriptions-item>
       </el-descriptions>
     </div>
     <el-divider />
     <div class="location">
-      <el-descriptions
-        :column="1"
-        direction="vertical"
-      >
+      <el-descriptions :column="1" direction="vertical">
         <el-descriptions-item label="Location Path">
           <el-breadcrumb :separator-icon="ArrowRight">
             <el-breadcrumb-item>SGB Richmond</el-breadcrumb-item>
@@ -31,10 +23,7 @@
     </div>
     <el-divider />
     <div class="image">
-      <el-descriptions
-        :column="1"
-        direction="vertical"
-      >
+      <el-descriptions :column="1" direction="vertical">
         <el-descriptions-item label="Images">
           <el-image :src="src" />
         </el-descriptions-item>
@@ -42,30 +31,16 @@
     </div>
     <el-divider />
     <div class="files">
-      <el-descriptions
-        :column="1"
-        direction="vertical"
-      >
+      <el-descriptions :column="1" direction="vertical">
         <el-descriptions-item label="Files">
           <div class="file-list">
-            <div
-              v-for="file in files"
-              :key="file.id"
-              class="file-item"
-            >
-              <el-link
-                :href="file.url"
-                target="_blank"
-                :icon="getFileIcon(file.type)"
-                class="file-link"
-              >
+            <div v-for="file in files" :key="file.id" class="file-item">
+              <el-link :href="file.url" target="_blank" :icon="getFileIcon(file.type)" class="file-link">
                 {{ file.name }}
               </el-link>
               <span class="file-size">{{ file.size }}</span>
             </div>
-            <div v-if="files.length === 0" class="no-files">
-              No files available
-            </div>
+            <div v-if="files.length === 0" class="no-files">No files available</div>
           </div>
         </el-descriptions-item>
       </el-descriptions>
@@ -133,9 +108,9 @@ function getFileIcon( fileType ) {
 
 <style scoped>
 .t3-details {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .general-information {

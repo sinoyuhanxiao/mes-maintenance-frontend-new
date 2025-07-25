@@ -1,11 +1,6 @@
 <template>
   <div class="simple-tree-container">
-    <el-input
-      v-model="filterText"
-      placeholder="Search nodes"
-      style="width: 240px; margin-bottom: 10px"
-      clearable
-    />
+    <el-input v-model="filterText" placeholder="Search nodes" style="width: 240px; margin-bottom: 10px" clearable />
     <el-tree
       :data="treeData"
       node-key="id"
@@ -32,12 +27,7 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue'
 import { ElTree, ElInput, ElIcon } from 'element-plus'
-import {
-  OfficeBuilding,
-  Setting,
-  Tools,
-  Folder
-} from '@element-plus/icons-vue'
+import { OfficeBuilding, Setting, Tools, Folder } from '@element-plus/icons-vue'
 import { getEquipmentTree } from '@/api/equipment.js'
 
 const filterText = ref( '' )
@@ -46,14 +36,20 @@ const loading = ref( false )
 const error = ref( null )
 const treeData = ref( [] )
 
-const getIconForLevel = ( level ) => {
+const getIconForLevel = level => {
   switch ( level ) {
-    case 0: return OfficeBuilding
-    case 1: return Folder
-    case 2: return Folder
-    case 3: return Setting
-    case 4: return Tools
-    default: return Folder
+    case 0:
+      return OfficeBuilding
+    case 1:
+      return Folder
+    case 2:
+      return Folder
+    case 3:
+      return Setting
+    case 4:
+      return Tools
+    default:
+      return Folder
   }
 }
 const transformNode = ( node, level = 0 ) => {
@@ -61,9 +57,10 @@ const transformNode = ( node, level = 0 ) => {
     id : node.id,
     label : level === 0 ? node.name : `T${level}: ${node.name}`,
     level, // Store level for icon selection
-    children : node.children && node.children.length > 0
-      ? node.children.map( child => transformNode( child, level + 1 ) )
-      : undefined
+    children :
+      node.children && node.children.length > 0
+        ? node.children.map( child => transformNode( child, level + 1 ) )
+        : undefined
   }
 }
 

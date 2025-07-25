@@ -8,16 +8,8 @@
       <div class="maintenance-equipment-details">
         <template v-if="selectedNode">
           <EquipmentGroup v-if="isTier2" :node="selectedNode" :breadcrumb="breadcrumbPath" />
-          <Equipment
-            v-else-if="isTier3"
-            :node="selectedNode"
-            :breadcrumb="breadcrumbPath"
-          />
-          <SubEquipment
-            v-else-if="isTier4"
-            :node="selectedNode"
-            :breadcrumb="breadcrumbPath"
-          />
+          <Equipment v-else-if="isTier3" :node="selectedNode" :breadcrumb="breadcrumbPath" />
+          <SubEquipment v-else-if="isTier4" :node="selectedNode" :breadcrumb="breadcrumbPath" />
           <div v-else>Select a node to see details</div>
         </template>
         <div v-else>Select a node to see details</div>

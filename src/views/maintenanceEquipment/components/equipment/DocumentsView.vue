@@ -4,11 +4,11 @@
       <el-text>{{ documentTitle }}</el-text>
       <div class="header-actions">
         <el-button @click="downloadPdf">
-          <el-icon style="margin-right: 10px;"><Download /></el-icon>
+          <el-icon style="margin-right: 10px"><Download /></el-icon>
           Download
         </el-button>
         <el-button @click="openInNewTab">
-          <el-icon style="margin-right: 10px;"><Link /></el-icon>
+          <el-icon style="margin-right: 10px"><Link /></el-icon>
           Open in New Tab
         </el-button>
       </div>
@@ -61,7 +61,7 @@ async function downloadPdf() {
       const response = await fetch( props.pdfUrl, {
         mode : 'cors',
         headers : {
-          'Accept' : 'application/pdf'
+          Accept : 'application/pdf'
         }
       } )
 

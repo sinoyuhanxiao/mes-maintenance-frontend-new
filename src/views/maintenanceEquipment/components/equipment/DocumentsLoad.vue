@@ -1,9 +1,7 @@
 <template>
   <div class="t3-documents-load">
     <div class="t3-documents-header">
-      <el-text >
-        No documents uploaded. Please upload the equipment manual.
-      </el-text>
+      <el-text> No documents uploaded. Please upload the equipment manual. </el-text>
       <el-divider />
     </div>
     <div class="t3-documents-content">
@@ -14,13 +12,9 @@
         multiple
       >
         <el-icon class="el-icon--upload"><upload-filled /></el-icon>
-        <div class="el-upload__text">
-        Drop file here or <em>click to upload</em>
-        </div>
+        <div class="el-upload__text">Drop file here or <em>click to upload</em></div>
         <template #tip>
-        <div class="el-upload__tip">
-            pdf files with a size of less than 500kb
-        </div>
+          <div class="el-upload__tip">pdf files with a size of less than 500kb</div>
         </template>
       </el-upload>
     </div>

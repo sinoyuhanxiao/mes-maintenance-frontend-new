@@ -26,10 +26,7 @@
       <el-table-column prop="previousRuntime" label="Previous Runtime" sortable width="150" />
       <el-table-column prop="maintenanceType" label="Maintenance Type" sortable width="140">
         <template #default="{ row }">
-          <el-tag
-            :type="getMaintenanceTypeColor(row.maintenanceType)"
-            size="small"
-          >
+          <el-tag :type="getMaintenanceTypeColor(row.maintenanceType)" size="small">
             {{ row.maintenanceType }}
           </el-tag>
         </template>
@@ -266,10 +263,11 @@ const tableData = ref( [
 
 const filteredData = computed( () => {
   if ( !searchQuery.value.trim() ) return tableData.value
-  return tableData.value.filter( row =>
-    row.locationCode.toLowerCase().includes( searchQuery.value.toLowerCase() ) ||
-    row.deviceTag.toLowerCase().includes( searchQuery.value.toLowerCase() ) ||
-    row.sparePart.toLowerCase().includes( searchQuery.value.toLowerCase() )
+  return tableData.value.filter(
+    row =>
+      row.locationCode.toLowerCase().includes( searchQuery.value.toLowerCase() ) ||
+      row.deviceTag.toLowerCase().includes( searchQuery.value.toLowerCase() ) ||
+      row.sparePart.toLowerCase().includes( searchQuery.value.toLowerCase() )
   )
 } )
 
@@ -284,14 +282,14 @@ function handlePageChange( page ) {
 
 function getMaintenanceTypeColor( type ) {
   const colorMap = {
-    'Preventive' : 'success',
-    'Predictive' : 'primary',
-    'Corrective' : 'warning',
-    'Emergency' : 'danger',
-    'Routine' : 'info',
-    'Overhaul' : 'warning',
-    'Upgrade' : 'primary',
-    'Inspection' : 'info'
+    Preventive : 'success',
+    Predictive : 'primary',
+    Corrective : 'warning',
+    Emergency : 'danger',
+    Routine : 'info',
+    Overhaul : 'warning',
+    Upgrade : 'primary',
+    Inspection : 'info'
   }
   return colorMap[type] || 'info'
 }

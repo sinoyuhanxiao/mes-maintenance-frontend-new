@@ -2,10 +2,7 @@
   <div class="t3-main-container">
     <div class="t3-main-header">
       <el-breadcrumb separator="/">
-        <el-breadcrumb-item
-          v-for="(item, index) in breadcrumb"
-          :key="index"
-        >
+        <el-breadcrumb-item v-for="(item, index) in breadcrumb" :key="index">
           {{ item.label }}
         </el-breadcrumb-item>
       </el-breadcrumb>

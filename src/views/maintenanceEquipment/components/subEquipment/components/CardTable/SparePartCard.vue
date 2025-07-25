@@ -2,26 +2,18 @@
   <div class="card-item">
     <div class="card-flex">
       <div class="image-section">
-        <el-image
-          :src="item.imageUrl || defaultImageUrl"
-          :alt="item.title"
-          fit="cover"
-          class="part-image"
-        >
+        <el-image :src="item.imageUrl || defaultImageUrl" :alt="item.title" fit="cover" class="part-image">
           <template #error>
             <div class="image-slot">
-              <el-icon><Picture/></el-icon>
+              <el-icon><Picture /></el-icon>
               <span>No Image</span>
             </div>
           </template>
         </el-image>
         <div class="image-text">
-          <el-descriptions
-            :column="1"
-            direction="vertical"
-            >
+          <el-descriptions :column="1" direction="vertical">
             <el-descriptions-item label="Last Installment Time" align="center">
-                <el-text>June 1, 2025</el-text>
+              <el-text>June 1, 2025</el-text>
             </el-descriptions-item>
           </el-descriptions>
         </div>
@@ -45,20 +37,16 @@
           </el-tooltip>
         </div>
         <el-divider />
-        <el-descriptions
-        :column="3"
-        direction="vertical"
-        >
-        <el-descriptions-item label="Device Tag">B583010</el-descriptions-item>
-        <el-descriptions-item label="Device Tag Position Code">4</el-descriptions-item>
-        <el-descriptions-item label="Device Quantity">1</el-descriptions-item>
-        <el-descriptions-item label="Suggested Service Days">1 Day</el-descriptions-item>
-        <el-descriptions-item label="Estimated Service Days">1 Day</el-descriptions-item>
-        <el-descriptions-item label="Auto Trigger Cycle">No</el-descriptions-item>
-      </el-descriptions>
+        <el-descriptions :column="3" direction="vertical">
+          <el-descriptions-item label="Device Tag">B583010</el-descriptions-item>
+          <el-descriptions-item label="Device Tag Position Code">4</el-descriptions-item>
+          <el-descriptions-item label="Device Quantity">1</el-descriptions-item>
+          <el-descriptions-item label="Suggested Service Days">1 Day</el-descriptions-item>
+          <el-descriptions-item label="Estimated Service Days">1 Day</el-descriptions-item>
+          <el-descriptions-item label="Auto Trigger Cycle">No</el-descriptions-item>
+        </el-descriptions>
       </div>
     </div>
-
   </div>
 </template>
 
