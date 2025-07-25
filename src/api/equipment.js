@@ -56,3 +56,14 @@ export const getEquipmentComponents = equipmentId => {
     data : { equipmentId }
   } )
 }
+
+/**
+ * Fetch equipment tree.
+ * @returns {Promise} API response with equipment tree nodes.
+ */
+export const getEquipmentTree = () => {
+  return http.request( {
+    method : 'get',
+    url : '/equipment/node-trees'
+  } )
+}

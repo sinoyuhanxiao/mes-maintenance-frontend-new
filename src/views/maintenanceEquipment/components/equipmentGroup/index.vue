@@ -6,7 +6,7 @@
           {{ item.label }}
         </el-breadcrumb-item>
       </el-breadcrumb>
-      <h2>{{ node.label }}</h2>
+      <h1>{{ node.label }}</h1>
     </div>
     <div class="t2-main-details">
       <el-tabs v-model="activeTab" type="border-card">
@@ -63,8 +63,6 @@ const activeTab = ref( 'details' )
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  padding-bottom: 10px;
 }
 
 .t2-main-details {

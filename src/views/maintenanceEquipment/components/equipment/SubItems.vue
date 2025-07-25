@@ -1,5 +1,5 @@
 <template>
-  <div class="main-container">
+  <div class="t2-sub-items">
     <div class="image">
       <el-image :src="imageUrl" :alt="imageAlt" fit="cover" :preview-src-list="[imageUrl]">
         <template #error>
@@ -28,7 +28,7 @@
 
 <script setup>
 import { Picture } from '@element-plus/icons-vue'
-import EquipmentSubItemCard from './EquipmentSubItemCard.vue'
+import EquipmentSubItemCard from './components/EquipmentSubItemCard.vue'
 
 defineProps( {
   imageUrl : {
@@ -62,7 +62,7 @@ defineProps( {
 </script>
 
 <style scoped>
-.main-container {
+.t2-sub-items {
   flex: 1;
   display: flex;
   flex-direction: row;
@@ -71,7 +71,7 @@ defineProps( {
 }
 
 .image {
-  height: calc(100vh - 310px);
+  height: calc(100vh - 280px);
   align-content: center;
 }
 
@@ -83,7 +83,7 @@ defineProps( {
 
 .label-cards {
   flex: 0 0 300px;
-  height: calc(100vh - 310px);
+  height: calc(100vh - 280px);
   overflow-y: auto;
   padding-right: 5px;
 }

@@ -8,7 +8,7 @@
       <div class="maintenance-equipment-details">
         <template v-if="selectedNode">
           <EquipmentGroup v-if="isTier2" :node="selectedNode" :breadcrumb="breadcrumbPath" />
-          <!-- <Equipment
+          <Equipment
             v-else-if="isTier3"
             :node="selectedNode"
             :breadcrumb="breadcrumbPath"
@@ -17,7 +17,7 @@
             v-else-if="isTier4"
             :node="selectedNode"
             :breadcrumb="breadcrumbPath"
-          /> -->
+          />
           <div v-else>Select a node to see details</div>
         </template>
         <div v-else>Select a node to see details</div>
@@ -30,15 +30,15 @@
 import { ref, computed } from 'vue'
 import EquipmentGroup from './components/equipmentGroup/index.vue'
 import EquipmentTree from './components/equipmentTree/index.vue'
-// import Equipment from '@/components/Equipment/index.vue'
-// import SubEquipment from '@/components/SubEquipment/index.vue'
+import Equipment from './components/Equipment/index.vue'
+import SubEquipment from './components/SubEquipment/index.vue'
 
 const breadcrumbPath = ref( [] )
 const selectedNode = ref( null )
 
-const isTier2 = computed( () => breadcrumbPath.value.length === 3 )
-// const isTier3 = computed( () => breadcrumbPath.value.length === 4 )
-// const isTier4 = computed( () => breadcrumbPath.value.length === 5 )
+const isTier2 = computed( () => breadcrumbPath.value.length === 4 )
+const isTier3 = computed( () => breadcrumbPath.value.length === 5 )
+const isTier4 = computed( () => breadcrumbPath.value.length === 6 )
 
 function onNodeClick( node, nodePath ) {
   selectedNode.value = node
