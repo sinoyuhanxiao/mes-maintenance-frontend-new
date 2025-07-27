@@ -38,48 +38,58 @@
 
     <!-- Card Content -->
     <div class="card-content">
-      <!-- Work Order Title -->
-      <h4 class="card-title" :title="workOrder.name">
-        {{ workOrder.name }}
-      </h4>
+      <!-- Main Content Area -->
+      <div class="content-main">
+        <!-- Work Order Title -->
+        <h4 class="card-title" :title="workOrder.name">
+          {{ workOrder.name }}
+        </h4>
 
-      <!-- Requested By -->
-      <div class="card-meta">
-        <span class="meta-label">{{ $t('workOrder.form.createdBy') }}:</span>
-        <span class="meta-value">{{ workOrder.created_by || 'N/A' }}</span>
+        <!-- Requested By -->
+        <div class="card-meta">
+          <span class="meta-label">{{ $t('workOrder.form.createdBy') }}:</span>
+          <span class="meta-value">{{ workOrder.created_by || 'N/A' }}</span>
+        </div>
+
+        <!-- Due Date -->
+        <div class="card-meta" v-if="workOrder.due_date">
+          <span class="meta-label">{{ $t('workOrder.table.dueDate') }}:</span>
+          <span class="meta-value" :class="{ 'overdue-text': isOverdue }">
+            {{ formatDate(workOrder.due_date) }}
+          </span>
+        </div>
+
+        <!-- Status and Priority Badges -->
+        <div class="card-badges">
+          <el-tag :type="getStatusTagType(workOrder.state?.name)" size="small" effect="dark">
+            {{ getStatusName(workOrder.state?.name) }}
+          </el-tag>
+
+          <el-tag :type="getPriorityTagType(workOrder.priority?.name)" size="small" effect="plain">
+            <el-icon style="margin-right: 4px">
+              <Flag />
+            </el-icon>
+            {{ getPriorityName(workOrder.priority?.name) }}
+          </el-tag>
+
+          <el-tag v-if="isOverdue" type="danger" size="small" effect="dark">
+            {{ $t('workOrder.status.overdue') }}
+          </el-tag>
+        </div>
       </div>
 
-      <!-- Due Date -->
-      <div class="card-meta" v-if="workOrder.due_date">
-        <span class="meta-label">{{ $t('workOrder.table.dueDate') }}:</span>
-        <span class="meta-value" :class="{ 'overdue-text': isOverdue }">
-          {{ formatDate(workOrder.due_date) }}
-        </span>
-      </div>
-
-      <!-- Status and Priority Badges -->
-      <div class="card-badges">
-        <el-tag :type="getStatusTagType(workOrder.state?.name)" size="small" effect="dark">
-          {{ getStatusName(workOrder.state?.name) }}
-        </el-tag>
-
-        <el-tag :type="getPriorityTagType(workOrder.priority?.name)" size="small" effect="plain">
-          <el-icon style="margin-right: 4px">
-            <Flag />
-          </el-icon>
-          {{ getPriorityName(workOrder.priority?.name) }}
-        </el-tag>
-
-        <el-tag v-if="isOverdue" type="danger" size="small" effect="dark">
-          {{ $t('workOrder.status.overdue') }}
-        </el-tag>
-      </div>
-
-      <!-- Thumbnail -->
-      <div class="card-thumbnail" v-if="workOrder.image_path && workOrder.image_path.length">
-        <el-image :src="workOrder.image_path[0]" fit="cover" :preview-src-list="workOrder.image_path">
+      <!-- Circular Thumbnail on Right -->
+      <div class="card-thumbnail-circle" v-if="workOrder.image_list && workOrder.image_list.length">
+        <el-image
+          :src="workOrder.image_list[0]"
+          fit="cover"
+          :preview-src-list="workOrder.image_list"
+          class="circular-image"
+          :z-index="2000"
+          preview-teleported
+        >
           <template #error>
-            <div class="image-slot">
+            <div class="image-slot-circle">
               <el-icon><Picture /></el-icon>
             </div>
           </template>
@@ -239,69 +249,101 @@ defineOptions( {
 }
 
 .card-content {
-  .card-title {
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--el-text-color-primary);
-    margin: 0 0 12px 0;
-    line-height: 1.4;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
 
-  .card-meta {
-    display: flex;
-    margin-bottom: 8px;
-    font-size: 13px;
+  .content-main {
+    flex: 1;
+    min-width: 0; // Prevents flex item from overflowing
 
-    .meta-label {
-      color: var(--el-text-color-secondary);
-      margin-right: 8px;
-      min-width: 60px;
+    .card-title {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--el-text-color-primary);
+      margin: 0 0 12px 0;
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
-    .meta-value {
-      color: var(--el-text-color-primary);
+    .card-meta {
+      display: flex;
+      margin-bottom: 8px;
+      font-size: 13px;
 
-      &.overdue-text {
-        color: var(--el-color-danger);
-        font-weight: 500;
+      .meta-label {
+        color: var(--el-text-color-secondary);
+        margin-right: 8px;
+        min-width: 60px;
+      }
+
+      .meta-value {
+        color: var(--el-text-color-primary);
+
+        &.overdue-text {
+          color: var(--el-color-danger);
+          font-weight: 500;
+        }
+      }
+    }
+
+    .card-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 12px 0 0 0;
+
+      .el-tag {
+        font-size: 11px;
       }
     }
   }
 
-  .card-badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin: 12px 0;
+  .card-thumbnail-circle {
+    flex-shrink: 0;
+    width: 80px;
+    height: 80px;
 
-    .el-tag {
-      font-size: 11px;
-    }
-  }
-
-  .card-thumbnail {
-    margin-top: 12px;
-
-    .el-image {
-      width: 100%;
+    .circular-image {
+      width: 80px;
       height: 80px;
-      border-radius: 4px;
+      border-radius: 50%;
       overflow: hidden;
+      border: 2px solid var(--el-border-color-lighter);
+      transition: all 0.2s ease;
+      cursor: pointer;
+
+      &:hover {
+        border-color: var(--el-color-primary);
+        transform: scale(1.05);
+      }
+
+      // Only apply border-radius to the image container, not the preview
+      :deep(.el-image__inner) {
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      // Ensure preview functionality works correctly
+      :deep(.el-image__preview) {
+        border-radius: 0 !important;
+      }
     }
 
-    .image-slot {
+    .image-slot-circle {
       display: flex;
       justify-content: center;
       align-items: center;
-      width: 100%;
+      width: 80px;
       height: 80px;
       background: var(--el-fill-color-light);
       color: var(--el-text-color-secondary);
       font-size: 24px;
+      border-radius: 50%;
+      border: 2px solid var(--el-border-color-lighter);
     }
   }
 }
@@ -313,8 +355,44 @@ defineOptions( {
     margin-bottom: 8px;
   }
 
-  .card-content .card-title {
-    font-size: 14px;
+  .card-content {
+    gap: 12px;
+
+    .content-main .card-title {
+      font-size: 14px;
+    }
+
+    .card-thumbnail-circle {
+      width: 60px;
+      height: 60px;
+
+      .circular-image {
+        width: 60px;
+        height: 60px;
+      }
+
+      .image-slot-circle {
+        width: 60px;
+        height: 60px;
+        font-size: 20px;
+      }
+    }
+  }
+}
+
+// Global styles to ensure image preview works correctly
+:deep(.el-image-viewer__wrapper) {
+  z-index: 3000 !important;
+}
+
+:deep(.el-image-viewer__mask) {
+  z-index: 2999 !important;
+}
+
+// Ensure the preview image is not affected by circular styling
+:deep(.el-image-viewer__canvas) {
+  .el-image-viewer__img {
+    border-radius: 0 !important;
   }
 }
 </style>
