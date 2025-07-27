@@ -207,7 +207,10 @@ export default {
       addParts : 'Add Part Usage',
       addTime : 'Add Time Log',
       addCosts : 'Add Other Costs',
-      viewProcedure : 'View Procedure'
+      viewProcedure : 'View Procedure',
+      viewSafetyMeasures : 'View Safety Measures',
+      viewTimeLogs : 'View Time Logs',
+      viewPartsUsage : 'View Parts Usage'
     },
 
     // Comments
