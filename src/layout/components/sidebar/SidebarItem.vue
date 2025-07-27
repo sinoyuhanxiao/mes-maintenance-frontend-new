@@ -15,7 +15,7 @@
             :icon-class="onlyOneChild.meta.icon || (props.item.meta && props.item.meta.icon)"
           />
           <template #title>
-            <span> {{ onlyOneChild.meta.title }} </span>
+            <span> {{ $t(onlyOneChild.meta.title) }} </span>
           </template>
         </el-menu-item>
       </AppLink>
@@ -28,7 +28,7 @@
           v-if="props.item.meta && props.item.meta.icon"
           :icon-class="props.item.meta && props.item.meta.icon"
         />
-        <span> {{ props.item.meta.title }} </span>
+        <span> {{ $t(props.item.meta.title) }} </span>
       </template>
       <SidebarItem
         v-for="child in props.item.children"

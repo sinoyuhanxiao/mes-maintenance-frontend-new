@@ -1,5 +1,5 @@
 <template>
-  <yu-layout title="自定义指令" subtitle="非常实用的Vue自定义指令">
+  <mes-layout title="自定义指令" subtitle="非常实用的Vue自定义指令">
     <template #body>
       <div class="section-container">
         <el-row :gutter="25">
@@ -78,7 +78,7 @@
               <div
                 class="water-marker h200"
                 v-waterMarker="{
-                  text: '小灰灰版权所有',
+                  text: 'FPS ©',
                   textColor: 'rgba(239,53,54,0.4)',
                 }"
               ></div>
@@ -143,14 +143,14 @@
         </el-row>
       </div>
     </template>
-  </yu-layout>
+  </mes-layout>
 </template>
 
 <script setup>
 import { ref, unref } from 'vue'
 import { usePermissionStore } from '@/store'
-import { ElMessage } from 'element-plus/lib'
-import YuLayout from '@/components/YuLayout'
+import { ElMessage } from 'element-plus'
+import MesLayout from 'src/components/MesLayout'
 
 const permissionStore = usePermissionStore()
 

@@ -1,5 +1,5 @@
 let modules = {}
-const modulesFiles = import.meta.glob( './language/**/*.js' )
+const modulesFiles = import.meta.glob( './language/**/*.js', { eager : true } )
 
 for ( const path in modulesFiles ) {
   const moduleName = path.replace( /(.*\/)*([^.]+).*/gi, '$2' )

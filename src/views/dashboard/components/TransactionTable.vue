@@ -60,7 +60,7 @@ onBeforeMount( () => {
 const fetchData = async() => {
   try {
     const response = await axios.get( '/api/workorders' )
-    list.value = response.data.data
+    list.value = response.data
   } catch ( error ) {
     console.error( 'Failed to fetch work orders:', error )
   }

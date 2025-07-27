@@ -1,20 +1,12 @@
-/**
- * @Description: axios封装
- * @Author: 灰是小灰灰的灰
- * @Email: 454539387@qq.com
- * @Date: 2021-07-06 11:49:40
- * @LastEditors: 灰是小灰灰的灰
- * @LastEditTime: 2021-07-06 11:49:40
- */
 'use strict'
 import axios from 'axios'
 import { ElMessage } from 'element-plus'
-import { getEnvs } from './envs'
+import { ENV_UTILS } from './env'
 import cookies from '@/utils/cookies'
 import router from '@/router'
 import { useUserStore } from '@/store'
 
-import { TOKEN, WHITE_CODE_LIST, LOGIN_ERROR_CODE, GLOBAL_DATA } from '@/config/constant'
+import { TOKEN, WHITE_CODE_LIST, LOGIN_ERROR_CODE } from '@/config/constant'
 // import qs from 'qs'
 class HttpRequest {
   // #baseUrl
@@ -25,9 +17,8 @@ class HttpRequest {
   }
 
   getBaseUrl() {
-    const { envStr } = getEnvs()
-    const baseUrlStr = envStr === 'dev' ? import.meta.env.VITE_PROXY_DOMAIN : GLOBAL_DATA[envStr].baseUrl
-    return baseUrlStr
+    // Use the environment utility for consistent API base URL logic
+    return ENV_UTILS.getApiBaseUrl()
   }
 
   getConfig() {
@@ -138,9 +129,9 @@ class HttpRequest {
         if ( type === '[object Blob]' || type === '[object ArrayBuffer]' ) {
           return result
         } else {
-          const { code, message } = result
-          const isErrorToken = LOGIN_ERROR_CODE.find( item => item.code == code )
-          const isWhiteCode = WHITE_CODE_LIST.find( item => item.code == code )
+          const { status, message } = result
+          const isErrorToken = LOGIN_ERROR_CODE.find( item => item.status == status )
+          const isWhiteCode = WHITE_CODE_LIST.find( item => item.status == status )
 
           const userStore = useUserStore()
 

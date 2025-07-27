@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import cookies from '@/utils/cookies'
 import { TOKEN, AVATAR } from '@/config/constant'
-import { logout, getInfo } from '@/api/user'
 import { resetRouter } from '@/router'
 import useTagsViewStore from './tagsView'
 
@@ -26,41 +25,69 @@ const useUserStore = defineStore( {
     },
     async GET_USER_INFO() {
       try {
-        const { code, data } = await getInfo()
-        if ( code == 200 ) {
-          const { id, name, avatar, roles, phone, email, identity } = data
-          this.uid = id || '9527'
-          this.name = name || ''
-          this.phone = phone || ''
-          this.email = email || ''
-          this.identity = identity || ''
-          this.avatar = avatar || AVATAR
-          this.roles = roles || ['editor']
-          return {
-            ...data,
-            uid : this.uid,
-            roles : this.roles
-          }
+        // Hardcoded user info instead of API call
+        const hardcodedUserInfo = {
+          id : '9527',
+          name : 'Admin User',
+          avatar : AVATAR,
+          roles : ['admin'],
+          phone : '15988888888',
+          email : 'admin@example.com',
+          identity : 'administrator'
+        }
+
+        const { id, name, avatar, roles, phone, email, identity } = hardcodedUserInfo
+        this.uid = id || '9527'
+        this.name = name || 'Admin User'
+        this.phone = phone || '15988888888'
+        this.email = email || 'admin@example.com'
+        this.identity = identity || 'administrator'
+        this.avatar = avatar || AVATAR
+        this.roles = roles || ['admin']
+
+        return {
+          ...hardcodedUserInfo,
+          uid : this.uid,
+          roles : this.roles
         }
       } catch ( error ) {
-        return error
+        // Fallback to default values
+        this.uid = '9527'
+        this.name = 'Admin User'
+        this.phone = '15988888888'
+        this.email = 'admin@example.com'
+        this.identity = 'administrator'
+        this.avatar = AVATAR
+        this.roles = ['admin']
+
+        return {
+          uid : this.uid,
+          name : this.name,
+          roles : this.roles
+        }
       }
     },
     async LOGIN_OUT() {
       try {
-        const { code } = await logout( this.token )
-        if ( code == 200 ) {
-          this.token = ''
-          this.name = ''
-          this.avatar = ''
-          this.phone = ''
-          this.email = ''
-          this.identity = ''
-          this.roles = []
-          this.RESET_INFO()
-        }
+        // Hardcoded logout - always successful
+        this.token = ''
+        this.name = ''
+        this.avatar = ''
+        this.phone = ''
+        this.email = ''
+        this.identity = ''
+        this.roles = []
+        this.RESET_INFO()
       } catch ( error ) {
-        return error
+        // Even if there's an error, clear the local state
+        this.token = ''
+        this.name = ''
+        this.avatar = ''
+        this.phone = ''
+        this.email = ''
+        this.identity = ''
+        this.roles = []
+        this.RESET_INFO()
       }
     },
     // 清空所有登录信息

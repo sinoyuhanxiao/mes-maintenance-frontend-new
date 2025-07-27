@@ -1,30 +1,58 @@
-import api from './api'
+import http from '@/utils/request'
 
-const BASE_URL = '/api/equipment'
-
+/**
+ * Fetch all production lines.
+ * @returns {Promise} API response with production lines.
+ */
 export const getAllProductionLines = () => {
-  return api.get( `${BASE_URL}/production_lines` )
+  return http.request( {
+    method : 'get',
+    url : '/equipment/production-lines'
+  } )
 }
 
+/**
+ * Fetch equipment groups by production line ID.
+ * @param {number} productionLineId - The production line ID.
+ * @returns {Promise} API response with equipment groups.
+ */
 export const getEquipmentGroups = productionLineId => {
-  return api.post( `${BASE_URL}/equipment_groups`, {
-    production_line_ids : [productionLineId] // 需要数组格式
-    // equipment_group_ids : [0],
-    // equipment_ids : [0],
-    // component_ids : [0],
-    // location_ids : [0],
-    // vendor_ids : [0]
+  return http.request( {
+    method : 'post',
+    url : '/equipment/equipment-groups',
+    data : {
+      production_line_ids : [productionLineId] // 需要数组格式
+      // equipment_group_ids : [0],
+      // equipment_ids : [0],
+      // component_ids : [0],
+      // location_ids : [0],
+      // vendor_ids : [0]
+    }
   } )
 }
 
+/**
+ * Fetch equipments by equipment group ID.
+ * @param {number} equipmentGroupId - The equipment group ID.
+ * @returns {Promise} API response with equipments.
+ */
 export const getEquipments = equipmentGroupId => {
-  return api.get( `${BASE_URL}/equipment`, {
-    params : { equipmentGroupId }
+  return http.request( {
+    method : 'get',
+    url : '/equipment/equipment',
+    data : { equipmentGroupId }
   } )
 }
 
+/**
+ * Fetch equipment components by equipment ID.
+ * @param {number} equipmentId - The equipment ID.
+ * @returns {Promise} API response with equipment components.
+ */
 export const getEquipmentComponents = equipmentId => {
-  return api.get( `${BASE_URL}/equipment_component`, {
-    params : { equipmentId }
+  return http.request( {
+    method : 'get',
+    url : '/equipment/equipment-component',
+    data : { equipmentId }
   } )
 }

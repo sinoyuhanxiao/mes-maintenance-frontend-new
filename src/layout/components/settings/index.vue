@@ -182,7 +182,7 @@ defineOptions( {
   .modeItem {
     width: 18%;
     height: 45px;
-    background: #f0f2f5;
+    background: white;
     position: relative;
     overflow: hidden;
     cursor: pointer;

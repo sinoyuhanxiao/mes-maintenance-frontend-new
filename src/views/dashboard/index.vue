@@ -43,7 +43,7 @@
         <TransactionTable />
       </el-col>
       <el-col :span="8" style="">
-        <YuStreetMap />
+        <MesStreetMap />
       </el-col>
     </el-row>
 
@@ -67,10 +67,7 @@ import RaddarChart from './components/RaddarChart.vue'
 import PieChart from './components/PieChart.vue'
 import BarChart from './components/BarChart.vue'
 import TransactionTable from './components/TransactionTable.vue'
-import YuStreetMap from '@/components/YuStreetMap'
-// import YuWeather from './components/YuWeather'
-// import TodoList from './components/TodoList/index.vue'
-// import BoxCard from './components/BoxCard'
+import MesStreetMap from 'src/components/MesStreetMap'
 
 import { ref } from 'vue'
 

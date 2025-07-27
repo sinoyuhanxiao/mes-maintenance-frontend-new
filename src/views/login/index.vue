@@ -23,7 +23,6 @@ import { ref, onBeforeMount, onMounted, onUnmounted } from 'vue'
 import { isMobile } from '@/utils/device'
 import { debounce } from 'lodash-unified'
 
-import YuCopyright from '@/components/YuCopyright'
 import Logo from './components/logo.vue'
 import WeChatLogin from './components/weChatLogin'
 import LoginPwd from './loginPwd.vue'

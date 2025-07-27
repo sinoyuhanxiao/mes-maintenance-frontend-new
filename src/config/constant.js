@@ -21,18 +21,18 @@ export const GLOBAL_DATA = {
 
 export const WHITE_CODE_LIST = [
   {
-    code : 200,
+    status : 200,
     msg : ''
   },
   {
-    code : 5006,
+    status : 5006,
     msg : '验证码错误或已过期'
   }
 ]
 
 export const LOGIN_ERROR_CODE = [
   {
-    code : 5004,
+    status : 5004,
     msg : '无效token'
   }
 ]

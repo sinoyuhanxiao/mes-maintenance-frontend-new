@@ -1,13 +1,14 @@
-import api from './api'
-
-const BASE_URL = '/api/common'
+import http from '@/utils/request'
 
 /**
  * Fetch all work types.
  * @returns {Promise} API response with work types.
  */
 export const getAllWorkTypes = () => {
-  return api.get( `${BASE_URL}/work-type` )
+  return http.request( {
+    method : 'get',
+    url : '/common/work-type'
+  } )
 }
 
 /**
@@ -15,7 +16,10 @@ export const getAllWorkTypes = () => {
  * @returns {Promise} API response with states.
  */
 export const getAllStates = () => {
-  return api.get( `${BASE_URL}/state` )
+  return http.request( {
+    method : 'get',
+    url : '/common/state'
+  } )
 }
 
 /**
@@ -23,7 +27,10 @@ export const getAllStates = () => {
  * @returns {Promise} API response with recurrence types.
  */
 export const getAllRecurrenceTypes = () => {
-  return api.get( `${BASE_URL}/recurrence-type` )
+  return http.request( {
+    method : 'get',
+    url : '/common/recurrence-type'
+  } )
 }
 
 /**
@@ -31,7 +38,10 @@ export const getAllRecurrenceTypes = () => {
  * @returns {Promise} API response with priorities.
  */
 export const getAllPriorities = () => {
-  return api.get( `${BASE_URL}/priority` )
+  return http.request( {
+    method : 'get',
+    url : '/common/priority'
+  } )
 }
 
 /**
@@ -39,5 +49,8 @@ export const getAllPriorities = () => {
  * @returns {Promise} API response with categories.
  */
 export const getAllCategories = () => {
-  return api.get( `${BASE_URL}/category` )
+  return http.request( {
+    method : 'get',
+    url : '/common/category'
+  } )
 }
