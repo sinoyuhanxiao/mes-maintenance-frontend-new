@@ -3,7 +3,7 @@
     <!-- Left Panel - Work Order List -->
     <div class="left-panel">
       <!-- Todo-specific Filters (Status tabs and sorting) -->
-      <div class="todo-specific-filters">
+      <div v-show="false" class="todo-specific-filters">
         <!-- Status Tabs -->
         <el-tabs v-model="activeTab" @tab-change="handleTabChange" class="todo-tabs">
           <el-tab-pane :label="$t('workOrder.tabs.todo')" name="todo" />
@@ -34,15 +34,59 @@
           <el-empty :description="$t('workOrder.messages.noData')" :image-size="80" />
         </div>
 
-        <div v-else class="cards-container">
-          <WorkOrderCard
-            v-for="workOrder in filteredWorkOrders"
-            :key="workOrder.id"
-            :work-order="workOrder"
-            :is-selected="selectedWorkOrder?.id === workOrder.id"
-            @select="selectWorkOrder"
-            @action="handleCardAction"
-          />
+        <div v-else class="list-content">
+          <!-- Pagination Info -->
+          <div class="pagination-info">
+            <div class="info-text">
+              {{ $t('workOrder.pagination.showing', {
+                start: paginationInfo.start,
+                end: paginationInfo.end,
+                total: paginationInfo.total
+              }) }}
+            </div>
+            <el-select
+              v-model="pageSize"
+              @change="handlePageSizeChange"
+              size="small"
+              style="width: 100px"
+            >
+              <el-option :label="'10'" :value="10" />
+              <el-option :label="'20'" :value="20" />
+              <el-option :label="'50'" :value="50" />
+            </el-select>
+          </div>
+
+          <!-- Cards Container -->
+          <div class="cards-container">
+            <el-row :gutter="16">
+              <el-col
+                v-for="workOrder in paginatedWorkOrders"
+                :key="workOrder.id"
+              >
+                <WorkOrderCard
+                  :work-order="workOrder"
+                  :is-selected="selectedWorkOrder?.id === workOrder.id"
+                  @select="selectWorkOrder"
+                  @action="handleCardAction"
+                />
+              </el-col>
+            </el-row>
+          </div>
+
+          <!-- Pagination Controls -->
+          <div class="pagination-controls" v-if="totalPages > 1">
+            <el-pagination
+              v-model:current-page="currentPage"
+              :page-size="pageSize"
+              :total="filteredWorkOrders.length"
+              :page-count="totalPages"
+              layout="total, prev, pager, next, jumper"
+              :small="true"
+              @current-change="handlePageChange"
+              @size-change="handlePageSizeChange"
+              hide-on-single-page
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -96,6 +140,10 @@ const { t } = useI18n()
 const selectedWorkOrder = ref( null )
 const activeTab = ref( 'todo' )
 const sortBy = ref( 'priority-desc' )
+
+// Pagination state
+const currentPage = ref( 1 )
+const pageSize = ref( 10 )
 
 // Computed
 const filteredWorkOrders = computed( () => {
@@ -213,6 +261,27 @@ const filteredWorkOrders = computed( () => {
   return filtered
 } )
 
+// Pagination computed properties
+const totalPages = computed( () => Math.ceil( filteredWorkOrders.value.length / pageSize.value ) )
+
+const paginatedWorkOrders = computed( () => {
+  const start = ( currentPage.value - 1 ) * pageSize.value
+  const end = start + pageSize.value
+  return filteredWorkOrders.value.slice( start, end )
+} )
+
+const paginationInfo = computed( () => {
+  const total = filteredWorkOrders.value.length
+  const start = total === 0 ? 0 : ( currentPage.value - 1 ) * pageSize.value + 1
+  const end = Math.min( currentPage.value * pageSize.value, total )
+
+  return {
+    start,
+    end,
+    total
+  }
+} )
+
 // Methods
 const getPriorityValue = priority => {
   const priorityMap = {
@@ -263,7 +332,7 @@ const handleDelete = workOrder => {
 }
 
 const handleShare = workOrder => {
-  // TODO: Implement share functionality
+  // Implement share functionality
   ElMessage.success( t( 'workOrder.messages.shareSuccess' ) )
 }
 
@@ -272,29 +341,41 @@ const handleStatusChange = ( { workOrder, status } ) => {
 }
 
 const handleAddParts = () => {
-  // TODO: Implement add parts functionality
+  // Implement add parts functionality
   ElMessage.info( t( 'workOrder.tracking.addParts' ) )
 }
 
 const handleAddTime = () => {
-  // TODO: Implement add time functionality
+  // Implement add time functionality
   ElMessage.info( t( 'workOrder.tracking.addTime' ) )
 }
 
 const handleAddCosts = () => {
-  // TODO: Implement add costs functionality
+  // Implement add costs functionality
   ElMessage.info( t( 'workOrder.tracking.addCosts' ) )
 }
 
 const handleViewProcedure = () => {
-  // TODO: Implement view procedure functionality
+  // Implement view procedure functionality
   ElMessage.info( t( 'workOrder.tracking.viewProcedure' ) )
 }
 
 const handleAddComment = ( { workOrder, comment } ) => {
-  // TODO: Implement add comment functionality
-  console.log( 'Add comment:', comment, 'to work order:', workOrder.id )
+  // Implement add comment functionality
   ElMessage.success( t( 'workOrder.comments.add' ) )
+}
+
+// Pagination methods
+const handlePageChange = ( page ) => {
+  currentPage.value = page
+  // Clear selection when changing pages to avoid confusion
+  selectedWorkOrder.value = null
+}
+
+const handlePageSizeChange = ( newPageSize ) => {
+  pageSize.value = newPageSize
+  currentPage.value = 1 // Reset to first page when changing page size
+  selectedWorkOrder.value = null
 }
 
 // Watchers
@@ -303,17 +384,29 @@ watch(
   newWorkOrders => {
     // Auto-select first work order if none selected
     if ( newWorkOrders.length > 0 && !selectedWorkOrder.value ) {
-      selectedWorkOrder.value = filteredWorkOrders.value[0]
+      selectedWorkOrder.value = paginatedWorkOrders.value[0]
     }
   },
   { immediate : true }
 )
 
+// Watch for filter changes to reset pagination
+watch( () => props.filters, () => {
+  currentPage.value = 1
+  selectedWorkOrder.value = null
+}, { deep : true } )
+
+// Reset pagination when tab or sort changes
+watch( [activeTab, sortBy], () => {
+  currentPage.value = 1
+  selectedWorkOrder.value = null
+}, { deep : true } )
+
 // Lifecycle
 onMounted( () => {
   // Auto-select first work order
-  if ( filteredWorkOrders.value.length > 0 ) {
-    selectedWorkOrder.value = filteredWorkOrders.value[0]
+  if ( paginatedWorkOrders.value.length > 0 ) {
+    selectedWorkOrder.value = paginatedWorkOrders.value[0]
   }
 } )
 
@@ -326,8 +419,7 @@ defineOptions( {
 .todo-view {
   display: flex;
   height: 100%;
-  gap: 16px;
-  background: var(--el-bg-color-page);
+  gap: 10px;
 }
 
 .left-panel {
@@ -377,8 +469,12 @@ defineOptions( {
 
 .work-order-list {
   flex: 1;
-  overflow-y: auto;
-  padding-right: 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--el-bg-color);
+  border-radius: 8px;
+  border: 1px solid var(--el-border-color-light);
 
   .loading-container {
     padding: 16px;
@@ -391,8 +487,85 @@ defineOptions( {
     height: 200px;
   }
 
-  .cards-container {
-    padding-bottom: 16px;
+  .list-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+
+    .pagination-info {
+      flex-shrink: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 8px;
+      border-bottom: 1px solid var(--el-border-color-lighter);
+      background: var(--el-bg-color);
+
+      .info-text {
+        font-size: 13px;
+        color: var(--el-text-color-secondary);
+      }
+    }
+
+    .cards-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 0;
+      min-height: 550px; // Ensure space for at least 5 cards (5 * 110px)
+      overflow-x: hidden;
+
+      // Custom scrollbar
+      &::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: var(--el-fill-color-lighter);
+        border-radius: 3px;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: var(--el-fill-color-dark);
+        border-radius: 3px;
+
+        &:hover {
+          background: var(--el-fill-color-darker);
+        }
+      }
+    }
+
+    .pagination-controls {
+      flex-shrink: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 12px 16px;
+      border-top: 1px solid var(--el-border-color-lighter);
+      background: var(--el-bg-color);
+
+      :deep(.el-pagination) {
+        .el-pager li {
+          min-width: 28px;
+          height: 28px;
+          line-height: 28px;
+          font-size: 12px;
+        }
+
+        .btn-prev,
+        .btn-next {
+          min-width: 28px;
+          height: 28px;
+          line-height: 28px;
+        }
+
+        .el-pagination__total,
+        .el-pagination__jump {
+          font-size: 12px;
+          color: var(--el-text-color-secondary);
+        }
+      }
+    }
   }
 }
 
@@ -402,25 +575,6 @@ defineOptions( {
   border-radius: 8px;
   border: 1px solid var(--el-border-color-light);
   overflow: hidden;
-}
-
-// Custom scrollbar for work order list
-.work-order-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.work-order-list::-webkit-scrollbar-track {
-  background: var(--el-fill-color-lighter);
-  border-radius: 3px;
-}
-
-.work-order-list::-webkit-scrollbar-thumb {
-  background: var(--el-fill-color-dark);
-  border-radius: 3px;
-}
-
-.work-order-list::-webkit-scrollbar-thumb:hover {
-  background: var(--el-fill-color-darker);
 }
 
 // Responsive design
@@ -452,6 +606,74 @@ defineOptions( {
 
   .work-order-list {
     padding-right: 0;
+
+    .list-content {
+      .pagination-info {
+        padding: 8px 12px;
+        font-size: 12px;
+
+        .el-select {
+          width: 80px;
+        }
+      }
+
+      .cards-container {
+        :deep(.work-order-card) {
+          .card-content {
+            .content-main {
+              .card-title {
+                font-size: 14px;
+              }
+
+              .card-meta {
+                font-size: 11px;
+              }
+            }
+
+            .card-thumbnail-circle {
+              width: 50px;
+              height: 50px;
+
+              .circular-image {
+                width: 50px;
+                height: 50px;
+              }
+
+              .image-slot-circle {
+                width: 50px;
+                height: 50px;
+                font-size: 16px;
+              }
+            }
+          }
+        }
+      }
+
+      .pagination-controls {
+        padding: 8px 12px;
+
+        :deep(.el-pagination) {
+          .el-pager li {
+            min-width: 24px;
+            height: 24px;
+            line-height: 24px;
+            font-size: 11px;
+          }
+
+          .btn-prev,
+          .btn-next {
+            min-width: 24px;
+            height: 24px;
+            line-height: 24px;
+          }
+
+          .el-pagination__total,
+          .el-pagination__jump {
+            font-size: 11px;
+          }
+        }
+      }
+    }
   }
 }
 </style>

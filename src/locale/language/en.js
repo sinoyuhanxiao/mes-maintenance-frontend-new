@@ -207,7 +207,10 @@ export default {
       addParts : 'Add Part Usage',
       addTime : 'Add Time Log',
       addCosts : 'Add Other Costs',
-      viewProcedure : 'View Procedure'
+      viewProcedure : 'View Procedure',
+      viewSafetyMeasures : 'View Safety Measures',
+      viewTimeLogs : 'View Time Logs',
+      viewPartsUsage : 'View Parts Usage'
     },
 
     // Comments
@@ -221,7 +224,14 @@ export default {
     selectWorkOrder : 'Select a work order to view details',
     statusChanged : 'Status updated successfully',
     shareSuccess : 'Shared successfully',
-    refreshSuccess : 'Refreshed successfully'
+    refreshSuccess : 'Refreshed successfully',
+
+    // Pagination
+    pagination : {
+      showing : 'Showing {start} to {end} of {total} items',
+      pageSize : 'Items per page',
+      items : 'items'
+    }
   },
   common : {
     success : 'Success',

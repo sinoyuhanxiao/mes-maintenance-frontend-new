@@ -144,7 +144,7 @@ const handleViewChange = view => {
 }
 
 const handleStatusChange = ( { workOrder, status } ) => {
-  // TODO: Implement status change API call
+  // Implement status change API call
   console.log( 'Status change:', workOrder.id, 'to', status )
   showSuccess( t( 'workOrder.messages.statusChanged' ) )
 }
@@ -209,8 +209,7 @@ defineOptions( {
 
 .todo-view-container {
   height: calc(100vh - 200px); // Adjust based on header height
-  background: var(--el-bg-color-page);
-  padding: 16px;
+  padding: 5px;
   border-radius: 8px;
 }
 

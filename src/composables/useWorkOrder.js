@@ -115,7 +115,7 @@ export function useWorkOrder() {
 
   const handleDelete = async( row, index ) => {
     try {
-      // TODO: Implement actual delete API call
+      // Implement actual delete API call
       ElNotification( {
         title : t( 'common.success' ),
         message : t( 'workOrder.messages.deleteSuccess' ),
@@ -190,7 +190,7 @@ export function useWorkOrderForm() {
     state_id : 1,
     halt_type : 0,
     time_zone : Intl.DateTimeFormat().resolvedOptions().timeZone,
-    created_by : 37, // TODO: Get from user store
+    created_by : 37, // Get from user store
     recurrence_type : null,
     image_list : [],
     files_list : [],
@@ -216,7 +216,7 @@ export function useWorkOrderForm() {
     ]
   } )
 
-  // Reset form to initial state
+  // Reset form to initial state, hardcode some values for testing purposes
   const resetForm = () => {
     Object.assign( form, {
       name : '',

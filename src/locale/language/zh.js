@@ -207,7 +207,10 @@ export default {
       addParts : '添加零件使用',
       addTime : '添加时间记录',
       addCosts : '添加其他费用',
-      viewProcedure : '查看程序'
+      viewProcedure : '查看程序',
+      viewSafetyMeasures : '查看安全措施',
+      viewTimeLogs : '查看时间记录',
+      viewPartsUsage : '查看零件使用记录'
     },
 
     // Comments
@@ -221,7 +224,14 @@ export default {
     selectWorkOrder : '请选择一个工单查看详情',
     statusChanged : '状态已更新',
     shareSuccess : '分享成功',
-    refreshSuccess : '刷新成功'
+    refreshSuccess : '刷新成功',
+
+    // Pagination
+    pagination : {
+      showing : '显示第 {start} 到 {end} 项，共 {total} 项',
+      pageSize : '每页显示',
+      items : '项'
+    }
   },
   common : {
     success : '成功',

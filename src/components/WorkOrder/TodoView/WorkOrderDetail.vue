@@ -30,10 +30,10 @@
         <div class="field-group">
           <label class="field-label">{{ $t('workOrder.table.state') }}</label>
           <el-select v-model="localStatus" @change="handleStatusChange" size="small" style="width: 150px">
-            <el-option label="Open" value="Open" />
+            <el-option label="Ready" value="Ready" />
             <el-option label="On Hold" value="On Hold" />
             <el-option label="In Progress" value="In Progress" />
-            <el-option label="Done" value="Done" />
+            <el-option label="Completed" value="Completed" />
           </el-select>
         </div>
 
@@ -91,8 +91,8 @@
     <div class="detail-section" v-if="hasAttachments">
       <h3 class="section-title">{{ $t('workOrder.attachments.title') }}</h3>
       <div class="attachments-grid">
-        <div v-for="(image, index) in workOrder.image_path" :key="index" class="attachment-item">
-          <el-image :src="image" fit="cover" :preview-src-list="workOrder.image_path" class="attachment-image">
+        <div v-for="(image, index) in workOrder.image_list" :key="index" class="attachment-item">
+          <el-image :src="image" fit="cover" :preview-src-list="workOrder.image_list" class="attachment-image">
             <template #error>
               <div class="image-slot">
                 <el-icon><Picture /></el-icon>
@@ -100,29 +100,6 @@
             </template>
           </el-image>
         </div>
-      </div>
-    </div>
-
-    <!-- Tracking Section -->
-    <div class="detail-section">
-      <h3 class="section-title">{{ $t('workOrder.tracking.title') }}</h3>
-      <div class="tracking-actions">
-        <el-button type="default" size="small" @click="$emit('add-parts')">
-          <el-icon><Plus /></el-icon>
-          {{ $t('workOrder.tracking.addParts') }}
-        </el-button>
-        <el-button type="default" size="small" @click="$emit('add-time')">
-          <el-icon><Timer /></el-icon>
-          {{ $t('workOrder.tracking.addTime') }}
-        </el-button>
-        <el-button type="default" size="small" @click="$emit('add-costs')">
-          <el-icon><Money /></el-icon>
-          {{ $t('workOrder.tracking.addCosts') }}
-        </el-button>
-        <el-button type="default" size="small" @click="$emit('view-procedure')">
-          <el-icon><Document /></el-icon>
-          {{ $t('workOrder.tracking.viewProcedure') }}
-        </el-button>
       </div>
     </div>
 
@@ -158,7 +135,11 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { Edit, Share, Plus, Timer, Money, Document, Picture } from '@element-plus/icons-vue'
+import {
+  Edit,
+  Share,
+  Picture
+} from '@element-plus/icons-vue'
 import { convertToLocalTime } from '@/utils/datetime'
 import PriorityTag from '../PriorityTag.vue'
 import WorkTypeTag from '../WorkTypeTag.vue'
@@ -194,7 +175,7 @@ const isOverdue = computed( () => {
 } )
 
 const hasAttachments = computed( () => {
-  return props.workOrder?.image_path && props.workOrder.image_path.length > 0
+  return props.workOrder?.image_list && props.workOrder.image_list.length > 0
 } )
 
 // Watchers
@@ -202,7 +183,7 @@ watch(
   () => props.workOrder,
   newWorkOrder => {
     if ( newWorkOrder ) {
-      localStatus.value = newWorkOrder.state?.name || 'Open'
+      localStatus.value = newWorkOrder.state?.name || 'Ready'
     }
   },
   { immediate : true }
@@ -278,6 +259,7 @@ defineOptions( {
 
 .detail-section {
   margin-bottom: 24px;
+  padding-bottom: 16px;
 
   .section-title {
     font-size: 16px;
@@ -288,7 +270,7 @@ defineOptions( {
 
   .section-row {
     display: flex;
-    gap: 24px;
+    gap: 70px;
     flex-wrap: wrap;
   }
 
@@ -383,6 +365,491 @@ defineOptions( {
 .comments-container {
   .comment-input {
     width: 100%;
+  }
+}
+
+// Recurrence Info Card
+.recurrence-info-card {
+  .info-card {
+    background: var(--el-color-primary-light-9);
+    border: 1px solid var(--el-color-primary-light-7);
+    border-radius: 8px;
+    padding: 16px;
+
+    .info-card-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 12px;
+
+      .info-card-icon {
+        color: var(--el-color-primary);
+        font-size: 18px;
+        margin-right: 8px;
+      }
+
+      .section-title {
+        margin: 0;
+        color: var(--el-color-primary);
+        font-size: 16px;
+      }
+    }
+
+    .info-card-content {
+      .schedule-line {
+        font-size: 14px;
+        line-height: 1.6;
+        color: var(--el-text-color-primary);
+        margin-bottom: 4px;
+
+        &:last-child {
+          margin-bottom: 0;
+        }
+      }
+    }
+  }
+}
+
+// Time & Cost Tracking Card
+.time-cost-tracking-card {
+  .tracking-tabs {
+    :deep(.el-tabs__header) {
+      margin: 0 0 16px 0;
+    }
+
+    :deep(.el-tabs__nav-wrap::after) {
+      height: 1px;
+    }
+
+    :deep(.el-tabs__item) {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .tab-content {
+      .tab-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+
+        .tab-title {
+          font-size: 16px;
+          font-weight: 500;
+          color: var(--el-text-color-primary);
+          margin: 0;
+        }
+
+        .add-edit-link {
+          color: var(--el-color-primary);
+          font-size: 13px;
+          padding: 0;
+
+          &:hover {
+            color: var(--el-color-primary-dark-2);
+          }
+        }
+      }
+
+      .parts-cost-table,
+      .time-logs-table {
+        border: 1px solid var(--el-border-color-light);
+        border-radius: 6px;
+        overflow: hidden;
+
+        .cost-table,
+        .logs-table {
+          :deep(.el-table__header) {
+            background: var(--el-fill-color-light);
+          }
+
+          :deep(.el-table__body) {
+            font-size: 13px;
+          }
+
+          :deep(.el-table td),
+          :deep(.el-table th) {
+            padding: 8px 12px;
+          }
+        }
+
+        .cost-footer {
+          background: var(--el-fill-color-lighter);
+          padding: 12px 16px;
+          border-top: 1px solid var(--el-border-color-light);
+
+          .cost-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            .cost-label {
+              font-size: 14px;
+              font-weight: 500;
+              color: var(--el-text-color-primary);
+            }
+
+            .cost-value {
+              font-size: 16px;
+              font-weight: 600;
+              color: var(--el-color-success);
+            }
+          }
+        }
+      }
+
+      // Safety Measures Content
+      .safety-measures-content {
+        .safety-section {
+          margin-bottom: 24px;
+
+          .safety-section-title {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--el-text-color-primary);
+            margin: 0 0 12px 0;
+            border-bottom: 1px solid var(--el-border-color-lighter);
+            padding-bottom: 4px;
+          }
+
+          .safety-checklist {
+            .safety-item {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding: 8px 0;
+              border-bottom: 1px solid var(--el-border-color-lighter);
+
+              &:last-child {
+                border-bottom: none;
+              }
+
+              .safety-status {
+                font-size: 12px;
+                font-weight: 500;
+                padding: 2px 8px;
+                border-radius: 4px;
+
+                &.completed {
+                  background: var(--el-color-success-light-9);
+                  color: var(--el-color-success);
+                }
+
+                &.pending {
+                  background: var(--el-color-warning-light-9);
+                  color: var(--el-color-warning);
+                }
+              }
+            }
+          }
+
+          .ppe-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+
+            .ppe-tag {
+              margin: 0;
+            }
+          }
+
+          .safety-notes {
+            p {
+              margin: 4px 0;
+              font-size: 14px;
+              line-height: 1.5;
+              color: var(--el-text-color-regular);
+            }
+          }
+        }
+      }
+
+      // Procedures Content
+      .procedures-content {
+        .procedure-form {
+          .procedure-step {
+            border: 1px solid var(--el-border-color-light);
+            border-radius: 8px;
+            margin-bottom: 16px;
+            overflow: hidden;
+
+            .step-header {
+              background: var(--el-fill-color-light);
+              padding: 12px 16px;
+              display: flex;
+              align-items: center;
+              gap: 12px;
+
+              .step-number {
+                background: var(--el-color-primary);
+                color: white;
+                width: 24px;
+                height: 24px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                font-weight: 600;
+              }
+
+              .step-title {
+                flex: 1;
+                margin: 0;
+                font-size: 15px;
+                font-weight: 500;
+                color: var(--el-text-color-primary);
+              }
+            }
+
+            .step-content {
+              padding: 16px;
+
+              .step-description {
+                margin: 0 0 16px 0;
+                font-size: 14px;
+                color: var(--el-text-color-regular);
+                line-height: 1.5;
+              }
+
+              .inspection-form,
+              .measurement-form,
+              .replacement-form,
+              .calibration-form {
+                .form-row {
+                  display: flex;
+                  align-items: center;
+                  gap: 12px;
+                  margin-bottom: 12px;
+
+                  &:last-child {
+                    margin-bottom: 0;
+                  }
+
+                  label {
+                    min-width: 140px;
+                    font-size: 13px;
+                    font-weight: 500;
+                    color: var(--el-text-color-primary);
+                  }
+
+                  .unit {
+                    font-size: 13px;
+                    color: var(--el-text-color-secondary);
+                    margin-left: 4px;
+                  }
+
+                  .range {
+                    font-size: 12px;
+                    color: var(--el-text-color-placeholder);
+                    margin-left: 8px;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// Related Assets Section
+.related-assets-section {
+  .assets-container {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+
+    .asset-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px;
+      border: 1px solid var(--el-border-color-light);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-width: 120px;
+
+      &:hover {
+        border-color: var(--el-color-primary);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+      }
+
+      .asset-image {
+        margin-bottom: 8px;
+
+        .asset-icon {
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          background: var(--el-color-primary-light-9);
+          border: 2px solid var(--el-color-primary);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--el-color-primary);
+          font-size: 24px;
+        }
+      }
+
+      .asset-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--el-text-color-primary);
+        text-align: center;
+        line-height: 1.4;
+      }
+    }
+  }
+}
+
+// Asset Tree Modal
+.asset-tree-content {
+  position: relative;
+  padding: 20px 0;
+
+  .tree-level {
+    margin-bottom: 32px;
+
+    .level-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--el-text-color-primary);
+      margin: 0 0 16px 0;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--el-border-color-light);
+    }
+
+    .equipment-node {
+      display: flex;
+      align-items: center;
+      padding: 16px;
+      border: 1px solid var(--el-border-color-light);
+      border-radius: 8px;
+      background: var(--el-bg-color);
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border-color: var(--el-color-primary);
+      }
+
+      .node-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 8px;
+        background: var(--el-fill-color-light);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 16px;
+        font-size: 24px;
+        color: var(--el-text-color-secondary);
+
+        &.highlighted {
+          background: var(--el-color-primary-light-9);
+          color: var(--el-color-primary);
+          border: 2px solid var(--el-color-primary);
+        }
+      }
+
+      .node-info {
+        flex: 1;
+
+        .node-name {
+          font-size: 16px;
+          font-weight: 600;
+          color: var(--el-text-color-primary);
+          margin-bottom: 4px;
+        }
+
+        .node-type {
+          font-size: 13px;
+          color: var(--el-text-color-secondary);
+          margin-bottom: 8px;
+        }
+
+        .node-status {
+          display: flex;
+          align-items: center;
+        }
+      }
+
+      &.parent-node {
+        background: var(--el-color-info-light-9);
+        border-color: var(--el-color-info-light-7);
+      }
+
+      &.current-node {
+        background: var(--el-color-primary-light-9);
+        border-color: var(--el-color-primary);
+        border-width: 2px;
+      }
+
+      &.sub-node {
+        background: var(--el-fill-color-lighter);
+      }
+    }
+
+    &.subcomponents-level {
+      .subcomponents-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 12px;
+
+        .equipment-node {
+          margin-bottom: 0;
+        }
+      }
+    }
+  }
+
+  .tree-connections {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 1;
+
+    .connection-line {
+      position: absolute;
+      background: var(--el-color-primary-light-7);
+
+      &.parent-to-current {
+        width: 2px;
+        height: 40px;
+        left: 50%;
+        top: 120px;
+        transform: translateX(-50%);
+      }
+
+      &.current-to-subs {
+        width: 2px;
+        height: 40px;
+        left: 50%;
+        top: 280px;
+        transform: translateX(-50%);
+      }
+    }
+  }
+}
+
+// Modal styles
+.modal-content {
+  padding: 20px 0;
+  text-align: center;
+  color: var(--el-text-color-secondary);
+
+  p {
+    margin: 8px 0;
+    line-height: 1.6;
   }
 }
 

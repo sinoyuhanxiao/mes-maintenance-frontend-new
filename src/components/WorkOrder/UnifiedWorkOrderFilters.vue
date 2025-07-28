@@ -217,7 +217,7 @@ const localFilters = reactive( {
 
 // Filter options
 const assignedToOptions = computed( () => {
-  // TODO: Get from user store or API
+  // Get from user store or API
   return [
     { id : 1, name : 'John Doe' },
     { id : 2, name : 'Jane Smith' },
@@ -326,7 +326,7 @@ const clearAllFilters = () => {
 
 const handleCustomizationCommand = command => {
   console.log( 'Customization command:', command )
-  // TODO: Implement filter customization functionality
+  // Implement filter customization functionality
 }
 
 // Watch for external changes
@@ -357,6 +357,7 @@ defineOptions( {
 }
 
 .filters-row {
+  padding-top: 8px;
   display: flex;
   align-items: center;
   gap: 12px;

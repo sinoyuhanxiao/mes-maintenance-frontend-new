@@ -320,8 +320,8 @@ const workOrder = ref( {
   equipment_group : {},
   equipment : {},
   component : {},
-  image_path : [],
-  file_path : []
+  image_list : [],
+  file_list : []
 } )
 const originalWorkOrder = ref( {} )
 const updatedWorkOrder = ref( {} )
@@ -380,8 +380,8 @@ onMounted( async() => {
     equipment_group : data.equipment_group || {},
     equipment : data.equipment || {},
     component : data.component || {},
-    image_path : data.image_list || [],
-    file_path : data.file_list || [],
+    image_list : data.image_list || [],
+    file_list : data.file_list || [],
     start_date : data.start_date,
     end_date : data.end_date,
     due_date : data.due_date,
