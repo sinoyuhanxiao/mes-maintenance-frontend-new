@@ -13,19 +13,13 @@ export const constantRoutes = [
     path : '/redirect',
     name : 'Redirect',
     component : Layout,
-    meta : {
-      title : 'Redirect',
-      hidden : true
-    },
+    meta : { title : 'Redirect', hidden : true },
     children : [
       {
         path : '/redirect/:path(.*)',
-        name : 'Redirect',
+        name : 'RedirectPath',
         component : () => import( '@/views/redirect/index.vue' ),
-        meta : {
-          title : 'Redirect',
-          hidden : true
-        }
+        meta : { title : 'Redirect', hidden : true }
       }
     ]
   },
@@ -70,7 +64,7 @@ export const constantRoutes = [
 export const asyncRoutes = [
   {
     path : '/',
-    name : 'Dashboard',
+    name : 'DashboardLayout',
     component : Layout,
     redirect : '/dashboard',
     meta : {
@@ -151,6 +145,13 @@ export const asyncRoutes = [
         name : 'ViewWorkOrder',
         props : true,
         meta : { title : 'router.viewWorkOrder', noCache : true, hidden : true }
+      },
+      {
+        path : 'test-view',
+        component : () => import( '@/views/workOrder/test_view.vue' ),
+        name : 'TestView',
+        props : true,
+        meta : { title : 'router.viewWorkOrder', noCache : true, hidden : false }
       }
     ]
   },

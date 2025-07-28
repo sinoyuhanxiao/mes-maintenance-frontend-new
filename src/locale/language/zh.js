@@ -30,7 +30,8 @@ export default {
       createdBy : '创建者',
       approvedBy : '审批人',
       description : '工单描述',
-      actions : '操作'
+      actions : '操作',
+      assignedTo : '分配给'
     },
 
     // Form fields
@@ -48,7 +49,9 @@ export default {
       category : '工单类别',
       workType : '工作类型',
       recurrence : '重复设置',
-      estimatedMinutes : '预估时间'
+      estimatedMinutes : '预估时间',
+      createdBy : '创建者',
+      createdOn : '创建于'
     },
 
     // Placeholders
@@ -75,7 +78,9 @@ export default {
       cancel : '取消',
       confirm : '确认',
       submit : '创建工单',
-      uploadToServer : '上传到服务器'
+      uploadToServer : '上传到服务器',
+      share : '分享',
+      refresh : '刷新'
     },
 
     // Status values
@@ -83,7 +88,8 @@ export default {
       failed : '失败',
       completed : '已完成',
       inProgress : '进行中',
-      pending : '待处理'
+      pending : '待处理',
+      overdue : '已逾期'
     },
 
     // Priority values
@@ -137,6 +143,94 @@ export default {
       recurrenceRequired : '请选择重复设置',
       startDateRequired : '请选择开始时间',
       endDateRequired : '请选择结束时间'
+    },
+
+    // View modes
+    viewModes : {
+      table : '表格视图',
+      todo : '待办视图'
+    },
+
+    // Filters
+    filters : {
+      assignedToMe : '分配给我',
+      assignedTo : '分配给',
+      overdue : '已逾期',
+      today : '今天',
+      thisWeek : '本周',
+      thisMonth : '本月',
+      custom : '自定义',
+      highPriority : '高优先级',
+      addFilter : '添加筛选',
+      dueDate : '截止日期',
+      location : '位置',
+      priority : '优先级',
+      maintenanceType : '维护类型',
+      myFilters : '我的筛选',
+      clearAll : '清除全部',
+      activeFilters : '当前筛选',
+      toggleVisibility : '切换显示',
+      savePreset : '保存预设',
+      managePresets : '管理预设'
+    },
+
+    // Tabs
+    tabs : {
+      todo : '待办',
+      done : '已完成'
+    },
+
+    // Sort options
+    sort : {
+      sortBy : '排序方式',
+      priorityHighest : '优先级：最高优先',
+      priorityLowest : '优先级：最低优先',
+      dueDateNearest : '截止日期：最近',
+      dueDateFarthest : '截止日期：最远',
+      createdNewest : '创建时间：最新',
+      createdOldest : '创建时间：最旧'
+    },
+
+    // Details
+    details : {
+      title : '工单详情'
+    },
+
+    // Attachments
+    attachments : {
+      title : '附件'
+    },
+
+    // Tracking
+    tracking : {
+      title : '跟踪记录',
+      addParts : '添加零件使用',
+      addTime : '添加时间记录',
+      addCosts : '添加其他费用',
+      viewProcedure : '查看程序',
+      viewSafetyMeasures : '查看安全措施',
+      viewTimeLogs : '查看时间记录',
+      viewPartsUsage : '查看零件使用记录'
+    },
+
+    // Comments
+    comments : {
+      title : '评论',
+      placeholder : '添加评论...',
+      add : '添加评论'
+    },
+
+    // Additional messages
+    selectWorkOrder : '请选择一个工单查看详情',
+    statusChanged : '状态已更新',
+    shareSuccess : '分享成功',
+    refreshSuccess : '刷新成功',
+
+    // Pagination
+    pagination : {
+      showing : '显示第 {start} 到 {end} 项，共 {total} 项',
+      pageSize : '每页显示',
+      items : '项'
     }
   },
   common : {
@@ -154,7 +248,10 @@ export default {
     sortIdAsc : 'ID 升序',
     sortIdDesc : 'ID 降序',
     yes : '是',
-    no : '否'
+    no : '否',
+    to : '至',
+    startDate : '开始日期',
+    endDate : '结束日期'
   },
   errors : {
     badRequest : '请求参数错误',

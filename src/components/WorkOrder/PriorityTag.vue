@@ -62,7 +62,8 @@ defineOptions( {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 500;
+  font-weight: 400;
+  font-size: 15px;
 
   &.priority-urgent {
     color: #f56c6c;

@@ -30,7 +30,8 @@ export default {
       createdBy : 'Created By',
       approvedBy : 'Approved By',
       description : 'Description',
-      actions : 'Actions'
+      actions : 'Actions',
+      assignedTo : 'Assigned To'
     },
 
     // Form fields
@@ -48,7 +49,9 @@ export default {
       category : 'Category',
       workType : 'Work Type',
       recurrence : 'Recurrence Setting',
-      estimatedMinutes : 'Estimated Time'
+      estimatedMinutes : 'Estimated Time',
+      createdBy : 'Created By',
+      createdOn : 'Created On'
     },
 
     // Placeholders
@@ -75,7 +78,9 @@ export default {
       cancel : 'Cancel',
       confirm : 'Confirm',
       submit : 'Create Work Order',
-      uploadToServer : 'Upload to Server'
+      uploadToServer : 'Upload to Server',
+      share : 'Share',
+      refresh : 'Refresh'
     },
 
     // Status values
@@ -83,7 +88,8 @@ export default {
       failed : 'Failed',
       completed : 'Completed',
       inProgress : 'In Progress',
-      pending : 'Pending'
+      pending : 'Pending',
+      overdue : 'Overdue'
     },
 
     // Priority values
@@ -137,6 +143,94 @@ export default {
       recurrenceRequired : 'Please select recurrence setting',
       startDateRequired : 'Please select start date',
       endDateRequired : 'Please select end date'
+    },
+
+    // View modes
+    viewModes : {
+      table : 'Table View',
+      todo : 'To-Do View'
+    },
+
+    // Filters
+    filters : {
+      assignedToMe : 'Assigned to Me',
+      assignedTo : 'Assigned To',
+      overdue : 'Overdue',
+      today : 'Today',
+      thisWeek : 'This Week',
+      thisMonth : 'This Month',
+      custom : 'Custom',
+      highPriority : 'High Priority',
+      addFilter : 'Add Filter',
+      dueDate : 'Due Date',
+      location : 'Location',
+      priority : 'Priority',
+      maintenanceType : 'Maintenance Type',
+      myFilters : 'My Filters',
+      clearAll : 'Clear All',
+      activeFilters : 'Active Filters',
+      toggleVisibility : 'Toggle Visibility',
+      savePreset : 'Save Preset',
+      managePresets : 'Manage Presets'
+    },
+
+    // Tabs
+    tabs : {
+      todo : 'To Do',
+      done : 'Done'
+    },
+
+    // Sort options
+    sort : {
+      sortBy : 'Sort By',
+      priorityHighest : 'Priority: Highest First',
+      priorityLowest : 'Priority: Lowest First',
+      dueDateNearest : 'Due Date: Nearest',
+      dueDateFarthest : 'Due Date: Farthest',
+      createdNewest : 'Created: Newest',
+      createdOldest : 'Created: Oldest'
+    },
+
+    // Details
+    details : {
+      title : 'Work Order Details'
+    },
+
+    // Attachments
+    attachments : {
+      title : 'Attachments'
+    },
+
+    // Tracking
+    tracking : {
+      title : 'Tracking',
+      addParts : 'Add Part Usage',
+      addTime : 'Add Time Log',
+      addCosts : 'Add Other Costs',
+      viewProcedure : 'View Procedure',
+      viewSafetyMeasures : 'View Safety Measures',
+      viewTimeLogs : 'View Time Logs',
+      viewPartsUsage : 'View Parts Usage'
+    },
+
+    // Comments
+    comments : {
+      title : 'Comments',
+      placeholder : 'Add a comment...',
+      add : 'Add Comment'
+    },
+
+    // Additional messages
+    selectWorkOrder : 'Select a work order to view details',
+    statusChanged : 'Status updated successfully',
+    shareSuccess : 'Shared successfully',
+    refreshSuccess : 'Refreshed successfully',
+
+    // Pagination
+    pagination : {
+      showing : 'Showing {start} to {end} of {total} items',
+      pageSize : 'Items per page',
+      items : 'items'
     }
   },
   common : {
@@ -154,7 +248,10 @@ export default {
     sortIdAsc : 'ID Ascending',
     sortIdDesc : 'ID Descending',
     yes : 'Yes',
-    no : 'No'
+    no : 'No',
+    to : 'to',
+    startDate : 'Start Date',
+    endDate : 'End Date'
   },
   errors : {
     badRequest : 'Bad request',
