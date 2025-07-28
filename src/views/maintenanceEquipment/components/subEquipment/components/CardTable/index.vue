@@ -1,5 +1,5 @@
 <template>
-  <div class="main-container">
+  <div class="card-table-container">
     <div class="search-bar">
       <el-input v-model="searchQuery" placeholder="Search by Spare Part..." clearable prefix-icon="el-icon-search" />
     </div>
@@ -65,7 +65,7 @@ function handlePageChange( page ) {
 </script>
 
 <style scoped>
-.main-container {
+.card-table-container {
   display: flex;
   flex-direction: column;
   flex: 1;

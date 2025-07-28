@@ -11,7 +11,7 @@
     <div class="t3-main-details">
       <el-tabs v-model="activeTab" type="border-card">
         <el-tab-pane label="Details" name="details">
-          <DetailsTab />
+          <DetailsTab :equipmentId="props.node.id"/>
         </el-tab-pane>
         <el-tab-pane label="Sub Items" name="subItems">
           <SubItemsTab />
@@ -46,7 +46,7 @@ import PersonnelTab from './personnel.vue'
 import DocumentsLoadTab from './DocumentsLoad.vue'
 import DocumentsViewTab from './DocumentsView.vue'
 
-defineProps( {
+const props = defineProps( {
   node : {
     type : Object,
     required : true
@@ -56,6 +56,9 @@ defineProps( {
     default : () => []
   }
 } )
+
+console.log( props.node.id )
+console.log( props.breadcrumb )
 
 const activeTab = ref( 'details' )
 </script>

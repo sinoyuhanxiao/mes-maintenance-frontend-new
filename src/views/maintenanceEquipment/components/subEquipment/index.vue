@@ -11,7 +11,7 @@
     <div class="t4-main-details">
       <el-tabs v-model="activeTab" type="border-card">
         <el-tab-pane label="Details" name="details">
-          <DetailsTab />
+          <DetailsTab :equipmentId="props.node.id"/>
         </el-tab-pane>
         <el-tab-pane label="Sub Items" name="subItems">
           <SubItemsTab />
@@ -30,7 +30,7 @@ import DetailsTab from './Details.vue'
 import SubItemsTab from './SubItems.vue'
 import MaintenanceHistory from './MaintenanceHistory.vue'
 
-defineProps( {
+const props = defineProps( {
   node : {
     type : Object,
     required : true

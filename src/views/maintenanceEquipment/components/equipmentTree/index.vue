@@ -4,7 +4,7 @@
     <el-tree
       :data="treeData"
       node-key="id"
-      default-expand-all
+      :default-expanded-keys="getDefaultExpandedKeys()"
       :props="defaultProps"
       :filter-node-method="filterNode"
       :expand-on-click-node="false"
@@ -36,6 +36,12 @@ const loading = ref( false )
 const error = ref( null )
 const treeData = ref( [] )
 
+const getDefaultExpandedKeys = () => {
+  return treeData.value
+    .filter( node => node.level === 0 )
+    .map( node => node.id )
+}
+
 const getIconForLevel = level => {
   switch ( level ) {
     case 0:
@@ -53,6 +59,14 @@ const getIconForLevel = level => {
   }
 }
 const transformNode = ( node, level = 0 ) => {
+  if ( level >= 4 ) {
+    return {
+      id : node.id,
+      label : level === 0 ? node.name : `T${level}: ${node.name}`,
+      level,
+      children : undefined // No children beyond T4
+    }
+  }
   return {
     id : node.id,
     label : level === 0 ? node.name : `T${level}: ${node.name}`,
