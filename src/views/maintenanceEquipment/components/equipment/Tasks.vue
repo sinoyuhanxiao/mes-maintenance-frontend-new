@@ -72,5 +72,4 @@ function handleTaskCurrentChange( page ) {
   flex-direction: column;
   gap: 20px;
 }
-
 </style>

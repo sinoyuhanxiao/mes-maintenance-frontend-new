@@ -37,9 +37,7 @@ const error = ref( null )
 const treeData = ref( [] )
 
 const getDefaultExpandedKeys = () => {
-  return treeData.value
-    .filter( node => node.level === 0 )
-    .map( node => node.id )
+  return treeData.value.filter( node => node.level === 0 ).map( node => node.id )
 }
 
 const getIconForLevel = level => {

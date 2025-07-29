@@ -19,16 +19,11 @@
         <el-descriptions :column="1" direction="vertical">
           <el-descriptions-item label="Location Path">
             <el-breadcrumb :separator-icon="ArrowRight" v-if="locationPath.length > 0">
-              <el-breadcrumb-item
-                v-for="location in locationPath"
-                :key="location.id"
-              >
+              <el-breadcrumb-item v-for="location in locationPath" :key="location.id">
                 {{ location.name }}
               </el-breadcrumb-item>
             </el-breadcrumb>
-            <el-text v-else type="info">
-              Location path not available
-            </el-text>
+            <el-text v-else type="info"> Location path not available </el-text>
           </el-descriptions-item>
         </el-descriptions>
       </div>
@@ -59,7 +54,12 @@
             <div class="file-list">
               <div v-if="equipmentData.file_list && equipmentData.file_list.length > 0">
                 <div v-for="file in equipmentData.file_list" :key="file.id || file.name" class="file-item">
-                  <el-link :href="file.url || file.path" target="_blank" :icon="getFileIcon(file.type || getFileTypeFromName(file.name))" class="file-link">
+                  <el-link
+                    :href="file.url || file.path"
+                    target="_blank"
+                    :icon="getFileIcon(file.type || getFileTypeFromName(file.name))"
+                    class="file-link"
+                  >
                     {{ file.name }}
                   </el-link>
                   <span class="file-size">{{ file.size || formatFileSize(file.file_size) }}</span>
@@ -136,7 +136,7 @@ const fetchEquipmentData = async() => {
 }
 
 // Fetch location path
-const fetchLocationPath = async( locationId ) => {
+const fetchLocationPath = async locationId => {
   try {
     const response = await getLocationPathById( locationId )
     locationPath.value = response.data || []
@@ -215,18 +215,21 @@ function formatFileSize( bytes ) {
   if ( bytes === 0 ) return '0 Bytes'
 
   const i = Math.floor( Math.log( bytes ) / Math.log( 1024 ) )
-  return Math.round( bytes / Math.pow( 1024, i ) * 100 ) / 100 + ' ' + sizes[i]
+  return Math.round( ( bytes / Math.pow( 1024, i ) ) * 100 ) / 100 + ' ' + sizes[i]
 }
 
 onMounted( () => {
   fetchEquipmentData()
 } )
 
-watch( () => props.equipmentId, ( newId ) => {
-  if ( newId ) {
-    fetchEquipmentData()
+watch(
+  () => props.equipmentId,
+  newId => {
+    if ( newId ) {
+      fetchEquipmentData()
+    }
   }
-} )
+)
 </script>
 
 <style scoped>

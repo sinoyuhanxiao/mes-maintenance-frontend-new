@@ -16,16 +16,11 @@
           <el-descriptions-item label="Location Path">
             <el-breadcrumb :separator-icon="ArrowRight">
               <!-- Dynamic breadcrumb from API -->
-              <el-breadcrumb-item
-                v-for="location in locationPath"
-                :key="location.id"
-              >
+              <el-breadcrumb-item v-for="location in locationPath" :key="location.id">
                 {{ location.name }}
               </el-breadcrumb-item>
               <!-- Fallback if no location path -->
-              <el-breadcrumb-item v-if="locationPath.length === 0">
-                No location path available
-              </el-breadcrumb-item>
+              <el-breadcrumb-item v-if="locationPath.length === 0"> No location path available </el-breadcrumb-item>
             </el-breadcrumb>
           </el-descriptions-item>
         </el-descriptions>
@@ -115,7 +110,7 @@ const fetchEquipmentData = async() => {
 }
 
 // Fetch location path
-const fetchLocationPath = async( locationId ) => {
+const fetchLocationPath = async locationId => {
   try {
     const response = await getLocationPathById( locationId )
     locationPath.value = response.data || []
@@ -131,11 +126,14 @@ onMounted( () => {
   fetchEquipmentData()
 } )
 
-watch( () => props.equipmentId, ( newId ) => {
-  if ( newId ) {
-    fetchEquipmentData()
+watch(
+  () => props.equipmentId,
+  newId => {
+    if ( newId ) {
+      fetchEquipmentData()
+    }
   }
-} )
+)
 </script>
 
 <style scoped>

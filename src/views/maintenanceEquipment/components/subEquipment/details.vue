@@ -5,7 +5,9 @@
         <el-descriptions :column="3" direction="vertical">
           <el-descriptions-item label="Name">{{ equipmentData.name }}</el-descriptions-item>
           <el-descriptions-item label="Code">{{ equipmentData.code }}</el-descriptions-item>
-          <el-descriptions-item label="Model">{{ equipmentData.model || equipmentData.serial_number || 'N/A' }}</el-descriptions-item>
+          <el-descriptions-item label="Model">{{
+            equipmentData.model || equipmentData.serial_number || 'N/A'
+          }}</el-descriptions-item>
           <el-descriptions-item label="Description" class="highlighted-item">
             {{ equipmentData.description || 'No description available' }}
           </el-descriptions-item>
@@ -16,16 +18,11 @@
         <el-descriptions :column="1" direction="vertical">
           <el-descriptions-item label="Location Path">
             <el-breadcrumb :separator-icon="ArrowRight" v-if="locationPath.length > 0">
-              <el-breadcrumb-item
-                v-for="location in locationPath"
-                :key="location.id"
-              >
+              <el-breadcrumb-item v-for="location in locationPath" :key="location.id">
                 {{ location.name }}
               </el-breadcrumb-item>
             </el-breadcrumb>
-            <el-text v-else type="info">
-              Location path not available
-            </el-text>
+            <el-text v-else type="info"> Location path not available </el-text>
           </el-descriptions-item>
         </el-descriptions>
       </div>
@@ -116,7 +113,7 @@ const fetchEquipmentData = async() => {
 }
 
 // Fetch location path
-const fetchLocationPath = async( locationId ) => {
+const fetchLocationPath = async locationId => {
   try {
     const response = await getLocationPathById( locationId )
     locationPath.value = response.data || []
@@ -131,11 +128,14 @@ onMounted( () => {
   fetchEquipmentData()
 } )
 
-watch( () => props.equipmentId, ( newId ) => {
-  if ( newId ) {
-    fetchEquipmentData()
+watch(
+  () => props.equipmentId,
+  newId => {
+    if ( newId ) {
+      fetchEquipmentData()
+    }
   }
-} )
+)
 
 const src = 'https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg'
 </script>
@@ -190,7 +190,9 @@ const src = 'https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jp
   gap: 10px;
 }
 
-.loading-state, .error-state, .no-data {
+.loading-state,
+.error-state,
+.no-data {
   display: flex;
   justify-content: center;
   align-items: center;

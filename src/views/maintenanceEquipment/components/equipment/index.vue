@@ -11,7 +11,7 @@
     <div class="t3-main-details">
       <el-tabs v-model="activeTab" type="border-card">
         <el-tab-pane label="Details" name="details">
-          <DetailsTab :equipmentId="props.node.id"/>
+          <DetailsTab :equipmentId="props.node.id" />
         </el-tab-pane>
         <el-tab-pane label="Sub Items" name="subItems">
           <SubItemsTab />
