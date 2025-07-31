@@ -96,4 +96,3 @@ export const getEquipmentNodes = ( page = 1, size = 10, sortField = 'name', dire
     data : search
   } )
 }
-

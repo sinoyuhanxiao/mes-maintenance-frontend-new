@@ -43,16 +43,8 @@
     </div>
 
     <!-- Add Equipment Group Dialog -->
-    <el-dialog
-      v-model="showAddDialog"
-      title="Add New Tier 2"
-      width="600px"
-      :before-close="handleCloseDialog"
-    >
-      <AddEquipmentGroup
-        @close="closeAddDialog"
-        @success="handleAddSuccess"
-      />
+    <el-dialog v-model="showAddDialog" title="Add New Tier 2" width="600px" :before-close="handleCloseDialog">
+      <AddEquipmentGroup @close="closeAddDialog" @success="handleAddSuccess" />
     </el-dialog>
   </div>
 </template>
@@ -93,12 +85,12 @@ const closeAddDialog = () => {
   showAddDialog.value = false
 }
 
-const handleCloseDialog = ( done ) => {
+const handleCloseDialog = done => {
   // You can add confirmation logic here if needed
   done()
 }
 
-const handleAddSuccess = ( newEquipment ) => {
+const handleAddSuccess = newEquipment => {
   // Handle successful addition (e.g., refresh data, show message)
   console.log( 'New equipment added:', newEquipment )
   closeAddDialog()
@@ -144,7 +136,7 @@ const handleAddSuccess = ( newEquipment ) => {
   border-radius: 4px;
   transition: background-color 0.2s ease;
   font-size: 24px;
-  color: #409EFF;
+  color: #409eff;
 }
 
 .kebab-icon:hover {

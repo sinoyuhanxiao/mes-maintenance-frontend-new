@@ -1,11 +1,7 @@
 <template>
   <div class="add-new-t2">
     <div class="general-information">
-      <el-form
-        :label-position="labelPosition"
-        label-width="auto"
-        :model="formData"
-      >
+      <el-form :label-position="labelPosition" label-width="auto" :model="formData">
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="Equipment Group Name">
@@ -19,11 +15,7 @@
           </el-col>
         </el-row>
         <el-form-item label="Description">
-          <el-input
-            v-model="formData.description"
-            type="textarea"
-            :rows="3"
-          />
+          <el-input v-model="formData.description" type="textarea" :rows="3" />
         </el-form-item>
         <el-form-item label="Location">
           <div class="tree-container">
@@ -40,12 +32,7 @@
               Loading locations...
             </div>
             <div v-else-if="error" class="tree-error">
-              <el-alert
-                :title="error"
-                type="error"
-                show-icon
-                :closable="false"
-              />
+              <el-alert :title="error" type="error" show-icon :closable="false" />
             </div>
             <el-tree
               v-else
@@ -74,12 +61,7 @@
                 style="width: 100%"
                 :loading="productionLineLoading"
               >
-                <el-option
-                  v-for="line in productionLines"
-                  :key="line.id"
-                  :label="line.name"
-                  :value="line.id"
-                />
+                <el-option v-for="line in productionLines" :key="line.id" :label="line.name" :value="line.id" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -91,30 +73,19 @@
         </el-row>
       </el-form>
       <div class="file-upload">
-        <ImageUploadMultiple
-          @update:imageList="handleImageListUpdate"
-          @update:filesList="handleFilesListUpdate"
-        />
+        <ImageUploadMultiple @update:imageList="handleImageListUpdate" @update:filesList="handleFilesListUpdate" />
       </div>
       <div class="dialog-footer">
-        <el-button @click="handleCancel">
-          Cancel
-        </el-button>
+        <el-button @click="handleCancel"> Cancel </el-button>
         <el-button
           type="warning"
           @click="handleTestUpload"
           :loading="testUploadLoading"
           :disabled="formData.image_list.length === 0 && formData.files_list.length === 0"
         >
-          🧪 Test Upload
+          Test Upload
         </el-button>
-        <el-button
-          type="primary"
-          @click="handleConfirm"
-          :loading="submitLoading"
-        >
-          Confirm
-        </el-button>
+        <el-button type="primary" @click="handleConfirm" :loading="submitLoading"> Confirm </el-button>
       </div>
 
       <!-- Debug info - remove later -->
@@ -132,17 +103,13 @@
       <div v-if="formData.image_list.length > 0" class="selected-info">
         <el-text><strong>Images:</strong> {{ formData.image_list.length }} files</el-text>
         <div v-if="typeof formData.image_list[0] === 'string'" class="url-list">
-          <div v-for="(url, index) in formData.image_list" :key="index" class="url-item">
-            📷 {{ url }}
-          </div>
+          <div v-for="(url, index) in formData.image_list" :key="index" class="url-item">📷 {{ url }}</div>
         </div>
       </div>
       <div v-if="formData.files_list.length > 0" class="selected-info">
         <el-text><strong>Documents:</strong> {{ formData.files_list.length }} files</el-text>
         <div v-if="typeof formData.files_list[0] === 'string'" class="url-list">
-          <div v-for="(url, index) in formData.files_list" :key="index" class="url-item">
-            📄 {{ url }}
-          </div>
+          <div v-for="(url, index) in formData.files_list" :key="index" class="url-item">📄 {{ url }}</div>
         </div>
       </div>
     </div>
@@ -199,13 +166,13 @@ const selectedProductionLineName = computed( () => {
 } )
 
 // Handle image uploads from ImageUploadMultiple component
-const handleImageListUpdate = ( images ) => {
+const handleImageListUpdate = images => {
   uploadedImages.value = images
   formData.image_list = images
 }
 
 // Handle file uploads from ImageUploadMultiple component
-const handleFilesListUpdate = ( files ) => {
+const handleFilesListUpdate = files => {
   uploadedFiles.value = files
   formData.files_list = files
 }
@@ -229,31 +196,31 @@ const handleTestUpload = async() => {
 
     // Upload images if they exist
     if ( testImageList.length > 0 ) {
-      console.log( '🧪 Testing image upload...', testImageList )
+      console.log( 'Testing image upload...', testImageList )
       const imageRes = await uploadMultipleToMinio( testImageList )
       uploadedImages = imageRes.data.uploadedFiles || []
-      console.log( '🖼 Test Images uploaded successfully:', uploadedImages )
+      console.log( 'Test Images uploaded successfully:', uploadedImages )
     }
 
     // Upload files if they exist
     if ( testFilesList.length > 0 ) {
-      console.log( '🧪 Testing file upload...', testFilesList )
+      console.log( 'Testing file upload...', testFilesList )
       const fileRes = await uploadMultipleToMinio( testFilesList )
       uploadedFiles = fileRes.data.uploadedFiles || []
-      console.log( '📄 Test Files uploaded successfully:', uploadedFiles )
+      console.log( 'Test Files uploaded successfully:', uploadedFiles )
     }
 
     // Show success message with counts
     const totalUploaded = uploadedImages.length + uploadedFiles.length
-    ElMessage.success( `🎉 Test upload successful! ${totalUploaded} files uploaded.` )
+    ElMessage.success( `Test upload successful! ${totalUploaded} files uploaded.` )
 
     // Log the URLs for testing
     const imageUrls = uploadedImages.map( file => file.url )
     const fileUrls = uploadedFiles.map( file => file.url )
 
-    console.log( '✅ Test Image URLs:', imageUrls )
-    console.log( '✅ Test File URLs:', fileUrls )
-    console.log( '📊 Upload Summary:', {
+    console.log( 'Test Image URLs:', imageUrls )
+    console.log( 'Test File URLs:', fileUrls )
+    console.log( 'Upload Summary:', {
       totalFiles : totalUploaded,
       images : uploadedImages.length,
       documents : uploadedFiles.length,
@@ -261,7 +228,7 @@ const handleTestUpload = async() => {
       fileUrls
     } )
   } catch ( error ) {
-    console.error( '❌ Test upload failed:', error )
+    console.error( 'Test upload failed:', error )
     ElMessage.error( `Test upload failed: ${error.message}` )
   } finally {
     testUploadLoading.value = false
@@ -278,7 +245,7 @@ const uploadFilesToServer = async() => {
     if ( formData.image_list.length > 0 ) {
       const imageRes = await uploadMultipleToMinio( formData.image_list )
       uploadedImages = imageRes.data.uploadedFiles || []
-      console.log( '🖼 Images uploaded successfully:', uploadedImages )
+      console.log( 'Images uploaded successfully:', uploadedImages )
       formData.image_list = uploadedImages.map( file => file.url )
     }
 
@@ -286,18 +253,18 @@ const uploadFilesToServer = async() => {
     if ( formData.files_list.length > 0 ) {
       const fileRes = await uploadMultipleToMinio( formData.files_list )
       uploadedFiles = fileRes.data.uploadedFiles || []
-      console.log( '📄 Files uploaded successfully:', uploadedFiles )
+      console.log( 'Files uploaded successfully:', uploadedFiles )
       formData.files_list = uploadedFiles.map( file => file.url )
     }
 
-    console.log( '✅ Current image list after upload:', formData.image_list )
-    console.log( '✅ Current file list after upload:', formData.files_list )
+    console.log( 'Current image list after upload:', formData.image_list )
+    console.log( 'Current file list after upload:', formData.files_list )
 
     ElMessage.success( 'Files uploaded successfully!' )
 
     return { uploadedImages, uploadedFiles }
   } catch ( err ) {
-    console.error( '❌ File upload failed:', err )
+    console.error( 'File upload failed:', err )
     throw new Error( 'File upload failed' )
   }
 }
@@ -312,7 +279,7 @@ const handleConfirm = async() => {
 
     // Now submit your main form data
     // At this point, formData.image_list and formData.files_list contain URLs
-    console.log( '📋 Form data to submit:', formData )
+    console.log( 'Form data to submit:', formData )
 
     // Example API call (replace with your actual endpoint):
     // await createEquipmentGroup( formData )
@@ -322,7 +289,7 @@ const handleConfirm = async() => {
     // Reset form or navigate away
     // resetForm()
   } catch ( error ) {
-    console.error( '❌ Submission failed:', error )
+    console.error( 'Submission failed:', error )
     ElMessage.error( 'Failed to create equipment group. Please try again.' )
   } finally {
     submitLoading.value = false
@@ -386,7 +353,7 @@ const fetchLocationTree = async() => {
   }
 }
 
-watch( filterText, ( val ) => {
+watch( filterText, val => {
   treeRef.value?.filter( val )
 } )
 
@@ -487,15 +454,15 @@ onMounted( () => {
 }
 
 :deep(.el-tree-node__content:hover) {
-  background-color: #D9ECFF;
+  background-color: #d9ecff;
 }
 
 :deep(.el-tree-node__content.is-current) {
-  background-color: #D9ECFF !important;
+  background-color: #d9ecff !important;
   font-weight: 500;
 }
 
 :deep(.el-tree-node.is-current > .el-tree-node__content) {
-  background-color: #D9ECFF !important;
+  background-color: #d9ecff !important;
 }
 </style>
