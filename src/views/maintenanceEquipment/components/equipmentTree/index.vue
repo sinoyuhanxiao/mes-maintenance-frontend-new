@@ -56,6 +56,7 @@ const getIconForLevel = level => {
       return Folder
   }
 }
+
 const transformNode = ( node, level = 0 ) => {
   if ( level >= 4 ) {
     return {

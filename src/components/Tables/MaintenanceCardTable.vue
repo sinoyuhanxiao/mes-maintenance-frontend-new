@@ -2,24 +2,22 @@
   <div class="table-container">
     <div class="search-container">
       <el-button v-if="searchActive === false"
-@click="handleSearchOption"
-size="small"
-:icon="Search"
-round
-        >Search</el-button
-      >
+        @click="handleSearchOption"
+        size="small"
+        :icon="Search"
+        round
+      >Search</el-button>
       <input
         v-if="searchActive === true"
         :placeholder="searchPlaceholder"
         style="border: solid 1px #d5d5d5; border-radius: 5px; width: 100%"
       />
       <el-button v-if="searchActive === true"
-@click="handleSearchOption"
-size="small"
-:icon="Close"
-round
-        >Cancel</el-button
-      >
+        @click="handleSearchOption"
+        size="small"
+        :icon="Close"
+        round
+      >Cancel</el-button>
     </div>
     <div class="card-scroll-container">
       <el-row :gutter="0">
@@ -30,9 +28,21 @@ round
             :module="module"
             @requestData="handleRequestData"
           />
-          <MaintenanceRequestCard v-if="module === 3" :wo="wo" @requestData="handleRequestData" />
-          <MaintenanceTaskLibraryCard v-if="module === 4" :item="wo" @click="handleCardClick(wo)" />
-          <MaintenanceSparePartCard v-if="module === 5" :item="wo" @click="handleCardClick(wo)" />
+          <MaintenanceRequestCard
+            v-if="module === 3"
+            :wo="wo"
+            @requestData="handleRequestData"
+          />
+          <MaintenanceTaskLibraryCard
+            v-if="module === 4"
+            :item="wo"
+            @click="handleCardClick(wo)"
+          />
+          <MaintenanceSparePartCard
+            v-if="module === 5"
+            :item="wo"
+            @click="handleCardClick(wo)"
+          />
         </el-col>
       </el-row>
     </div>

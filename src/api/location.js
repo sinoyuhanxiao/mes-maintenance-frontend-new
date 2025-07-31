@@ -12,3 +12,14 @@ export const getLocationPathById = locationId => {
     url : `/location/node-path/${locationId}`
   } )
 }
+
+/**
+ * Fetch location tree.
+ * @returns {Promise} API response with location tree nodes.
+ */
+export const getLocationTree = () => {
+  return http.request( {
+    method : 'get',
+    url : '/location/node-trees'
+  } )
+}
