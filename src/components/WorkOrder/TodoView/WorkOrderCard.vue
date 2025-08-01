@@ -14,7 +14,7 @@
       <div class="card-actions">
         <el-dropdown trigger="click" @command="handleAction">
           <el-button type="text" size="small" class="action-button">
-            <el-icon><MoreFilled /></el-icon>
+            <el-icon class="rotated-icon"><MoreFilled /></el-icon>
           </el-button>
           <template #dropdown>
             <el-dropdown-menu>
@@ -106,38 +106,38 @@ import { MoreFilled, Edit, View, Delete, Flag, Picture } from '@element-plus/ico
 import { convertToLocalTime } from '@/utils/datetime'
 
 // Props
-const props = defineProps( {
-  workOrder : {
-    type : Object,
-    required : true
+const props = defineProps({
+  workOrder: {
+    type: Object,
+    required: true,
   },
-  isSelected : {
-    type : Boolean,
-    default : false
-  }
-} )
+  isSelected: {
+    type: Boolean,
+    default: false,
+  },
+})
 
 // Emits
-const emit = defineEmits( ['select', 'action'] )
+const emit = defineEmits(['select', 'action'])
 
 const { t } = useI18n()
 
 // Computed
-const isOverdue = computed( () => {
-  return props.workOrder.due_date && new Date( props.workOrder.due_date ) < new Date()
-} )
+const isOverdue = computed(() => {
+  return props.workOrder.due_date && new Date(props.workOrder.due_date) < new Date()
+})
 
-const isHighPriority = computed( () => {
+const isHighPriority = computed(() => {
   return props.workOrder.priority?.name === 'High' || props.workOrder.priority?.name === 'Urgent'
-} )
+})
 
 // Methods
 const formatDate = dateString => {
-  return convertToLocalTime( dateString )
+  return convertToLocalTime(dateString)
 }
 
 const getStatusTagType = status => {
-  switch ( status ) {
+  switch (status) {
     case 'Failed':
       return 'danger'
     case 'Completed':
@@ -151,16 +151,16 @@ const getStatusTagType = status => {
 
 const getStatusName = status => {
   const statusMap = {
-    Failed : t( 'workOrder.status.failed' ),
-    Completed : t( 'workOrder.status.completed' ),
-    'In Progress' : t( 'workOrder.status.inProgress' ),
-    Pending : t( 'workOrder.status.pending' )
+    Failed: t('workOrder.status.failed'),
+    Completed: t('workOrder.status.completed'),
+    'In Progress': t('workOrder.status.inProgress'),
+    Pending: t('workOrder.status.pending'),
   }
   return statusMap[status] || status
 }
 
 const getPriorityTagType = priority => {
-  switch ( priority ) {
+  switch (priority) {
     case 'Urgent':
       return 'danger'
     case 'High':
@@ -176,21 +176,21 @@ const getPriorityTagType = priority => {
 
 const getPriorityName = priority => {
   const priorityMap = {
-    Urgent : t( 'workOrder.priority.urgent' ),
-    High : t( 'workOrder.priority.high' ),
-    Medium : t( 'workOrder.priority.medium' ),
-    Low : t( 'workOrder.priority.low' )
+    Urgent: t('workOrder.priority.urgent'),
+    High: t('workOrder.priority.high'),
+    Medium: t('workOrder.priority.medium'),
+    Low: t('workOrder.priority.low'),
   }
   return priorityMap[priority] || priority
 }
 
 const handleAction = command => {
-  emit( 'action', { action : command, workOrder : props.workOrder } )
+  emit('action', { action: command, workOrder: props.workOrder })
 }
 
-defineOptions( {
-  name : 'WorkOrderCard'
-} )
+defineOptions({
+  name: 'WorkOrderCard',
+})
 </script>
 
 <style scoped lang="scss">
@@ -394,5 +394,10 @@ defineOptions( {
   .el-image-viewer__img {
     border-radius: 0 !important;
   }
+}
+
+.rotated-icon {
+  display: inline-block;
+  transform: rotate(90deg);
 }
 </style>

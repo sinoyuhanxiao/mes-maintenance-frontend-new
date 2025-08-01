@@ -38,18 +38,15 @@
           <!-- Pagination Info -->
           <div class="pagination-info">
             <div class="info-text">
-              {{ $t('workOrder.pagination.showing', {
-                start: paginationInfo.start,
-                end: paginationInfo.end,
-                total: paginationInfo.total
-              }) }}
+              {{
+                $t('workOrder.pagination.showing', {
+                  start: paginationInfo.start,
+                  end: paginationInfo.end,
+                  total: paginationInfo.total,
+                })
+              }}
             </div>
-            <el-select
-              v-model="pageSize"
-              @change="handlePageSizeChange"
-              size="small"
-              style="width: 100px"
-            >
+            <el-select v-model="pageSize" @change="handlePageSizeChange" size="small" style="width: 100px">
               <el-option :label="'10'" :value="10" />
               <el-option :label="'20'" :value="20" />
               <el-option :label="'50'" :value="50" />
@@ -59,10 +56,7 @@
           <!-- Cards Container -->
           <div class="cards-container">
             <el-row :gutter="16">
-              <el-col
-                v-for="workOrder in paginatedWorkOrders"
-                :key="workOrder.id"
-              >
+              <el-col v-for="workOrder in paginatedWorkOrders" :key="workOrder.id">
                 <WorkOrderCard
                   :work-order="workOrder"
                   :is-selected="selectedWorkOrder?.id === workOrder.id"
@@ -91,9 +85,11 @@
       </div>
     </div>
 
-    <!-- Right Panel - Work Order Detail -->
+    <!-- Right Panel - Work Order Detail or Create -->
     <div class="right-panel">
+      <!-- Work Order Detail View -->
       <WorkOrderDetail
+        v-if="currentRightPanelView === 'detail'"
         :work-order="selectedWorkOrder"
         @edit="handleEdit"
         @share="handleShare"
@@ -103,6 +99,13 @@
         @add-costs="handleAddCosts"
         @view-procedure="handleViewProcedure"
         @add-comment="handleAddComment"
+      />
+
+      <!-- Work Order Create View -->
+      <WorkOrderCreateEnhanced
+        v-else-if="currentRightPanelView === 'create'"
+        @back-to-detail="showDetailView"
+        @work-order-created="handleWorkOrderCreated"
       />
     </div>
   </div>
@@ -114,95 +117,97 @@ import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import WorkOrderCard from './WorkOrderCard.vue'
 import WorkOrderDetail from './WorkOrderDetail.vue'
+import WorkOrderCreateEnhanced from './WorkOrderCreateEnhanced.vue'
 
 // Props
-const props = defineProps( {
-  workOrders : {
-    type : Array,
-    default : () => []
+const props = defineProps({
+  workOrders: {
+    type: Array,
+    default: () => [],
   },
-  loading : {
-    type : Boolean,
-    default : false
+  loading: {
+    type: Boolean,
+    default: false,
   },
-  filters : {
-    type : Object,
-    default : () => ( {} )
-  }
-} )
+  filters: {
+    type: Object,
+    default: () => ({}),
+  },
+})
 
 // Emits
-const emit = defineEmits( ['edit', 'delete', 'status-change', 'refresh'] )
+const emit = defineEmits(['edit', 'delete', 'status-change', 'refresh', 'work-order-created'])
 
 const { t } = useI18n()
 
 // State
-const selectedWorkOrder = ref( null )
-const activeTab = ref( 'todo' )
-const sortBy = ref( 'priority-desc' )
+const selectedWorkOrder = ref(null)
+const activeTab = ref('todo')
+const sortBy = ref('priority-desc')
+const currentRightPanelView = ref('detail') // 'detail' or 'create'
 
 // Pagination state
-const currentPage = ref( 1 )
-const pageSize = ref( 10 )
+const currentPage = ref(1)
+const pageSize = ref(10)
 
 // Computed
-const filteredWorkOrders = computed( () => {
+const filteredWorkOrders = computed(() => {
   let filtered = [...props.workOrders]
 
   // Apply external filters from UnifiedWorkOrderFilters
   const externalFilters = props.filters || {}
 
   // Filter by assigned to
-  if ( externalFilters.assignedTo ) {
-    filtered = filtered.filter( wo => wo.assigned_to === externalFilters.assignedTo )
+  if (externalFilters.assignedTo) {
+    filtered = filtered.filter(wo => wo.assigned_to === externalFilters.assignedTo)
   }
 
   // Filter by due date
-  if ( externalFilters.dueDate ) {
+  if (externalFilters.dueDate) {
     const now = new Date()
-    const today = new Date( now.getFullYear(), now.getMonth(), now.getDate() )
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
-    switch ( externalFilters.dueDate ) {
+    switch (externalFilters.dueDate) {
       case 'overdue':
-        filtered = filtered.filter( wo => wo.due_date && new Date( wo.due_date ) < now )
+        filtered = filtered.filter(wo => wo.due_date && new Date(wo.due_date) < now)
         break
       case 'today':
-        filtered = filtered.filter( wo => {
-          if ( !wo.due_date ) return false
-          const dueDate = new Date( wo.due_date )
-          return dueDate >= today && dueDate < new Date( today.getTime() + 24 * 60 * 60 * 1000 )
-        } )
+        filtered = filtered.filter(wo => {
+          if (!wo.due_date) return false
+          const dueDate = new Date(wo.due_date)
+          return dueDate >= today && dueDate < new Date(today.getTime() + 24 * 60 * 60 * 1000)
+        })
         break
       case 'thisWeek': {
-        const weekStart = new Date( today )
-        weekStart.setDate( today.getDate() - today.getDay() )
-        const weekEnd = new Date( weekStart )
-        weekEnd.setDate( weekStart.getDate() + 7 )
-        filtered = filtered.filter( wo => {
-          if ( !wo.due_date ) return false
-          const dueDate = new Date( wo.due_date )
+        const weekStart = new Date(today)
+        weekStart.setDate(today.getDate() - today.getDay())
+        const weekEnd = new Date(weekStart)
+        weekEnd.setDate(weekStart.getDate() + 7)
+        filtered = filtered.filter(wo => {
+          if (!wo.due_date) return false
+          const dueDate = new Date(wo.due_date)
           return dueDate >= weekStart && dueDate < weekEnd
-        } )
+        })
         break
       }
       case 'thisMonth': {
-        const monthStart = new Date( today.getFullYear(), today.getMonth(), 1 )
-        const monthEnd = new Date( today.getFullYear(), today.getMonth() + 1, 1 )
-        filtered = filtered.filter( wo => {
-          if ( !wo.due_date ) return false
-          const dueDate = new Date( wo.due_date )
+        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
+        const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 1)
+        filtered = filtered.filter(wo => {
+          if (!wo.due_date) return false
+          const dueDate = new Date(wo.due_date)
           return dueDate >= monthStart && dueDate < monthEnd
-        } )
+        })
         break
       }
       case 'custom':
-        if ( externalFilters.customDateRange && externalFilters.customDateRange.length === 2 ) {
+        if (externalFilters.customDateRange && externalFilters.customDateRange.length === 2) {
           const [startDate, endDate] = externalFilters.customDateRange
-          filtered = filtered.filter( wo => {
-            if ( !wo.due_date ) return false
-            const dueDate = new Date( wo.due_date )
+          filtered = filtered.filter(wo => {
+            if (!wo.due_date) return false
+            const dueDate = new Date(wo.due_date)
             return dueDate >= startDate && dueDate <= endDate
-          } )
+          })
         }
         break
       default:
@@ -211,84 +216,84 @@ const filteredWorkOrders = computed( () => {
   }
 
   // Filter by work type
-  if ( externalFilters.workType ) {
-    filtered = filtered.filter( wo => wo.work_type?.id === externalFilters.workType )
+  if (externalFilters.workType) {
+    filtered = filtered.filter(wo => wo.work_type?.id === externalFilters.workType)
   }
 
   // Filter by priority
-  if ( externalFilters.priority ) {
-    filtered = filtered.filter( wo => wo.priority?.id === externalFilters.priority )
+  if (externalFilters.priority) {
+    filtered = filtered.filter(wo => wo.priority?.id === externalFilters.priority)
   }
 
   // Filter by search text
-  if ( externalFilters.search ) {
+  if (externalFilters.search) {
     const searchTerm = externalFilters.search.toLowerCase()
     filtered = filtered.filter(
       wo =>
-        wo.name?.toLowerCase().includes( searchTerm ) ||
-        wo.description?.toLowerCase().includes( searchTerm ) ||
-        wo.code?.toLowerCase().includes( searchTerm )
+        wo.name?.toLowerCase().includes(searchTerm) ||
+        wo.description?.toLowerCase().includes(searchTerm) ||
+        wo.code?.toLowerCase().includes(searchTerm)
     )
   }
 
   // Filter by tab (todo/done)
-  if ( activeTab.value === 'todo' ) {
-    filtered = filtered.filter( wo => wo.state?.name !== 'Completed' && wo.state?.name !== 'Done' )
+  if (activeTab.value === 'todo') {
+    filtered = filtered.filter(wo => wo.state?.name !== 'Completed' && wo.state?.name !== 'Done')
   } else {
-    filtered = filtered.filter( wo => wo.state?.name === 'Completed' || wo.state?.name === 'Done' )
+    filtered = filtered.filter(wo => wo.state?.name === 'Completed' || wo.state?.name === 'Done')
   }
 
   // Apply sorting
-  filtered.sort( ( a, b ) => {
-    switch ( sortBy.value ) {
+  filtered.sort((a, b) => {
+    switch (sortBy.value) {
       case 'priority-desc':
-        return getPriorityValue( b.priority?.name ) - getPriorityValue( a.priority?.name )
+        return getPriorityValue(b.priority?.name) - getPriorityValue(a.priority?.name)
       case 'priority-asc':
-        return getPriorityValue( a.priority?.name ) - getPriorityValue( b.priority?.name )
+        return getPriorityValue(a.priority?.name) - getPriorityValue(b.priority?.name)
       case 'dueDate-asc':
-        return new Date( a.due_date || '9999-12-31' ) - new Date( b.due_date || '9999-12-31' )
+        return new Date(a.due_date || '9999-12-31') - new Date(b.due_date || '9999-12-31')
       case 'dueDate-desc':
-        return new Date( b.due_date || '1900-01-01' ) - new Date( a.due_date || '1900-01-01' )
+        return new Date(b.due_date || '1900-01-01') - new Date(a.due_date || '1900-01-01')
       case 'created-desc':
-        return new Date( b.created_at ) - new Date( a.created_at )
+        return new Date(b.created_at) - new Date(a.created_at)
       case 'created-asc':
-        return new Date( a.created_at ) - new Date( b.created_at )
+        return new Date(a.created_at) - new Date(b.created_at)
       default:
         return 0
     }
-  } )
+  })
 
   return filtered
-} )
+})
 
 // Pagination computed properties
-const totalPages = computed( () => Math.ceil( filteredWorkOrders.value.length / pageSize.value ) )
+const totalPages = computed(() => Math.ceil(filteredWorkOrders.value.length / pageSize.value))
 
-const paginatedWorkOrders = computed( () => {
-  const start = ( currentPage.value - 1 ) * pageSize.value
+const paginatedWorkOrders = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
   const end = start + pageSize.value
-  return filteredWorkOrders.value.slice( start, end )
-} )
+  return filteredWorkOrders.value.slice(start, end)
+})
 
-const paginationInfo = computed( () => {
+const paginationInfo = computed(() => {
   const total = filteredWorkOrders.value.length
-  const start = total === 0 ? 0 : ( currentPage.value - 1 ) * pageSize.value + 1
-  const end = Math.min( currentPage.value * pageSize.value, total )
+  const start = total === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1
+  const end = Math.min(currentPage.value * pageSize.value, total)
 
   return {
     start,
     end,
-    total
+    total,
   }
-} )
+})
 
 // Methods
 const getPriorityValue = priority => {
   const priorityMap = {
-    Urgent : 4,
-    High : 3,
-    Medium : 2,
-    Low : 1
+    Urgent: 4,
+    High: 3,
+    Medium: 2,
+    Low: 1,
   }
   return priorityMap[priority] || 0
 }
@@ -307,72 +312,72 @@ const handleSortChange = sortValue => {
   sortBy.value = sortValue
 }
 
-const handleCardAction = ( { action, workOrder } ) => {
-  switch ( action ) {
+const handleCardAction = ({ action, workOrder }) => {
+  switch (action) {
     case 'edit':
-      handleEdit( workOrder )
+      handleEdit(workOrder)
       break
     case 'view':
-      selectWorkOrder( workOrder )
+      selectWorkOrder(workOrder)
       break
     case 'delete':
-      handleDelete( workOrder )
+      handleDelete(workOrder)
       break
     default:
-      console.warn( `Unhandled action: ${action}`, workOrder )
+      console.warn(`Unhandled action: ${action}`, workOrder)
   }
 }
 
 const handleEdit = workOrder => {
-  emit( 'edit', workOrder )
+  emit('edit', workOrder)
 }
 
 const handleDelete = workOrder => {
-  emit( 'delete', workOrder )
+  emit('delete', workOrder)
 }
 
 const handleShare = workOrder => {
   // Implement share functionality
-  ElMessage.success( t( 'workOrder.messages.shareSuccess' ) )
+  ElMessage.success(t('workOrder.messages.shareSuccess'))
 }
 
-const handleStatusChange = ( { workOrder, status } ) => {
-  emit( 'status-change', { workOrder, status } )
+const handleStatusChange = ({ workOrder, status }) => {
+  emit('status-change', { workOrder, status })
 }
 
 const handleAddParts = () => {
   // Implement add parts functionality
-  ElMessage.info( t( 'workOrder.tracking.addParts' ) )
+  ElMessage.info(t('workOrder.tracking.addParts'))
 }
 
 const handleAddTime = () => {
   // Implement add time functionality
-  ElMessage.info( t( 'workOrder.tracking.addTime' ) )
+  ElMessage.info(t('workOrder.tracking.addTime'))
 }
 
 const handleAddCosts = () => {
   // Implement add costs functionality
-  ElMessage.info( t( 'workOrder.tracking.addCosts' ) )
+  ElMessage.info(t('workOrder.tracking.addCosts'))
 }
 
 const handleViewProcedure = () => {
   // Implement view procedure functionality
-  ElMessage.info( t( 'workOrder.tracking.viewProcedure' ) )
+  ElMessage.info(t('workOrder.tracking.viewProcedure'))
 }
 
-const handleAddComment = ( { workOrder, comment } ) => {
+const handleAddComment = ({ workOrder, comment }) => {
   // Implement add comment functionality
-  ElMessage.success( t( 'workOrder.comments.add' ) )
+  ElMessage.success(t('workOrder.comments.add'))
 }
 
 // Pagination methods
-const handlePageChange = ( page ) => {
+const handlePageChange = page => {
   currentPage.value = page
   // Clear selection when changing pages to avoid confusion
   selectedWorkOrder.value = null
 }
 
-const handlePageSizeChange = ( newPageSize ) => {
+const handlePageSizeChange = newPageSize => {
   pageSize.value = newPageSize
   currentPage.value = 1 // Reset to first page when changing page size
   selectedWorkOrder.value = null
@@ -383,36 +388,71 @@ watch(
   () => props.workOrders,
   newWorkOrders => {
     // Auto-select first work order if none selected
-    if ( newWorkOrders.length > 0 && !selectedWorkOrder.value ) {
+    if (newWorkOrders.length > 0 && !selectedWorkOrder.value) {
       selectedWorkOrder.value = paginatedWorkOrders.value[0]
     }
   },
-  { immediate : true }
+  { immediate: true }
 )
 
 // Watch for filter changes to reset pagination
-watch( () => props.filters, () => {
-  currentPage.value = 1
-  selectedWorkOrder.value = null
-}, { deep : true } )
+watch(
+  () => props.filters,
+  () => {
+    currentPage.value = 1
+    selectedWorkOrder.value = null
+  },
+  { deep: true }
+)
 
 // Reset pagination when tab or sort changes
-watch( [activeTab, sortBy], () => {
-  currentPage.value = 1
-  selectedWorkOrder.value = null
-}, { deep : true } )
+watch(
+  [activeTab, sortBy],
+  () => {
+    currentPage.value = 1
+    selectedWorkOrder.value = null
+  },
+  { deep: true }
+)
 
-// Lifecycle
-onMounted( () => {
-  // Auto-select first work order
-  if ( paginatedWorkOrders.value.length > 0 ) {
+// Methods for create functionality
+const showCreateForm = () => {
+  currentRightPanelView.value = 'create'
+  selectedWorkOrder.value = null
+}
+
+const showDetailView = () => {
+  currentRightPanelView.value = 'detail'
+  // Auto-select first work order if none selected
+  if (!selectedWorkOrder.value && paginatedWorkOrders.value.length > 0) {
     selectedWorkOrder.value = paginatedWorkOrders.value[0]
   }
-} )
+}
 
-defineOptions( {
-  name : 'TodoView'
-} )
+const handleWorkOrderCreated = newWorkOrder => {
+  // Emit to parent component
+  emit('work-order-created', newWorkOrder)
+  // Switch back to detail view
+  showDetailView()
+}
+
+// Expose methods for parent component
+defineExpose({
+  showCreateForm,
+  showDetailView,
+})
+
+// Lifecycle
+onMounted(() => {
+  // Auto-select first work order
+  if (paginatedWorkOrders.value.length > 0) {
+    selectedWorkOrder.value = paginatedWorkOrders.value[0]
+  }
+})
+
+defineOptions({
+  name: 'TodoView',
+})
 </script>
 
 <style scoped lang="scss">

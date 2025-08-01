@@ -13,20 +13,20 @@ import en from 'element-plus/es/locale/lang/en'
 import { useAppStore } from '@/store'
 // import { useI18n } from 'vue-i18n'
 
-export default defineComponent( {
-  name : 'App',
-  components : {
-    [ElConfigProvider.name] : ElConfigProvider
+export default defineComponent({
+  name: 'App',
+  components: {
+    [ElConfigProvider.name]: ElConfigProvider,
   },
   setup() {
     // const { t } = useI18n()
     const appStore = useAppStore()
-    const locale = computed( () => ( appStore.lang === 'zh' ? zh : en ) )
-    const size = computed( () => appStore.size )
+    const locale = computed(() => (appStore.lang === 'zh' ? zh : en))
+    const size = computed(() => appStore.size)
     return {
       locale,
-      size
+      size,
     }
-  }
-} )
+  },
+})
 </script>

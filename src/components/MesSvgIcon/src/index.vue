@@ -9,40 +9,40 @@
 import { isExternal as isExternalLink } from '@/utils/validate'
 import { computed } from 'vue'
 
-const props = defineProps( {
-  iconClass : {
-    type : String,
-    required : true
+const props = defineProps({
+  iconClass: {
+    type: String,
+    required: true,
   },
-  className : {
-    type : String,
-    default : ''
-  }
-} )
+  className: {
+    type: String,
+    default: '',
+  },
+})
 
-const isExternal = computed( () => {
-  return isExternalLink( props.iconClass )
-} )
-const iconName = computed( () => {
+const isExternal = computed(() => {
+  return isExternalLink(props.iconClass)
+})
+const iconName = computed(() => {
   return `#icon-${props.iconClass}`
-} )
-const svgClass = computed( () => {
-  if ( props.className ) {
+})
+const svgClass = computed(() => {
+  if (props.className) {
     return 'svg-icon ' + props.className
   } else {
     return 'svg-icon'
   }
-} )
-const styleExternalIcon = computed( () => {
+})
+const styleExternalIcon = computed(() => {
   return {
-    mask : `url(${props.iconClass}) no-repeat 50% 50%`,
-    '-webkit-mask' : `url(${props.iconClass}) no-repeat 50% 50%`
+    mask: `url(${props.iconClass}) no-repeat 50% 50%`,
+    '-webkit-mask': `url(${props.iconClass}) no-repeat 50% 50%`,
   }
-} )
+})
 
-defineOptions( {
-  name : 'MesSvgIcon'
-} )
+defineOptions({
+  name: 'MesSvgIcon',
+})
 </script>
 
 <style scoped>
