@@ -50,6 +50,7 @@
       <!-- To-Do View -->
       <div v-else-if="currentView === 'todo'" class="todo-view-container">
         <TodoView
+          ref="todoViewRef"
           :work-orders="list"
           :loading="listLoading"
           :filters="listQuery"
@@ -57,6 +58,7 @@
           @delete="handleDelete"
           @status-change="handleStatusChange"
           @refresh="fetchWorkOrders"
+          @work-order-created="handleWorkOrderCreated"
         />
       </div>
     </template>
@@ -115,6 +117,7 @@ const {
 // State
 const downloadLoading = ref( false )
 const currentView = ref( 'table' ) // 'table' or 'todo'
+const todoViewRef = ref( null )
 
 // Methods
 const handleView = row => {
@@ -122,7 +125,13 @@ const handleView = row => {
 }
 
 const handleCreate = () => {
-  router.push( { name : 'NewWorkOrder' } )
+  if ( currentView.value === 'todo' ) {
+    // For todo view, emit create event to TodoView
+    todoViewRef.value?.showCreateForm()
+  } else {
+    // For table view, navigate to separate page
+    router.push( { name : 'NewWorkOrder' } )
+  }
 }
 
 const handleUpdate = row => {
@@ -160,6 +169,14 @@ const handleRefresh = async() => {
 
 const handleDownload = () => {
   console.log( 'Download action triggered' )
+}
+
+const handleWorkOrderCreated = async newWorkOrder => {
+  // Add the new work order to the list
+  list.value.unshift( newWorkOrder )
+  showSuccess( t( 'workOrder.messages.createSuccess' ) )
+  // Refresh the data to ensure consistency
+  await fetchWorkOrders()
 }
 
 // Lifecycle

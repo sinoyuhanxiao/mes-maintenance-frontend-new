@@ -427,19 +427,19 @@ onMounted( () => {
   clearExistingFromNewLists()
 
   // Initialize with existing data if provided
-  if ( props.existingImageList.length > 0 || props.existingFileList.length > 0 ) {
-    console.log( 'Initialized with existing files:', {
-      images : props.existingImageList,
-      files : props.existingFileList
-    } )
+  if (props.existingImageList.length > 0 || props.existingFileList.length > 0) {
+    console.log('Initialized with existing files:', {
+      images: props.existingImageList,
+      files: props.existingFileList
+    })
   }
-} )
+})
 
 // Expose reset function for parent components
-defineExpose( {
+defineExpose({
   resetRemovedItems,
   clearExistingFromNewLists
-} )
+})
 </script>
 
 <style scoped>

@@ -80,7 +80,9 @@ export default {
       submit : '创建工单',
       uploadToServer : '上传到服务器',
       share : '分享',
-      refresh : '刷新'
+      refresh : '刷新',
+      backToDetail : '返回详情',
+      reset : '重置'
     },
 
     // Status values
@@ -89,7 +91,8 @@ export default {
       completed : '已完成',
       inProgress : '进行中',
       pending : '待处理',
-      overdue : '已逾期'
+      overdue : '已逾期',
+      cancelled : '已取消'
     },
 
     // Priority values
@@ -97,7 +100,8 @@ export default {
       urgent : '紧急',
       high : '高',
       medium : '中',
-      low : '低'
+      low : '低',
+      none : '无'
     },
 
     // Work types
@@ -114,7 +118,32 @@ export default {
       daily : '每日',
       weekly : '每周',
       monthlyByDate : '每月 (按日期)',
-      yearly : '每年'
+      yearly : '每年',
+      doesNotRepeat : '不重复',
+      every : '每',
+      weeksRepeat : '周重复',
+      monthsOn : '个月的第',
+      yearsOn : '年的',
+      repeat : '重复',
+      selectDate : '选择日期',
+      selectMonth : '选择月份',
+      dayOfMonth : '日',
+      month : '月',
+      startDateTime : '开始时间',
+      endDateTime : '结束时间',
+      selectStartTime : '选择开始时间',
+      selectEndTime : '选择结束时间'
+    },
+
+    // Days of week
+    days : {
+      monday : '周一',
+      tuesday : '周二',
+      wednesday : '周三',
+      thursday : '周四',
+      friday : '周五',
+      saturday : '周六',
+      sunday : '周日'
     },
 
     // Messages
@@ -129,12 +158,58 @@ export default {
       uploadFailed : '文件上传失败',
       noImagePlaceholder : '无图无真相',
       loadingData : '加载数据中...',
-      noData : '暂无数据'
+      noData : '暂无数据',
+      formReset : '表单已重置',
+      validationFailed : '请修正验证错误',
+      procedurePickerNotImplemented : '程序选择器将被实现'
+    },
+
+    // Create form specific
+    create : {
+      taskTitlePlaceholder : '需要做什么？',
+      addPictures : '添加或拖拽图片',
+      descriptionPlaceholder : '添加描述',
+      location : '位置',
+      locationPlaceholder : '开始输入…',
+      asset : '资产',
+      assetPlaceholder : '开始输入…',
+      procedure : '程序',
+      procedurePlaceholder : '创建或附加新表单、程序或检查清单',
+      addProcedure : '添加程序',
+      assignTo : '分配给',
+      assigneePlaceholder : '输入姓名、邮箱或电话号码',
+      estimatedTime : '预估时间',
+      hours : '小时',
+      minutes : '分钟',
+      dueDate : '截止日期',
+      dueDatePlaceholder : 'mm/dd/yyyy',
+      startDate : '开始日期',
+      startDatePlaceholder : 'mm/dd/yyyy',
+      recurrence : '重复',
+      recurrencePlaceholder : '不重复',
+      recurrenceSettings : '重复设置',
+      workType : '工作类型',
+      workTypePlaceholder : '选择工作类型',
+      priority : '优先级',
+      priorityPlaceholder : '请选择优先级',
+      imageUpload : '图片上传',
+      fileUpload : '文件上传',
+      clickToUpload : '点击上传',
+      filesAndFolders : '文件和文件夹',
+      dragFilesHere : '拖拽文件到此处或点击上传',
+      uploadHint : '支持多文件上传',
+      categories : '类别',
+      categoriesPlaceholder : '开始输入…',
+      vendors : '供应商',
+      vendorsPlaceholder : '开始输入…'
     },
 
     // Validation messages
     validation : {
       nameRequired : '请输入工单名称',
+      taskTitleRequired : '请输入任务标题',
+      locationRequired : '请选择位置',
+      assetRequired : '请选择资产',
       haltTypeRequired : '请选择是否停机',
       productionLineRequired : '请选择生产线',
       priorityRequired : '请选择优先级',
@@ -171,7 +246,19 @@ export default {
       activeFilters : '当前筛选',
       toggleVisibility : '切换显示',
       savePreset : '保存预设',
-      managePresets : '管理预设'
+      managePresets : '管理预设',
+      // Filter drawer
+      filterDrawerTitle : '筛选器设置',
+      filterDrawerSubtitle : '选择要显示的筛选器',
+      showFilter : '显示筛选器',
+      hideFilter : '隐藏筛选器',
+      filterCategories : '筛选器类别',
+      basicFilters : '基础筛选',
+      advancedFilters : '高级筛选',
+      status : '状态',
+      category : '类别',
+      equipment : '设备',
+      search : '搜索'
     },
 
     // Tabs
@@ -218,6 +305,108 @@ export default {
       title : '评论',
       placeholder : '添加评论...',
       add : '添加评论'
+    },
+
+    // Schedule Conditions
+    schedule : {
+      title : '计划条件',
+      subtitle : '自动化循环维护计划',
+      repeatType : '重复类型',
+      frequency : '频率',
+      continuedFrom : '延续自',
+      timeBased : '基于时间的循环',
+      weeklyPattern : '每周：周二、周五、周六',
+      nextOccurrence : '下次发生',
+      viewTimeline : '查看工单时间线'
+    },
+
+    // Timeline Modal
+    timeline : {
+      title : '工单时间线',
+      description : '此工单生命周期的完整时间历史记录',
+      totalEvents : '总事件数',
+      activeDays : '活跃天数',
+      export : '导出时间线',
+      timeRange : '时间范围',
+      to : '至',
+      startDate : '开始日期',
+      endDate : '结束日期',
+      apply : '应用',
+      avgTimeConsumed : '平均耗时',
+      duration : '持续时间',
+      assignees : '分配人员',
+      overdue : '逾期'
+    },
+
+    // Activity Panel
+    activity : {
+      title : '活动',
+      tabs : {
+        all : '全部',
+        comments : '评论',
+        history : '历史记录',
+        workLog : '工作日志'
+      },
+      composer : {
+        placeholder : '添加评论…',
+        proTip : '小贴士：按 M 键快速评论',
+        quickReplies : {
+          looksGood : '看起来不错！',
+          needHelp : '需要帮助？',
+          blocked : '这被阻塞了…',
+          clarify : '能澄清一下吗…？',
+          onTrack : '进展顺利'
+        }
+      },
+      actions : {
+        reply : '回复',
+        like : '点赞',
+        copyLink : '复制链接',
+        more : '更多'
+      },
+      history : {
+        statusChanged : '更改了 **状态**',
+        pmDateUpdated : '更新了 **下次预防性维护日期**',
+        systemScheduler : '系统（调度器）',
+        reason : '油品分析发现异常粘度 – 提前安排维护。'
+      },
+      workLog : {
+        tasksPerformed : '执行的任务',
+        partsUsed : '使用的零件',
+        duration : '持续时间',
+        startTime : '开始时间',
+        endTime : '结束时间'
+      }
+    },
+
+    // Location
+    location : {
+      title : '位置',
+      viewLocationTree : '查看位置树',
+      currentLocation : '当前位置',
+      building : '建筑',
+      floor : '楼层',
+      room : '房间',
+      area : '区域',
+      zone : '区域',
+      selectLocation : '选择位置',
+      locationDetails : '位置详情',
+      navigateToLocation : '导航到位置',
+      locationTreeTitle : '位置树 - {location}',
+      close : '关闭',
+      viewFullTree : '查看完整树'
+    },
+
+    // Vendors
+    vendors : {
+      title : '供应商',
+      vendorName : '供应商名称',
+      email : '邮箱',
+      address : '地址',
+      contactVendor : '联系供应商',
+      viewVendorDetails : '查看供应商详情',
+      noVendors : '未分配供应商',
+      vendorCount : '已分配 {count} 个供应商'
     },
 
     // Additional messages
@@ -292,5 +481,19 @@ export default {
     myAccount : '我的账号',
     logout : '登 出',
     home : '首 页'
+  },
+  settings : {
+    title : '维护系统配置',
+    systemConfig : '系统配置',
+    layoutMode : '布局模式',
+    enableTagsView : '开启 TagsView',
+    fixedHeader : '固定 Header',
+    sidebarLogo : '侧边栏 Logo',
+    switchOn : '开',
+    switchOff : '关',
+    layoutModes : {
+      leftSidebar : '左侧模式',
+      topMode : '顶部模式( todo : coming soon )'
+    }
   }
 }
