@@ -18,6 +18,7 @@
               <!-- Dynamic breadcrumb from API -->
               <el-breadcrumb-item v-for="location in locationPath" :key="location.id">
                 {{ location.name }}
+                {{ location.id }}
               </el-breadcrumb-item>
               <!-- Fallback if no location path -->
               <el-breadcrumb-item v-if="locationPath.length === 0"> No location path available </el-breadcrumb-item>
@@ -111,6 +112,7 @@ const fetchEquipmentData = async() => {
 
 // Fetch location path
 const fetchLocationPath = async locationId => {
+  console.log( 'inside fetchLocationPath: ', locationId )
   try {
     const response = await getLocationPathById( locationId )
     locationPath.value = response.data || []

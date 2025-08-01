@@ -87,12 +87,25 @@ export const getEquipmentById = equipmentId => {
  * @param {string} sortField - Field to sort by.
  * @param {string} direction - Sort direction ("ASC" or "DESC").
  * @param {object} search - Search filter
- * @returns {Promise} API response with the list of all spare parts.
+ * @returns {Promise} API response with the list of all Euipment.
  */
 export const getEquipmentNodes = ( page = 1, size = 10, sortField = 'name', direction = 'ASC', search = {} ) => {
   return http.request( {
     method : 'post',
     url : `/equipment/node-search?page=${page}&size=${size}&sortField=${sortField}&direction=${direction}`,
     data : search
+  } )
+}
+
+/**
+ * Fetch equipment node by equipment ID.
+ * @param {object} equipmentInfo - The equipment ID.
+ * @returns {Promise} API response with equipment details.
+ */
+export const createNewNode = equipmentInfo => {
+  return http.request( {
+    method : 'post',
+    url : `/equipment/equipment-node`,
+    data : equipmentInfo
   } )
 }

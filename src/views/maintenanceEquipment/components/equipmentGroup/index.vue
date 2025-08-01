@@ -44,13 +44,13 @@
 
     <!-- Add Equipment Group Dialog -->
     <el-dialog v-model="showAddDialog" title="Add New Tier 2" width="600px" :before-close="handleCloseDialog">
-      <AddEquipmentGroup @close="closeAddDialog" @success="handleAddSuccess" />
+      <AddEquipmentGroup @close="closeAddDialog" @success="handleAddSuccess" :parentId="parentId"/>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { MoreFilled } from '@element-plus/icons-vue'
 import DetailsTab from './Details.vue'
 import SubItemsTab from './SubItems.vue'
@@ -68,6 +68,20 @@ const props = defineProps( {
     type : Array,
     default : () => []
   }
+} )
+
+const parentId = computed( () => {
+  // Filter out the first array item and get valid breadcrumb items
+  const validBreadcrumbItems = props.breadcrumb.filter( ( item, index ) => {
+    return index > 0 && item && typeof item === 'object' && 'id' in item
+  } )
+
+  if ( validBreadcrumbItems.length >= 2 ) {
+    // Get second-to-last item (parent of current)
+    return validBreadcrumbItems[validBreadcrumbItems.length - 2].id
+  }
+
+  return null
 } )
 
 console.log( props.node.id )
@@ -91,10 +105,7 @@ const handleCloseDialog = done => {
 }
 
 const handleAddSuccess = newEquipment => {
-  // Handle successful addition (e.g., refresh data, show message)
-  console.log( 'New equipment added:', newEquipment )
   closeAddDialog()
-  // You might want to emit an event to parent component or refresh data here
 }
 </script>
 

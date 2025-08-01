@@ -25,6 +25,10 @@ export const WHITE_CODE_LIST = [
     msg : ''
   },
   {
+    status : 201,
+    msg : 'Success'
+  },
+  {
     status : 5006,
     msg : '验证码错误或已过期'
   }
