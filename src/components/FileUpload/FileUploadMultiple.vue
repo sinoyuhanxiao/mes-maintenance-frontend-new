@@ -1,6 +1,7 @@
 <template>
   <div class="upload-editor">
-    <el-form-item label="Image Upload" label-position="top">
+    <!-- Image Upload Field -->
+    <el-form-item v-if="showImages" label="Image Upload" label-position="top">
       <el-upload
         v-loading="uploading"
         class="upload-demo"
@@ -11,9 +12,14 @@
         :on-remove="handleImageRemove"
         :file-list="imageList"
         :on-change="handleImageChange"
+        :before-upload="beforeImageUpload"
         accept="image/*"
+        :disabled="isImageLimitReached"
       >
-        <el-icon><Plus /></el-icon>
+        <el-icon v-if="!isImageLimitReached"><Plus /></el-icon>
+        <div v-else class="upload-limit-text">
+          Limit reached ({{ imageList.length }}/{{ maxImages }})
+        </div>
 
         <template #file="{ file }">
           <div>
@@ -33,15 +39,26 @@
         </template>
       </el-upload>
 
-      <el-dialog fullscreen v-model="dialogVisible" append-to-body>
+      <!-- Image count display -->
+      <div v-if="maxImages > 0" class="upload-count">
+        Images: {{ imageList.length }}/{{ maxImages }}
+      </div>
+
+      <el-dialog
+        v-model="dialogVisible"
+        :width="'80%'"
+        :top="'5vh'"
+        append-to-body
+        destroy-on-close
+      >
         <div class="image-wrapper">
-          <img :src="dialogImageUrl" alt="Preview Image" />
+          <img :src="dialogImageUrl" alt="Preview Image" class="preview-image" />
         </div>
       </el-dialog>
     </el-form-item>
 
     <!-- File Upload Field -->
-    <el-form-item label="File Upload" label-position="top">
+    <el-form-item v-if="showFiles" label="File Upload" label-position="top">
       <el-upload
         class="upload-demo"
         action="#"
@@ -50,17 +67,44 @@
         :on-remove="handleFileRemove"
         :file-list="fileList"
         :on-change="handleFileChange"
+        :before-upload="beforeFileUpload"
         accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar,.csv,.json,.xml,.ppt,.pptx"
+        :disabled="isFileLimitReached"
       >
-        <el-button size="small" type="success">Click to Upload</el-button>
+        <el-button size="small" type="success" :disabled="isFileLimitReached">
+          {{ isFileLimitReached ? `Limit Reached (${fileList.length}/${maxFiles})` : 'Click to Upload' }}
+        </el-button>
       </el-upload>
+
+      <!-- File count display -->
+      <div v-if="maxFiles > 0" class="upload-count">
+        Files: {{ fileList.length }}/{{ maxFiles }}
+      </div>
     </el-form-item>
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import { Plus, ZoomIn, Download, Delete } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+
+// Props
+const props = defineProps( {
+  uploadType : {
+    type : String,
+    default : 'both', // 'images', 'files', 'both'
+    validator : ( value ) => ['images', 'files', 'both'].includes( value )
+  },
+  maxImages : {
+    type : Number,
+    default : 0 // 0 means no limit
+  },
+  maxFiles : {
+    type : Number,
+    default : 0 // 0 means no limit
+  }
+} )
 
 const imageList = ref( [] )
 const dialogVisible = ref( false )
@@ -70,7 +114,36 @@ const fileList = ref( [] )
 
 const emit = defineEmits( ['update:imageList', 'update:filesList'] )
 
+// Computed properties
+const showImages = computed( () => props.uploadType === 'both' || props.uploadType === 'images' )
+const showFiles = computed( () => props.uploadType === 'both' || props.uploadType === 'files' )
+const isImageLimitReached = computed( () => props.maxImages > 0 && imageList.value.length >= props.maxImages )
+const isFileLimitReached = computed( () => props.maxFiles > 0 && fileList.value.length >= props.maxFiles )
+
+// Before upload validators
+const beforeImageUpload = ( file ) => {
+  if ( props.maxImages > 0 && imageList.value.length >= props.maxImages ) {
+    ElMessage.warning( `Maximum ${props.maxImages} images allowed` )
+    return false
+  }
+  return true
+}
+
+const beforeFileUpload = ( file ) => {
+  if ( props.maxFiles > 0 && fileList.value.length >= props.maxFiles ) {
+    ElMessage.warning( `Maximum ${props.maxFiles} files allowed` )
+    return false
+  }
+  return true
+}
+
 const handleFileChange = ( file, newFileList ) => {
+  // Check file limit
+  if ( props.maxFiles > 0 && newFileList.length > props.maxFiles ) {
+    ElMessage.warning( `Maximum ${props.maxFiles} files allowed` )
+    newFileList = newFileList.slice( 0, props.maxFiles )
+  }
+
   const readerPromises = newFileList.map( uploadedFile => {
     return new Promise( resolve => {
       if ( !uploadedFile.uid ) {
@@ -118,6 +191,12 @@ const handleImageRemove = file => {
 }
 
 const handleImageChange = ( file, uploadFileList ) => {
+  // Check image limit
+  if ( props.maxImages > 0 && uploadFileList.length > props.maxImages ) {
+    ElMessage.warning( `Maximum ${props.maxImages} images allowed` )
+    uploadFileList = uploadFileList.slice( 0, props.maxImages )
+  }
+
   const readerPromises = uploadFileList.map( uploadedFile => {
     return new Promise( resolve => {
       if ( !uploadedFile.uid ) {
@@ -177,6 +256,8 @@ watch(
 .upload-editor {
   margin-top: 20px;
   width: 700px;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .upload-demo {
@@ -187,6 +268,49 @@ watch(
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100%;
+  height: 70vh;
+  overflow: hidden;
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.upload-count {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #909399;
+  text-align: right;
+}
+
+.upload-limit-text {
+  font-size: 12px;
+  color: #909399;
+  text-align: center;
+  padding: 10px;
+}
+
+:deep(.el-upload--picture-card.is-disabled) {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+:deep(.el-upload--picture-card.is-disabled:hover) {
+  border-color: #d9d9d9;
+}
+
+:deep(.el-upload-list--picture-card) {
+  overflow: visible;
+}
+
+:deep(.el-upload-list__item) {
+  overflow: hidden;
+  border-radius: 6px;
+}
+
+:deep(.el-upload-list__item:hover .el-upload-list__item-actions) {
+  opacity: 1;
 }
 </style>

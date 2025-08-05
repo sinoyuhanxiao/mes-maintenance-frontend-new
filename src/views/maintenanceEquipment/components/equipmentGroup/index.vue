@@ -44,7 +44,7 @@
 
     <!-- Add Equipment Group Dialog -->
     <el-dialog v-model="showAddDialog" title="Add New Tier 2" width="600px" :before-close="handleCloseDialog">
-      <AddEquipmentGroup @close="closeAddDialog" @success="handleAddSuccess" :parentId="parentId"/>
+      <AddEquipmentGroup @close="closeAddDialog" @success="handleAddSuccess" :parentId="parentId" />
     </el-dialog>
   </div>
 </template>

@@ -15,12 +15,10 @@
         <el-descriptions :column="1" direction="vertical">
           <el-descriptions-item label="Location Path">
             <el-breadcrumb :separator-icon="ArrowRight">
-              <!-- Dynamic breadcrumb from API -->
               <el-breadcrumb-item v-for="location in locationPath" :key="location.id">
                 {{ location.name }}
                 {{ location.id }}
               </el-breadcrumb-item>
-              <!-- Fallback if no location path -->
               <el-breadcrumb-item v-if="locationPath.length === 0"> No location path available </el-breadcrumb-item>
             </el-breadcrumb>
           </el-descriptions-item>
@@ -95,7 +93,6 @@ const fetchEquipmentData = async() => {
 
     console.log( 'Equipment data:', equipmentData.value )
 
-    // Use location_id to fetch location path
     if ( equipmentData.value.location_id ) {
       console.log( 'Fetching location path for location_id:', equipmentData.value.location_id )
       await fetchLocationPath( equipmentData.value.location_id )
@@ -119,7 +116,6 @@ const fetchLocationPath = async locationId => {
     console.log( 'Location path received:', locationPath.value )
   } catch ( err ) {
     console.error( 'Error fetching location path:', err )
-    // Don't set main error, just log since location is optional
     locationPath.value = []
   }
 }

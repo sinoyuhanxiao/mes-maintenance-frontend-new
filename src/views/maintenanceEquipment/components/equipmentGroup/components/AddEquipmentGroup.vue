@@ -8,8 +8,8 @@
               label="Equipment Group Name"
               prop="name"
               :rules="[
-                { required: true, message: 'Equipment Group name is required'},
-                { type: 'string', message: 'Equipment Group name must be a string'}
+                { required: true, message: 'Equipment Group name is required' },
+                { type: 'string', message: 'Equipment Group name must be a string' },
               ]"
             >
               <el-input v-model="formData.name" />
@@ -19,9 +19,7 @@
             <el-form-item
               label="Equipment Group Code"
               prop="code"
-              :rules="[
-                { required: true, message: 'Equipment Group code is required'},
-              ]"
+              :rules="[{ required: true, message: 'Equipment Group code is required' }]"
             >
               <el-input v-model="formData.code" />
             </el-form-item>
@@ -33,9 +31,7 @@
         <el-form-item
           label="Location"
           prop="selectedLocationId"
-          :rules="[
-            { required: true, message: 'Location is required'},
-          ]"
+          :rules="[{ required: true, message: 'Location is required' }]"
         >
           <div class="tree-container">
             <el-input
@@ -74,9 +70,7 @@
             <el-form-item
               label="Production Line"
               prop="equipmentId"
-              :rules="[
-                { required: true, message: 'Production Line name is required'},
-              ]"
+              :rules="[{ required: true, message: 'Production Line name is required' }]"
             >
               <el-select
                 v-model="formData.equipmentId"
@@ -95,8 +89,8 @@
               label="Sequence Order"
               prop="sequenceOrder"
               :rules="[
-                { required: true, message: 'Sequence Order is required'},
-                { type: 'number', message: 'Sequence Order must be a number', transform: (value) => Number(value) }
+                { required: true, message: 'Sequence Order is required' },
+                { type: 'number', message: 'Sequence Order must be a number', transform: value => Number(value) },
               ]"
             >
               <el-input-number v-model="formData.sequenceOrder" :min="1" :max="maxSequenceOrder" style="width: 100%" />
@@ -104,8 +98,16 @@
           </el-col>
         </el-row>
       </el-form>
+      <el-divider />
+      <el-divider />
       <div class="file-upload">
-        <ImageUploadMultiple @update:imageList="handleImageListUpdate" @update:filesList="handleFilesListUpdate" />
+        <ImageUploadMultiple
+          @update:imageList="handleImageListUpdate"
+          @update:filesList="handleFilesListUpdate"
+          :uploadType="'both'"
+          :maxImages="0"
+          :maxFiles="0"
+        />
       </div>
       <div class="dialog-footer">
         <el-button @click="handleCancel">Cancel</el-button>
@@ -152,12 +154,13 @@ const formData = reactive( {
   name : '',
   code : '',
   description : '',
-  parent_id : props.parentId,
+  parentId : props.parentId,
   selectedLocationId : null,
   equipmentId : null,
   sequenceOrder : 1,
-  image_list : [],
-  files_list : []
+  imageList : [],
+  explodedViewDrawing : [],
+  filesList : []
 } )
 
 const treeProps = {
@@ -167,12 +170,12 @@ const treeProps = {
 
 const handleImageListUpdate = images => {
   uploadedImages.value = images
-  formData.image_list = images
+  formData.imageList = images
 }
 
 const handleFilesListUpdate = files => {
   uploadedFiles.value = files
-  formData.files_list = files
+  formData.filesList = files
 }
 
 const uploadFilesToServer = async() => {
@@ -180,16 +183,16 @@ const uploadFilesToServer = async() => {
     let uploadedImages = []
     let uploadedFiles = []
 
-    if ( formData.image_list.length > 0 ) {
-      const imageRes = await uploadMultipleToMinio( formData.image_list )
+    if ( formData.imageList.length > 0 ) {
+      const imageRes = await uploadMultipleToMinio( formData.imageList )
       uploadedImages = imageRes.data.uploadedFiles || []
-      formData.image_list = uploadedImages.map( file => file.url )
+      formData.imageList = uploadedImages.map( file => file.url )
     }
 
-    if ( formData.files_list.length > 0 ) {
-      const fileRes = await uploadMultipleToMinio( formData.files_list )
+    if ( formData.filesList.length > 0 ) {
+      const fileRes = await uploadMultipleToMinio( formData.filesList )
       uploadedFiles = fileRes.data.uploadedFiles || []
-      formData.files_list = uploadedFiles.map( file => file.url )
+      formData.filesList = uploadedFiles.map( file => file.url )
     }
 
     return { uploadedImages, uploadedFiles }
@@ -207,7 +210,7 @@ const handleConfirm = async() => {
   submitLoading.value = true
 
   try {
-    if ( formData.image_list.length > 0 || formData.files_list.length > 0 ) {
+    if ( formData.imageList.length > 0 || formData.filesList.length > 0 ) {
       await uploadFilesToServer()
     }
 
@@ -216,11 +219,12 @@ const handleConfirm = async() => {
       code : formData.code,
       description : formData.description,
       node_type_id : 4,
-      parent_id : formData.parent_id,
+      parent_id : formData.parentId,
       location_id : formData.selectedLocationId,
       sequence_order : Number( formData.sequenceOrder ),
-      image_list : formData.image_list,
-      files_list : formData.files_list
+      image_list : formData.imageList,
+      exploded_view_drawing : formData.explodedViewDrawing,
+      files_list : formData.filesList
     }
 
     const response = await createNewNode( submissionData )
@@ -245,12 +249,12 @@ const resetForm = () => {
     name : '',
     code : '',
     description : '',
-    parent_id : props.parentId,
+    parentId : props.parentId,
     selectedLocationId : null,
     equipmentId : null,
     sequenceOrder : 1,
-    image_list : [],
-    files_list : []
+    imageList : [],
+    filesList : []
   } )
 
   selectedNodeId.value = null
@@ -283,7 +287,7 @@ const fetchProductionLines = async() => {
     // Fetch equipment groups to calculate sequence order
     const equipmentGroupsResponse = await getEquipmentNodes( 1, 100, 'sequenceOrder', 'ASC', {
       node_type_ids : [4],
-      parent_ids : [props.parentId]
+      parentIds : [props.parentId]
     } )
 
     console.log( '=== EQUIPMENT GROUPS API RESPONSE ===' )
@@ -296,7 +300,10 @@ const fetchProductionLines = async() => {
       .map( item => item.sequence_order )
       .filter( order => order !== null && order !== undefined && !isNaN( order ) )
 
-    console.log( 'Raw sequence orders from equipment groups:', equipmentGroupsContent.map( item => item.sequence_order ) )
+    console.log(
+      'Raw sequence orders from equipment groups:',
+      equipmentGroupsContent.map( item => item.sequence_order )
+    )
     console.log( 'Filtered valid sequence orders:', sequenceOrdersArray )
 
     sequenceOrders.value = sequenceOrdersArray
