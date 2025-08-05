@@ -1,7 +1,7 @@
 <template>
   <div class="upload-editor">
     <!-- Image Upload Field -->
-    <el-form-item v-if="showImages" label="Image Upload" label-position="top">
+    <el-form-item v-if="showImages" :label="imageLabel" label-position="top">
       <el-upload
         v-loading="uploading"
         class="upload-demo"
@@ -17,9 +17,7 @@
         :disabled="isImageLimitReached"
       >
         <el-icon v-if="!isImageLimitReached"><Plus /></el-icon>
-        <div v-else class="upload-limit-text">
-          Limit reached ({{ imageList.length }}/{{ maxImages }})
-        </div>
+        <div v-else class="upload-limit-text">Limit reached ({{ imageList.length }}/{{ maxImages }})</div>
 
         <template #file="{ file }">
           <div>
@@ -40,17 +38,9 @@
       </el-upload>
 
       <!-- Image count display -->
-      <div v-if="maxImages > 0" class="upload-count">
-        Images: {{ imageList.length }}/{{ maxImages }}
-      </div>
+      <div v-if="maxImages > 0" class="upload-count">Images: {{ imageList.length }}/{{ maxImages }}</div>
 
-      <el-dialog
-        v-model="dialogVisible"
-        :width="'80%'"
-        :top="'5vh'"
-        append-to-body
-        destroy-on-close
-      >
+      <el-dialog v-model="dialogVisible" :width="'80%'" :top="'5vh'" append-to-body destroy-on-close>
         <div class="image-wrapper">
           <img :src="dialogImageUrl" alt="Preview Image" class="preview-image" />
         </div>
@@ -58,7 +48,7 @@
     </el-form-item>
 
     <!-- File Upload Field -->
-    <el-form-item v-if="showFiles" label="File Upload" label-position="top">
+    <el-form-item v-if="showFiles" :label="fileLabel" label-position="top">
       <el-upload
         class="upload-demo"
         action="#"
@@ -77,9 +67,7 @@
       </el-upload>
 
       <!-- File count display -->
-      <div v-if="maxFiles > 0" class="upload-count">
-        Files: {{ fileList.length }}/{{ maxFiles }}
-      </div>
+      <div v-if="maxFiles > 0" class="upload-count">Files: {{ fileList.length }}/{{ maxFiles }}</div>
     </el-form-item>
   </div>
 </template>
@@ -91,10 +79,18 @@ import { ElMessage } from 'element-plus'
 
 // Props
 const props = defineProps( {
+  imageLabel : {
+    type : String,
+    default : 'Upload Images'
+  },
+  fileLabel : {
+    type : String,
+    default : 'Upload Files'
+  },
   uploadType : {
     type : String,
     default : 'both', // 'images', 'files', 'both'
-    validator : ( value ) => ['images', 'files', 'both'].includes( value )
+    validator : value => ['images', 'files', 'both'].includes( value )
   },
   maxImages : {
     type : Number,
@@ -121,7 +117,7 @@ const isImageLimitReached = computed( () => props.maxImages > 0 && imageList.val
 const isFileLimitReached = computed( () => props.maxFiles > 0 && fileList.value.length >= props.maxFiles )
 
 // Before upload validators
-const beforeImageUpload = ( file ) => {
+const beforeImageUpload = file => {
   if ( props.maxImages > 0 && imageList.value.length >= props.maxImages ) {
     ElMessage.warning( `Maximum ${props.maxImages} images allowed` )
     return false
@@ -129,7 +125,7 @@ const beforeImageUpload = ( file ) => {
   return true
 }
 
-const beforeFileUpload = ( file ) => {
+const beforeFileUpload = file => {
   if ( props.maxFiles > 0 && fileList.value.length >= props.maxFiles ) {
     ElMessage.warning( `Maximum ${props.maxFiles} files allowed` )
     return false

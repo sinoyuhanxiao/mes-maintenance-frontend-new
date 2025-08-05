@@ -99,14 +99,22 @@
         </el-row>
       </el-form>
       <el-divider />
+      <div class="file-upload">
+        <FileUploadMultiple
+          @update:imageList="handleExplosionViewUpdate"
+          image-label="Upload Exploded View"
+          upload-type="images"
+          :max-images="1"
+        />
+      </div>
       <el-divider />
       <div class="file-upload">
-        <ImageUploadMultiple
+        <FileUploadMultiple
           @update:imageList="handleImageListUpdate"
           @update:filesList="handleFilesListUpdate"
-          :uploadType="'both'"
-          :maxImages="0"
-          :maxFiles="0"
+          upload-type="both"
+          :max-images="5"
+          :max-files="5"
         />
       </div>
       <div class="dialog-footer">
@@ -124,7 +132,7 @@ import { ElMessage } from 'element-plus'
 import { getLocationTree } from '@/api/location.js'
 import { getEquipmentNodes, createNewNode } from '@/api/equipment.js'
 import { uploadMultipleToMinio } from '@/api/minio.js'
-import ImageUploadMultiple from '@/components/FileUpload/FileUploadMultiple.vue'
+import FileUploadMultiple from '@/components/FileUpload/FileUploadMultiple.vue'
 
 const formRef = ref( null )
 const labelPosition = ref( 'top' )
@@ -140,6 +148,7 @@ const productionLineLoading = ref( false )
 const sequenceOrders = ref( [] )
 const uploadedImages = ref( [] )
 const uploadedFiles = ref( [] )
+const uploadedExplosionView = ref( [] )
 
 const props = defineProps( {
   parentId : {
@@ -173,6 +182,11 @@ const handleImageListUpdate = images => {
   formData.imageList = images
 }
 
+const handleExplosionViewUpdate = images => {
+  uploadedExplosionView.value = images
+  formData.explodedViewDrawing = images
+}
+
 const handleFilesListUpdate = files => {
   uploadedFiles.value = files
   formData.filesList = files
@@ -181,12 +195,19 @@ const handleFilesListUpdate = files => {
 const uploadFilesToServer = async() => {
   try {
     let uploadedImages = []
+    let uploadedExplosionView = []
     let uploadedFiles = []
 
     if ( formData.imageList.length > 0 ) {
       const imageRes = await uploadMultipleToMinio( formData.imageList )
       uploadedImages = imageRes.data.uploadedFiles || []
       formData.imageList = uploadedImages.map( file => file.url )
+    }
+
+    if ( formData.explodedViewDrawing.length > 0 ) {
+      const explosionRes = await uploadMultipleToMinio( formData.explodedViewDrawing )
+      uploadedExplosionView = explosionRes.data.uploadedFiles || []
+      formData.explodedViewDrawing = uploadedExplosionView.map( file => file.url )
     }
 
     if ( formData.filesList.length > 0 ) {
@@ -224,7 +245,7 @@ const handleConfirm = async() => {
       sequence_order : Number( formData.sequenceOrder ),
       image_list : formData.imageList,
       exploded_view_drawing : formData.explodedViewDrawing,
-      files_list : formData.filesList
+      file_list : formData.filesList
     }
 
     const response = await createNewNode( submissionData )
@@ -254,11 +275,13 @@ const resetForm = () => {
     equipmentId : null,
     sequenceOrder : 1,
     imageList : [],
+    explodedViewDrawing : [],
     filesList : []
   } )
 
   selectedNodeId.value = null
   uploadedImages.value = []
+  uploadedExplosionView.value = []
   uploadedFiles.value = []
   fetchProductionLines()
 }
