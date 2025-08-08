@@ -5,10 +5,10 @@ import http from '@/utils/request'
  * @returns {Promise} API response with production lines.
  */
 export const getAllProductionLines = () => {
-  return http.request({
-    method: 'get',
-    url: '/equipment/production-lines',
-  })
+  return http.request( {
+    method : 'get',
+    url : '/equipment/production-lines'
+  } )
 }
 
 /**
@@ -17,18 +17,18 @@ export const getAllProductionLines = () => {
  * @returns {Promise} API response with equipment groups.
  */
 export const getEquipmentGroups = productionLineId => {
-  return http.request({
-    method: 'post',
-    url: '/equipment/equipment-groups',
-    data: {
-      production_line_ids: [productionLineId], // 需要数组格式
+  return http.request( {
+    method : 'post',
+    url : '/equipment/equipment-groups',
+    data : {
+      production_line_ids : [productionLineId] // 需要数组格式
       // equipment_group_ids : [0],
       // equipment_ids : [0],
       // component_ids : [0],
       // location_ids : [0],
       // vendor_ids : [0]
-    },
-  })
+    }
+  } )
 }
 
 /**
@@ -37,11 +37,11 @@ export const getEquipmentGroups = productionLineId => {
  * @returns {Promise} API response with equipments.
  */
 export const getEquipments = equipmentGroupId => {
-  return http.request({
-    method: 'get',
-    url: '/equipment/equipment',
-    data: { equipmentGroupId },
-  })
+  return http.request( {
+    method : 'get',
+    url : '/equipment/equipment',
+    data : { equipmentGroupId }
+  } )
 }
 
 /**
@@ -50,9 +50,9 @@ export const getEquipments = equipmentGroupId => {
  * @returns {Promise} API response with equipment components.
  */
 export const getEquipmentComponents = equipmentId => {
-  return http.request({
-    method: 'get',
-    url: '/equipment/equipment-component',
-    data: { equipmentId },
-  })
+  return http.request( {
+    method : 'get',
+    url : '/equipment/equipment-component',
+    data : { equipmentId }
+  } )
 }

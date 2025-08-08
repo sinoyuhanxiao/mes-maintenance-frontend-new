@@ -86,67 +86,67 @@ const { t } = useI18n()
 // } )
 
 // Emits
-const emit = defineEmits(['add-comment'])
+const emit = defineEmits( ['add-comment'] )
 
 // State
-const activeTab = ref('comments')
-const newComment = ref('')
+const activeTab = ref( 'comments' )
+const newComment = ref( '' )
 
 // Mock data
-const mockComments = ref([
+const mockComments = ref( [
   {
-    id: 'cmt-001',
-    author: {
-      name: 'Erik Yu',
-      avatar: { text: 'EY', background: '#34C759' },
+    id : 'cmt-001',
+    author : {
+      name : 'Erik Yu',
+      avatar : { text : 'EY', background : '#34C759' }
     },
-    meta: { timestamp: '2025-04-23T10:31:00-07:00' },
-    body: { content: 'Fixed conveyor alignment issue; see new photo 📸' },
+    meta : { timestamp : '2025-04-23T10:31:00-07:00' },
+    body : { content : 'Fixed conveyor alignment issue; see new photos.' }
   },
   {
-    id: 'cmt-002',
-    author: {
-      name: 'Yao Li',
-      avatar: { text: 'YL', background: '#0EA5E9' },
+    id : 'cmt-002',
+    author : {
+      name : 'Yao Li',
+      avatar : { text : 'YL', background : '#0EA5E9' }
     },
-    meta: { timestamp: '2025-04-22T14:15:00-07:00' },
-    body: { content: 'Maintenance completed successfully. All systems operational.' },
-  },
-])
+    meta : { timestamp : '2025-04-22T14:15:00-07:00' },
+    body : { content : 'Maintenance completed successfully. All systems operational.' }
+  }
+] )
 
-const mockHistoryEvents = ref([
+const mockHistoryEvents = ref( [
   {
-    id: 'hst-101',
-    author: {
-      name: 'Eric Yellow',
-      avatar: { text: 'EY', background: '#df9d39' },
+    id : 'hst-101',
+    author : {
+      name : 'Eric Yellow',
+      avatar : { text : 'EY', background : '#df9d39' }
     },
-    title: t('workOrder.activity.history.statusChanged'),
-    meta: { timestamp: '2025-04-23T13:27:00-07:00' },
-    diff: [
+    title : t( 'workOrder.activity.history.statusChanged' ),
+    meta : { timestamp : '2025-04-23T13:27:00-07:00' },
+    diff : [
       {
-        field: 'Status',
-        from: { label: 'TO DO' },
-        to: { label: 'DONE' },
-      },
-    ],
+        field : 'Status',
+        from : { label : 'TO DO' },
+        to : { label : 'DONE' }
+      }
+    ]
   },
   {
-    id: 'hst-102',
-    author: {
-      name: 'System',
-      avatar: { text: 'SYS', background: '#A855F7' },
+    id : 'hst-102',
+    author : {
+      name : 'John Li',
+      avatar : { text : 'JL', background : '#A855F7' }
     },
-    title: 'updated the Priority',
-    meta: { timestamp: '2025-04-22T06:00:00-07:00' },
-    diff: [{ field: 'Priority', from: 'Medium', to: 'High' }],
-  },
-])
+    title : 'updated the Priority',
+    meta : { timestamp : '2025-04-22T06:00:00-07:00' },
+    diff : [{ field : 'Priority', from : 'Medium', to : 'High' }]
+  }
+] )
 
 // Methods
 const submitComment = () => {
-  if (newComment.value.trim()) {
-    emit('add-comment', { comment: newComment.value })
+  if ( newComment.value.trim() ) {
+    emit( 'add-comment', { comment : newComment.value } )
     newComment.value = ''
   }
 }
@@ -156,7 +156,7 @@ const submitComment = () => {
 // }
 
 const formatTimestamp = timestamp => {
-  return new Date(timestamp).toLocaleString()
+  return new Date( timestamp ).toLocaleString()
 }
 </script>
 
@@ -164,6 +164,7 @@ const formatTimestamp = timestamp => {
 .activity-panel {
   background: #ffffff;
   border-radius: 6px;
+  height: 600px;
 }
 
 .activity-tabs {
@@ -217,7 +218,6 @@ const formatTimestamp = timestamp => {
 .comment-list {
   display: flex;
   flex-direction: column;
-  gap: 20px;
 }
 
 .comment-card {

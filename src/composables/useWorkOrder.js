@@ -33,10 +33,24 @@ export function useWorkOrder() {
   const isEmpty = computed( () => !loading.value && !hasData.value )
 
   // Methods
-  const fetchWorkOrders = async() => {
+  const fetchWorkOrders = async( additionalFilters = {} ) => {
     loading.value = true
     try {
-      const response = await getAllWorkOrders( listQuery.page, listQuery.limit, 'createdAt', 'DESC' )
+      // Prepare filters for API call
+      const filters = {
+        ...additionalFilters
+      }
+
+      // Add filters from listQuery if they exist
+      if ( listQuery.assignedTo ) filters.assignedTo = listQuery.assignedTo
+      if ( listQuery.priority ) filters.priority = listQuery.priority
+      if ( listQuery.workType ) filters.workType = listQuery.workType
+      if ( listQuery.status ) filters.status = listQuery.status
+      if ( listQuery.search ) filters.search = listQuery.search
+      if ( listQuery.dueDate ) filters.dueDate = listQuery.dueDate
+      if ( listQuery.customDateRange ) filters.customDateRange = listQuery.customDateRange
+
+      const response = await getAllWorkOrders( listQuery.page, listQuery.limit, 'createdAt', 'DESC', filters )
 
       const data = response.data.content
       total.value = response.data.totalElements

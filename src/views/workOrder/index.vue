@@ -54,11 +54,17 @@
           :work-orders="list"
           :loading="listLoading"
           :filters="listQuery"
+          :total="total"
+          :current-page="listQuery.page"
+          :page-size="listQuery.limit"
           @edit="handleUpdate"
           @delete="handleDelete"
           @status-change="handleStatusChange"
           @refresh="fetchWorkOrders"
           @work-order-created="handleWorkOrderCreated"
+          @page-change="handleCurrentChange"
+          @page-size-change="handleSizeChange"
+          @tab-change="handleTabChange"
         />
       </div>
     </template>
@@ -147,9 +153,21 @@ const handleDelete = async( row, index ) => {
   }
 }
 
-const handleViewChange = view => {
+const handleViewChange = async view => {
   currentView.value = view
   console.log( 'View changed to:', view )
+
+  // When switching to todo view, set default status filter for "todo" tab
+  if ( view === 'todo' ) {
+    listQuery.status = 'pending,in_progress'
+    listQuery.page = 1
+    await fetchWorkOrders()
+  } else if ( view === 'table' ) {
+    // Clear status filter for table view to show all items
+    listQuery.status = null
+    listQuery.page = 1
+    await fetchWorkOrders()
+  }
 }
 
 const handleStatusChange = ( { workOrder, status } ) => {
@@ -176,6 +194,14 @@ const handleWorkOrderCreated = async newWorkOrder => {
   list.value.unshift( newWorkOrder )
   showSuccess( t( 'workOrder.messages.createSuccess' ) )
   // Refresh the data to ensure consistency
+  await fetchWorkOrders()
+}
+
+const handleTabChange = async( { tab, statusFilter } ) => {
+  // Update the status filter in listQuery
+  listQuery.status = statusFilter
+  listQuery.page = 1 // Reset to first page
+  // Fetch work orders with new status filter
   await fetchWorkOrders()
 }
 
@@ -226,7 +252,7 @@ defineOptions( {
 
 .todo-view-container {
   height: calc(100vh - 200px); // Adjust based on header height
-  padding: 5px;
+  padding-top: 5px;
   border-radius: 8px;
 }
 

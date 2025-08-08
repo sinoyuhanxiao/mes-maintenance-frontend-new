@@ -6,20 +6,22 @@ import http from '@/utils/request'
  * @param {number} size - The number of items per page.
  * @param {string} sortField - The field to sort by (e.g., "createdAt").
  * @param {string} direction - Sorting direction ("ASC" or "DESC").
+ * @param {Object} filters - Additional filters to apply.
  * @returns {Promise} API response with the list of all work orders.
  */
-export const getAllWorkOrders = (page = 1, size = 10, sortField = 'createdAt', direction = 'DESC') => {
-  return http.request({
-    method: 'post',
-    url: '/work-order/search',
-    data: {
+export const getAllWorkOrders = ( page = 1, size = 10, sortField = 'createdAt', direction = 'DESC', filters = {} ) => {
+  return http.request( {
+    method : 'post',
+    url : '/work-order/search',
+    data : {
       page,
       size,
       sortField,
       direction,
-      latest_per_recurrence: true,
-    },
-  })
+      latest_per_recurrence : true,
+      ...filters
+    }
+  } )
 }
 
 /**
@@ -38,16 +40,16 @@ export const getWorkOrdersByRecurrence = (
   sortField = 'createdAt',
   direction = 'DESC'
 ) => {
-  return http.request({
-    method: 'get',
-    url: `/work-order/recurrence/${recurrenceId}`,
-    data: {
+  return http.request( {
+    method : 'get',
+    url : `/work-order/recurrence/${recurrenceId}`,
+    data : {
       page,
       size,
       sortField,
-      direction,
-    },
-  })
+      direction
+    }
+  } )
 }
 
 /**
@@ -56,11 +58,11 @@ export const getWorkOrdersByRecurrence = (
  * @returns {Promise} API response from the server.
  */
 export const createWorkOrder = data => {
-  return http.request({
-    method: 'post',
-    url: '/work-order',
-    data,
-  })
+  return http.request( {
+    method : 'post',
+    url : '/work-order',
+    data
+  } )
 }
 
 /**
@@ -69,8 +71,8 @@ export const createWorkOrder = data => {
  * @returns {Promise} API response containing the work order data.
  */
 export const getWorkOrderById = id => {
-  return http.request({
-    method: 'get',
-    url: `/work-order/${id}`,
-  })
+  return http.request( {
+    method : 'get',
+    url : `/work-order/${id}`
+  } )
 }

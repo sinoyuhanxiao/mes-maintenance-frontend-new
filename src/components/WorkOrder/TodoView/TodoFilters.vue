@@ -116,51 +116,51 @@ import { ArrowDown, Calendar, Location, Flag, Tools, Star } from '@element-plus/
 // } )
 
 // Emits
-const emit = defineEmits(['update:modelValue', 'filter-change', 'tab-change', 'sort-change'])
+const emit = defineEmits( ['update:modelValue', 'filter-change', 'tab-change', 'sort-change'] )
 
 const { t } = useI18n()
 
 // State
-const activeFilter = ref('')
-const activeTab = ref('todo')
-const sortBy = ref('priority-desc')
-const activeFilters = ref([])
+const activeFilter = ref( '' )
+const activeTab = ref( 'todo' )
+const sortBy = ref( 'priority-desc' )
+const activeFilters = ref( [] )
 
 // Computed
-const hasActiveFilters = computed(() => activeFilters.value.length > 0)
+const hasActiveFilters = computed( () => activeFilters.value.length > 0 )
 
 // Methods
 const setFilter = filterType => {
-  if (activeFilter.value === filterType) {
+  if ( activeFilter.value === filterType ) {
     activeFilter.value = ''
-    removeFilter(filterType)
+    removeFilter( filterType )
   } else {
     activeFilter.value = filterType
-    addFilter(filterType)
+    addFilter( filterType )
   }
 }
 
 const addFilter = filterType => {
   const filterLabels = {
-    assigned: t('workOrder.filters.assignedToMe'),
-    overdue: t('workOrder.filters.overdue'),
-    high: t('workOrder.filters.highPriority'),
+    assigned : t( 'workOrder.filters.assignedToMe' ),
+    overdue : t( 'workOrder.filters.overdue' ),
+    high : t( 'workOrder.filters.highPriority' )
   }
 
-  const existingIndex = activeFilters.value.findIndex(f => f.key === filterType)
-  if (existingIndex === -1) {
-    activeFilters.value.push({
-      key: filterType,
-      label: filterLabels[filterType] || filterType,
-    })
+  const existingIndex = activeFilters.value.findIndex( f => f.key === filterType )
+  if ( existingIndex === -1 ) {
+    activeFilters.value.push( {
+      key : filterType,
+      label : filterLabels[filterType] || filterType
+    } )
   }
 
   emitFilterChange()
 }
 
 const removeFilter = filterKey => {
-  activeFilters.value = activeFilters.value.filter(f => f.key !== filterKey)
-  if (activeFilter.value === filterKey) {
+  activeFilters.value = activeFilters.value.filter( f => f.key !== filterKey )
+  if ( activeFilter.value === filterKey ) {
     activeFilter.value = ''
   }
   emitFilterChange()
@@ -174,29 +174,29 @@ const clearAllFilters = () => {
 
 const handleFilterCommand = command => {
   // Handle advanced filter commands
-  console.log('Advanced filter:', command)
+  console.log( 'Advanced filter:', command )
   // Implement advanced filter modals/dialogs
 }
 
 const handleTabChange = tabName => {
-  emit('tab-change', tabName)
+  emit( 'tab-change', tabName )
 }
 
 const handleSortChange = sortValue => {
-  emit('sort-change', sortValue)
+  emit( 'sort-change', sortValue )
 }
 
 const emitFilterChange = () => {
   const filters = {
-    active: activeFilters.value,
-    quick: activeFilter.value,
+    active : activeFilters.value,
+    quick : activeFilter.value
   }
-  emit('filter-change', filters)
+  emit( 'filter-change', filters )
 }
 
-defineOptions({
-  name: 'TodoFilters',
-})
+defineOptions( {
+  name : 'TodoFilters'
+} )
 </script>
 
 <style scoped lang="scss">

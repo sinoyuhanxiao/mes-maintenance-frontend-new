@@ -62,114 +62,114 @@
 import { ref, watch } from 'vue'
 import { Plus, ZoomIn, Download, Delete } from '@element-plus/icons-vue'
 
-const imageList = ref([])
-const dialogVisible = ref(false)
-const dialogImageUrl = ref('')
-const uploading = ref(false)
-const fileList = ref([])
+const imageList = ref( [] )
+const dialogVisible = ref( false )
+const dialogImageUrl = ref( '' )
+const uploading = ref( false )
+const fileList = ref( [] )
 
-const emit = defineEmits(['update:imageList', 'update:filesList'])
+const emit = defineEmits( ['update:imageList', 'update:filesList'] )
 
-const handleFileChange = (file, newFileList) => {
-  const readerPromises = newFileList.map(uploadedFile => {
-    return new Promise(resolve => {
-      if (!uploadedFile.uid) {
+const handleFileChange = ( file, newFileList ) => {
+  const readerPromises = newFileList.map( uploadedFile => {
+    return new Promise( resolve => {
+      if ( !uploadedFile.uid ) {
         uploadedFile.uid = Date.now().toString()
       }
 
-      if (!uploadedFile.raw) {
-        resolve(uploadedFile)
+      if ( !uploadedFile.raw ) {
+        resolve( uploadedFile )
         return
       }
 
       const reader = new FileReader()
       reader.onload = e => {
         uploadedFile.url = e.target.result
-        resolve(uploadedFile)
+        resolve( uploadedFile )
       }
-      reader.readAsDataURL(uploadedFile.raw)
-    })
-  })
+      reader.readAsDataURL( uploadedFile.raw )
+    } )
+  } )
 
-  Promise.all(readerPromises).then(resolvedList => {
+  Promise.all( readerPromises ).then( resolvedList => {
     fileList.value = resolvedList
-  })
+  } )
 }
 
 const handleFileRemove = file => {
-  const index = fileList.value.findIndex(item => item.uid === file.uid)
-  if (index !== -1) {
-    fileList.value.splice(index, 1)
+  const index = fileList.value.findIndex( item => item.uid === file.uid )
+  if ( index !== -1 ) {
+    fileList.value.splice( index, 1 )
   }
 }
 
 const handlePictureCardPreview = file => {
-  if (file.url) {
+  if ( file.url ) {
     dialogImageUrl.value = file.url
     dialogVisible.value = true
   }
 }
 
 const handleImageRemove = file => {
-  const index = imageList.value.findIndex(item => item.uid === file.uid)
-  if (index !== -1) {
-    imageList.value.splice(index, 1)
+  const index = imageList.value.findIndex( item => item.uid === file.uid )
+  if ( index !== -1 ) {
+    imageList.value.splice( index, 1 )
   }
 }
 
-const handleImageChange = (file, uploadFileList) => {
-  const readerPromises = uploadFileList.map(uploadedFile => {
-    return new Promise(resolve => {
-      if (!uploadedFile.uid) {
+const handleImageChange = ( file, uploadFileList ) => {
+  const readerPromises = uploadFileList.map( uploadedFile => {
+    return new Promise( resolve => {
+      if ( !uploadedFile.uid ) {
         uploadedFile.uid = Date.now().toString()
       }
 
-      if (!uploadedFile.raw) {
-        resolve(uploadedFile)
+      if ( !uploadedFile.raw ) {
+        resolve( uploadedFile )
         return
       }
 
       const reader = new FileReader()
       reader.onload = e => {
         uploadedFile.url = e.target.result
-        resolve(uploadedFile)
+        resolve( uploadedFile )
       }
-      reader.readAsDataURL(uploadedFile.raw)
-    })
-  })
+      reader.readAsDataURL( uploadedFile.raw )
+    } )
+  } )
 
-  Promise.all(readerPromises).then(resolvedList => {
+  Promise.all( readerPromises ).then( resolvedList => {
     imageList.value = resolvedList
-  })
+  } )
 }
 
 const handleDownload = file => {
-  if (file.url) {
-    const link = document.createElement('a')
+  if ( file.url ) {
+    const link = document.createElement( 'a' )
     link.href = file.url
     link.download = file.name || 'downloaded_file.png'
-    document.body.appendChild(link)
+    document.body.appendChild( link )
     link.click()
-    document.body.removeChild(link)
+    document.body.removeChild( link )
   }
 }
 
 watch(
   imageList,
   newList => {
-    const fileArray = newList.map(file => file.raw).filter(file => file instanceof File)
-    emit('update:imageList', fileArray)
+    const fileArray = newList.map( file => file.raw ).filter( file => file instanceof File )
+    emit( 'update:imageList', fileArray )
   },
-  { deep: true }
+  { deep : true }
 )
 
 watch(
   fileList,
   newList => {
-    const fileArray = newList.map(file => file.raw).filter(file => file instanceof File)
-    emit('update:filesList', fileArray)
+    const fileArray = newList.map( file => file.raw ).filter( file => file instanceof File )
+    emit( 'update:filesList', fileArray )
   },
-  { deep: true }
+  { deep : true }
 )
 </script>
 

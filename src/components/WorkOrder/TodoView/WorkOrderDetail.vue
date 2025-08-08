@@ -14,16 +14,29 @@
             </div>
           </div>
         </el-col>
-        <el-col :span="6">
+        <el-col :span="4">
           <div class="header-actions">
-            <el-button type="primary" size="small" @click="$emit('edit', workOrder)">
-              <el-icon><Edit /></el-icon>
-              {{ $t('workOrder.actions.edit') }}
-            </el-button>
-            <el-button type="default" size="small" @click="$emit('share', workOrder)">
-              <el-icon><Share /></el-icon>
-              {{ $t('workOrder.actions.share') }}
-            </el-button>
+            <el-dropdown trigger="click" @command="handleHeaderAction">
+              <el-button type="text" size="small" class="action-button">
+                <el-icon class="rotated-icon"><MoreFilled /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="edit">
+                    <el-icon><Edit /></el-icon>
+                    {{ $t('workOrder.actions.edit') }}
+                  </el-dropdown-item>
+                  <el-dropdown-item command="share">
+                    <el-icon><Share /></el-icon>
+                    {{ $t('workOrder.actions.share') }}
+                  </el-dropdown-item>
+                  <el-dropdown-item command="export" divided>
+                    <el-icon><Download /></el-icon>
+                    {{ $t('workOrder.actions.export') }}
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </div>
         </el-col>
       </el-row>
@@ -97,65 +110,54 @@
 
     <!-- Schedule Conditions Section -->
     <div v-if="isRecurring" class="detail-section schedule-conditions-section">
-      <el-divider />
-      <h3 class="section-title">
-        <el-icon class="section-icon"><Calendar /></el-icon>
-        {{ $t('workOrder.schedule.title') }}
-        <el-button
-          type="primary"
-          size="small"
-          @click="openTimelineModal"
-          :title="$t('workOrder.schedule.viewTimeline')"
-          class="timeline-button"
-        >
-          <el-icon><Clock /></el-icon>
-          {{ $t('workOrder.schedule.viewTimeline') }}
-        </el-button>
-      </h3>
-
-      <div class="schedule-content">
-        <div class="schedule-info-grid">
-          <div class="info-item">
-            <div class="info-icon">
-              <el-icon><Refresh /></el-icon>
-            </div>
-            <div class="info-content">
-              <span class="info-label">{{ $t('workOrder.schedule.repeatType') }}</span>
-              <span class="info-value">{{ $t('workOrder.schedule.timeBased') }}</span>
-            </div>
+      <!-- Schedule Conditions Card -->
+      <div class="schedule-conditions-card">
+        <!-- Header -->
+        <div class="schedule-header">
+          <div class="header-left">
+            <div class="decorative-line"></div>
+            <h3 class="schedule-title">{{ $t('workOrder.schedule.title') }}</h3>
           </div>
-
-          <div class="info-item">
-            <div class="info-icon">
-              <el-icon><Timer /></el-icon>
-            </div>
-            <div class="info-content">
-              <span class="info-label">{{ $t('workOrder.schedule.frequency') }}</span>
-              <span class="info-value">{{ $t('workOrder.schedule.weeklyPattern') }}</span>
-            </div>
-          </div>
-
-          <div class="info-item">
-            <div class="info-icon">
-              <el-icon><Link /></el-icon>
-            </div>
-            <div class="info-content">
-              <span class="info-label">{{ $t('workOrder.schedule.continuedFrom') }}</span>
-              <span class="info-value linked-order" @click="navigateToLinkedOrder"> Daily Wash - Washin Washer </span>
-            </div>
-          </div>
+          <el-button
+            type="default"
+            size="small"
+            @click="openTimelineModal"
+            :title="$t('workOrder.schedule.viewTimeline')"
+            class="timeline-button"
+          >
+            <el-icon><View /></el-icon>
+            {{ $t('workOrder.schedule.viewTimeline') }}
+          </el-button>
         </div>
 
-        <div class="schedule-timeline-preview">
-          <div class="timeline-days">
-            <div class="day-indicator" :class="{ active: day.active }" v-for="day in weekDays" :key="day.name">
-              <span class="day-name">{{ day.name }}</span>
-              <div class="day-dot"></div>
-            </div>
+        <!-- Content Grid -->
+        <div class="schedule-content-grid">
+          <!-- Repeat Type -->
+          <div class="data-section">
+            <div class="data-label">{{ $t('workOrder.schedule.repeatTypeLabel') }}</div>
+            <div class="data-value">{{ $t('workOrder.schedule.timeBased') }}</div>
           </div>
-          <div class="next-occurrence">
-            <span class="next-label">{{ $t('workOrder.schedule.nextOccurrence') }}:</span>
-            <span class="next-date">{{ formatDate('2024-08-02') }}</span>
+
+          <!-- Frequency -->
+          <div class="data-section">
+            <div class="data-label">{{ $t('workOrder.schedule.frequencyLabel') }}</div>
+            <div class="data-value">{{ $t('workOrder.schedule.weeklyPattern') }}</div>
+          </div>
+
+          <!-- Continued From -->
+          <div class="data-section">
+            <div class="data-label">{{ $t('workOrder.schedule.continuedFromLabel') }}</div>
+            <div class="data-value linked-value" @click="navigateToLinkedOrder">Daily Wash - Washin Washer</div>
+          </div>
+
+          <!-- Weekly Pattern -->
+          <div class="data-section weekly-pattern-section">
+            <div class="data-label">{{ $t('workOrder.schedule.weeklyPatternLabel') }}</div>
+            <div class="day-indicators">
+              <div v-for="day in weekDays" :key="day.name" class="day-indicator" :class="{ active: day.active }">
+                {{ day.name.charAt(0) }}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -248,9 +250,7 @@
           <div class="tab-content">
             <div class="tab-header">
               <h4 class="tab-title">Parts Cost</h4>
-              <el-button type="text" size="small" @click="openPartsCostModal" class="add-edit-link">
-                Add / Edit
-              </el-button>
+              <el-button type="text" size="small" @click="openPartsCostModal" class="add-edit-link"> Edit </el-button>
             </div>
 
             <div class="parts-cost-table">
@@ -276,9 +276,7 @@
           <div class="tab-content">
             <div class="tab-header">
               <h4 class="tab-title">Labor Time Tracking</h4>
-              <el-button type="text" size="small" @click="openTimeLogsModal" class="add-edit-link">
-                Add / Edit
-              </el-button>
+              <el-button type="text" size="small" @click="openTimeLogsModal" class="add-edit-link"> Edit </el-button>
             </div>
 
             <div class="time-logs-table">
@@ -307,9 +305,7 @@
           <div class="tab-content">
             <div class="tab-header">
               <h4 class="tab-title">Safety Checklist & Measures</h4>
-              <el-button type="text" size="small" @click="openSafetyModal" class="add-edit-link">
-                Add / Edit
-              </el-button>
+              <el-button type="text" size="small" @click="openSafetyModal" class="add-edit-link"> Edit </el-button>
             </div>
 
             <div class="safety-measures-content">
@@ -354,9 +350,7 @@
           <div class="tab-content">
             <div class="tab-header">
               <h4 class="tab-title">Maintenance Procedures</h4>
-              <el-button type="text" size="small" @click="openProceduresModal" class="add-edit-link">
-                Add / Edit
-              </el-button>
+              <el-button type="text" size="small" @click="openProceduresModal" class="add-edit-link"> Edit </el-button>
             </div>
 
             <div class="procedures-content">
@@ -714,7 +708,7 @@
                     <span class="detail-label">{{ $t('workOrder.timeline.assignees') }}:</span>
                     <div class="assignees-list">
                       <el-avatar
-                        v-for="(assignee) in event.assignees.slice(0, 2)"
+                        v-for="assignee in event.assignees.slice(0, 2)"
                         :key="assignee.id"
                         :size="24"
                         :src="assignee.avatar"
@@ -766,20 +760,17 @@ import {
   Share,
   Document,
   Picture,
-  Calendar,
   Setting,
   Location,
   User,
   Phone,
-  Clock,
-  Refresh,
-  Timer,
-  Link,
   Download,
   Plus,
   ShoppingCart,
   Tools,
-  Search
+  Search,
+  View,
+  MoreFilled
 } from '@element-plus/icons-vue'
 import { convertToLocalTime } from '@/utils/datetime'
 import PriorityTag from '../PriorityTag.vue'
@@ -799,6 +790,7 @@ const props = defineProps( {
 const emit = defineEmits( [
   'edit',
   'share',
+  'export',
   'status-change',
   'add-parts',
   'add-time',
@@ -848,7 +840,7 @@ const partsCostData = ref( [
 // Hardcoded time logs data
 const timeLogsData = ref( [
   {
-    technician : 'John Smith',
+    technician : 'Erik Yellow',
     date : '2024-07-15',
     startTime : '08:00',
     endTime : '10:30',
@@ -857,7 +849,7 @@ const timeLogsData = ref( [
     totalCost : '$87.50'
   },
   {
-    technician : 'Mike Johnson',
+    technician : 'King Harry',
     date : '2024-07-15',
     startTime : '10:30',
     endTime : '12:00',
@@ -866,7 +858,7 @@ const timeLogsData = ref( [
     totalCost : '$60.00'
   },
   {
-    technician : 'Sarah Wilson',
+    technician : 'Steve Buhao',
     date : '2024-07-16',
     startTime : '09:00',
     endTime : '11:15',
@@ -935,8 +927,8 @@ const timelineEvents = ref( [
     plannedEnd : '2024-06-15 10:30',
     actualEnd : '2024-06-15 10:30',
     assignees : [
-      { id : 1, name : 'John Smith', avatar : 'https://via.placeholder.com/40' },
-      { id : 2, name : 'Mike Johnson', avatar : 'https://via.placeholder.com/40' }
+      { id : 1, name : 'Eric Yellow', avatar : 'https://via.placeholder.com/40' },
+      { id : 2, name : 'Chang Duan', avatar : 'https://via.placeholder.com/40' }
     ]
   },
   {
@@ -1352,6 +1344,22 @@ const handleAddComment = commentData => {
   emit( 'add-comment', { workOrder : props.workOrder, ...commentData } )
 }
 
+const handleHeaderAction = action => {
+  switch ( action ) {
+    case 'edit':
+      emit( 'edit', props.workOrder )
+      break
+    case 'share':
+      emit( 'share', props.workOrder )
+      break
+    case 'export':
+      emit( 'export', props.workOrder )
+      break
+    default:
+      console.warn( `Unhandled header action: ${action}` )
+  }
+}
+
 // Modal Methods
 const openPartsCostModal = () => {
   partsCostModalVisible.value = true
@@ -1524,14 +1532,22 @@ defineOptions( {
 .work-order-detail {
   background: var(--el-bg-color);
   border-radius: 8px;
-  padding: 24px;
+  margin-top: 24px;
+  padding: 0 24px 24px 24px;
   height: 100%;
   overflow-y: auto;
+  position: relative; // Add relative positioning
 }
 
 .detail-header {
   padding-bottom: 16px;
   border-bottom: 1px solid var(--el-border-color-light);
+  position: sticky; // Use sticky instead of fixed for better behavior
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--el-bg-color);
+  z-index: 10;
 
   .header-main {
     .detail-title {
@@ -1558,6 +1574,20 @@ defineOptions( {
   .header-actions {
     display: flex;
     gap: 8px;
+    justify-content: flex-end;
+
+    .action-button {
+      padding: 4px;
+      color: var(--el-text-color-secondary);
+
+      &:hover {
+        color: var(--el-color-primary);
+      }
+
+      .rotated-icon {
+        transform: rotate(90deg);
+      }
+    }
   }
 }
 
@@ -1703,145 +1733,135 @@ defineOptions( {
 
 // Schedule Conditions Section
 .schedule-conditions-section {
-  .section-title {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  margin-top: 24px;
+  .schedule-conditions-card {
+    background: linear-gradient(to right, #f9fafb, #eff6ff);
+    padding: 24px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
 
-    .section-icon {
-      margin-right: 8px;
-      color: var(--el-color-primary);
-    }
+    .schedule-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
 
-    .timeline-button {
-      margin-left: auto;
-      font-size: 12px;
-    }
-  }
-
-  .schedule-content {
-    .schedule-info-grid {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-      margin-bottom: 20px;
-
-      .info-item {
+      .header-left {
         display: flex;
         align-items: center;
-        padding: 12px 16px;
-        background: var(--el-fill-color-lighter);
-        border-radius: 6px;
-        border: 1px solid var(--el-border-color-lighter);
-        transition: all 0.2s ease;
+        gap: 12px;
+
+        .decorative-line {
+          width: 8px;
+          height: 32px;
+          background-color: var(--el-color-primary);
+          border-radius: 4px;
+        }
+
+        .schedule-title {
+          margin: 0;
+          font-size: 16px;
+          font-weight: 500;
+          color: #111827;
+        }
+      }
+
+      .timeline-button {
+        border-color: #bfdbfe;
+        color: #2563eb;
+        background: transparent;
+        font-size: 14px;
+        font-weight: 500;
 
         &:hover {
-          background: var(--el-fill-color-light);
-          border-color: var(--el-color-primary-light-7);
+          background-color: #eff6ff;
+          border-color: #93c5fd;
         }
 
-        .info-icon {
-          margin-right: 12px;
-          font-size: 16px;
-          color: var(--el-color-primary);
-        }
-
-        .info-content {
-          flex: 1;
-
-          .info-label {
-            display: block;
-            font-size: 12px;
-            color: var(--el-text-color-secondary);
-            margin-bottom: 2px;
-            font-weight: 500;
-          }
-
-          .info-value {
-            display: block;
-            font-size: 14px;
-            color: var(--el-text-color-primary);
-            font-weight: 500;
-
-            &.linked-order {
-              cursor: pointer;
-              color: var(--el-color-primary);
-              text-decoration: underline;
-              transition: all 0.2s ease;
-
-              &:hover {
-                color: var(--el-color-primary-dark-2);
-              }
-            }
-          }
+        .el-icon {
+          margin-right: 8px;
         }
       }
     }
 
-    .schedule-timeline-preview {
-      .timeline-days {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 16px;
-        padding: 16px;
-        background: var(--el-fill-color-lighter);
-        border-radius: 6px;
-        border: 1px solid var(--el-border-color-lighter);
+    .schedule-content-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      align-items: center;
 
-        .day-indicator {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 8px;
-          transition: all 0.2s ease;
-
-          .day-name {
-            font-size: 12px;
-            color: var(--el-text-color-secondary);
-            font-weight: 500;
-          }
-
-          .day-dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--el-border-color);
-            transition: all 0.2s ease;
-          }
-
-          &.active {
-            .day-name {
-              color: var(--el-color-primary);
-              font-weight: 600;
-            }
-
-            .day-dot {
-              background: var(--el-color-primary);
-              transform: scale(1.2);
-            }
-          }
-        }
+      @media (max-width: 1023px) {
+        grid-template-columns: 1fr;
+        text-align: center;
       }
 
-      .next-occurrence {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 12px 16px;
-        background: var(--el-fill-color-lighter);
-        border-radius: 6px;
-        border: 1px solid var(--el-border-color-lighter);
-
-        .next-label {
-          font-size: 13px;
-          color: var(--el-text-color-secondary);
-          font-weight: 500;
+      .data-section {
+        &.weekly-pattern-section {
+          @media (min-width: 1024px) {
+            text-align: right;
+          }
         }
 
-        .next-date {
+        .data-label {
+          font-size: 12px;
+          color: #6b7280;
+          margin-bottom: 4px;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          font-weight: 400;
+        }
+
+        .data-value {
           font-size: 14px;
-          color: var(--el-text-color-primary);
-          font-weight: 600;
+          color: #111827;
+          font-weight: 400;
+
+          &.linked-value {
+            color: #2563eb;
+            cursor: pointer;
+            transition: color 0.2s ease;
+
+            &:hover {
+              color: #1d4ed8;
+            }
+          }
+        }
+
+        .day-indicators {
+          display: flex;
+          gap: 4px;
+          justify-content: flex-start;
+
+          @media (max-width: 1023px) {
+            justify-content: center;
+          }
+
+          @media (min-width: 1024px) {
+            justify-content: flex-end;
+          }
+
+          .day-indicator {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 400;
+            transition: all 0.2s ease;
+
+            &.active {
+              background-color: var(--el-color-primary);
+              color: white;
+            }
+
+            &:not(.active) {
+              background-color: #e5e7eb;
+              color: #6b7280;
+            }
+          }
         }
       }
     }
