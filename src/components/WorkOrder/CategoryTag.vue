@@ -10,25 +10,25 @@ import { computed } from 'vue'
 import { getCategoryTagType } from '@/utils/general'
 
 // Props
-const props = defineProps({
-  category: {
-    type: Object,
-    default: () => ({}),
-  },
-})
+const props = defineProps( {
+  category : {
+    type : Object,
+    default : () => ( {} )
+  }
+} )
 
 // const { t } = useI18n()
 
 // Computed
-const categoryName = computed(() => {
+const categoryName = computed( () => {
   return props.category?.name || '-'
-})
+} )
 
-const tagType = computed(() => {
-  return getCategoryTagType(props.category?.name)
-})
+const tagType = computed( () => {
+  return getCategoryTagType( props.category?.name )
+} )
 
-defineOptions({
-  name: 'CategoryTag',
-})
+defineOptions( {
+  name : 'CategoryTag'
+} )
 </script>

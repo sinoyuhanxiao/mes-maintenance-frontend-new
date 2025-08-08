@@ -33,27 +33,27 @@
 <script>
 import { defineComponent, ref } from 'vue'
 
-export default defineComponent({
-  name: 'MesLayout',
-  props: {
-    title: {
-      type: String,
-      default: '',
+export default defineComponent( {
+  name : 'MesLayout',
+  props : {
+    title : {
+      type : String,
+      default : ''
     },
-    subtitle: {
-      type: String,
-      default: '',
+    subtitle : {
+      type : String,
+      default : ''
     },
-    viewMode: {
-      type: String,
-      default: 'table', // 'table' or 'todo'
-    },
+    viewMode : {
+      type : String,
+      default : 'table' // 'table' or 'todo'
+    }
   },
   setup() {
     const wrapperRef = ref()
     return { wrapperRef }
-  },
-})
+  }
+} )
 </script>
 
 <style lang="scss" scoped>

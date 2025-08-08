@@ -156,6 +156,8 @@ export default {
       deleteFailed : '删除失败',
       uploadSuccess : '文件上传成功！',
       uploadFailed : '文件上传失败',
+      shareSuccess : '分享成功！',
+      exportSuccess : '导出成功！',
       noImagePlaceholder : '无图无真相',
       loadingData : '加载数据中...',
       noData : '暂无数据',
@@ -255,10 +257,12 @@ export default {
       filterCategories : '筛选器类别',
       basicFilters : '基础筛选',
       advancedFilters : '高级筛选',
+      workOrderFilters : '工单筛选',
       status : '状态',
       category : '类别',
       equipment : '设备',
-      search : '搜索'
+      search : '搜索',
+      searchFiltersPlaceholder : '搜索筛选项'
     },
 
     // Tabs
@@ -314,6 +318,10 @@ export default {
       repeatType : '重复类型',
       frequency : '频率',
       continuedFrom : '延续自',
+      repeatTypeLabel : '重复类型',
+      frequencyLabel : '频率',
+      continuedFromLabel : '延续自',
+      weeklyPatternLabel : '每周模式',
       timeBased : '基于时间的循环',
       weeklyPattern : '每周：周二、周五、周六',
       nextOccurrence : '下次发生',

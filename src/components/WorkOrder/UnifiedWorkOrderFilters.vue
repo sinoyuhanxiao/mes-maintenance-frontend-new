@@ -12,6 +12,7 @@
             clearable
             size="default"
             style="width: 140px"
+            :class="{ 'highlight-animation': animatingFilters.assignedTo }"
             @change="handleFilterChange"
           >
             <el-option v-for="user in assignedToOptions" :key="user.id" :label="user.name" :value="user.id" />
@@ -26,6 +27,7 @@
             clearable
             size="default"
             style="width: 140px"
+            :class="{ 'highlight-animation': animatingFilters.dueDate }"
             @change="handleFilterChange"
           >
             <el-option :label="$t('workOrder.filters.overdue')" value="overdue" />
@@ -44,6 +46,7 @@
             clearable
             size="default"
             style="width: 140px"
+            :class="{ 'highlight-animation': animatingFilters.workType }"
             @change="handleFilterChange"
           >
             <el-option
@@ -63,6 +66,7 @@
             clearable
             size="default"
             style="width: 140px"
+            :class="{ 'highlight-animation': animatingFilters.priority }"
             @change="handleFilterChange"
           >
             <el-option
@@ -82,6 +86,7 @@
             clearable
             size="default"
             style="width: 140px"
+            :class="{ 'highlight-animation': animatingFilters.status }"
             @change="handleFilterChange"
           >
             <el-option v-for="status in statusOptions" :key="status.id" :label="status.name" :value="status.id" />
@@ -96,6 +101,7 @@
             clearable
             size="default"
             style="width: 140px"
+            :class="{ 'highlight-animation': animatingFilters.category }"
             @change="handleFilterChange"
           >
             <el-option
@@ -115,6 +121,7 @@
             clearable
             size="default"
             style="width: 140px"
+            :class="{ 'highlight-animation': animatingFilters.equipment }"
             @change="handleFilterChange"
           >
             <el-option
@@ -134,6 +141,7 @@
             clearable
             size="default"
             style="width: 140px"
+            :class="{ 'highlight-animation': animatingFilters.location }"
             @change="handleFilterChange"
           >
             <el-option
@@ -145,41 +153,42 @@
           </el-select>
         </div>
 
-        <!-- Search Input -->
-        <div v-if="isFilterVisible('search')" class="filter-item search-item">
-          <el-input
-            v-model="localFilters.search"
-            :placeholder="$t('workOrder.placeholder.search')"
-            style="width: 200px"
-            size="default"
-            clearable
-            @keyup.enter="handleFilterChange"
-            @clear="handleFilterChange"
-          >
-            <template #prefix>
-              <el-icon><Search /></el-icon>
-            </template>
-          </el-input>
-        </div>
+        <!-- Right group: Search + Actions -->
+        <div class="right-group">
+          <!-- Search Input (optional) -->
+          <div v-if="isFilterVisible('search')" class="filter-item search-item">
+            <el-input
+              v-model="localFilters.search"
+              :placeholder="$t('workOrder.placeholder.search')"
+              style="width: 200px"
+              size="default"
+              clearable
+              :class="{ 'highlight-animation': animatingFilters.search }"
+              @keyup.enter="handleFilterChange"
+              @clear="handleFilterChange"
+            >
+              <template #prefix>
+                <el-icon><Search /></el-icon>
+              </template>
+            </el-input>
+          </div>
 
-        <!-- Action Buttons Row -->
-        <div class="actions-row">
-          <!-- Create Button -->
-          <el-button size="default" type="primary" :icon="EditPen" @click="$emit('create')">
-            {{ $t('workOrder.actions.create') }}
-          </el-button>
-
-          <!-- Export Button -->
-          <el-button size="default" :loading="exportLoading" type="success" :icon="Download" @click="$emit('export')">
-            {{ $t('workOrder.actions.export') }}
-          </el-button>
-
-          <!-- Additional Actions for Todo View -->
-          <template v-if="showTodoActions">
-            <el-button size="default" type="default" :icon="Refresh" @click="$emit('refresh')">
-              {{ $t('workOrder.actions.refresh') }}
+          <!-- Action Buttons Row -->
+          <div class="actions-row">
+            <el-button size="default" type="primary" :icon="EditPen" @click="$emit('create')">
+              {{ $t('workOrder.actions.create') }}
             </el-button>
-          </template>
+
+            <el-button size="default" :loading="exportLoading" type="success" :icon="Download" @click="$emit('export')">
+              {{ $t('workOrder.actions.export') }}
+            </el-button>
+
+            <template v-if="showTodoActions">
+              <el-button size="default" type="default" :icon="Refresh" @click="$emit('refresh')">
+                {{ $t('workOrder.actions.refresh') }}
+              </el-button>
+            </template>
+          </div>
         </div>
 
         <!-- Filter Customization Menu -->
@@ -257,7 +266,17 @@
       <div class="filter-drawer-content">
         <!-- Drawer Header -->
         <div class="drawer-header">
-          <p class="drawer-subtitle">{{ $t('workOrder.filters.filterDrawerSubtitle') }}</p>
+          <el-input
+            v-model="filterSearchTerm"
+            :placeholder="$t('workOrder.filters.searchFiltersPlaceholder')"
+            class="drawer-search"
+            size="default"
+            clearable
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
         </div>
 
         <!-- Basic Filters Section -->
@@ -267,7 +286,7 @@
             {{ $t('workOrder.filters.basicFilters') }}
           </h4>
           <div class="filter-list">
-            <div v-for="filter in basicFilters" :key="filter.key" class="filter-item-row">
+            <div v-for="filter in filteredBasicFilters" :key="filter.key" class="filter-item-row">
               <el-checkbox
                 :model-value="isFilterVisible(filter.key)"
                 @change="toggleFilterVisibility(filter.key)"
@@ -288,10 +307,10 @@
         <div class="filter-section">
           <h4 class="section-title">
             <el-icon><Setting /></el-icon>
-            {{ $t('workOrder.filters.advancedFilters') }}
+            {{ $t('workOrder.filters.workOrderFilters') }}
           </h4>
           <div class="filter-list">
-            <div v-for="filter in advancedFilters" :key="filter.key" class="filter-item-row">
+            <div v-for="filter in filteredAdvancedFilters" :key="filter.key" class="filter-item-row">
               <el-checkbox
                 :model-value="isFilterVisible(filter.key)"
                 @change="toggleFilterVisibility(filter.key)"
@@ -313,7 +332,7 @@
 </template>
 
 <script setup>
-import { reactive, computed, watch, ref } from 'vue'
+import { reactive, computed, watch, ref, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Search, Operation, View, Plus, Star, Setting, EditPen, Download, Refresh, Grid } from '@element-plus/icons-vue'
 import { useCommonDataStore } from '@/store/modules/commonData'
@@ -356,6 +375,19 @@ const localFilters = reactive( {
 
 // Filter drawer state
 const drawerVisible = ref( false )
+
+// Animation state for border highlight
+const animatingFilters = reactive( {
+  assignedTo : false,
+  dueDate : false,
+  workType : false,
+  priority : false,
+  search : false,
+  status : false,
+  category : false,
+  equipment : false,
+  location : false
+} )
 
 // Available filters configuration
 const availableFilters = reactive( {
@@ -469,6 +501,22 @@ const filterDefinitions = computed( () => ( {
 const basicFilters = computed( () => Object.values( filterDefinitions.value ).filter( f => f.category === 'basic' ) )
 
 const advancedFilters = computed( () => Object.values( filterDefinitions.value ).filter( f => f.category === 'advanced' ) )
+
+// Search term for filtering the drawer lists
+const filterSearchTerm = ref( '' )
+
+// Case-insensitive, instant filtering of labels; auto-hide non-matches
+const filteredBasicFilters = computed( () => {
+  const q = filterSearchTerm.value.trim().toLowerCase()
+  if ( !q ) return basicFilters.value
+  return basicFilters.value.filter( f => ( f.label || '' ).toLowerCase().includes( q ) )
+} )
+
+const filteredAdvancedFilters = computed( () => {
+  const q = filterSearchTerm.value.trim().toLowerCase()
+  if ( !q ) return advancedFilters.value
+  return advancedFilters.value.filter( f => ( f.label || '' ).toLowerCase().includes( q ) )
+} )
 
 // Active filters
 const activeFilterTags = computed( () => {
@@ -634,8 +682,30 @@ const closeFilterDrawer = () => {
   drawerVisible.value = false
 }
 
-const toggleFilterVisibility = filterKey => {
-  availableFilters[filterKey].visible = !availableFilters[filterKey].visible
+const toggleFilterVisibility = async filterKey => {
+  const wasVisible = availableFilters[filterKey].visible
+  availableFilters[filterKey].visible = !wasVisible
+
+  // Trigger animation for the toggled filter item in main filters row
+  await triggerFilterHighlightAnimation( filterKey )
+}
+
+// Animation method for border highlight
+const triggerFilterHighlightAnimation = async filterKey => {
+  // Wait for DOM update to ensure the filter item is rendered/removed
+  await nextTick()
+
+  // Only animate if the filter is now visible (showing animation)
+  // For hiding animation, the element will be removed by v-if, so we skip it
+  if ( availableFilters[filterKey].visible ) {
+    // Start animation
+    animatingFilters[filterKey] = true
+
+    // Remove animation after 2 seconds
+    setTimeout( () => {
+      animatingFilters[filterKey] = false
+    }, 2000 )
+  }
 }
 
 const isFilterVisible = filterKey => {
@@ -681,7 +751,6 @@ defineOptions( {
     align-items: center;
 
     &.search-item {
-      margin-left: auto;
     }
 
     &.customization-item {
@@ -698,10 +767,44 @@ defineOptions( {
   }
 }
 
+.right-group {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Form field highlight animation styles */
+.el-select.highlight-animation,
+.el-input.highlight-animation,
+.el-date-editor.highlight-animation {
+  :deep(.el-input__wrapper),
+  :deep(.el-select__wrapper) {
+    animation: formFieldHighlight 1s ease-in-out;
+  }
+}
+
+// Form field highlight animation keyframes
+@keyframes formFieldHighlight {
+  0% {
+    border-color: var(--el-border-color);
+    box-shadow: none;
+  }
+  50% {
+    border-color: #0085a4;
+    box-shadow: 0 0 0 2px rgba(0, 133, 164, 0.5);
+  }
+  100% {
+    border-color: var(--el-border-color);
+    box-shadow: none;
+  }
+}
+
 .actions-row {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-left: 10px;
 }
 
 .active-filters-row {
@@ -746,32 +849,43 @@ defineOptions( {
 }
 
 .drawer-header {
-  padding: 0 0 20px 0;
+  padding: 12px 0 16px 0;
   border-bottom: 1px solid var(--el-border-color-lighter);
-  margin-bottom: 24px;
+  margin-bottom: 16px;
+  background: var(--el-bg-color);
 
   .drawer-subtitle {
     margin: 0;
     color: var(--el-text-color-secondary);
-    font-size: 14px;
-    line-height: 1.5;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  .drawer-search :deep(.el-input__wrapper) {
+    box-shadow: none;
   }
 }
 
 .filter-section {
-  margin-bottom: 32px;
+  padding: 0 0 8px 0;
+  margin-bottom: 20px;
 
   .section-title {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin: 0 0 16px 0;
-    font-size: 16px;
+    margin: 0 0 12px 0;
+    font-size: 14px;
     font-weight: 600;
     color: var(--el-text-color-primary);
 
     .el-icon {
       color: var(--el-color-primary);
+      font-size: 16px;
     }
   }
 }
@@ -779,26 +893,28 @@ defineOptions( {
 .filter-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 6px; /* tighter list */
 }
 
 .filter-item-row {
-  padding: 8px 0;
+  padding: 6px 8px;
   border-radius: 6px;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.15s ease;
 
   &:hover {
     background-color: var(--el-fill-color-lighter);
-    padding-left: 8px;
-    padding-right: 8px;
   }
 
   .filter-checkbox {
     width: 100%;
 
     :deep(.el-checkbox__label) {
-      width: 100%;
       padding-left: 8px;
+      font-size: 13px;
+      color: var(--el-text-color-primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
   }
 }
@@ -806,7 +922,7 @@ defineOptions( {
 .filter-info {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
 
   .filter-icon {
@@ -816,10 +932,14 @@ defineOptions( {
   }
 
   .filter-label {
-    font-size: 14px;
+    font-size: 15px;
     color: var(--el-text-color-primary);
     flex: 1;
   }
+}
+
+:deep(.el-drawer__body) {
+  padding: 20px;
 }
 
 // Drawer responsive design
@@ -827,6 +947,10 @@ defineOptions( {
   @media (max-width: 768px) {
     width: 100% !important;
   }
+}
+
+:deep(.el-overlay) {
+  background-color: rgba(0, 0, 0, 0.2); /* adjust opacity */
 }
 
 :deep(.el-drawer__header) {

@@ -156,6 +156,8 @@ export default {
       deleteFailed : 'Failed to delete',
       uploadSuccess : 'Files uploaded successfully!',
       uploadFailed : 'Failed to upload files',
+      shareSuccess : 'Work order shared successfully!',
+      exportSuccess : 'Work order exported successfully!',
       noImagePlaceholder : 'No image available',
       loadingData : 'Loading data...',
       noData : 'No data available',
@@ -215,10 +217,12 @@ export default {
       filterCategories : 'Filter Categories',
       basicFilters : 'Basic Filters',
       advancedFilters : 'Advanced Filters',
+      workOrderFilters : 'Work Order Filters',
       status : 'Status',
       category : 'Category',
       equipment : 'Equipment',
-      search : 'Search'
+      search : 'Search',
+      searchFiltersPlaceholder : 'Search filters'
     },
 
     // Tabs
@@ -274,6 +278,10 @@ export default {
       repeatType : 'Repeat Type',
       frequency : 'Frequency',
       continuedFrom : 'Continued From',
+      repeatTypeLabel : 'REPEAT TYPE',
+      frequencyLabel : 'FREQUENCY',
+      continuedFromLabel : 'CONTINUED FROM',
+      weeklyPatternLabel : 'WEEKLY PATTERN',
       timeBased : 'Time-based recurring',
       weeklyPattern : 'Weekly: Tue, Fri, Sat',
       nextOccurrence : 'Next Occurrence',

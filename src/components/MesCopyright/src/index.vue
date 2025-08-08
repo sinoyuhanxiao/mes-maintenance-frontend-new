@@ -17,14 +17,14 @@
 import SvgIcon from 'src/components/MesSvgIcon'
 import { ref, onBeforeMount } from 'vue'
 
-const currentYear = ref(2021)
-onBeforeMount(() => {
+const currentYear = ref( 2021 )
+onBeforeMount( () => {
   currentYear.value = new Date().getFullYear()
-})
+} )
 
-defineOptions({
-  name: 'MesCopyright',
-})
+defineOptions( {
+  name : 'MesCopyright'
+} )
 </script>
 
 <style lang="scss" scoped>

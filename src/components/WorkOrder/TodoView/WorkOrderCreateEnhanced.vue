@@ -484,70 +484,70 @@ import { useI18n } from 'vue-i18n'
 // })
 
 // Emits
-const emit = defineEmits(['back-to-detail', 'work-order-created'])
+const emit = defineEmits( ['back-to-detail', 'work-order-created'] )
 
 const { t } = useI18n()
 
 // State
-const formRef = ref(null)
-const loading = ref(false)
+const formRef = ref( null )
+const loading = ref( false )
 
 // Upload dialog state
-const imageDialogVisible = ref(false)
-const dialogImageUrl = ref('')
+const imageDialogVisible = ref( false )
+const dialogImageUrl = ref( '' )
 
 // Form data
-const form = reactive({
-  taskTitle: '',
-  pictures: [],
-  description: '',
-  location: null,
-  asset: null,
-  procedure: null,
-  assignee: null,
-  estimatedHours: 1,
-  estimatedMinutes: 0,
-  dueDate: null,
-  startDate: null,
-  recurrence: 'none',
-  workType: 'reactive',
-  priority: 'none',
-  files: [],
-  categories: [],
-  vendors: [],
-  recurrenceSettings: {
-    repeatInterval: 1,
-    selectedDays: [],
-    monthlyRepeatInterval: 1,
-    monthlyDate: 1,
-    yearlyRepeatInterval: 1,
-    yearlyMonth: 1,
-    yearlyDay: 1,
-    startDate: null,
-    endDate: null,
-  },
-})
+const form = reactive( {
+  taskTitle : '',
+  pictures : [],
+  description : '',
+  location : null,
+  asset : null,
+  procedure : null,
+  assignee : null,
+  estimatedHours : 1,
+  estimatedMinutes : 0,
+  dueDate : null,
+  startDate : null,
+  recurrence : 'none',
+  workType : 'reactive',
+  priority : 'none',
+  files : [],
+  categories : [],
+  vendors : [],
+  recurrenceSettings : {
+    repeatInterval : 1,
+    selectedDays : [],
+    monthlyRepeatInterval : 1,
+    monthlyDate : 1,
+    yearlyRepeatInterval : 1,
+    yearlyMonth : 1,
+    yearlyDay : 1,
+    startDate : null,
+    endDate : null
+  }
+} )
 
 // Validation rules
-const rules = reactive({
-  taskTitle: [{ required: true, message: t('workOrder.validation.taskTitleRequired'), trigger: 'blur' }],
-  location: [{ required: true, message: t('workOrder.validation.locationRequired'), trigger: 'change' }],
-  asset: [{ required: true, message: t('workOrder.validation.assetRequired'), trigger: 'change' }],
-})
+const rules = reactive( {
+  taskTitle : [{ required : true, message : t( 'workOrder.validation.taskTitleRequired' ), trigger : 'blur' }],
+  location : [{ required : true, message : t( 'workOrder.validation.locationRequired' ), trigger : 'change' }],
+  asset : [{ required : true, message : t( 'workOrder.validation.assetRequired' ), trigger : 'change' }]
+} )
 
 // Tree props for tree selects
 const treeProps = {
-  children: 'children',
-  label: 'name',
-  value: 'id',
+  children : 'children',
+  label : 'name',
+  value : 'id'
 }
 
 // Mock data options
 const priorityOptions = [
-  { value: 'none', label: t('workOrder.priority.none') },
-  { value: 'low', label: t('workOrder.priority.low') },
-  { value: 'medium', label: t('workOrder.priority.medium') },
-  { value: 'high', label: t('workOrder.priority.high') },
+  { value : 'none', label : t( 'workOrder.priority.none' ) },
+  { value : 'low', label : t( 'workOrder.priority.low' ) },
+  { value : 'medium', label : t( 'workOrder.priority.medium' ) },
+  { value : 'high', label : t( 'workOrder.priority.high' ) }
 ]
 
 // const recurrenceOptions = [
@@ -557,305 +557,305 @@ const priorityOptions = [
 //   { value : 'monthly', label : t( 'workOrder.recurrence.monthly' ) }
 // ]
 
-const workTypeOptions = ref([
-  { id: 1, name: 'Preventative' },
-  { id: 2, name: 'Reactive' },
-  { id: 3, name: 'Follow-up' },
-  { id: 4, name: 'Other' },
-])
+const workTypeOptions = ref( [
+  { id : 1, name : 'Preventative' },
+  { id : 2, name : 'Reactive' },
+  { id : 3, name : 'Follow-up' },
+  { id : 4, name : 'Other' }
+] )
 
-const assigneeOptions = ref([
-  { id: 1, name: 'John Doe' },
-  { id: 2, name: 'Jane Smith' },
-  { id: 3, name: 'Mike Johnson' },
-  { id: 4, name: 'Sarah Wilson' },
-])
+const assigneeOptions = ref( [
+  { id : 1, name : 'John Doe' },
+  { id : 2, name : 'Jane Smith' },
+  { id : 3, name : 'Mike Johnson' },
+  { id : 4, name : 'Sarah Wilson' }
+] )
 
-const categoryOptions = ref([
-  { id: 1, name: 'Mechanical' },
-  { id: 2, name: 'Electrical' },
-  { id: 3, name: 'Hydraulic' },
-  { id: 4, name: 'Pneumatic' },
-  { id: 5, name: 'Safety' },
-])
+const categoryOptions = ref( [
+  { id : 1, name : 'Mechanical' },
+  { id : 2, name : 'Electrical' },
+  { id : 3, name : 'Hydraulic' },
+  { id : 4, name : 'Pneumatic' },
+  { id : 5, name : 'Safety' }
+] )
 
-const vendorOptions = ref([
-  { id: 1, name: 'ABC Maintenance Co.' },
-  { id: 2, name: 'XYZ Equipment Services' },
-  { id: 3, name: 'TechFix Solutions' },
-])
+const vendorOptions = ref( [
+  { id : 1, name : 'ABC Maintenance Co.' },
+  { id : 2, name : 'XYZ Equipment Services' },
+  { id : 3, name : 'TechFix Solutions' }
+] )
 
 // Location tree data (reusing from WorkOrderDetail)
-const locationTreeData = ref([
+const locationTreeData = ref( [
   {
-    id: 'building-a',
-    name: 'Manufacturing Building A',
-    children: [
+    id : 'building-a',
+    name : 'Manufacturing Building A',
+    children : [
       {
-        id: 'floor-1',
-        name: 'Ground Floor',
-        children: [
-          { id: 'room-101', name: 'Production Area 101' },
-          { id: 'room-102', name: 'Storage Room 102' },
-          { id: 'room-103', name: 'Quality Control Lab 103' },
-        ],
+        id : 'floor-1',
+        name : 'Ground Floor',
+        children : [
+          { id : 'room-101', name : 'Production Area 101' },
+          { id : 'room-102', name : 'Storage Room 102' },
+          { id : 'room-103', name : 'Quality Control Lab 103' }
+        ]
       },
       {
-        id: 'floor-2',
-        name: 'Second Floor',
-        children: [
-          { id: 'room-201', name: 'Processing Area 201' },
-          { id: 'room-202', name: 'Packaging Area 202' },
-        ],
-      },
-    ],
+        id : 'floor-2',
+        name : 'Second Floor',
+        children : [
+          { id : 'room-201', name : 'Processing Area 201' },
+          { id : 'room-202', name : 'Packaging Area 202' }
+        ]
+      }
+    ]
   },
   {
-    id: 'building-b',
-    name: 'Manufacturing Building B',
-    children: [
+    id : 'building-b',
+    name : 'Manufacturing Building B',
+    children : [
       {
-        id: 'floor-b1',
-        name: 'Ground Floor',
-        children: [
-          { id: 'room-b101', name: 'Assembly Line 1' },
-          { id: 'room-b102', name: 'Assembly Line 2' },
-        ],
-      },
-    ],
-  },
-])
+        id : 'floor-b1',
+        name : 'Ground Floor',
+        children : [
+          { id : 'room-b101', name : 'Assembly Line 1' },
+          { id : 'room-b102', name : 'Assembly Line 2' }
+        ]
+      }
+    ]
+  }
+] )
 
 // Asset tree data (equipment hierarchy)
-const assetTreeData = ref([
+const assetTreeData = ref( [
   {
-    id: 'line-a',
-    name: 'Food Processing Line A',
-    children: [
+    id : 'line-a',
+    name : 'Food Processing Line A',
+    children : [
       {
-        id: 'steam-equipment',
-        name: 'Steam Processing Equipment',
-        children: [
-          { id: 'steam-peeler', name: 'Steam Peeler' },
-          { id: 'steam-blancher', name: 'Steam Blancher' },
-        ],
+        id : 'steam-equipment',
+        name : 'Steam Processing Equipment',
+        children : [
+          { id : 'steam-peeler', name : 'Steam Peeler' },
+          { id : 'steam-blancher', name : 'Steam Blancher' }
+        ]
       },
       {
-        id: 'conveyor-systems',
-        name: 'Conveyor Systems',
-        children: [
-          { id: 'main-conveyor', name: 'Main Conveyor Belt' },
-          { id: 'sorting-conveyor', name: 'Sorting Conveyor' },
-        ],
-      },
-    ],
+        id : 'conveyor-systems',
+        name : 'Conveyor Systems',
+        children : [
+          { id : 'main-conveyor', name : 'Main Conveyor Belt' },
+          { id : 'sorting-conveyor', name : 'Sorting Conveyor' }
+        ]
+      }
+    ]
   },
   {
-    id: 'line-b',
-    name: 'Food Processing Line B',
-    children: [
+    id : 'line-b',
+    name : 'Food Processing Line B',
+    children : [
       {
-        id: 'packaging-equipment',
-        name: 'Packaging Equipment',
-        children: [
-          { id: 'sealing-machine', name: 'Sealing Machine' },
-          { id: 'labeling-machine', name: 'Labeling Machine' },
-        ],
-      },
-    ],
-  },
-])
+        id : 'packaging-equipment',
+        name : 'Packaging Equipment',
+        children : [
+          { id : 'sealing-machine', name : 'Sealing Machine' },
+          { id : 'labeling-machine', name : 'Labeling Machine' }
+        ]
+      }
+    ]
+  }
+] )
 
 const handleAddProcedure = () => {
   // TODO: Implement procedure picker modal
-  ElMessage.info(t('workOrder.messages.procedurePickerNotImplemented'))
+  ElMessage.info( t( 'workOrder.messages.procedurePickerNotImplemented' ) )
 }
 
 // Image upload handlers
 const handlePictureCardPreview = file => {
-  if (file.url) {
+  if ( file.url ) {
     dialogImageUrl.value = file.url
     imageDialogVisible.value = true
   } else {
-    console.error('Invalid image URL. Please check the file object:', file)
+    console.error( 'Invalid image URL. Please check the file object:', file )
   }
 }
 
 const handleImageRemove = file => {
-  const index = form.pictures.findIndex(item => item.uid === file.uid)
-  if (index !== -1) {
-    form.pictures.splice(index, 1)
+  const index = form.pictures.findIndex( item => item.uid === file.uid )
+  if ( index !== -1 ) {
+    form.pictures.splice( index, 1 )
   } else {
-    console.error('File not found in pictures list.')
+    console.error( 'File not found in pictures list.' )
   }
 }
 
-const handleImageChange = (file, uploadFileList) => {
-  const readerPromises = uploadFileList.map(uploadedFile => {
-    return new Promise(resolve => {
-      if (!uploadedFile.uid) {
+const handleImageChange = ( file, uploadFileList ) => {
+  const readerPromises = uploadFileList.map( uploadedFile => {
+    return new Promise( resolve => {
+      if ( !uploadedFile.uid ) {
         uploadedFile.uid = Date.now().toString()
       }
 
-      if (!uploadedFile.raw) {
-        resolve(uploadedFile)
+      if ( !uploadedFile.raw ) {
+        resolve( uploadedFile )
         return
       }
 
       const reader = new FileReader()
       reader.onload = e => {
         uploadedFile.url = e.target.result
-        resolve(uploadedFile)
+        resolve( uploadedFile )
       }
-      reader.readAsDataURL(uploadedFile.raw)
-    })
-  })
+      reader.readAsDataURL( uploadedFile.raw )
+    } )
+  } )
 
-  Promise.all(readerPromises).then(resolvedList => {
+  Promise.all( readerPromises ).then( resolvedList => {
     form.pictures = resolvedList
-  })
+  } )
 }
 
 const handleImageDownload = file => {
-  if (file.url) {
-    const link = document.createElement('a')
+  if ( file.url ) {
+    const link = document.createElement( 'a' )
     link.href = file.url
     link.download = file.name || 'downloaded_image.png'
-    document.body.appendChild(link)
+    document.body.appendChild( link )
     link.click()
-    document.body.removeChild(link)
+    document.body.removeChild( link )
   } else {
-    console.error('File URL not available for download.')
+    console.error( 'File URL not available for download.' )
   }
 }
 
 // File upload handlers
 const handleFileRemove = file => {
-  const index = form.files.findIndex(item => item.uid === file.uid)
-  if (index !== -1) {
-    form.files.splice(index, 1)
+  const index = form.files.findIndex( item => item.uid === file.uid )
+  if ( index !== -1 ) {
+    form.files.splice( index, 1 )
   } else {
-    console.error('File not found in files list.')
+    console.error( 'File not found in files list.' )
   }
 }
 
-const handleFileChange = (file, newFileList) => {
-  const readerPromises = newFileList.map(uploadedFile => {
-    return new Promise(resolve => {
-      if (!uploadedFile.uid) {
+const handleFileChange = ( file, newFileList ) => {
+  const readerPromises = newFileList.map( uploadedFile => {
+    return new Promise( resolve => {
+      if ( !uploadedFile.uid ) {
         uploadedFile.uid = Date.now().toString()
       }
 
-      if (!uploadedFile.raw) {
-        resolve(uploadedFile)
+      if ( !uploadedFile.raw ) {
+        resolve( uploadedFile )
         return
       }
 
       const reader = new FileReader()
       reader.onload = e => {
         uploadedFile.url = e.target.result
-        resolve(uploadedFile)
+        resolve( uploadedFile )
       }
-      reader.readAsDataURL(uploadedFile.raw)
-    })
-  })
+      reader.readAsDataURL( uploadedFile.raw )
+    } )
+  } )
 
-  Promise.all(readerPromises).then(resolvedList => {
+  Promise.all( readerPromises ).then( resolvedList => {
     form.files = resolvedList
-  })
+  } )
 }
 
 const resetForm = () => {
-  if (formRef.value) {
+  if ( formRef.value ) {
     formRef.value.resetFields()
   }
 
   // Reset form to initial values
-  Object.assign(form, {
-    taskTitle: '',
-    pictures: [],
-    description: '',
-    location: null,
-    asset: null,
-    procedure: null,
-    assignee: null,
-    estimatedHours: 1,
-    estimatedMinutes: 0,
-    dueDate: null,
-    startDate: null,
-    recurrence: 'none',
-    workType: 'reactive',
-    priority: 'none',
-    files: [],
-    categories: [],
-    vendors: [],
-    recurrenceSettings: {
-      repeatInterval: 1,
-      selectedDays: [],
-      monthlyRepeatInterval: 1,
-      monthlyDate: 1,
-      yearlyRepeatInterval: 1,
-      yearlyMonth: 1,
-      yearlyDay: 1,
-      startDate: null,
-      endDate: null,
-    },
-  })
+  Object.assign( form, {
+    taskTitle : '',
+    pictures : [],
+    description : '',
+    location : null,
+    asset : null,
+    procedure : null,
+    assignee : null,
+    estimatedHours : 1,
+    estimatedMinutes : 0,
+    dueDate : null,
+    startDate : null,
+    recurrence : 'none',
+    workType : 'reactive',
+    priority : 'none',
+    files : [],
+    categories : [],
+    vendors : [],
+    recurrenceSettings : {
+      repeatInterval : 1,
+      selectedDays : [],
+      monthlyRepeatInterval : 1,
+      monthlyDate : 1,
+      yearlyRepeatInterval : 1,
+      yearlyMonth : 1,
+      yearlyDay : 1,
+      startDate : null,
+      endDate : null
+    }
+  } )
 
-  ElMessage.success(t('workOrder.messages.formReset'))
+  ElMessage.success( t( 'workOrder.messages.formReset' ) )
 }
 
-const submitForm = async () => {
-  if (!formRef.value) return
+const submitForm = async() => {
+  if ( !formRef.value ) return
 
   try {
     const valid = await formRef.value.validate()
-    if (!valid) {
-      ElMessage.error(t('workOrder.messages.validationFailed'))
+    if ( !valid ) {
+      ElMessage.error( t( 'workOrder.messages.validationFailed' ) )
       return
     }
 
     loading.value = true
 
     // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    await new Promise( resolve => setTimeout( resolve, 1500 ) )
 
     // Mock successful creation
     const mockWorkOrder = {
-      id: Date.now(),
-      name: form.taskTitle,
-      description: form.description,
-      estimated_minutes: form.estimatedHours * 60 + form.estimatedMinutes,
-      due_date: form.dueDate,
-      start_date: form.startDate,
-      priority: { name: priorityOptions.find(p => p.value === form.priority)?.label || 'None' },
-      work_type: workTypeOptions.value.find(wt => wt.id === form.workType),
-      categories: form.categories,
-      created_at: new Date().toISOString(),
-      state: { name: 'Ready' },
-      assigned_to: form.assignee,
-      location_id: form.location,
-      asset_id: form.asset,
+      id : Date.now(),
+      name : form.taskTitle,
+      description : form.description,
+      estimated_minutes : form.estimatedHours * 60 + form.estimatedMinutes,
+      due_date : form.dueDate,
+      start_date : form.startDate,
+      priority : { name : priorityOptions.find( p => p.value === form.priority )?.label || 'None' },
+      work_type : workTypeOptions.value.find( wt => wt.id === form.workType ),
+      categories : form.categories,
+      created_at : new Date().toISOString(),
+      state : { name : 'Ready' },
+      assigned_to : form.assignee,
+      location_id : form.location,
+      asset_id : form.asset
     }
 
-    ElMessage.success(t('workOrder.messages.createSuccess'))
+    ElMessage.success( t( 'workOrder.messages.createSuccess' ) )
 
     // Emit the created work order
-    emit('work-order-created', mockWorkOrder)
+    emit( 'work-order-created', mockWorkOrder )
 
     // Reset form after successful creation
     resetForm()
-  } catch (error) {
-    console.error('Failed to create work order:', error)
-    ElMessage.error(t('workOrder.messages.createFailed'))
+  } catch ( error ) {
+    console.error( 'Failed to create work order:', error )
+    ElMessage.error( t( 'workOrder.messages.createFailed' ) )
   } finally {
     loading.value = false
   }
 }
 
-defineOptions({
-  name: 'WorkOrderCreateEnhanced',
-})
+defineOptions( {
+  name : 'WorkOrderCreateEnhanced'
+} )
 </script>
 
 <style scoped lang="scss">
