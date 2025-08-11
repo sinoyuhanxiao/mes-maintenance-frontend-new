@@ -69,6 +69,18 @@ export const getEquipmentTree = () => {
 }
 
 /**
+ * Fetch equipment subtree tree.
+ * @param {number} equipmentId - The equipment ID.
+ * @returns {Promise} API response with equipment Subtree nodes.
+ */
+export const getEquipmentSubtree = equipmentId => {
+  return http.request( {
+    method : 'get',
+    url : `/equipment/node-subtree/${equipmentId}`
+  } )
+}
+
+/**
  * Fetch equipment node by equipment ID.
  * @param {number} equipmentId - The equipment ID.
  * @returns {Promise} API response with equipment details.
@@ -99,7 +111,7 @@ export const getEquipmentNodes = ( page = 1, size = 10, sortField = 'name', dire
 
 /**
  * Fetch equipment node by equipment ID.
- * @param {object} equipmentInfo - The equipment ID.
+ * @param {object} equipmentInfo - The equipment information payload.
  * @returns {Promise} API response with equipment details.
  */
 export const createNewNode = equipmentInfo => {
@@ -107,5 +119,31 @@ export const createNewNode = equipmentInfo => {
     method : 'post',
     url : `/equipment/equipment-node`,
     data : equipmentInfo
+  } )
+}
+
+/**
+ * Edit equipment node by equipment ID and data.
+ * @param {number} equipmentId - The equipment  ID.
+ * @param {object} equipmentInfo - The equipment info to be edited.
+ * @returns {Promise} API response with equipment details.
+ */
+export const editEquipmentNode = ( equipmentId, equipmentInfo ) => {
+  return http.request( {
+    method : 'patch',
+    url : `/equipment/equipment-node/${equipmentId}`,
+    data : equipmentInfo
+  } )
+}
+
+/**
+ * Deactivate equipment node by equipment ID.
+ * @param {number} equipmentId - The equipment ID.
+ * @returns {Promise} API response with status.
+ */
+export const deactivateEquipmentNode = equipmentId => {
+  return http.request( {
+    method : 'post',
+    url : `/equipment/equipment-node/${equipmentId}/deactivate`
   } )
 }

@@ -103,6 +103,16 @@ const fetchEquipmentTree = async() => {
   }
 }
 
+// Method to refresh the tree data
+const refreshTree = async() => {
+  await fetchEquipmentTree()
+}
+
+// Expose the refresh method so parent components can call it
+defineExpose( {
+  refreshTree
+} )
+
 onMounted( () => {
   fetchEquipmentTree()
 } )

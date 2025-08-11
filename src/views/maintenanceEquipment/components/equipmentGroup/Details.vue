@@ -44,11 +44,33 @@
           </el-descriptions-item>
         </el-descriptions>
       </div>
+      <el-divider />
+      <div class="files">
+        <el-descriptions :column="1" direction="vertical">
+          <el-descriptions-item label="Files">
+            <div class="file-list">
+              <div v-if="equipmentData.file_list && equipmentData.file_list.length > 0">
+                <div v-for="file in equipmentData.file_list" :key="file.id || file.name" class="file-item">
+                  <el-link
+                    :href="file.url"
+                    target="_blank"
+                    :icon="getFileIcon(file.type)"
+                    class="file-link"
+                  >
+                    {{ file.name }}
+                  </el-link>
+                </div>
+              </div>
+              <div v-else class="no-files"><el-text> No files available </el-text></div>
+            </div>
+          </el-descriptions-item>
+        </el-descriptions>
+      </div>
     </template>
 
     <!-- Loading state -->
-    <div v-else-if="loading" class="loading-state">
-      <el-loading text="Loading equipment details..." />
+    <div v-else-if="loading" class="loading-state" v-loading="true" element-loading-text="Loading equipment details...">
+      <div style="height: 200px;"></div>
     </div>
 
     <!-- Error state -->
@@ -65,7 +87,7 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { ArrowRight } from '@element-plus/icons-vue'
+import { ArrowRight, Document, Picture, VideoCamera, Microphone, Download } from '@element-plus/icons-vue'
 import { getEquipmentById } from '@/api/equipment.js'
 import { getLocationPathById } from '@/api/location.js'
 
@@ -80,6 +102,27 @@ const locationPath = ref( [] )
 const loading = ref( false )
 const error = ref( null )
 
+// Parse file list from array of URLs
+const parseFileList = ( fileArray ) => {
+  if ( !fileArray || !Array.isArray( fileArray ) ) return []
+
+  return fileArray.map( ( url, index ) => {
+    // Extract filename from URL
+    const urlParts = url.split( '/' )
+    const filename = urlParts[urlParts.length - 1] || `file_${index + 1}`
+
+    // Clean up filename (remove timestamp if present)
+    const cleanFilename = filename.replace( /\d{17}/, '' ) // Remove 17-digit timestamp
+
+    return {
+      id : index,
+      name : decodeURIComponent( cleanFilename ),
+      url,
+      type : getFileTypeFromName( cleanFilename )
+    }
+  } )
+}
+
 // Fetch equipment data
 const fetchEquipmentData = async() => {
   if ( !props.equipmentId ) return
@@ -90,8 +133,15 @@ const fetchEquipmentData = async() => {
 
     const response = await getEquipmentById( props.equipmentId )
     equipmentData.value = response.data
+    console.log( 'Equipment data received:', equipmentData.value )
+
+    // Parse file list if it's an array of URLs
+    if ( equipmentData.value.file_list && Array.isArray( equipmentData.value.file_list ) ) {
+      equipmentData.value.file_list = parseFileList( equipmentData.value.file_list )
+    }
 
     console.log( 'Equipment data:', equipmentData.value )
+    console.log( 'Parsed file list:', equipmentData.value.file_list )
 
     if ( equipmentData.value.location_id ) {
       console.log( 'Fetching location path for location_id:', equipmentData.value.location_id )
@@ -118,6 +168,66 @@ const fetchLocationPath = async locationId => {
     console.error( 'Error fetching location path:', err )
     locationPath.value = []
   }
+}
+
+// Get file icon based on file type
+function getFileIcon( fileType ) {
+  switch ( fileType?.toLowerCase() ) {
+    case 'image':
+    case 'jpg':
+    case 'jpeg':
+    case 'png':
+    case 'gif':
+    case 'bmp':
+    case 'webp':
+      return Picture
+    case 'video':
+    case 'mp4':
+    case 'avi':
+    case 'mov':
+    case 'wmv':
+    case 'flv':
+      return VideoCamera
+    case 'audio':
+    case 'mp3':
+    case 'wav':
+    case 'flac':
+    case 'aac':
+      return Microphone
+    case 'pdf':
+    case 'document':
+    case 'doc':
+    case 'docx':
+    case 'txt':
+    case 'rtf':
+      return Document
+    case 'download':
+    case 'zip':
+    case 'rar':
+    case '7z':
+      return Download
+    default:
+      return Document
+  }
+}
+
+// Get file type from file name extension
+function getFileTypeFromName( fileName ) {
+  if ( !fileName ) return 'document'
+
+  const extension = fileName.split( '.' ).pop()?.toLowerCase()
+
+  const imageTypes = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg']
+  const videoTypes = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv']
+  const audioTypes = ['mp3', 'wav', 'flac', 'aac', 'ogg']
+  const archiveTypes = ['zip', 'rar', '7z', 'tar', 'gz']
+
+  if ( imageTypes.includes( extension ) ) return 'image'
+  if ( videoTypes.includes( extension ) ) return 'video'
+  if ( audioTypes.includes( extension ) ) return 'audio'
+  if ( archiveTypes.includes( extension ) ) return 'download'
+
+  return 'document'
 }
 
 onMounted( () => {
@@ -177,6 +287,48 @@ watch(
 }
 
 .no-images {
+  text-align: left;
+}
+
+.files {
+  flex: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  background-color: #fafafa;
+  transition: background-color 0.2s;
+}
+
+.file-item:hover {
+  background-color: #f0f9ff;
+}
+
+.file-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.file-size {
+  color: #909399;
+  font-size: 12px;
+}
+
+.no-files {
   text-align: left;
 }
 </style>

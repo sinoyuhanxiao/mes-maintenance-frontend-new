@@ -172,6 +172,19 @@ const formData = reactive( {
   filesList : []
 } )
 
+// Watch for parentId changes and refresh data
+watch( () => props.parentId, ( newParentId, oldParentId ) => {
+  console.log( 'ParentId changed from', oldParentId, 'to', newParentId )
+  if ( newParentId !== oldParentId && newParentId !== null ) {
+    // Update formData with new parentId
+    formData.parentId = newParentId
+
+    // Reset form and fetch new data
+    resetFormData()
+    fetchProductionLines()
+  }
+}, { immediate : false } )
+
 const treeProps = {
   children : 'children',
   label : 'name'
@@ -180,6 +193,7 @@ const treeProps = {
 const handleImageListUpdate = images => {
   uploadedImages.value = images
   formData.imageList = images
+  console.log( 'Uploaded images:', formData.imageList )
 }
 
 const handleExplosionViewUpdate = images => {
@@ -234,7 +248,7 @@ const handleConfirm = async() => {
     if ( formData.imageList.length > 0 || formData.filesList.length > 0 ) {
       await uploadFilesToServer()
     }
-
+    console.log( 'Form data before submission:', formData.imageList )
     const submissionData = {
       name : formData.name,
       code : formData.code,
@@ -261,16 +275,18 @@ const handleConfirm = async() => {
   }
 }
 
-const resetForm = () => {
+// Separate function to reset only form data (not fetch new data)
+const resetFormData = () => {
   if ( formRef.value ) {
     formRef.value.resetFields()
   }
 
+  // Reset form fields but keep the current parentId
   Object.assign( formData, {
     name : '',
     code : '',
     description : '',
-    parentId : props.parentId,
+    parentId : props.parentId, // Keep current parentId
     selectedLocationId : null,
     equipmentId : null,
     sequenceOrder : 1,
@@ -283,6 +299,11 @@ const resetForm = () => {
   uploadedImages.value = []
   uploadedExplosionView.value = []
   uploadedFiles.value = []
+}
+
+// Full reset including data fetching (used when closing dialog)
+const resetForm = () => {
+  resetFormData()
   fetchProductionLines()
 }
 
@@ -293,10 +314,15 @@ const handleCancel = () => {
 }
 
 const fetchProductionLines = async() => {
+  if ( !props.parentId ) {
+    console.log( 'No parentId provided, skipping production lines fetch' )
+    return
+  }
+
   productionLineLoading.value = true
   try {
     // Fetch production lines for the dropdown
-    const productionLinesResponse = await getEquipmentNodes( 1, 10, 'sequenceOrder', 'ASC', {
+    const productionLinesResponse = await getEquipmentNodes( 1, 100, 'sequenceOrder', 'ASC', {
       node_type_ids : [3]
     } )
 
@@ -310,7 +336,7 @@ const fetchProductionLines = async() => {
     // Fetch equipment groups to calculate sequence order
     const equipmentGroupsResponse = await getEquipmentNodes( 1, 100, 'sequenceOrder', 'ASC', {
       node_type_ids : [4],
-      parentIds : [props.parentId]
+      parent_ids : [props.parentId]
     } )
 
     console.log( '=== EQUIPMENT GROUPS API RESPONSE ===' )
@@ -407,7 +433,9 @@ const handleNodeClick = ( data, node ) => {
 
 onMounted( () => {
   fetchLocationTree()
-  fetchProductionLines()
+  if ( props.parentId ) {
+    fetchProductionLines()
+  }
 } )
 </script>
 

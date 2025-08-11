@@ -25,18 +25,58 @@ export const WHITE_CODE_LIST = [
     msg : ''
   },
   {
-    status : 201,
-    msg : 'Success'
+    status : 201, // Created
+    msg : ''
+  },
+  {
+    status : 202, // Accepted
+    msg : ''
+  },
+  {
+    status : 203, // Non-Authoritative Information
+    msg : ''
+  },
+  {
+    status : 204, // No Content
+    msg : ''
+  },
+  {
+    status : 205, // Reset Content
+    msg : ''
+  },
+  {
+    status : 206, // Partial Content
+    msg : ''
+  },
+  {
+    status : 207, // Multi-Status
+    msg : ''
+  },
+  {
+    status : 208, // Already Reported
+    msg : ''
+  },
+  {
+    status : 226, // IM Used
+    msg : ''
   },
   {
     status : 5006,
-    msg : '验证码错误或已过期'
+    msg : 'Captcha error or expired'
   }
 ]
 
 export const LOGIN_ERROR_CODE = [
   {
-    status : 5004,
-    msg : '无效token'
+    status : 401,
+    msg : 'unauthorized token access'
+  },
+  {
+    status : 403,
+    msg : 'visit rejected'
+  },
+  {
+    status : 422,
+    msg : 'login info invalid'
   }
 ]

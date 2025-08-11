@@ -7,9 +7,24 @@
       </div>
       <div class="maintenance-equipment-details">
         <template v-if="selectedNode">
-          <EquipmentGroup v-if="isTier2" :node="selectedNode" :breadcrumb="breadcrumbPath" />
-          <Equipment v-else-if="isTier3" :node="selectedNode" :breadcrumb="breadcrumbPath" />
-          <SubEquipment v-else-if="isTier4" :node="selectedNode" :breadcrumb="breadcrumbPath" />
+          <EquipmentGroup
+            v-if="isTier2"
+            :node="selectedNode"
+            :breadcrumb="breadcrumbPath"
+            @refresh-tree="handleRefreshTree"
+          />
+          <Equipment
+            v-else-if="isTier3"
+            :node="selectedNode"
+            :breadcrumb="breadcrumbPath"
+            @refresh-tree="handleRefreshTree"
+          />
+          <SubEquipment
+            v-else-if="isTier4"
+            :node="selectedNode"
+            :breadcrumb="breadcrumbPath"
+            @refresh-tree="handleRefreshTree"
+          />
           <div v-else>Select a node to see details</div>
         </template>
         <div v-else>Select a node to see details</div>
@@ -27,6 +42,7 @@ import SubEquipment from './components/SubEquipment/index.vue'
 
 const breadcrumbPath = ref( [] )
 const selectedNode = ref( null )
+const equipmentTree = ref( null )
 
 const isTier2 = computed( () => breadcrumbPath.value.length === 4 )
 const isTier3 = computed( () => breadcrumbPath.value.length === 5 )
@@ -35,6 +51,13 @@ const isTier4 = computed( () => breadcrumbPath.value.length === 6 )
 function onNodeClick( node, nodePath ) {
   selectedNode.value = node
   breadcrumbPath.value = nodePath
+  console.log( 'Node clicked in parent:', node, 'Path:', nodePath )
+}
+
+// Handle tree refresh from child components
+function handleRefreshTree() {
+  console.log( 'Refreshing tree from parent...' )
+  equipmentTree.value?.refreshTree()
 }
 </script>
 
