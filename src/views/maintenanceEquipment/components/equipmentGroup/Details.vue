@@ -51,12 +51,7 @@
             <div class="file-list">
               <div v-if="equipmentData.file_list && equipmentData.file_list.length > 0">
                 <div v-for="file in equipmentData.file_list" :key="file.id || file.name" class="file-item">
-                  <el-link
-                    :href="file.url"
-                    target="_blank"
-                    :icon="getFileIcon(file.type)"
-                    class="file-link"
-                  >
+                  <el-link :href="file.url" target="_blank" :icon="getFileIcon(file.type)" class="file-link">
                     {{ file.name }}
                   </el-link>
                 </div>
@@ -70,7 +65,7 @@
 
     <!-- Loading state -->
     <div v-else-if="loading" class="loading-state" v-loading="true" element-loading-text="Loading equipment details...">
-      <div style="height: 200px;"></div>
+      <div style="height: 200px"></div>
     </div>
 
     <!-- Error state -->
@@ -103,7 +98,7 @@ const loading = ref( false )
 const error = ref( null )
 
 // Parse file list from array of URLs
-const parseFileList = ( fileArray ) => {
+const parseFileList = fileArray => {
   if ( !fileArray || !Array.isArray( fileArray ) ) return []
 
   return fileArray.map( ( url, index ) => {

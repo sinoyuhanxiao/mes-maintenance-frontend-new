@@ -1,16 +1,11 @@
 <template>
   <div class="deactivate-container">
-    <el-alert
-      title="Delete Equipment Node"
-      type="warning"
-      :closable="false"
-      show-icon
-    >
+    <el-alert title="Delete Equipment Node" type="warning" :closable="false" show-icon>
       <el-text>Are you sure you want to delete this equipment node?</el-text>
       <br /><br />
       <el-text>
-        <strong>Warning:</strong> This action cannot be undone. All associated data,
-        sub-items, work orders, and tasks will be permanently removed.
+        <strong>Warning:</strong> This action cannot be undone. All associated data, sub-items, work orders, and tasks
+        will be permanently removed.
       </el-text>
     </el-alert>
 
@@ -33,15 +28,8 @@
     <el-divider />
 
     <div class="button-group">
-      <el-button @click="handleCancel" :disabled="submitting">
-        Cancel
-      </el-button>
-      <el-button
-        type="danger"
-        @click="handleConfirm"
-        :loading="submitting"
-        :disabled="!confirmDeletion"
-      >
+      <el-button @click="handleCancel" :disabled="submitting"> Cancel </el-button>
+      <el-button type="danger" @click="handleConfirm" :loading="submitting" :disabled="!confirmDeletion">
         Delete Equipment Node
       </el-button>
     </div>
@@ -156,18 +144,22 @@ onMounted( () => {
 } )
 
 // Watch for equipmentId changes and refetch data
-watch( () => props.equipmentId, ( newId, oldId ) => {
-  if ( newId && newId !== oldId ) {
-    // Reset data first
-    nodeData.value = null
-    childrenCount.value = 0
-    confirmDeletion.value = false
+watch(
+  () => props.equipmentId,
+  ( newId, oldId ) => {
+    if ( newId && newId !== oldId ) {
+      // Reset data first
+      nodeData.value = null
+      childrenCount.value = 0
+      confirmDeletion.value = false
 
-    // Fetch new data
-    fetchEquipmentData()
-    fetchChildrenCount()
-  }
-}, { immediate : false } )
+      // Fetch new data
+      fetchEquipmentData()
+      fetchChildrenCount()
+    }
+  },
+  { immediate : false }
+)
 </script>
 
 <style scoped>

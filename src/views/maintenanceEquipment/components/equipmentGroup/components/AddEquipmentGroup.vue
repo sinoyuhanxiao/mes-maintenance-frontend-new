@@ -173,17 +173,21 @@ const formData = reactive( {
 } )
 
 // Watch for parentId changes and refresh data
-watch( () => props.parentId, ( newParentId, oldParentId ) => {
-  console.log( 'ParentId changed from', oldParentId, 'to', newParentId )
-  if ( newParentId !== oldParentId && newParentId !== null ) {
-    // Update formData with new parentId
-    formData.parentId = newParentId
+watch(
+  () => props.parentId,
+  ( newParentId, oldParentId ) => {
+    console.log( 'ParentId changed from', oldParentId, 'to', newParentId )
+    if ( newParentId !== oldParentId && newParentId !== null ) {
+      // Update formData with new parentId
+      formData.parentId = newParentId
 
-    // Reset form and fetch new data
-    resetFormData()
-    fetchProductionLines()
-  }
-}, { immediate : false } )
+      // Reset form and fetch new data
+      resetFormData()
+      fetchProductionLines()
+    }
+  },
+  { immediate : false }
+)
 
 const treeProps = {
   children : 'children',

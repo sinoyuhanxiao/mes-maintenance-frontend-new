@@ -48,11 +48,7 @@
     </el-dialog>
 
     <el-dialog v-model="showEditDialog" title="Edit Tier 2" width="600px" :before-close="handleCloseDialog">
-      <EditEquipmentGroup
-        @close="closeEditDialog"
-        @success="handleEditSuccess"
-        :equipmentId="props.node.id"
-      />
+      <EditEquipmentGroup @close="closeEditDialog" @success="handleEditSuccess" :equipmentId="props.node.id" />
     </el-dialog>
 
     <el-dialog v-model="showDeactivateDialog" title="Delete Tier 2" width="600px" :before-close="handleCloseDialog">
