@@ -6,17 +6,20 @@ import http from '@/utils/request'
  * @param {number} size - The number of items per page.
  * @param {string} sortField - The field to sort by (e.g., "createdAt").
  * @param {string} direction - Sorting direction ("ASC" or "DESC").
+ * @param {Object} filters - Additional filters to apply.
  * @returns {Promise} API response with the list of all work orders.
  */
-export const getAllWorkOrders = ( page = 1, size = 10, sortField = 'createdAt', direction = 'DESC' ) => {
+export const getAllWorkOrders = ( page = 1, size = 10, sortField = 'createdAt', direction = 'DESC', filters = {} ) => {
   return http.request( {
-    method : 'get',
-    url : '/work-order',
+    method : 'post',
+    url : '/work-order/search',
     data : {
       page,
       size,
       sortField,
-      direction
+      direction,
+      latest_per_recurrence : true,
+      ...filters
     }
   } )
 }

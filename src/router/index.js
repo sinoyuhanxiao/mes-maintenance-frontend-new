@@ -152,6 +152,18 @@ export const asyncRoutes = [
         name : 'TestView',
         props : true,
         meta : { title : 'router.viewWorkOrder', noCache : true, hidden : false }
+      },
+      {
+        path : 'filter-drawer-test',
+        component : () => import( '@/views/test/FilterDrawerTest.vue' ),
+        name : 'FilterDrawerTest',
+        meta : { title : 'Filter Drawer Test', noCache : true, hidden : false }
+      },
+      {
+        path : 'pdf-test',
+        component : () => import( '@/components/WorkOrder/WorkOrderPdf.vue' ),
+        name : 'PdfExportTest',
+        meta : { title : 'PDF Export Test', noCache : true, hidden : false }
       }
     ]
   },

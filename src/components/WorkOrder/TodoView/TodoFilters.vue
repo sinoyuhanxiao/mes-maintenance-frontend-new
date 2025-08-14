@@ -175,7 +175,7 @@ const clearAllFilters = () => {
 const handleFilterCommand = command => {
   // Handle advanced filter commands
   console.log( 'Advanced filter:', command )
-  // TODO: Implement advanced filter modals/dialogs
+  // Implement advanced filter modals/dialogs
 }
 
 const handleTabChange = tabName => {

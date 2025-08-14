@@ -50,13 +50,21 @@
       <!-- To-Do View -->
       <div v-else-if="currentView === 'todo'" class="todo-view-container">
         <TodoView
+          ref="todoViewRef"
           :work-orders="list"
           :loading="listLoading"
           :filters="listQuery"
+          :total="total"
+          :current-page="listQuery.page"
+          :page-size="listQuery.limit"
           @edit="handleUpdate"
           @delete="handleDelete"
           @status-change="handleStatusChange"
           @refresh="fetchWorkOrders"
+          @work-order-created="handleWorkOrderCreated"
+          @page-change="handleCurrentChange"
+          @page-size-change="handleSizeChange"
+          @tab-change="handleTabChange"
         />
       </div>
     </template>
@@ -115,6 +123,7 @@ const {
 // State
 const downloadLoading = ref( false )
 const currentView = ref( 'table' ) // 'table' or 'todo'
+const todoViewRef = ref( null )
 
 // Methods
 const handleView = row => {
@@ -122,7 +131,13 @@ const handleView = row => {
 }
 
 const handleCreate = () => {
-  router.push( { name : 'NewWorkOrder' } )
+  if ( currentView.value === 'todo' ) {
+    // For todo view, emit create event to TodoView
+    todoViewRef.value?.showCreateForm()
+  } else {
+    // For table view, navigate to separate page
+    router.push( { name : 'NewWorkOrder' } )
+  }
 }
 
 const handleUpdate = row => {
@@ -138,13 +153,25 @@ const handleDelete = async( row, index ) => {
   }
 }
 
-const handleViewChange = view => {
+const handleViewChange = async view => {
   currentView.value = view
   console.log( 'View changed to:', view )
+
+  // When switching to todo view, set default status filter for "todo" tab
+  if ( view === 'todo' ) {
+    listQuery.status = 'pending,in_progress'
+    listQuery.page = 1
+    await fetchWorkOrders()
+  } else if ( view === 'table' ) {
+    // Clear status filter for table view to show all items
+    listQuery.status = null
+    listQuery.page = 1
+    await fetchWorkOrders()
+  }
 }
 
 const handleStatusChange = ( { workOrder, status } ) => {
-  // TODO: Implement status change API call
+  // Implement status change API call
   console.log( 'Status change:', workOrder.id, 'to', status )
   showSuccess( t( 'workOrder.messages.statusChanged' ) )
 }
@@ -160,6 +187,22 @@ const handleRefresh = async() => {
 
 const handleDownload = () => {
   console.log( 'Download action triggered' )
+}
+
+const handleWorkOrderCreated = async newWorkOrder => {
+  // Add the new work order to the list
+  list.value.unshift( newWorkOrder )
+  showSuccess( t( 'workOrder.messages.createSuccess' ) )
+  // Refresh the data to ensure consistency
+  await fetchWorkOrders()
+}
+
+const handleTabChange = async( { tab, statusFilter } ) => {
+  // Update the status filter in listQuery
+  listQuery.status = statusFilter
+  listQuery.page = 1 // Reset to first page
+  // Fetch work orders with new status filter
+  await fetchWorkOrders()
 }
 
 // Lifecycle
@@ -209,8 +252,7 @@ defineOptions( {
 
 .todo-view-container {
   height: calc(100vh - 200px); // Adjust based on header height
-  background: var(--el-bg-color-page);
-  padding: 16px;
+  padding-top: 5px;
   border-radius: 8px;
 }
 

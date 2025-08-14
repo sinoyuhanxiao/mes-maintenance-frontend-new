@@ -14,7 +14,7 @@
       <div class="card-actions">
         <el-dropdown trigger="click" @command="handleAction">
           <el-button type="text" size="small" class="action-button">
-            <el-icon><MoreFilled /></el-icon>
+            <el-icon class="rotated-icon"><MoreFilled /></el-icon>
           </el-button>
           <template #dropdown>
             <el-dropdown-menu>
@@ -394,5 +394,10 @@ defineOptions( {
   .el-image-viewer__img {
     border-radius: 0 !important;
   }
+}
+
+.rotated-icon {
+  display: inline-block;
+  transform: rotate(90deg);
 }
 </style>

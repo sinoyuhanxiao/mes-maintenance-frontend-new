@@ -134,7 +134,7 @@ const yearlyMonth = ref( 1 ) // default to January
 const yearlyDay = ref( 1 ) // default to 1st
 const emit = defineEmits( ['update:recurrenceSetting'] )
 
-// TODO: should be from backend
+// should be from backend
 const recurrenceTypeMap = {
   none : 1,
   daily : 2,

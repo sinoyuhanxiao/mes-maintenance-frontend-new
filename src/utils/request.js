@@ -48,61 +48,58 @@ class HttpRequest {
     let errMessage = ''
     switch ( status ) {
       case 400:
-        errMessage = '错误请求'
+        errMessage = 'Bad Request'
         break
       case 401:
-        errMessage = '未授权，请重新登录'
+        errMessage = 'Unauthorized, please login again'
         break
       case 403:
-        errMessage = '拒绝访问'
+        errMessage = 'Access Denied'
         break
       case 404:
-        errMessage = '请求错误,未找到该资源'
+        errMessage = 'Request Error, resource not found'
         break
       case 405:
-        errMessage = '请求方法未允许'
+        errMessage = 'Request method not allowed'
         break
       case 408:
-        errMessage = '请求超时'
+        errMessage = 'Request Timeout'
         break
       case 500:
-        errMessage = '服务器端出错'
+        errMessage = 'Internal Server Error'
         break
       case 501:
-        errMessage = '网络未实现'
+        errMessage = 'Not Implemented'
         break
       case 502:
-        errMessage = '网络错误'
+        errMessage = 'Bad Gateway'
         break
       case 503:
-        errMessage = '服务不可用'
+        errMessage = 'Service Unavailable'
         break
       case 504:
-        errMessage = '网络超时'
+        errMessage = 'Gateway Timeout'
         break
       case 505:
-        errMessage = 'http版本不支持该请求'
+        errMessage = 'HTTP Version Not Supported'
         break
       default:
-        errMessage = '连接错误'
+        errMessage = 'Connection Error'
     }
     return errMessage
   }
 
-  // 拦截处理
   setInterceptors( instance ) {
     const that = this
-
-    // 请求拦截
     instance.interceptors.request.use(
       config => {
         if ( !navigator.onLine ) {
           ElMessage( {
-            message : '请检查您的网络是否正常',
+            message : 'Please check if your network is available',
             type : 'error',
             duration : 3 * 1000
           } )
-          return Promise.reject( new Error( '请检查您的网络是否正常' ) )
+          return Promise.reject( new Error( 'Please check if your network is available' ) )
         }
         const token = cookies.get( TOKEN )
         if ( token ) {
@@ -116,8 +113,7 @@ class HttpRequest {
         return Promise.reject( new Error( error ) )
       }
     )
-
-    // 响应拦截
+    // Response interceptor
     instance.interceptors.response.use(
       res => {
         const result = res.data
@@ -125,7 +121,7 @@ class HttpRequest {
 
         // const $config = res.config
 
-        // 如果是文件流 直接返回
+        // if it is a file download, return directly
         if ( type === '[object Blob]' || type === '[object ArrayBuffer]' ) {
           return result
         } else {
@@ -159,7 +155,7 @@ class HttpRequest {
         }
         const isTimeout = error.message.includes( 'timeout' )
         ElMessage( {
-          message : isTimeout ? '网络请求超时' : error.message || '连接到服务器失败',
+          message : isTimeout ? 'Network Request Timeout' : error.message || 'Fail to connect to the server',
           type : 'error',
           duration : 2 * 1000
         } )

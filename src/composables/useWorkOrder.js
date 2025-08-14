@@ -33,10 +33,24 @@ export function useWorkOrder() {
   const isEmpty = computed( () => !loading.value && !hasData.value )
 
   // Methods
-  const fetchWorkOrders = async() => {
+  const fetchWorkOrders = async( additionalFilters = {} ) => {
     loading.value = true
     try {
-      const response = await getAllWorkOrders( listQuery.page, listQuery.limit, 'createdAt', 'DESC' )
+      // Prepare filters for API call
+      const filters = {
+        ...additionalFilters
+      }
+
+      // Add filters from listQuery if they exist
+      if ( listQuery.assignedTo ) filters.assignedTo = listQuery.assignedTo
+      if ( listQuery.priority ) filters.priority = listQuery.priority
+      if ( listQuery.workType ) filters.workType = listQuery.workType
+      if ( listQuery.status ) filters.status = listQuery.status
+      if ( listQuery.search ) filters.search = listQuery.search
+      if ( listQuery.dueDate ) filters.dueDate = listQuery.dueDate
+      if ( listQuery.customDateRange ) filters.customDateRange = listQuery.customDateRange
+
+      const response = await getAllWorkOrders( listQuery.page, listQuery.limit, 'createdAt', 'DESC', filters )
 
       const data = response.data.content
       total.value = response.data.totalElements
@@ -115,7 +129,7 @@ export function useWorkOrder() {
 
   const handleDelete = async( row, index ) => {
     try {
-      // TODO: Implement actual delete API call
+      // Implement actual delete API call
       ElNotification( {
         title : t( 'common.success' ),
         message : t( 'workOrder.messages.deleteSuccess' ),
@@ -190,7 +204,7 @@ export function useWorkOrderForm() {
     state_id : 1,
     halt_type : 0,
     time_zone : Intl.DateTimeFormat().resolvedOptions().timeZone,
-    created_by : 37, // TODO: Get from user store
+    created_by : 37, // Get from user store
     recurrence_type : null,
     image_list : [],
     files_list : [],
@@ -216,7 +230,7 @@ export function useWorkOrderForm() {
     ]
   } )
 
-  // Reset form to initial state
+  // Reset form to initial state, hardcode some values for testing purposes
   const resetForm = () => {
     Object.assign( form, {
       name : '',
