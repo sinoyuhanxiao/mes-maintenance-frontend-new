@@ -97,3 +97,16 @@ export function deleteFile( fileName ) {
     }
   } )
 }
+
+/**
+ * Delete list of objects from MinIO.
+ * @param {Object} objectInfo - The data object with bucket name and object url list.
+ * @returns {Promise} - API response.
+ */
+export function deleteObjectList( objectInfo ) {
+  return http.request( {
+    method : 'delete',
+    url : '/files/object-list',
+    data : objectInfo
+  } )
+}

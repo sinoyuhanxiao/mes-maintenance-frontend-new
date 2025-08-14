@@ -10,14 +10,14 @@
         :auto-upload="false"
         :on-preview="handlePictureCardPreview"
         :on-remove="handleImageRemove"
-        :file-list="imageList"
+        :file-list="combinedImageList"
         :on-change="handleImageChange"
         :before-upload="beforeImageUpload"
         accept="image/*"
         :disabled="isImageLimitReached"
       >
         <el-icon v-if="!isImageLimitReached"><Plus /></el-icon>
-        <div v-else class="upload-limit-text">Limit reached ({{ imageList.length }}/{{ maxImages }})</div>
+        <div v-else class="upload-limit-text">Limit reached ({{ combinedImageList.length }}/{{ maxImages }})</div>
 
         <template #file="{ file }">
           <div>
@@ -38,7 +38,7 @@
       </el-upload>
 
       <!-- Image count display -->
-      <div v-if="maxImages > 0" class="upload-count">Images: {{ imageList.length }}/{{ maxImages }}</div>
+      <div v-if="maxImages > 0" class="upload-count">Images: {{ combinedImageList.length }}/{{ maxImages }}</div>
 
       <el-dialog v-model="dialogVisible" :width="'80%'" :top="'5vh'" append-to-body destroy-on-close>
         <div class="image-wrapper">
@@ -55,30 +55,49 @@
         list-type="text"
         :auto-upload="false"
         :on-remove="handleFileRemove"
-        :file-list="fileList"
+        :file-list="combinedFileList"
         :on-change="handleFileChange"
         :before-upload="beforeFileUpload"
         accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar,.csv,.json,.xml,.ppt,.pptx"
         :disabled="isFileLimitReached"
       >
         <el-button size="small" type="success" :disabled="isFileLimitReached">
-          {{ isFileLimitReached ? `Limit Reached (${fileList.length}/${maxFiles})` : 'Click to Upload' }}
+          {{ isFileLimitReached ? `Limit Reached (${combinedFileList.length}/${maxFiles})` : 'Click to Upload' }}
         </el-button>
       </el-upload>
 
       <!-- File count display -->
-      <div v-if="maxFiles > 0" class="upload-count">Files: {{ fileList.length }}/{{ maxFiles }}</div>
+      <div v-if="maxFiles > 0" class="upload-count">Files: {{ combinedFileList.length }}/{{ maxFiles }}</div>
     </el-form-item>
+
+    <el-button type="primary" size="small" @click="logEmitInfo">
+      Log Emitted Info
+    </el-button>
   </div>
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue'
-import { Plus, ZoomIn, Download, Delete } from '@element-plus/icons-vue'
+import { ref, watch, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Plus, ZoomIn, Download, Delete } from '@element-plus/icons-vue'
 
-// Props
+const imageList = ref( [] )
+const dialogVisible = ref( false )
+const dialogImageUrl = ref( '' )
+const uploading = ref( false )
+const fileList = ref( [] )
+const removedExistingImages = ref( [] )
+const removedExistingFiles = ref( [] )
+
 const props = defineProps( {
+  existingImageList : {
+    type : Array,
+    default : () => []
+  },
+  existingFileList : {
+    type : Array,
+    default : () => []
+  },
   imageLabel : {
     type : String,
     default : 'Upload Images'
@@ -89,8 +108,7 @@ const props = defineProps( {
   },
   uploadType : {
     type : String,
-    default : 'both', // 'images', 'files', 'both'
-    validator : value => ['images', 'files', 'both'].includes( value )
+    default : 'both' // 'both', 'images', 'files'
   },
   maxImages : {
     type : Number,
@@ -102,53 +120,85 @@ const props = defineProps( {
   }
 } )
 
-const imageList = ref( [] )
-const dialogVisible = ref( false )
-const dialogImageUrl = ref( '' )
-const uploading = ref( false )
-const fileList = ref( [] )
+const emit = defineEmits( ['update:imageList', 'update:filesList', 'remove-existing-image', 'remove-existing-file'] )
 
-const emit = defineEmits( ['update:imageList', 'update:filesList'] )
+// Show/hide sections based on uploadType
+const showImages = computed( () => {
+  return props.uploadType === 'both' || props.uploadType === 'images'
+} )
 
-// Computed properties
-const showImages = computed( () => props.uploadType === 'both' || props.uploadType === 'images' )
-const showFiles = computed( () => props.uploadType === 'both' || props.uploadType === 'files' )
-const isImageLimitReached = computed( () => props.maxImages > 0 && imageList.value.length >= props.maxImages )
-const isFileLimitReached = computed( () => props.maxFiles > 0 && fileList.value.length >= props.maxFiles )
+const showFiles = computed( () => {
+  return props.uploadType === 'both' || props.uploadType === 'files'
+} )
 
-// Before upload validators
-const beforeImageUpload = file => {
-  if ( props.maxImages > 0 && imageList.value.length >= props.maxImages ) {
-    ElMessage.warning( `Maximum ${props.maxImages} images allowed` )
-    return false
-  }
-  return true
+// Check if limits are reached
+const isImageLimitReached = computed( () => {
+  return props.maxImages > 0 && combinedImageList.value.length >= props.maxImages
+} )
+
+const isFileLimitReached = computed( () => {
+  return props.maxFiles > 0 && combinedFileList.value.length >= props.maxFiles
+} )
+
+const logEmitInfo = () => {
+  console.log( 'New image File[] to emit:', imageList.value.map( f => f.raw ).filter( f => f instanceof File ) )
+  console.log( 'New file File[] to emit:', fileList.value.map( f => f.raw ).filter( f => f instanceof File ) )
+  console.log( 'Removed existing image URLs:', removedExistingImages.value )
+  console.log( 'Removed existing file URLs:', removedExistingFiles.value )
 }
 
-const beforeFileUpload = file => {
-  if ( props.maxFiles > 0 && fileList.value.length >= props.maxFiles ) {
-    ElMessage.warning( `Maximum ${props.maxFiles} files allowed` )
-    return false
-  }
-  return true
-}
+// Computed to combine existing and new images/files for display
+const combinedImageList = computed( () => {
+  const existing = props.existingImageList
+    .filter( url => !removedExistingImages.value.includes( url ) )
+    .map( ( url, index ) => ( {
+      uid : `existing-image-${index}`,
+      name : `existing-image-${index}`,
+      url,
+      status : 'success',
+      isExisting : true
+    } ) )
+
+  return [...existing, ...imageList.value]
+} )
+
+const combinedFileList = computed( () => {
+  const existing = props.existingFileList
+    .filter( url => !removedExistingFiles.value.includes( url ) )
+    .map( ( url, index ) => {
+      // Extract filename from URL
+      const filename = url.split( '/' ).pop() || `existing-file-${index}`
+      return {
+        uid : `existing-file-${index}`,
+        name : filename,
+        url,
+        status : 'success',
+        isExisting : true
+      }
+    } )
+  return [...existing, ...fileList.value]
+} )
 
 const handleFileChange = ( file, newFileList ) => {
-  // Check file limit
-  if ( props.maxFiles > 0 && newFileList.length > props.maxFiles ) {
-    ElMessage.warning( `Maximum ${props.maxFiles} files allowed` )
-    newFileList = newFileList.slice( 0, props.maxFiles )
-  }
+  // Only process new files (files with raw property) and filter out existing files
+  // Also filter out any files that might be from removed existing files
+  const newFiles = newFileList.filter( uploadedFile => {
+    // Must have raw property (new upload)
+    if ( !uploadedFile.raw ) return false
 
-  const readerPromises = newFileList.map( uploadedFile => {
+    // Must not be marked as existing
+    if ( uploadedFile.isExisting ) return false
+
+    // Must not be in the removed list (extra safety check)
+    if ( uploadedFile.url && removedExistingFiles.value.includes( uploadedFile.url ) ) return false
+
+    return true
+  } )
+
+  const readerPromises = newFiles.map( uploadedFile => {
     return new Promise( resolve => {
       if ( !uploadedFile.uid ) {
         uploadedFile.uid = Date.now().toString()
-      }
-
-      if ( !uploadedFile.raw ) {
-        resolve( uploadedFile )
-        return
       }
 
       const reader = new FileReader()
@@ -161,14 +211,25 @@ const handleFileChange = ( file, newFileList ) => {
   } )
 
   Promise.all( readerPromises ).then( resolvedList => {
-    fileList.value = resolvedList
+    // Final safety check - ensure no existing files sneak into new list
+    const cleanedList = resolvedList.filter( file => !file.isExisting && !removedExistingFiles.value.includes( file.url ) )
+    fileList.value = cleanedList
   } )
 }
 
 const handleFileRemove = file => {
-  const index = fileList.value.findIndex( item => item.uid === file.uid )
-  if ( index !== -1 ) {
-    fileList.value.splice( index, 1 )
+  if ( file.isExisting ) {
+    // Handle removal of existing file
+    if ( !removedExistingFiles.value.includes( file.url ) ) {
+      removedExistingFiles.value.push( file.url )
+    }
+    emit( 'remove-existing-file', file.url )
+  } else {
+    // Handle removal of newly uploaded file
+    const index = fileList.value.findIndex( item => item.uid === file.uid )
+    if ( index !== -1 ) {
+      fileList.value.splice( index, 1 )
+    }
   }
 }
 
@@ -180,28 +241,41 @@ const handlePictureCardPreview = file => {
 }
 
 const handleImageRemove = file => {
-  const index = imageList.value.findIndex( item => item.uid === file.uid )
-  if ( index !== -1 ) {
-    imageList.value.splice( index, 1 )
+  if ( file.isExisting ) {
+    // Handle removal of existing image
+    if ( !removedExistingImages.value.includes( file.url ) ) {
+      removedExistingImages.value.push( file.url )
+    }
+    emit( 'remove-existing-image', file.url )
+  } else {
+    // Handle removal of newly uploaded image
+    const index = imageList.value.findIndex( item => item.uid === file.uid )
+    if ( index !== -1 ) {
+      imageList.value.splice( index, 1 )
+    }
   }
 }
 
 const handleImageChange = ( file, uploadFileList ) => {
-  // Check image limit
-  if ( props.maxImages > 0 && uploadFileList.length > props.maxImages ) {
-    ElMessage.warning( `Maximum ${props.maxImages} images allowed` )
-    uploadFileList = uploadFileList.slice( 0, props.maxImages )
-  }
+  // Only process new files (files with raw property) and filter out existing files
+  // Also filter out any files that might be from removed existing images
+  const newFiles = uploadFileList.filter( uploadedFile => {
+    // Must have raw property (new upload)
+    if ( !uploadedFile.raw ) return false
 
-  const readerPromises = uploadFileList.map( uploadedFile => {
+    // Must not be marked as existing
+    if ( uploadedFile.isExisting ) return false
+
+    // Must not be in the removed list (extra safety check)
+    if ( uploadedFile.url && removedExistingImages.value.includes( uploadedFile.url ) ) return false
+
+    return true
+  } )
+
+  const readerPromises = newFiles.map( uploadedFile => {
     return new Promise( resolve => {
       if ( !uploadedFile.uid ) {
         uploadedFile.uid = Date.now().toString()
-      }
-
-      if ( !uploadedFile.raw ) {
-        resolve( uploadedFile )
-        return
       }
 
       const reader = new FileReader()
@@ -214,8 +288,44 @@ const handleImageChange = ( file, uploadFileList ) => {
   } )
 
   Promise.all( readerPromises ).then( resolvedList => {
-    imageList.value = resolvedList
+    // Final safety check - ensure no existing files sneak into new list
+    const cleanedList = resolvedList.filter( file => !file.isExisting && !removedExistingImages.value.includes( file.url ) )
+    imageList.value = cleanedList
   } )
+}
+
+// Upload validation functions
+const beforeImageUpload = file => {
+  const isValidType = file.type.startsWith( 'image/' )
+  if ( !isValidType ) {
+    ElMessage.error( 'Only image files are allowed!' )
+    return false
+  }
+
+  if ( props.maxImages > 0 && combinedImageList.value.length >= props.maxImages ) {
+    ElMessage.error( `Maximum ${props.maxImages} images allowed!` )
+    return false
+  }
+
+  return true
+}
+
+const beforeFileUpload = file => {
+  const allowedTypes = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.txt', '.zip', '.rar', '.csv', '.json', '.xml', '.ppt', '.pptx']
+  const fileExtension = '.' + file.name.split( '.' ).pop().toLowerCase()
+  const isValidType = allowedTypes.includes( fileExtension )
+
+  if ( !isValidType ) {
+    ElMessage.error( 'File type not allowed!' )
+    return false
+  }
+
+  if ( props.maxFiles > 0 && combinedFileList.value.length >= props.maxFiles ) {
+    ElMessage.error( `Maximum ${props.maxFiles} files allowed!` )
+    return false
+  }
+
+  return true
 }
 
 const handleDownload = file => {
@@ -246,14 +356,57 @@ watch(
   },
   { deep : true }
 )
+
+// Reset removed items when component reinitializes
+const resetRemovedItems = () => {
+  removedExistingImages.value = []
+  removedExistingFiles.value = []
+}
+
+// Clear any existing files that might have accidentally been added to new file lists
+const clearExistingFromNewLists = () => {
+  // Remove any existing files that got into imageList
+  imageList.value = imageList.value.filter( file => !file.isExisting )
+  // Remove any existing files that got into fileList
+  fileList.value = fileList.value.filter( file => !file.isExisting )
+}
+
+// Watch for changes in existing props to reset removed items
+watch(
+  () => [props.existingImageList, props.existingFileList],
+  () => {
+    resetRemovedItems()
+    clearExistingFromNewLists()
+  },
+  { deep : true }
+)
+
+// Initialize existing files on mount or when props change
+onMounted( () => {
+  // Reset removed items on mount
+  resetRemovedItems()
+  clearExistingFromNewLists()
+
+  // Initialize with existing data if provided
+  if ( props.existingImageList.length > 0 || props.existingFileList.length > 0 ) {
+    console.log( 'Initialized with existing files:', {
+      images : props.existingImageList,
+      files : props.existingFileList
+    } )
+  }
+} )
+
+// Expose reset function for parent components
+defineExpose( {
+  resetRemovedItems,
+  clearExistingFromNewLists
+} )
 </script>
 
 <style scoped>
 .upload-editor {
   margin-top: 20px;
-  width: 700px;
-  max-width: 100%;
-  overflow: hidden;
+  width: 100%;
 }
 
 .upload-demo {
@@ -264,49 +417,6 @@ watch(
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 70vh;
-  overflow: hidden;
-}
-
-.preview-image {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-
-.upload-count {
-  margin-top: 8px;
-  font-size: 12px;
-  color: #909399;
-  text-align: right;
-}
-
-.upload-limit-text {
-  font-size: 12px;
-  color: #909399;
-  text-align: center;
-  padding: 10px;
-}
-
-:deep(.el-upload--picture-card.is-disabled) {
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
-:deep(.el-upload--picture-card.is-disabled:hover) {
-  border-color: #d9d9d9;
-}
-
-:deep(.el-upload-list--picture-card) {
-  overflow: visible;
-}
-
-:deep(.el-upload-list__item) {
-  overflow: hidden;
-  border-radius: 6px;
-}
-
-:deep(.el-upload-list__item:hover .el-upload-list__item-actions) {
-  opacity: 1;
+  height: 100%;
 }
 </style>

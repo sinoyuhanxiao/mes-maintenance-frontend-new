@@ -44,15 +44,28 @@
     </div>
 
     <el-dialog v-model="showAddDialog" title="Add New Tier 2" width="600px" :before-close="handleCloseDialog">
-      <AddEquipmentGroup @close="closeAddDialog" @success="handleAddSuccess" :parentId="parentId" />
+      <AddEquipmentGroup
+        v-if="showAddDialog"
+        @close="closeAddDialog"
+        @success="handleAddSuccess"
+        :parentId="parentId"
+      />
     </el-dialog>
 
+    <!-- 🔥 KEY FIX: Add unique key to force component recreation -->
     <el-dialog v-model="showEditDialog" title="Edit Tier 2" width="600px" :before-close="handleCloseDialog">
-      <EditEquipmentGroup @close="closeEditDialog" @success="handleEditSuccess" :equipmentId="props.node.id" />
+      <EditEquipmentGroup
+        v-if="showEditDialog"
+        :key="`edit-${props.node.id}-${editDialogKey}`"
+        @close="closeEditDialog"
+        @success="handleEditSuccess"
+        :equipmentId="props.node.id"
+      />
     </el-dialog>
 
     <el-dialog v-model="showDeactivateDialog" title="Delete Tier 2" width="600px" :before-close="handleCloseDialog">
       <DeactivateNode
+        v-if="showDeactivateDialog"
         @close="closeDeactivateDialog"
         @success="handleDeleteSuccess"
         @refresh-tree="handleRefreshTree"
@@ -111,6 +124,9 @@ const showEditDialog = ref( false )
 const showDeactivateDialog = ref( false )
 const refreshKey = ref( 0 ) // Key for forcing component re-render
 
+// 🔥 ADD THIS: Key to force EditEquipmentGroup component recreation
+const editDialogKey = ref( 0 )
+
 // Dialog methods
 const openAddDialog = () => {
   showAddDialog.value = true
@@ -121,6 +137,8 @@ const closeAddDialog = () => {
 }
 
 const openEditDialog = () => {
+  // 🔥 INCREMENT KEY EVERY TIME DIALOG OPENS - Forces fresh component
+  editDialogKey.value += 1
   showEditDialog.value = true
 }
 
@@ -152,7 +170,9 @@ const handleEditSuccess = updatedEquipment => {
   emit( 'refresh-tree' )
 
   // Refresh only the data in the current view
-  refreshViewData()
+  setTimeout( () => {
+    refreshViewData()
+  }, 100 )
 }
 
 // Function to refresh data in the current view

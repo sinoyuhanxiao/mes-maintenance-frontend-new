@@ -17,7 +17,6 @@
             <el-breadcrumb :separator-icon="ArrowRight">
               <el-breadcrumb-item v-for="location in locationPath" :key="location.id">
                 {{ location.name }}
-                {{ location.id }}
               </el-breadcrumb-item>
               <el-breadcrumb-item v-if="locationPath.length === 0"> No location path available </el-breadcrumb-item>
             </el-breadcrumb>
@@ -98,7 +97,7 @@ const loading = ref( false )
 const error = ref( null )
 
 // Parse file list from array of URLs
-const parseFileList = fileArray => {
+const parseFileList = ( fileArray ) => {
   if ( !fileArray || !Array.isArray( fileArray ) ) return []
 
   return fileArray.map( ( url, index ) => {
@@ -128,24 +127,20 @@ const fetchEquipmentData = async() => {
 
     const response = await getEquipmentById( props.equipmentId )
     equipmentData.value = response.data
-    console.log( 'Equipment data received:', equipmentData.value )
 
     // Parse file list if it's an array of URLs
     if ( equipmentData.value.file_list && Array.isArray( equipmentData.value.file_list ) ) {
       equipmentData.value.file_list = parseFileList( equipmentData.value.file_list )
     }
 
-    console.log( 'Equipment data:', equipmentData.value )
-    console.log( 'Parsed file list:', equipmentData.value.file_list )
-
-    if ( equipmentData.value.location_id ) {
-      console.log( 'Fetching location path for location_id:', equipmentData.value.location_id )
-      await fetchLocationPath( equipmentData.value.location_id )
+    if ( equipmentData.value.location?.id &&
+        typeof equipmentData.value.location.id !== 'object' &&
+        equipmentData.value.location.status !== 0 ) {
+      await fetchLocationPath( equipmentData.value.location.id )
     } else {
-      console.log( 'No location_id found in equipment data' )
+      locationPath.value = []
     }
   } catch ( err ) {
-    console.error( 'Error fetching equipment:', err )
     error.value = err.message || 'Failed to fetch equipment data'
   } finally {
     loading.value = false
@@ -153,14 +148,11 @@ const fetchEquipmentData = async() => {
 }
 
 // Fetch location path
-const fetchLocationPath = async locationId => {
-  console.log( 'inside fetchLocationPath: ', locationId )
+const fetchLocationPath = async( locationId ) => {
   try {
     const response = await getLocationPathById( locationId )
     locationPath.value = response.data || []
-    console.log( 'Location path received:', locationPath.value )
   } catch ( err ) {
-    console.error( 'Error fetching location path:', err )
     locationPath.value = []
   }
 }
@@ -231,7 +223,7 @@ onMounted( () => {
 
 watch(
   () => props.equipmentId,
-  newId => {
+  ( newId ) => {
     if ( newId ) {
       fetchEquipmentData()
     }
