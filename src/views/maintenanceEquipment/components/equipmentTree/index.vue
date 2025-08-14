@@ -63,13 +63,13 @@ const transformNode = ( node, level = 0 ) => {
       id : node.id,
       label : level === 0 ? node.name : `T${level}: ${node.name}`,
       level,
-      children : undefined // No children beyond T4
+      children : undefined
     }
   }
   return {
     id : node.id,
     label : level === 0 ? node.name : `T${level}: ${node.name}`,
-    level, // Store level for icon selection
+    level,
     children :
       node.children && node.children.length > 0
         ? node.children.map( child => transformNode( child, level + 1 ) )
@@ -103,12 +103,10 @@ const fetchEquipmentTree = async() => {
   }
 }
 
-// Method to refresh the tree data
 const refreshTree = async() => {
   await fetchEquipmentTree()
 }
 
-// Expose the refresh method so parent components can call it
 defineExpose( {
   refreshTree
 } )

@@ -6,7 +6,6 @@ import http from '@/utils/request'
  * @returns {Promise} API response with location path
  */
 export const getLocationPathById = locationId => {
-  console.log( 'API function called with locationId:', locationId )
   return http.request( {
     method : 'get',
     url : `/location/node-path/${locationId}`

@@ -109,8 +109,8 @@
         <FileUploadMultiple
           @update:imageList="handleFileUpdate('imageList', $event)"
           @update:filesList="handleFileUpdate('filesList', $event)"
-          @remove-existing-image="handleFileUpdate('removeImage', $event)"
-          @remove-existing-file="handleFileUpdate('removeFile', $event)"
+          @update:removedExistingImages="handleFileUpdate('removeImage', $event)"
+          @update:removedExistingFiles="handleFileUpdate('removeFile', $event)"
           upload-type="both"
           :max-images="5"
           :max-files="5"
@@ -148,12 +148,12 @@ const productionLines = ref( [] )
 const productionLineLoading = ref( false )
 const sequenceOrders = ref( [] )
 const dataLoading = ref( false )
-const newImages = ref( [] ) // File Objects
-const newFiles = ref( [] ) // File Objects
-const removedImages = ref( [] ) // URLs
-const removedFiles = ref( [] ) // URLs
-const newImageUrls = ref( [] ) // URLs
-const newFileUrls = ref( [] ) // URLs
+const newImages = ref( [] )
+const newFiles = ref( [] )
+const removedImages = ref( [] )
+const removedFiles = ref( [] )
+const newImageUrls = ref( [] )
+const newFileUrls = ref( [] )
 
 const props = defineProps( {
   equipmentId : {
@@ -180,7 +180,6 @@ const treeProps = {
   label : 'name'
 }
 
-// Add this function to reset all file-related state
 const resetFileState = () => {
   newImages.value = []
   newFiles.value = []
@@ -198,45 +197,34 @@ const setCurrentTreeNode = async locationId => {
   try {
     await nextTick()
 
-    // Ensure tree is fully rendered and has data
     if ( treeData.value.length === 0 ) {
-      console.warn( 'Tree data not loaded yet' )
       return
     }
 
-    // Set the current node
     treeRef.value.setCurrentKey( locationId )
 
-    // Double-check if the node exists in the tree
     const node = treeRef.value.getNode( locationId )
     if ( !node ) {
-      console.warn( `Node with id ${locationId} not found in tree` )
       return
     }
 
-    // Expand parent nodes to make the selected node visible
     let parentNode = node.parent
     while ( parentNode && parentNode.key !== undefined ) {
       parentNode.expanded = true
       parentNode = parentNode.parent
     }
 
-    // Ensure the form data is in sync
     formData.selectedLocationId = locationId
 
-    // Clear any validation errors for the location field
     if ( formRef.value ) {
       await nextTick()
       formRef.value.clearValidate( 'selectedLocationId' )
     }
-
-    console.log( `Successfully set tree node to: ${locationId}` )
   } catch ( error ) {
-    console.error( 'Error setting current tree node:', error )
+    // Silent error handling
   }
 }
 
-// Updated fetchEquipmentData with proper reset
 const fetchEquipmentData = async() => {
   if ( !props.equipmentId ) return
 
@@ -246,10 +234,8 @@ const fetchEquipmentData = async() => {
     const equipment = response.data
     const actualData = equipment.data || equipment
 
-    // Reset file state first to prevent duplication
     resetFileState()
 
-    // Populate form with existing data
     formData.name = actualData.name || ''
     formData.code = actualData.code || ''
     formData.description = actualData.description || ''
@@ -259,7 +245,6 @@ const fetchEquipmentData = async() => {
     formData.imageList = actualData.image_list || []
     formData.filesList = actualData.file_list || []
 
-    // Store the location info for later tree initialization
     selectedNodeId.value = actualData.location?.id || actualData.location_id
 
     return actualData
@@ -305,10 +290,8 @@ const initializeTreeSelection = async equipmentData => {
   const locationId = equipmentData.location?.id || equipmentData.location_id
   if ( !locationId ) return
 
-  // Wait for tree to be fully rendered
   await nextTick()
 
-  // Set the tree node - the watchers will handle retries if needed
   if ( treeRef.value && treeData.value.length > 0 ) {
     await setCurrentTreeNode( locationId )
   }
@@ -318,22 +301,18 @@ const handleFileUpdate = ( type, data ) => {
   switch ( type ) {
     case 'imageList':
       newImages.value = data
-      console.log( 'New images:', newImages.value ) // Debugging log
       break
 
     case 'filesList':
       newFiles.value = data
-      console.log( 'New files:', newFiles.value ) // Debugging log
       break
 
     case 'removeImage':
       removedImages.value = data
-      console.log( 'Removed images:', removedImages.value ) // Debugging log
       break
 
     case 'removeFile':
       removedFiles.value = data
-      console.log( 'Removed files:', removedFiles.value ) // Debugging log
       break
 
     default:
@@ -343,13 +322,11 @@ const handleFileUpdate = ( type, data ) => {
 
 const uploadFilesToServer = async() => {
   try {
-    // Upload new images if any
     if ( newImages.value.length > 0 ) {
       const imageRes = await uploadMultipleToMinio( newImages.value )
       newImageUrls.value = imageRes.data.uploadedFiles?.map( file => file.url ) || []
     }
 
-    // Upload new files if any
     if ( newFiles.value.length > 0 ) {
       const fileRes = await uploadMultipleToMinio( newFiles.value )
       newFileUrls.value = fileRes.data.uploadedFiles?.map( file => file.url ) || []
@@ -359,7 +336,6 @@ const uploadFilesToServer = async() => {
   }
 }
 
-// Updated handleConfirm with proper state cleanup
 const handleConfirm = async() => {
   if ( !formRef.value ) return
 
@@ -372,18 +348,14 @@ const handleConfirm = async() => {
     let finalImageList = formData.imageList || []
     let finalFilesList = formData.filesList || []
 
-    // Upload new files if there are any
     if ( newImages.value.length > 0 || newFiles.value.length > 0 ) {
       await uploadFilesToServer()
     }
 
-    // Combine existing files with newly uploaded ones
     finalImageList = [...( finalImageList || [] ), ...( newImageUrls.value || [] )]
     finalFilesList = [...( finalFilesList || [] ), ...( newFileUrls.value || [] )]
 
-    // Filter out removed items
     finalImageList = finalImageList.filter( imageUrl => !removedImages.value.includes( imageUrl ) )
-
     finalFilesList = finalFilesList.filter( fileUrl => !removedFiles.value.includes( fileUrl ) )
 
     const submissionData = {
@@ -401,49 +373,38 @@ const handleConfirm = async() => {
     const response = await editEquipmentNode( props.equipmentId, submissionData )
     ElMessage.success( 'Equipment group updated successfully!' )
 
-    console.log( 'images removed', removedImages.value )
-    console.log( 'files removed', removedFiles.value )
     if ( removedImages.value.length > 0 || removedFiles.value.length > 0 ) {
       const removedUrls = [...removedImages.value, ...removedFiles.value]
-      console.log( 'removedUrls:', removedUrls ) // This will have a value
-      try {
-        const deleteResponse = await deleteObjectList( {
-          bucketName : 'sv-file-bucket',
-          objectUrls : removedUrls
-        } )
 
-        console.log( 'delete response:', deleteResponse ) // This will have a value
-        ElMessage.success( 'Old files deleted successfully!' )
-      } catch ( error ) {
-        // 🎯 THIS contains your API response structure
-        console.log( 'Server response:', error.response.data )
+      Promise.resolve().then( async() => {
+        try {
+          const deleteResponse = await deleteObjectList( {
+            bucketName : 'sv-file-bucket',
+            objectUrls : removedUrls
+          } )
 
-        // Your API schema:
-        console.log( 'Timestamp:', error.response.data.timestamp )
-        console.log( 'API Status:', error.response.data.status ) // 0 = success, >0 = error
-        console.log( 'Message:', error.response.data.message )
-        console.log( 'Data:', error.response.data.data )
-      }
+          if ( deleteResponse.status === 0 ) {
+            ElMessage.success( 'Old files deleted successfully!' )
+          }
+        } catch ( error ) {
+          // Silent fail
+        }
+      } )
     }
 
-    // Reset file state after successful submission
     resetFileState()
 
     emit( 'close' )
     emit( 'success', response.data )
   } catch ( error ) {
-    console.error( 'Error in handleConfirm:', error )
     ElMessage.error( `Failed to update equipment group: ${error.message}` )
   } finally {
     submitLoading.value = false
   }
 }
 
-// Updated handleCancel with state reset
 const handleCancel = () => {
-  // Reset file state when canceling
   resetFileState()
-
   emit( 'close' )
   emit( 'cancel' )
 }
@@ -455,7 +416,6 @@ const fetchProductionLines = async() => {
 
   productionLineLoading.value = true
   try {
-    // Fetch production lines for the dropdown
     const productionLinesResponse = await getEquipmentNodes( 1, 100, 'sequenceOrder', 'ASC', {
       node_type_ids : [3]
     } )
@@ -463,7 +423,6 @@ const fetchProductionLines = async() => {
     const productionLinesContent = productionLinesResponse.data?.content || []
     productionLines.value = productionLinesContent
 
-    // Fetch equipment groups to calculate sequence order (excluding current item)
     const equipmentGroupsResponse = await getEquipmentNodes( 1, 100, 'sequenceOrder', 'ASC', {
       node_type_ids : [4],
       parent_ids : [formData.parentId]
@@ -471,7 +430,6 @@ const fetchProductionLines = async() => {
 
     const equipmentGroupsContent = equipmentGroupsResponse.data?.content || []
 
-    // Filter out current equipment being edited
     const otherEquipmentGroups = equipmentGroupsContent.filter( item => item.id !== parseInt( props.equipmentId ) )
 
     const sequenceOrdersArray = otherEquipmentGroups
@@ -500,21 +458,17 @@ const filterNode = ( value, data ) => {
   return data.name.toLowerCase().includes( value.toLowerCase() )
 }
 
-// Enhanced handleNodeClick with proper validation
 const handleNodeClick = async( data, node ) => {
   selectedNodeId.value = data.id
   formData.selectedLocationId = data.id
 
-  // Wait for next tick to ensure reactive updates are processed
   await nextTick()
 
-  // Trigger validation for the location field
   if ( formRef.value ) {
     formRef.value.validateField( 'selectedLocationId' )
   }
 }
 
-// Watch for parentId changes and refresh production lines
 watch(
   () => formData.parentId,
   ( newParentId, oldParentId ) => {
@@ -525,7 +479,6 @@ watch(
   { immediate : false }
 )
 
-// Add a watcher to handle tree initialization when tree data loads
 watch( treeData, async newTreeData => {
   if ( newTreeData.length > 0 && selectedNodeId.value ) {
     await nextTick()
@@ -533,14 +486,12 @@ watch( treeData, async newTreeData => {
   }
 } )
 
-// Enhanced watcher for selectedLocationId
 watch(
   () => formData.selectedLocationId,
   async( newLocationId, oldLocationId ) => {
     if ( newLocationId && newLocationId !== oldLocationId ) {
       selectedNodeId.value = newLocationId
 
-      // Only try to update tree if it's loaded
       if ( treeData.value.length > 0 ) {
         await nextTick()
         await setCurrentTreeNode( newLocationId )
@@ -549,38 +500,30 @@ watch(
   }
 )
 
-// Updated onMounted function
 onMounted( async() => {
   try {
-    // Reset file state when component mounts
     resetFileState()
 
-    // Load equipment data and tree data in parallel
     const [equipmentData] = await Promise.all( [fetchEquipmentData(), fetchLocationTree()] )
 
-    // Initialize tree selection after both are loaded
     if ( equipmentData ) {
       await initializeTreeSelection( equipmentData )
 
-      // Fetch production lines if we have a parent ID
       if ( equipmentData.parent_id || equipmentData.parent_equipment_node_id ) {
         await fetchProductionLines()
       }
     }
   } catch ( error ) {
-    console.error( 'Error during component initialization:', error )
+    // Silent error handling
   }
 } )
 
-// Updated equipmentId watcher with proper reset
 watch(
   () => props.equipmentId,
   ( newId, oldId ) => {
     if ( newId && newId !== oldId ) {
-      // Reset ALL state when equipmentId changes
       resetFileState()
 
-      // Reset form first
       Object.assign( formData, {
         name : '',
         code : '',
@@ -593,7 +536,6 @@ watch(
       } )
       selectedNodeId.value = null
 
-      // Fetch new data
       fetchEquipmentData()
     }
   },

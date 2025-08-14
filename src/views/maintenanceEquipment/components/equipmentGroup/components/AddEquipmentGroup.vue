@@ -172,16 +172,11 @@ const formData = reactive( {
   filesList : []
 } )
 
-// Watch for parentId changes and refresh data
 watch(
   () => props.parentId,
   ( newParentId, oldParentId ) => {
-    console.log( 'ParentId changed from', oldParentId, 'to', newParentId )
     if ( newParentId !== oldParentId && newParentId !== null ) {
-      // Update formData with new parentId
       formData.parentId = newParentId
-
-      // Reset form and fetch new data
       resetFormData()
       fetchProductionLines()
     }
@@ -197,7 +192,6 @@ const treeProps = {
 const handleImageListUpdate = images => {
   uploadedImages.value = images
   formData.imageList = images
-  console.log( 'Uploaded images:', formData.imageList )
 }
 
 const handleExplosionViewUpdate = images => {
@@ -252,7 +246,7 @@ const handleConfirm = async() => {
     if ( formData.imageList.length > 0 || formData.filesList.length > 0 ) {
       await uploadFilesToServer()
     }
-    console.log( 'Form data before submission:', formData.imageList )
+
     const submissionData = {
       name : formData.name,
       code : formData.code,
@@ -279,18 +273,16 @@ const handleConfirm = async() => {
   }
 }
 
-// Separate function to reset only form data (not fetch new data)
 const resetFormData = () => {
   if ( formRef.value ) {
     formRef.value.resetFields()
   }
 
-  // Reset form fields but keep the current parentId
   Object.assign( formData, {
     name : '',
     code : '',
     description : '',
-    parentId : props.parentId, // Keep current parentId
+    parentId : props.parentId,
     selectedLocationId : null,
     equipmentId : null,
     sequenceOrder : 1,
@@ -305,7 +297,6 @@ const resetFormData = () => {
   uploadedFiles.value = []
 }
 
-// Full reset including data fetching (used when closing dialog)
 const resetForm = () => {
   resetFormData()
   fetchProductionLines()
@@ -319,45 +310,28 @@ const handleCancel = () => {
 
 const fetchProductionLines = async() => {
   if ( !props.parentId ) {
-    console.log( 'No parentId provided, skipping production lines fetch' )
     return
   }
 
   productionLineLoading.value = true
   try {
-    // Fetch production lines for the dropdown
     const productionLinesResponse = await getEquipmentNodes( 1, 100, 'sequenceOrder', 'ASC', {
       node_type_ids : [3]
     } )
 
-    console.log( '=== PRODUCTION LINES API RESPONSE ===' )
-    console.log( 'Production lines response:', productionLinesResponse )
-
     const productionLinesContent = productionLinesResponse.data?.content || []
-    console.log( 'Production lines for dropdown:', productionLinesContent )
     productionLines.value = productionLinesContent
 
-    // Fetch equipment groups to calculate sequence order
     const equipmentGroupsResponse = await getEquipmentNodes( 1, 100, 'sequenceOrder', 'ASC', {
       node_type_ids : [4],
       parent_ids : [props.parentId]
     } )
 
-    console.log( '=== EQUIPMENT GROUPS API RESPONSE ===' )
-    console.log( 'Equipment groups response:', equipmentGroupsResponse )
-
     const equipmentGroupsContent = equipmentGroupsResponse.data?.content || []
-    console.log( 'Equipment groups for sequence calculation:', equipmentGroupsContent )
 
     const sequenceOrdersArray = equipmentGroupsContent
       .map( item => item.sequence_order )
       .filter( order => order !== null && order !== undefined && !isNaN( order ) )
-
-    console.log(
-      'Raw sequence orders from equipment groups:',
-      equipmentGroupsContent.map( item => item.sequence_order )
-    )
-    console.log( 'Filtered valid sequence orders:', sequenceOrdersArray )
 
     sequenceOrders.value = sequenceOrdersArray
 
@@ -365,25 +339,10 @@ const fetchProductionLines = async() => {
     const nextSequenceOrder = maxSequenceOrder + 1
     const maxAllowedSequence = sequenceOrdersArray.length + 1
 
-    console.log( 'Max sequence order found:', maxSequenceOrder )
-    console.log( 'Next sequence order calculated:', nextSequenceOrder )
-    console.log( 'Array size:', sequenceOrdersArray.length )
-    console.log( 'Max allowed sequence order:', maxAllowedSequence )
-
-    // Set sequence order, but cap it at the maximum allowed
     const finalSequenceOrder = nextSequenceOrder > maxAllowedSequence ? maxAllowedSequence : nextSequenceOrder
-
-    console.log( 'Final sequence order (after max check):', finalSequenceOrder )
-    console.log( '=== END DEBUG ===' )
 
     formData.sequenceOrder = finalSequenceOrder
   } catch ( err ) {
-    console.error( 'Fetch error:', err )
-    console.error( 'Error details:', {
-      message : err.message,
-      stack : err.stack,
-      response : err.response
-    } )
     ElMessage.error( 'Failed to load production lines' )
   } finally {
     productionLineLoading.value = false

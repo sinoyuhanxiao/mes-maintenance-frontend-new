@@ -118,7 +118,12 @@ const props = defineProps( {
   }
 } )
 
-const emit = defineEmits( ['update:imageList', 'update:filesList', 'remove-existing-image', 'remove-existing-file'] )
+const emit = defineEmits( [
+  'update:imageList',
+  'update:filesList',
+  'update:removedExistingImages',
+  'update:removedExistingFiles'
+] )
 
 // Show/hide sections based on uploadType
 const showImages = computed( () => {
@@ -227,7 +232,6 @@ const handleFileRemove = file => {
     if ( !removedExistingFiles.value.includes( file.url ) ) {
       removedExistingFiles.value.push( file.url )
     }
-    emit( 'remove-existing-file', file.url )
   } else {
     // Handle removal of newly uploaded file
     const index = fileList.value.findIndex( item => item.uid === file.uid )
@@ -250,7 +254,6 @@ const handleImageRemove = file => {
     if ( !removedExistingImages.value.includes( file.url ) ) {
       removedExistingImages.value.push( file.url )
     }
-    emit( 'remove-existing-image', file.url )
   } else {
     // Handle removal of newly uploaded image
     const index = imageList.value.findIndex( item => item.uid === file.uid )
@@ -371,6 +374,24 @@ watch(
   newList => {
     const fileArray = newList.map( file => file.raw ).filter( file => file instanceof File )
     emit( 'update:filesList', fileArray )
+  },
+  { deep : true }
+)
+
+watch(
+  removedExistingImages,
+  list => {
+    console.log( 'Emitting removedExistingImages list:', list.slice() )
+    emit( 'update:removedExistingImages', list.slice() )
+  },
+  { deep : true }
+)
+
+watch(
+  removedExistingFiles,
+  list => {
+    console.log( 'Emitting removedExistingFiles list:', list.slice() )
+    emit( 'update:removedExistingFiles', list.slice() )
   },
   { deep : true }
 )

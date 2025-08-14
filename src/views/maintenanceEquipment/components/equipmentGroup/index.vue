@@ -1,6 +1,5 @@
 <template>
   <div class="t2-main-container">
-    {{ props.node.id }}
     <div class="t2-main-header">
       <el-breadcrumb separator="/">
         <el-breadcrumb-item v-for="(item, index) in breadcrumb" :key="index">
@@ -52,7 +51,6 @@
       />
     </el-dialog>
 
-    <!-- 🔥 KEY FIX: Add unique key to force component recreation -->
     <el-dialog v-model="showEditDialog" title="Edit Tier 2" width="600px" :before-close="handleCloseDialog">
       <EditEquipmentGroup
         v-if="showEditDialog"
@@ -98,36 +96,27 @@ const props = defineProps( {
   }
 } )
 
-// Add emit for refresh-tree and refresh-data events
 const emit = defineEmits( ['refresh-tree', 'refresh-data'] )
 
 const parentId = computed( () => {
-  // Filter out the first array item and get valid breadcrumb items
   const validBreadcrumbItems = props.breadcrumb.filter( ( item, index ) => {
     return index > 0 && item && typeof item === 'object' && 'id' in item
   } )
 
   if ( validBreadcrumbItems.length >= 2 ) {
-    // Get second-to-last item (parent of current)
     return validBreadcrumbItems[validBreadcrumbItems.length - 2].id
   }
 
   return null
 } )
 
-console.log( props.node.id )
-console.log( props.breadcrumb )
-
 const activeTab = ref( 'details' )
 const showAddDialog = ref( false )
 const showEditDialog = ref( false )
 const showDeactivateDialog = ref( false )
-const refreshKey = ref( 0 ) // Key for forcing component re-render
-
-// 🔥 ADD THIS: Key to force EditEquipmentGroup component recreation
+const refreshKey = ref( 0 )
 const editDialogKey = ref( 0 )
 
-// Dialog methods
 const openAddDialog = () => {
   showAddDialog.value = true
 }
@@ -137,7 +126,6 @@ const closeAddDialog = () => {
 }
 
 const openEditDialog = () => {
-  // 🔥 INCREMENT KEY EVERY TIME DIALOG OPENS - Forces fresh component
   editDialogKey.value += 1
   showEditDialog.value = true
 }
@@ -160,38 +148,29 @@ const handleCloseDialog = done => {
 
 const handleAddSuccess = newEquipment => {
   closeAddDialog()
-  // Emit refresh-tree when new equipment is added
   emit( 'refresh-tree' )
 }
 
 const handleEditSuccess = updatedEquipment => {
   closeEditDialog()
-  // Emit refresh-tree when equipment is edited
   emit( 'refresh-tree' )
 
-  // Refresh only the data in the current view
   setTimeout( () => {
     refreshViewData()
   }, 100 )
 }
 
-// Function to refresh data in the current view
 const refreshViewData = () => {
-  // Force re-render of all tabs by updating a reactive key
   refreshKey.value += 1
-
-  // You can also emit a custom event to refresh specific data
   emit( 'refresh-data', props.node.id )
 }
 
 const handleDeleteSuccess = deletedEquipmentId => {
   closeDeactivateDialog()
-  // Emit refresh-tree when equipment is deleted
   emit( 'refresh-tree' )
 }
 
 const handleRefreshTree = () => {
-  // Pass the refresh-tree event up to parent
   emit( 'refresh-tree' )
 }
 </script>

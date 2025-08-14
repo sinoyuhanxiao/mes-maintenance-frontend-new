@@ -1,25 +1,29 @@
 <template>
   <div class="table-container">
     <div class="search-container">
-      <el-button v-if="searchActive === false"
-@click="handleSearchOption"
-size="small"
-:icon="Search"
-round
-        >Search</el-button
+      <el-button
+        v-if="searchActive === false"
+        @click="handleSearchOption"
+        size="small"
+        :icon="Search"
+        round
       >
+        Search
+      </el-button>
       <input
         v-if="searchActive === true"
         :placeholder="searchPlaceholder"
         style="border: solid 1px #d5d5d5; border-radius: 5px; width: 100%"
       />
-      <el-button v-if="searchActive === true"
-@click="handleSearchOption"
-size="small"
-:icon="Close"
-round
-        >Cancel</el-button
+      <el-button
+        v-if="searchActive === true"
+        @click="handleSearchOption"
+        size="small"
+        :icon="Close"
+        round
       >
+        Cancel
+      </el-button>
     </div>
     <div class="card-scroll-container">
       <el-row :gutter="0">
@@ -89,7 +93,6 @@ watch(
   () => props.items,
   newItems => {
     items.value = newItems
-    console.log( 'Updated items:', items.value )
   },
   { immediate : true, deep : true }
 )
@@ -103,7 +106,6 @@ function handleRequestData( data ) {
 }
 
 function handleCardClick( item ) {
-  // Handle click for module 4 cards
   emit( 'requestData', item )
 }
 

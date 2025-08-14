@@ -62,17 +62,14 @@
       </div>
     </template>
 
-    <!-- Loading state -->
     <div v-else-if="loading" class="loading-state" v-loading="true" element-loading-text="Loading equipment details...">
       <div style="height: 200px"></div>
     </div>
 
-    <!-- Error state -->
     <div v-else-if="error" class="error-state">
       <el-alert type="error" :title="error" show-icon />
     </div>
 
-    <!-- No data state -->
     <div v-else class="no-data">
       <el-empty description="No equipment data found" />
     </div>
@@ -96,17 +93,14 @@ const locationPath = ref( [] )
 const loading = ref( false )
 const error = ref( null )
 
-// Parse file list from array of URLs
 const parseFileList = fileArray => {
   if ( !fileArray || !Array.isArray( fileArray ) ) return []
 
   return fileArray.map( ( url, index ) => {
-    // Extract filename from URL
     const urlParts = url.split( '/' )
     const filename = urlParts[urlParts.length - 1] || `file_${index + 1}`
 
-    // Clean up filename (remove timestamp if present)
-    const cleanFilename = filename.replace( /\d{17}/, '' ) // Remove 17-digit timestamp
+    const cleanFilename = filename.replace( /\d{17}/, '' )
 
     return {
       id : index,
@@ -117,7 +111,6 @@ const parseFileList = fileArray => {
   } )
 }
 
-// Fetch equipment data
 const fetchEquipmentData = async() => {
   if ( !props.equipmentId ) return
 
@@ -128,7 +121,6 @@ const fetchEquipmentData = async() => {
     const response = await getEquipmentById( props.equipmentId )
     equipmentData.value = response.data
 
-    // Parse file list if it's an array of URLs
     if ( equipmentData.value.file_list && Array.isArray( equipmentData.value.file_list ) ) {
       equipmentData.value.file_list = parseFileList( equipmentData.value.file_list )
     }
@@ -149,7 +141,6 @@ const fetchEquipmentData = async() => {
   }
 }
 
-// Fetch location path
 const fetchLocationPath = async locationId => {
   try {
     const response = await getLocationPathById( locationId )
@@ -159,7 +150,6 @@ const fetchLocationPath = async locationId => {
   }
 }
 
-// Get file icon based on file type
 function getFileIcon( fileType ) {
   switch ( fileType?.toLowerCase() ) {
     case 'image':
@@ -200,7 +190,6 @@ function getFileIcon( fileType ) {
   }
 }
 
-// Get file type from file name extension
 function getFileTypeFromName( fileName ) {
   if ( !fileName ) return 'document'
 

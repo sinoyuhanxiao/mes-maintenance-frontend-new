@@ -103,10 +103,13 @@ export function deleteFile( fileName ) {
  * @param {Object} objectInfo - The data object with bucket name and object url list.
  * @returns {Promise} - API response.
  */
-export function deleteObjectList( objectInfo ) {
-  return http.request( {
-    method : 'delete',
-    url : '/files/object-list',
-    data : objectInfo
+export async function deleteObjectList( objectInfo ) {
+  const response = await fetch( `${MINIO_URL}/files/object-list`, {
+    method : 'DELETE',
+    headers : {
+      'Content-Type' : 'application/json'
+    },
+    body : JSON.stringify( objectInfo )
   } )
+  return await response.json()
 }

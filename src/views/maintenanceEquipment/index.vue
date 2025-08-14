@@ -51,12 +51,9 @@ const isTier4 = computed( () => breadcrumbPath.value.length === 6 )
 function onNodeClick( node, nodePath ) {
   selectedNode.value = node
   breadcrumbPath.value = nodePath
-  console.log( 'Node clicked in parent:', node, 'Path:', nodePath )
 }
 
-// Handle tree refresh from child components
 function handleRefreshTree() {
-  console.log( 'Refreshing tree from parent...' )
   equipmentTree.value?.refreshTree()
 }
 </script>
