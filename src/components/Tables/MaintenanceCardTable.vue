@@ -1,7 +1,13 @@
 <template>
   <div class="table-container">
     <div class="search-container">
-      <el-button v-if="searchActive === false" @click="handleSearchOption" size="small" :icon="Search" round>
+      <el-button
+        v-if="searchActive === false"
+        @click="handleSearchOption"
+        size="small"
+        :icon="Search"
+        round
+      >
         Search
       </el-button>
       <input
@@ -9,7 +15,13 @@
         :placeholder="searchPlaceholder"
         style="border: solid 1px #d5d5d5; border-radius: 5px; width: 100%"
       />
-      <el-button v-if="searchActive === true" @click="handleSearchOption" size="small" :icon="Close" round>
+      <el-button
+        v-if="searchActive === true"
+        @click="handleSearchOption"
+        size="small"
+        :icon="Close"
+        round
+      >
         Cancel
       </el-button>
     </div>
@@ -34,7 +46,7 @@
       :current-page="currentPage"
       :page-size="pageSize"
       :total="totalItems"
-      :pager-count="3"
+      :pager-count="pagerCount"
       @current-change="handleCurrentChange"
       class="pagination"
     />
@@ -88,6 +100,19 @@ watch(
 const pageSize = ref( props.pageSize )
 
 const emit = defineEmits( ['requestData'] )
+
+// Computed property to ensure pagerCount is always valid
+const pagerCount = computed( () => {
+  // Element Plus requires pagerCount to be between 5 and 21 (odd numbers)
+  // Default to 5 if props.totalItems is null/undefined or would result in invalid count
+  if ( !props.totalItems || props.totalItems <= 0 ) {
+    return 5
+  }
+
+  // Calculate reasonable pager count based on total items, but keep it odd and within bounds
+  const calculatedCount = Math.min( Math.max( 5, Math.ceil( props.totalItems / 10 ) ), 21 )
+  return calculatedCount % 2 === 0 ? calculatedCount - 1 : calculatedCount
+} )
 
 function handleRequestData( data ) {
   emit( 'requestData', data )
