@@ -70,9 +70,7 @@
       <div v-if="maxFiles > 0" class="upload-count">Files: {{ combinedFileList.length }}/{{ maxFiles }}</div>
     </el-form-item>
 
-    <el-button type="primary" size="small" @click="logEmitInfo">
-      Log Emitted Info
-    </el-button>
+    <el-button type="primary" size="small" @click="logEmitInfo"> Log Emitted Info </el-button>
   </div>
 </template>
 
@@ -141,8 +139,14 @@ const isFileLimitReached = computed( () => {
 } )
 
 const logEmitInfo = () => {
-  console.log( 'New image File[] to emit:', imageList.value.map( f => f.raw ).filter( f => f instanceof File ) )
-  console.log( 'New file File[] to emit:', fileList.value.map( f => f.raw ).filter( f => f instanceof File ) )
+  console.log(
+    'New image File[] to emit:',
+    imageList.value.map( f => f.raw ).filter( f => f instanceof File )
+  )
+  console.log(
+    'New file File[] to emit:',
+    fileList.value.map( f => f.raw ).filter( f => f instanceof File )
+  )
   console.log( 'Removed existing image URLs:', removedExistingImages.value )
   console.log( 'Removed existing file URLs:', removedExistingFiles.value )
 }
@@ -311,7 +315,21 @@ const beforeImageUpload = file => {
 }
 
 const beforeFileUpload = file => {
-  const allowedTypes = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.txt', '.zip', '.rar', '.csv', '.json', '.xml', '.ppt', '.pptx']
+  const allowedTypes = [
+    '.pdf',
+    '.doc',
+    '.docx',
+    '.xls',
+    '.xlsx',
+    '.txt',
+    '.zip',
+    '.rar',
+    '.csv',
+    '.json',
+    '.xml',
+    '.ppt',
+    '.pptx'
+  ]
   const fileExtension = '.' + file.name.split( '.' ).pop().toLowerCase()
   const isValidType = allowedTypes.includes( fileExtension )
 

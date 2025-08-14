@@ -97,7 +97,7 @@ const loading = ref( false )
 const error = ref( null )
 
 // Parse file list from array of URLs
-const parseFileList = ( fileArray ) => {
+const parseFileList = fileArray => {
   if ( !fileArray || !Array.isArray( fileArray ) ) return []
 
   return fileArray.map( ( url, index ) => {
@@ -133,9 +133,11 @@ const fetchEquipmentData = async() => {
       equipmentData.value.file_list = parseFileList( equipmentData.value.file_list )
     }
 
-    if ( equipmentData.value.location?.id &&
-        typeof equipmentData.value.location.id !== 'object' &&
-        equipmentData.value.location.status !== 0 ) {
+    if (
+      equipmentData.value.location?.id &&
+      typeof equipmentData.value.location.id !== 'object' &&
+      equipmentData.value.location.status !== 0
+    ) {
       await fetchLocationPath( equipmentData.value.location.id )
     } else {
       locationPath.value = []
@@ -148,7 +150,7 @@ const fetchEquipmentData = async() => {
 }
 
 // Fetch location path
-const fetchLocationPath = async( locationId ) => {
+const fetchLocationPath = async locationId => {
   try {
     const response = await getLocationPathById( locationId )
     locationPath.value = response.data || []
@@ -223,7 +225,7 @@ onMounted( () => {
 
 watch(
   () => props.equipmentId,
-  ( newId ) => {
+  newId => {
     if ( newId ) {
       fetchEquipmentData()
     }

@@ -190,7 +190,7 @@ const resetFileState = () => {
   newFileUrls.value = []
 }
 
-const setCurrentTreeNode = async( locationId ) => {
+const setCurrentTreeNode = async locationId => {
   if ( !treeRef.value || !locationId ) {
     return
   }
@@ -299,7 +299,7 @@ const fetchLocationTree = async() => {
   }
 }
 
-const initializeTreeSelection = async( equipmentData ) => {
+const initializeTreeSelection = async equipmentData => {
   if ( !equipmentData ) return
 
   const locationId = equipmentData.location?.id || equipmentData.location_id
@@ -382,13 +382,9 @@ const handleConfirm = async() => {
     finalFilesList = [...( finalFilesList || [] ), ...( newFileUrls.value || [] )]
 
     // Filter out removed items
-    finalImageList = finalImageList.filter( imageUrl =>
-      !removedImages.value.includes( imageUrl )
-    )
+    finalImageList = finalImageList.filter( imageUrl => !removedImages.value.includes( imageUrl ) )
 
-    finalFilesList = finalFilesList.filter( fileUrl =>
-      !removedFiles.value.includes( fileUrl )
-    )
+    finalFilesList = finalFilesList.filter( fileUrl => !removedFiles.value.includes( fileUrl ) )
 
     const submissionData = {
       name : formData.name,
@@ -408,10 +404,7 @@ const handleConfirm = async() => {
     console.log( 'images removed', removedImages.value )
     console.log( 'files removed', removedFiles.value )
     if ( removedImages.value.length > 0 || removedFiles.value.length > 0 ) {
-      const removedUrls = [
-        ...removedImages.value,
-        ...removedFiles.value
-      ]
+      const removedUrls = [...removedImages.value, ...removedFiles.value]
       console.log( 'removedUrls:', removedUrls ) // This will have a value
       try {
         const deleteResponse = await deleteObjectList( {
@@ -479,9 +472,7 @@ const fetchProductionLines = async() => {
     const equipmentGroupsContent = equipmentGroupsResponse.data?.content || []
 
     // Filter out current equipment being edited
-    const otherEquipmentGroups = equipmentGroupsContent.filter(
-      item => item.id !== parseInt( props.equipmentId )
-    )
+    const otherEquipmentGroups = equipmentGroupsContent.filter( item => item.id !== parseInt( props.equipmentId ) )
 
     const sequenceOrdersArray = otherEquipmentGroups
       .map( item => item.sequence_order )
@@ -500,7 +491,7 @@ const maxSequenceOrder = computed( () => {
   return Math.max( calculatedMax, formData.sequenceOrder || 1 )
 } )
 
-watch( filterText, ( val ) => {
+watch( filterText, val => {
   treeRef.value?.filter( val )
 } )
 
@@ -524,14 +515,18 @@ const handleNodeClick = async( data, node ) => {
 }
 
 // Watch for parentId changes and refresh production lines
-watch( () => formData.parentId, ( newParentId, oldParentId ) => {
-  if ( newParentId && newParentId !== oldParentId ) {
-    fetchProductionLines()
-  }
-}, { immediate : false } )
+watch(
+  () => formData.parentId,
+  ( newParentId, oldParentId ) => {
+    if ( newParentId && newParentId !== oldParentId ) {
+      fetchProductionLines()
+    }
+  },
+  { immediate : false }
+)
 
 // Add a watcher to handle tree initialization when tree data loads
-watch( treeData, async( newTreeData ) => {
+watch( treeData, async newTreeData => {
   if ( newTreeData.length > 0 && selectedNodeId.value ) {
     await nextTick()
     await setCurrentTreeNode( selectedNodeId.value )
@@ -539,17 +534,20 @@ watch( treeData, async( newTreeData ) => {
 } )
 
 // Enhanced watcher for selectedLocationId
-watch( () => formData.selectedLocationId, async( newLocationId, oldLocationId ) => {
-  if ( newLocationId && newLocationId !== oldLocationId ) {
-    selectedNodeId.value = newLocationId
+watch(
+  () => formData.selectedLocationId,
+  async( newLocationId, oldLocationId ) => {
+    if ( newLocationId && newLocationId !== oldLocationId ) {
+      selectedNodeId.value = newLocationId
 
-    // Only try to update tree if it's loaded
-    if ( treeData.value.length > 0 ) {
-      await nextTick()
-      await setCurrentTreeNode( newLocationId )
+      // Only try to update tree if it's loaded
+      if ( treeData.value.length > 0 ) {
+        await nextTick()
+        await setCurrentTreeNode( newLocationId )
+      }
     }
   }
-} )
+)
 
 // Updated onMounted function
 onMounted( async() => {
@@ -558,10 +556,7 @@ onMounted( async() => {
     resetFileState()
 
     // Load equipment data and tree data in parallel
-    const [equipmentData] = await Promise.all( [
-      fetchEquipmentData(),
-      fetchLocationTree()
-    ] )
+    const [equipmentData] = await Promise.all( [fetchEquipmentData(), fetchLocationTree()] )
 
     // Initialize tree selection after both are loaded
     if ( equipmentData ) {
@@ -578,28 +573,32 @@ onMounted( async() => {
 } )
 
 // Updated equipmentId watcher with proper reset
-watch( () => props.equipmentId, ( newId, oldId ) => {
-  if ( newId && newId !== oldId ) {
-    // Reset ALL state when equipmentId changes
-    resetFileState()
+watch(
+  () => props.equipmentId,
+  ( newId, oldId ) => {
+    if ( newId && newId !== oldId ) {
+      // Reset ALL state when equipmentId changes
+      resetFileState()
 
-    // Reset form first
-    Object.assign( formData, {
-      name : '',
-      code : '',
-      description : '',
-      parentId : null,
-      selectedLocationId : null,
-      sequenceOrder : 1,
-      imageList : [],
-      filesList : []
-    } )
-    selectedNodeId.value = null
+      // Reset form first
+      Object.assign( formData, {
+        name : '',
+        code : '',
+        description : '',
+        parentId : null,
+        selectedLocationId : null,
+        sequenceOrder : 1,
+        imageList : [],
+        filesList : []
+      } )
+      selectedNodeId.value = null
 
-    // Fetch new data
-    fetchEquipmentData()
-  }
-}, { immediate : false } )
+      // Fetch new data
+      fetchEquipmentData()
+    }
+  },
+  { immediate : false }
+)
 </script>
 
 <style scoped>
