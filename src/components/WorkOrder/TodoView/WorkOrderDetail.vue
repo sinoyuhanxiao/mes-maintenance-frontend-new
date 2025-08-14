@@ -245,55 +245,77 @@
 
       <!-- Tracking Tabs -->
       <el-tabs v-model="activeTrackingTab" class="tracking-tabs">
-        <!-- Parts Usage Tab -->
-        <el-tab-pane label="Parts Usage" name="partsUsage">
+        <!-- Combined Costs Tab -->
+        <el-tab-pane label="Costs" name="costs">
           <div class="tab-content">
-            <div class="tab-header">
-              <h4 class="tab-title">Parts Cost</h4>
-              <el-button type="text" size="small" @click="openPartsCostModal" class="add-edit-link"> Edit </el-button>
-            </div>
+            <!-- Parts Cost Section -->
+            <div class="cost-section">
+              <div class="tab-header">
+                <h4 class="tab-title">Parts Cost</h4>
+                <el-button type="text" size="small" @click="openPartsCostModal" class="add-edit-link"> Edit </el-button>
+              </div>
 
-            <div class="parts-cost-table">
-              <el-table :data="partsCostData" size="small" class="cost-table">
-                <el-table-column prop="part" label="Part" min-width="120" />
-                <el-table-column prop="location" label="Location" width="100" />
-                <el-table-column prop="quantity" label="Quantity" width="80" align="center" />
-                <el-table-column prop="unitCost" label="Unit Cost" width="100" align="right" />
-              </el-table>
+              <div class="parts-cost-table">
+                <el-table :data="partsCostData" size="small" class="cost-table">
+                  <el-table-column prop="part" label="Part" min-width="120" />
+                  <el-table-column prop="location" label="Location" width="100" />
+                  <el-table-column prop="quantity" label="Quantity" width="80" align="center" />
+                  <el-table-column prop="unitCost" label="Unit Cost" width="100" align="right" />
+                </el-table>
 
-              <div class="cost-footer">
-                <div class="cost-total">
-                  <span class="cost-label">Parts Cost:</span>
-                  <span class="cost-value">$107.00</span>
+                <div class="cost-footer">
+                  <div class="cost-total">
+                    <span class="cost-label">Parts Cost:</span>
+                    <span class="cost-value">$107.00</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </el-tab-pane>
 
-        <!-- Time Logs Tab -->
-        <el-tab-pane label="Time Logs" name="timeLogs">
-          <div class="tab-content">
-            <div class="tab-header">
-              <h4 class="tab-title">Labor Time Tracking</h4>
-              <el-button type="text" size="small" @click="openTimeLogsModal" class="add-edit-link"> Edit </el-button>
+            <!-- Labor Cost Section -->
+            <div class="cost-section">
+              <div class="tab-header">
+                <h4 class="tab-title">Labor Time Tracking</h4>
+                <el-button type="text" size="small" @click="openTimeLogsModal" class="add-edit-link"> Edit </el-button>
+              </div>
+
+              <div class="time-logs-table">
+                <el-table :data="timeLogsData" size="small" class="logs-table">
+                  <el-table-column prop="technician" label="Technician" min-width="120" />
+                  <el-table-column prop="date" label="Date" width="100" />
+                  <el-table-column prop="startTime" label="Start Time" width="100" align="center" />
+                  <el-table-column prop="endTime" label="End Time" width="100" align="center" />
+                  <el-table-column prop="duration" label="Duration" width="80" align="center" />
+                  <el-table-column prop="hourlyRate" label="Rate/Hr" width="80" align="right" />
+                  <el-table-column prop="totalCost" label="Total" width="80" align="right" />
+                </el-table>
+
+                <div class="cost-footer">
+                  <div class="cost-total">
+                    <span class="cost-label">Labor Cost:</span>
+                    <span class="cost-value">$240.00</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div class="time-logs-table">
-              <el-table :data="timeLogsData" size="small" class="logs-table">
-                <el-table-column prop="technician" label="Technician" min-width="120" />
-                <el-table-column prop="date" label="Date" width="100" />
-                <el-table-column prop="startTime" label="Start Time" width="100" align="center" />
-                <el-table-column prop="endTime" label="End Time" width="100" align="center" />
-                <el-table-column prop="duration" label="Duration" width="80" align="center" />
-                <el-table-column prop="hourlyRate" label="Rate/Hr" width="80" align="right" />
-                <el-table-column prop="totalCost" label="Total" width="80" align="right" />
-              </el-table>
+            <!-- Total Cost Summary -->
+            <div class="cost-section">
+              <div class="tab-header">
+                <h4 class="tab-title">Total Cost Summary</h4>
+              </div>
 
-              <div class="cost-footer">
-                <div class="cost-total">
-                  <span class="cost-label">Labor Cost:</span>
-                  <span class="cost-value">$240.00</span>
+              <div class="total-cost-table">
+                <el-table :data="costSummaryData" size="small" class="cost-table">
+                  <el-table-column prop="description" label="Description" min-width="120" />
+                  <el-table-column prop="amount" label="Amount" width="100" align="right" />
+                </el-table>
+
+                <div class="cost-footer total-footer">
+                  <div class="cost-total">
+                    <span class="cost-label">Total Cost:</span>
+                    <span class="cost-value total-amount">$347.00</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -801,7 +823,7 @@ const emit = defineEmits( [
 
 // State
 const localStatus = ref( '' )
-const activeTrackingTab = ref( 'partsUsage' )
+const activeTrackingTab = ref( 'costs' )
 const partsCostModalVisible = ref( false )
 const timeLogsModalVisible = ref( false )
 const safetyModalVisible = ref( false )
@@ -834,6 +856,18 @@ const partsCostData = ref( [
     location : 'E5-F6',
     quantity : 1,
     unitCost : '$38.00'
+  }
+] )
+
+// Cost summary data
+const costSummaryData = ref( [
+  {
+    description : 'Parts Cost',
+    amount : '$107.00'
+  },
+  {
+    description : 'Labor Cost',
+    amount : '$240.00'
   }
 ] )
 
@@ -2119,8 +2153,18 @@ defineOptions( {
         }
       }
 
+      // Cost sections spacing
+      .cost-section {
+        margin-bottom: 32px;
+
+        &:last-of-type {
+          margin-bottom: 24px;
+        }
+      }
+
       .parts-cost-table,
-      .time-logs-table {
+      .time-logs-table,
+      .total-cost-table {
         border: 1px solid var(--el-border-color-light);
         border-radius: 6px;
         overflow: hidden;
@@ -2161,6 +2205,23 @@ defineOptions( {
               font-size: 16px;
               font-weight: 600;
               color: var(--el-color-success);
+
+              &.total-amount {
+                font-size: 18px;
+                font-weight: 700;
+                color: var(--el-color-primary);
+              }
+            }
+          }
+
+          &.total-footer {
+            background: var(--el-color-primary-light-9);
+            border-top: 2px solid var(--el-color-primary-light-7);
+
+            .cost-label {
+              font-size: 16px;
+              font-weight: 600;
+              color: var(--el-color-primary);
             }
           }
         }
