@@ -1,13 +1,7 @@
 <template>
   <div class="table-container">
     <div class="search-container">
-      <el-button
-        v-if="searchActive === false"
-        @click="handleSearchOption"
-        size="small"
-        :icon="Search"
-        round
-      >
+      <el-button v-if="searchActive === false" @click="handleSearchOption" size="small" :icon="Search" round>
         Search
       </el-button>
       <input
@@ -15,13 +9,7 @@
         :placeholder="searchPlaceholder"
         style="border: solid 1px #d5d5d5; border-radius: 5px; width: 100%"
       />
-      <el-button
-        v-if="searchActive === true"
-        @click="handleSearchOption"
-        size="small"
-        :icon="Close"
-        round
-      >
+      <el-button v-if="searchActive === true" @click="handleSearchOption" size="small" :icon="Close" round>
         Cancel
       </el-button>
     </div>
