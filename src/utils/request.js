@@ -65,6 +65,9 @@ class HttpRequest {
       case 408:
         errMessage = 'Request Timeout'
         break
+      case 409:
+        errMessage = 'Conflict error'
+        break
       case 500:
         errMessage = 'Internal Server Error'
         break
@@ -125,7 +128,7 @@ class HttpRequest {
         if ( type === '[object Blob]' || type === '[object ArrayBuffer]' ) {
           return result
         } else {
-          const { status, message } = result
+          const { status } = result
           const isErrorToken = LOGIN_ERROR_CODE.find( item => item.status == status )
           const isWhiteCode = WHITE_CODE_LIST.find( item => item.status == status )
 
@@ -136,12 +139,16 @@ class HttpRequest {
             router.push( '/login' )
             window.location.reload()
           } else if ( !isWhiteCode ) {
+            // Prioritize backend error message, fallback to generic error
+            const backendMessage = result.message || result.error || result.msg
+            const errorMessage = backendMessage || 'Unknown error occurred'
+
             ElMessage( {
-              message : message || 'Error',
+              message : errorMessage,
               type : 'error',
               duration : 3 * 1000
             } )
-            return Promise.reject( new Error( message || 'Error' ) )
+            return Promise.reject( new Error( errorMessage ) )
           } else {
             return result
           }
@@ -150,16 +157,25 @@ class HttpRequest {
         return result
       },
       error => {
+        let errorMessage = error.message
+
         if ( error && error.response ) {
-          error.message = that.checkStatus( error.response.status )
+          // Prioritize backend error message from response data
+          const backendMessage = error.response.data?.message || error.response.data?.error || error.response.data?.msg
+
+          // Use backend message if available, otherwise fall back to HTTP status message
+          errorMessage = backendMessage || that.checkStatus( error.response.status )
         }
-        const isTimeout = error.message.includes( 'timeout' )
+
+        const isTimeout = errorMessage.includes( 'timeout' )
+        const finalMessage = isTimeout ? 'Network Request Timeout' : errorMessage || 'Fail to connect to the server'
+
         ElMessage( {
-          message : isTimeout ? 'Network Request Timeout' : error.message || 'Fail to connect to the server',
+          message : finalMessage,
           type : 'error',
           duration : 2 * 1000
         } )
-        return Promise.reject( new Error( error.message ) )
+        return Promise.reject( new Error( finalMessage ) )
       }
     )
   }
