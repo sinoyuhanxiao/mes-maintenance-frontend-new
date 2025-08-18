@@ -284,7 +284,7 @@ import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { ArrowLeft, RefreshLeft, Plus, ZoomIn, Download, Delete } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
-import RecurrenceEditor from '@/views/workOrder/components/recurrenceEditor.vue'
+import RecurrenceEditor from '@/views/workOrder/components/RecurrenceEditor.vue'
 import {
   getAllWorkTypes,
   getAllPriorities,

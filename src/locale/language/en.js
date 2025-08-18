@@ -431,7 +431,7 @@ export default {
     }
   },
   maintenanceEquipment : {
-    title : 'Maintenance Equipment',
+    title : 'Equipment',
     subtitle : 'Equipment Hierarchy View'
   },
   common : {
@@ -474,7 +474,7 @@ export default {
     directive : 'Directive',
     workOrderCenter : 'Work Order Center',
     workOrderManagement : 'Work Order',
-    maintenanceEquipment : 'Maintenance Equipment',
+    maintenanceEquipment : 'Equipment',
     newWorkOrder : 'New Work Order',
     viewWorkOrder : 'View Work Order',
     userCenter : 'User Center',

@@ -306,7 +306,7 @@ import { convertToLocalTime } from '@/utils/datetime'
 import { updateTabTitle } from '@/utils/tabs'
 import { useCommonDataStore } from '@/store/modules/commonData'
 import { getEquipmentGroups, getEquipments, getEquipmentComponents } from '@/api/equipment'
-import ImagesAndFiles from '@/views/workOrder/components/imagesAndFiles.vue'
+import ImagesAndFiles from '@/views/workOrder/components/ImagesAndFiles.vue'
 import { CopyDocument } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 

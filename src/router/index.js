@@ -122,11 +122,11 @@ export const asyncRoutes = [
     path : '/maintenance',
     name : 'Equipment',
     component : Layout,
-    meta : { title : 'router.maintenanceEquipment', icon : 'table', noCache : true },
+    meta : { title : 'router.maintenanceEquipment', icon : 'setting', noCache : true },
     children : [
       {
         path : 'equipment',
-        component : () => import( '@/views/maintenanceEquipment/index.vue' ),
+        component : () => import( '@/views/equipment/index.vue' ),
         name : 'Maintenance Test',
         meta : { title : 'router.maintenanceEquipment', noCache : true }
       }
@@ -160,18 +160,11 @@ export const asyncRoutes = [
       },
       {
         path : 'test-view',
-        component : () => import( '@/views/workOrder/test_view.vue' ),
+        component : () => import( '@/views/workOrder/TestView.vue' ),
         name : 'TestView',
         props : true,
         meta : { title : 'router.viewWorkOrder', noCache : true, hidden : true }
-      },
-      {
-        path : 'filter-drawer-test',
-        component : () => import( '@/views/test/FilterDrawerTest.vue' ),
-        name : 'FilterDrawerTest',
-        meta : { title : 'Filter Drawer Test', noCache : true, hidden : true }
-      }
-    ]
+      }]
   },
   {
     path : '/user',
