@@ -50,6 +50,7 @@
     "vue": "^3.3.4",
     "vue-i18n": "^9.2.2",
     "vue-router": "^4.2.2",
+    "vue3-grid-layout": "^1.0.0",
     "vue3-lottie": "^2.7.4",
     "vxe-table": "^4.4.2",
     "xe-utils": "^3.5.11"

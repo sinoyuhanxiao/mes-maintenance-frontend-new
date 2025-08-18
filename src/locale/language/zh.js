@@ -273,6 +273,8 @@ export default {
     directive : '指令',
     workOrderCenter : '工单中心',
     workOrderManagement : '工单管理',
+    maintenanceType : '维护设备',
+    maintenanceEquipment : '维护设备',
     newWorkOrder : '新增工单',
     viewWorkOrder : '查看工单',
     userCenter : '个人中心',
