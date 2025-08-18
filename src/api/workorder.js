@@ -6,17 +6,22 @@ import http from '@/utils/request'
  * @param {number} size - The number of items per page.
  * @param {string} sortField - The field to sort by (e.g., "createdAt").
  * @param {string} direction - Sorting direction ("ASC" or "DESC").
+ * @param {Object} filters - Additional filters to apply.
  * @returns {Promise} API response with the list of all work orders.
  */
-export const getAllWorkOrders = ( page = 1, size = 10, sortField = 'createdAt', direction = 'DESC' ) => {
+export const getAllWorkOrders = ( page = 1, size = 10, sortField = 'createdAt', direction = 'DESC', filters = {} ) => {
   return http.request( {
-    method : 'get',
-    url : '/work-order',
-    data : {
+    method : 'post',
+    url : '/work-order/search',
+    params : {
       page,
       size,
       sortField,
       direction
+    },
+    data : {
+      latest_per_recurrence : true,
+      ...filters
     }
   } )
 }
@@ -40,7 +45,7 @@ export const getWorkOrdersByRecurrence = (
   return http.request( {
     method : 'get',
     url : `/work-order/recurrence/${recurrenceId}`,
-    data : {
+    params : {
       page,
       size,
       sortField,
@@ -71,5 +76,83 @@ export const getWorkOrderById = id => {
   return http.request( {
     method : 'get',
     url : `/work-order/${id}`
+  } )
+}
+
+// API functions for work order creation form data
+/**
+ * Fetch all work types.
+ * @returns {Promise} API response with work types.
+ */
+export const getAllWorkTypes = () => {
+  return http.request( {
+    method : 'get',
+    url : '/common/work-type'
+  } )
+}
+
+/**
+ * Fetch all priorities.
+ * @returns {Promise} API response with priorities.
+ */
+export const getAllPriorities = () => {
+  return http.request( {
+    method : 'get',
+    url : '/common/priority'
+  } )
+}
+
+/**
+ * Fetch all categories.
+ * @returns {Promise} API response with categories.
+ */
+export const getAllCategories = () => {
+  return http.request( {
+    method : 'get',
+    url : '/common/category'
+  } )
+}
+
+/**
+ * Fetch all states.
+ * @returns {Promise} API response with states.
+ */
+export const getAllStates = () => {
+  return http.request( {
+    method : 'get',
+    url : '/common/state'
+  } )
+}
+
+/**
+ * Fetch all recurrence types.
+ * @returns {Promise} API response with recurrence types.
+ */
+export const getAllRecurrenceTypes = () => {
+  return http.request( {
+    method : 'get',
+    url : '/common/recurrence-type'
+  } )
+}
+
+/**
+ * Fetch all location node trees.
+ * @returns {Promise} API response with location node trees.
+ */
+export const getLocationNodeTrees = () => {
+  return http.request( {
+    method : 'get',
+    url : '/location/node-trees'
+  } )
+}
+
+/**
+ * Fetch all equipment node trees.
+ * @returns {Promise} API response with equipment node trees.
+ */
+export const getEquipmentNodeTrees = () => {
+  return http.request( {
+    method : 'get',
+    url : '/equipment/node-trees'
   } )
 }

@@ -17,7 +17,7 @@
 <script setup>
 import * as echarts from 'echarts'
 import { onMounted, ref, watch, onBeforeUnmount, nextTick } from 'vue'
-import ColorDisplayButton from '@/components/common/colorDisplayButton.vue'
+import ColorDisplayButton from 'src/components/Common/ColorDisplayButton.vue'
 
 const props = defineProps( {
   title : { type : String, default : 'Pie Chart' },

@@ -2,41 +2,52 @@
   <div class="settings-container">
     <el-drawer :size="315" v-model="showSettings" direction="rtl" :append-to-body="false" :close-on-click-modal="true">
       <template #header>
-        <h4 class="drawer-title">维护系统配置</h4>
+        <h4 class="drawer-title">{{ $t('settings.title') }}</h4>
       </template>
       <template #default>
         <div>
-          <el-divider content-position="center">系统配置</el-divider>
+          <el-divider content-position="center">{{ $t('settings.systemConfig') }}</el-divider>
 
           <div class="drawer-item">
-            <span>开启 TagsView</span>
-            <el-switch v-model="set.tagsView" inline-prompt class="drawer-switch" active-text="开" inactive-text="关" />
+            <span>{{ $t('settings.enableTagsView') }}</span>
+            <el-switch
+              v-model="settingStore.tagsView"
+              inline-prompt
+              class="drawer-switch"
+              :active-text="$t('settings.switchOn')"
+              :inactive-text="$t('settings.switchOff')"
+            />
           </div>
           <!-- <div class="drawer-item">
-            <span>固定 Header</span>
+            <span>{{ $t('settings.fixedHeader') }}</span>
             <el-switch
                 v-model="set.fixedHeader"
                 inline-prompt
                 class="drawer-switch"
-                active-text="开"
-                inactive-text="关" />
+                :active-text="$t('settings.switchOn')"
+                :inactive-text="$t('settings.switchOff')" />
           </div>-->
           <div class="drawer-item">
-            <span>侧边栏 Logo</span>
+            <span>{{ $t('settings.sidebarLogo') }}</span>
             <el-switch
-              v-model="set.sidebarLogo"
+              v-model="settingStore.sidebarLogo"
               inline-prompt
               class="drawer-switch"
-              active-text="开"
-              inactive-text="关"
+              :active-text="$t('settings.switchOn')"
+              :inactive-text="$t('settings.switchOff')"
             />
           </div>
 
-          <el-divider content-position="center">布局模式</el-divider>
+          <el-divider content-position="center">{{ $t('settings.layoutMode') }}</el-divider>
 
           <div class="drawer-item">
             <div class="layoutMode">
-              <el-tooltip class="box-item" effect="dark" content="左侧模式" placement="top-start">
+              <el-tooltip
+                class="box-item"
+                effect="dark"
+                :content="$t('settings.layoutModes.leftSidebar')"
+                placement="top-start"
+              >
                 <div
                   class="modeItem"
                   :class="{ active: set.layoutMod == 'vertical' }"
@@ -47,7 +58,12 @@
                 </div>
               </el-tooltip>
 
-              <el-tooltip class="box-item" effect="dark" content="顶部模式( todo : coming soon )" placement="top-start">
+              <el-tooltip
+                class="box-item"
+                effect="dark"
+                :content="$t('settings.layoutModes.topMode')"
+                placement="top-start"
+              >
                 <div
                   class="modeItem"
                   :class="{ active: set.layoutMod == 'horizontal' }"

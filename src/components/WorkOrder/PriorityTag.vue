@@ -59,7 +59,6 @@ defineOptions( {
 
 <style scoped lang="scss">
 .priority-tag {
-  display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 400;

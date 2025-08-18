@@ -11,7 +11,7 @@
     <div class="t3-main-details">
       <el-tabs v-model="activeTab" type="border-card">
         <el-tab-pane label="Details" name="details">
-          <DetailsTab :equipmentId="props.node.id" />
+          <EquipmentDetailsTab :equipmentId="props.node.id" />
         </el-tab-pane>
         <el-tab-pane label="Sub Items" name="subItems">
           <SubItemsTab />
@@ -38,11 +38,11 @@
 
 <script setup>
 import { ref } from 'vue'
-import DetailsTab from './details.vue'
+import EquipmentDetailsTab from './EquipmentDetails.vue'
 import SubItemsTab from './SubItems.vue'
 import WorkOrderTab from './WorkOrders.vue'
-import TasksTab from './tasks.vue'
-import PersonnelTab from './personnel.vue'
+import TasksTab from './Tasks.vue'
+import PersonnelTab from './Personnel.vue'
 import DocumentsLoadTab from './DocumentsLoad.vue'
 import DocumentsViewTab from './DocumentsView.vue'
 

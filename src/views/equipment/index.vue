@@ -37,8 +37,8 @@
 import { ref, computed } from 'vue'
 import EquipmentGroup from './components/equipmentGroup/index.vue'
 import EquipmentTree from './components/equipmentTree/index.vue'
-import Equipment from './components/Equipment/index.vue'
-import SubEquipment from './components/SubEquipment/index.vue'
+import Equipment from './components/equipment/index.vue'
+import SubEquipment from './components/subEquipment/index.vue'
 
 const breadcrumbPath = ref( [] )
 const selectedNode = ref( null )
