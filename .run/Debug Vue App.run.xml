@@ -5,7 +5,7 @@
     <scripts>
       <script value="dev:debug" />
     </scripts>
-    <node-interpreter value="project" />
+    <node-interpreter value="wsl://Ubuntu@/usr/bin/node" />
     <envs />
     <method v="2" />
   </configuration>

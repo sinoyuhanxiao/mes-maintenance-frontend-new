@@ -52,6 +52,10 @@ export default defineConfig( ( { command, mode } ) => {
       } )
     },
 
+    esbuild : {
+      sourcemap : true
+    },
+
     build : {
       path : './',
       sourcemap : false,

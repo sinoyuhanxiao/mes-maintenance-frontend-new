@@ -30,7 +30,7 @@
           <el-skeleton :rows="3" animated />
         </div>
 
-        <div v-else-if="filteredWorkOrders.length === 0" class="empty-list">
+        <div v-else-if="displayedWorkOrders && displayedWorkOrders.length === 0" class="empty-list">
           <el-empty :description="$t('workOrder.messages.noData')" :image-size="80" />
         </div>
 
@@ -56,7 +56,7 @@
           <!-- Cards Container -->
           <div class="cards-container">
             <el-row :gutter="16">
-              <el-col v-for="workOrder in paginatedWorkOrders" :key="workOrder.id">
+              <el-col v-for="workOrder in displayedWorkOrders" :key="workOrder.id">
                 <WorkOrderCard
                   :work-order="workOrder"
                   :is-selected="selectedWorkOrder?.id === workOrder.id"
@@ -70,7 +70,7 @@
           <!-- Pagination Controls -->
           <div class="pagination-controls" v-if="paginationInfo.total > internalPageSize">
             <el-pagination
-              v-model:current-page="internalCurrentPage"
+              :current-page="internalCurrentPage"
               :page-size="internalPageSize"
               :total="paginationInfo.total"
               layout="total, prev, pager, next, jumper"
@@ -106,6 +106,14 @@
         v-else-if="currentRightPanelView === 'create'"
         @back-to-detail="showDetailView"
         @work-order-created="handleWorkOrderCreated"
+      />
+
+      <!-- Work Order Edit View -->
+      <WorkOrderEditEnhanced
+        v-else-if="currentRightPanelView === 'edit'"
+        :work-order="workOrderToEdit"
+        @back-to-detail="showDetailView"
+        @work-order-updated="handleWorkOrderUpdated"
       />
     </div>
 
@@ -216,6 +224,7 @@ import { ElMessage } from 'element-plus'
 import WorkOrderCard from './WorkOrderCard.vue'
 import WorkOrderDetail from './WorkOrderDetail.vue'
 import WorkOrderCreateEnhanced from './WorkOrderCreateEnhanced.vue'
+import WorkOrderEditEnhanced from './WorkOrderEditEnhanced.vue'
 import WorkOrderPdf from '../WorkOrderPdf.vue'
 import { Printer, Download, View, ArrowLeft, ArrowRight, ZoomIn, ZoomOut } from '@element-plus/icons-vue'
 
@@ -254,6 +263,7 @@ const emit = defineEmits( [
   'status-change',
   'refresh',
   'work-order-created',
+  'work-order-updated',
   'page-change',
   'page-size-change',
   'tab-change'
@@ -265,7 +275,8 @@ const { t } = useI18n()
 const selectedWorkOrder = ref( null )
 const activeTab = ref( 'todo' )
 const sortBy = ref( 'priority-desc' )
-const currentRightPanelView = ref( 'detail' ) // 'detail' or 'create'
+const currentRightPanelView = ref( 'detail' ) // 'detail', 'create', or 'edit'
+const workOrderToEdit = ref( null )
 
 // PDF Preview state
 const showPdfPreview = ref( false )
@@ -280,122 +291,25 @@ const pdfPreviewContent = ref( null )
 const internalCurrentPage = ref( props.currentPage )
 const internalPageSize = ref( props.pageSize )
 
-// Computed
-const filteredWorkOrders = computed( () => {
-  let filtered = [...props.workOrders]
+// Server handles all filtering, sorting, and pagination
+// Use work orders directly from props - no client-side processing needed
+const displayedWorkOrders = computed( () => {
+  // Server provides correctly filtered, sorted, and paginated data
+  // Ensure we always return an array to prevent template errors
+  const workOrders = Array.isArray( props.workOrders ) ? props.workOrders : []
 
-  // Apply external filters from UnifiedWorkOrderFilters
-  const externalFilters = props.filters || {}
-
-  // Filter by assigned to
-  if ( externalFilters.assignedTo ) {
-    filtered = filtered.filter( wo => wo.assigned_to === externalFilters.assignedTo )
-  }
-
-  // Filter by due date
-  if ( externalFilters.dueDate ) {
-    const now = new Date()
-    const today = new Date( now.getFullYear(), now.getMonth(), now.getDate() )
-
-    switch ( externalFilters.dueDate ) {
-      case 'overdue':
-        filtered = filtered.filter( wo => wo.due_date && new Date( wo.due_date ) < now )
-        break
-      case 'today':
-        filtered = filtered.filter( wo => {
-          if ( !wo.due_date ) return false
-          const dueDate = new Date( wo.due_date )
-          return dueDate >= today && dueDate < new Date( today.getTime() + 24 * 60 * 60 * 1000 )
-        } )
-        break
-      case 'thisWeek': {
-        const weekStart = new Date( today )
-        weekStart.setDate( today.getDate() - today.getDay() )
-        const weekEnd = new Date( weekStart )
-        weekEnd.setDate( weekStart.getDate() + 7 )
-        filtered = filtered.filter( wo => {
-          if ( !wo.due_date ) return false
-          const dueDate = new Date( wo.due_date )
-          return dueDate >= weekStart && dueDate < weekEnd
-        } )
-        break
-      }
-      case 'thisMonth': {
-        const monthStart = new Date( today.getFullYear(), today.getMonth(), 1 )
-        const monthEnd = new Date( today.getFullYear(), today.getMonth() + 1, 1 )
-        filtered = filtered.filter( wo => {
-          if ( !wo.due_date ) return false
-          const dueDate = new Date( wo.due_date )
-          return dueDate >= monthStart && dueDate < monthEnd
-        } )
-        break
-      }
-      case 'custom':
-        if ( externalFilters.customDateRange && externalFilters.customDateRange.length === 2 ) {
-          const [startDate, endDate] = externalFilters.customDateRange
-          filtered = filtered.filter( wo => {
-            if ( !wo.due_date ) return false
-            const dueDate = new Date( wo.due_date )
-            return dueDate >= startDate && dueDate <= endDate
-          } )
-        }
-        break
-      default:
-        break
-    }
-  }
-
-  // Filter by work type
-  if ( externalFilters.workType ) {
-    filtered = filtered.filter( wo => wo.work_type?.id === externalFilters.workType )
-  }
-
-  // Filter by priority
-  if ( externalFilters.priority ) {
-    filtered = filtered.filter( wo => wo.priority?.id === externalFilters.priority )
-  }
-
-  // Filter by search text
-  if ( externalFilters.search ) {
-    const searchTerm = externalFilters.search.toLowerCase()
-    filtered = filtered.filter(
-      wo =>
-        wo.name?.toLowerCase().includes( searchTerm ) ||
-        wo.description?.toLowerCase().includes( searchTerm ) ||
-        wo.code?.toLowerCase().includes( searchTerm )
-    )
-  }
-
-  // Tab filtering is now handled server-side via status filter
-  // No client-side tab filtering needed
-
-  // Apply sorting
-  filtered.sort( ( a, b ) => {
-    switch ( sortBy.value ) {
-      case 'priority-desc':
-        return getPriorityValue( b.priority?.name ) - getPriorityValue( a.priority?.name )
-      case 'priority-asc':
-        return getPriorityValue( a.priority?.name ) - getPriorityValue( b.priority?.name )
-      case 'dueDate-asc':
-        return new Date( a.due_date || '9999-12-31' ) - new Date( b.due_date || '9999-12-31' )
-      case 'dueDate-desc':
-        return new Date( b.due_date || '1900-01-01' ) - new Date( a.due_date || '1900-01-01' )
-      case 'created-desc':
-        return new Date( b.created_at ) - new Date( a.created_at )
-      case 'created-asc':
-        return new Date( a.created_at ) - new Date( b.created_at )
-      default:
-        return 0
-    }
+  // Debug logging to verify pagination data flow
+  console.log( '🔍 TodoView displayedWorkOrders computed:', {
+    count : workOrders.length,
+    currentPage : internalCurrentPage.value,
+    pageSize : internalPageSize.value,
+    total : props.total,
+    firstItemId : workOrders[0]?.id,
+    firstItemName : workOrders[0]?.name,
+    allIds : workOrders.map( wo => wo.id )
   } )
 
-  return filtered
-} )
-
-// Use server-side pagination instead of client-side
-const paginatedWorkOrders = computed( () => {
-  // Server already provides paginated data, just apply local filtering and sorting
-  return filteredWorkOrders.value
+  return workOrders
 } )
 
 const paginationInfo = computed( () => {
@@ -411,6 +325,7 @@ const paginationInfo = computed( () => {
 } )
 
 // Methods
+// eslint-disable-next-line no-unused-vars
 const getPriorityValue = priority => {
   const priorityMap = {
     Urgent : 4,
@@ -456,7 +371,10 @@ const handleCardAction = ( { action, workOrder } ) => {
 }
 
 const handleEdit = workOrder => {
-  emit( 'edit', workOrder )
+  // Show edit view in right panel instead of emitting to parent
+  workOrderToEdit.value = workOrder
+  currentRightPanelView.value = 'edit'
+  selectedWorkOrder.value = workOrder
 }
 
 const handleDelete = workOrder => {
@@ -1516,19 +1434,23 @@ const handleAddComment = ( { workOrder, comment } ) => {
 
 // Pagination methods
 const handlePageChange = page => {
+  console.log( '🔄 TodoView handlePageChange:', { from : internalCurrentPage.value, to : page } )
   internalCurrentPage.value = page
   // Emit to parent to handle server-side pagination
   emit( 'page-change', page )
   // Clear selection when changing pages to avoid confusion
   selectedWorkOrder.value = null
+  console.log( '📤 TodoView emitted page-change event:', page )
 }
 
 const handlePageSizeChange = newPageSize => {
+  console.log( '🔄 TodoView handlePageSizeChange:', { from : internalPageSize.value, to : newPageSize } )
   internalPageSize.value = newPageSize
   internalCurrentPage.value = 1 // Reset to first page when changing page size
   // Emit to parent to handle server-side pagination
   emit( 'page-size-change', newPageSize )
   selectedWorkOrder.value = null
+  console.log( '📤 TodoView emitted page-size-change event:', newPageSize )
 }
 
 // Watchers
@@ -1537,7 +1459,7 @@ watch(
   newWorkOrders => {
     // Auto-select first work order if none selected
     if ( newWorkOrders.length > 0 && !selectedWorkOrder.value ) {
-      selectedWorkOrder.value = paginatedWorkOrders.value[0]
+      selectedWorkOrder.value = displayedWorkOrders.value[0]
     }
   },
   { immediate : true }
@@ -1546,15 +1468,29 @@ watch(
 // Watch for prop changes to sync internal state
 watch(
   () => props.currentPage,
-  newPage => {
+  ( newPage, oldPage ) => {
+    console.log( '👁️ TodoView currentPage prop changed:', { from : oldPage, to : newPage } )
     internalCurrentPage.value = newPage
   }
 )
 
 watch(
   () => props.pageSize,
-  newPageSize => {
+  ( newPageSize, oldPageSize ) => {
+    console.log( '👁️ TodoView pageSize prop changed:', { from : oldPageSize, to : newPageSize } )
     internalPageSize.value = newPageSize
+  }
+)
+
+watch(
+  () => props.workOrders,
+  ( newWorkOrders, oldWorkOrders ) => {
+    console.log( '👁️ TodoView workOrders prop changed:', {
+      oldCount : oldWorkOrders?.length || 0,
+      newCount : newWorkOrders?.length || 0,
+      newFirstId : newWorkOrders?.[0]?.id,
+      newIds : newWorkOrders?.map( wo => wo.id ) || []
+    } )
   }
 )
 
@@ -1616,30 +1552,88 @@ const showCreateForm = () => {
 
 const showDetailView = () => {
   currentRightPanelView.value = 'detail'
+  workOrderToEdit.value = null
   // Auto-select first work order if none selected
-  if ( !selectedWorkOrder.value && paginatedWorkOrders.value.length > 0 ) {
-    selectedWorkOrder.value = paginatedWorkOrders.value[0]
+  if ( !selectedWorkOrder.value && displayedWorkOrders.value.length > 0 ) {
+    selectedWorkOrder.value = displayedWorkOrders.value[0]
   }
 }
 
 const handleWorkOrderCreated = newWorkOrder => {
+  console.log( '📨 TodoView received work-order-created event:', newWorkOrder )
+
   // Emit to parent component
   emit( 'work-order-created', newWorkOrder )
-  // Switch back to detail view
-  showDetailView()
+  console.log( '📤 TodoView forwarded event to parent (index.vue)' )
+
+  // DON'T call showDetailView() immediately - let parent handle selection after refresh
+  // showDetailView()
+}
+
+const handleWorkOrderUpdated = updatedWorkOrder => {
+  // Update the work order in the list
+  const index = displayedWorkOrders.value.findIndex( wo => wo.id === updatedWorkOrder.id )
+  if ( index !== -1 ) {
+    // Replace the work order in the list
+    displayedWorkOrders.value[index] = updatedWorkOrder
+  }
+
+  // Update selected work order if it's the same one
+  if ( selectedWorkOrder.value && selectedWorkOrder.value.id === updatedWorkOrder.id ) {
+    selectedWorkOrder.value = updatedWorkOrder
+  }
+
+  // Clear edit state and return to detail view
+  workOrderToEdit.value = null
+  currentRightPanelView.value = 'detail'
+
+  // Emit to parent for any additional handling
+  emit( 'work-order-updated', updatedWorkOrder )
+
+  ElMessage.success( 'Work order updated successfully' )
+}
+
+// Method to select work order by ID (for external use)
+const selectWorkOrderById = workOrderId => {
+  console.log( '🎯 selectWorkOrderById called with ID:', workOrderId )
+  console.log(
+    '📄 Current displayedWorkOrders:',
+    displayedWorkOrders.value.map( wo => ( {
+      id : wo.id,
+      name : wo.name,
+      state_id : wo.state_id,
+      status : wo.status
+    } ) )
+  )
+
+  const workOrder = displayedWorkOrders.value.find( wo => wo.id === workOrderId )
+  if ( workOrder ) {
+    console.log( '✅ Found work order:', workOrder )
+    selectedWorkOrder.value = workOrder
+    currentRightPanelView.value = 'detail'
+    console.log( '📍 Auto-selected work order:', workOrder.name || workOrder.id )
+    return true
+  }
+  console.warn( '❌ Work order not found in displayedWorkOrders' )
+  console.log(
+    '🔍 Available IDs:',
+    displayedWorkOrders.value.map( wo => wo.id )
+  )
+  return false
 }
 
 // Expose methods for parent component
 defineExpose( {
   showCreateForm,
-  showDetailView
+  showDetailView,
+  selectWorkOrderById
 } )
 
 // Lifecycle
 onMounted( () => {
   // Auto-select first work order
-  if ( paginatedWorkOrders.value.length > 0 ) {
-    selectedWorkOrder.value = paginatedWorkOrders.value[0]
+  if ( displayedWorkOrders.value.length > 0 ) {
+    selectedWorkOrder.value = displayedWorkOrders.value[0]
   }
 } )
 
@@ -1804,6 +1798,7 @@ defineOptions( {
 
 .right-panel {
   flex: 1;
+  padding-bottom: 40px;
   background: var(--el-bg-color);
   border-radius: 8px;
   border: 1px solid var(--el-border-color-light);

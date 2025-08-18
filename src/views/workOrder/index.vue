@@ -62,6 +62,7 @@
           @status-change="handleStatusChange"
           @refresh="fetchWorkOrders"
           @work-order-created="handleWorkOrderCreated"
+          @work-order-updated="handleWorkOrderUpdated"
           @page-change="handleCurrentChange"
           @page-size-change="handleSizeChange"
           @tab-change="handleTabChange"
@@ -87,7 +88,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Grid, List } from '@element-plus/icons-vue'
@@ -113,6 +114,7 @@ const {
   fetchWorkOrders,
   loadChildren,
   handleFilter,
+  updateFilters,
   handleSizeChange,
   handleCurrentChange,
   toggleRowHighlight,
@@ -159,14 +161,10 @@ const handleViewChange = async view => {
 
   // When switching to todo view, set default status filter for "todo" tab
   if ( view === 'todo' ) {
-    listQuery.status = 'pending,in_progress'
-    listQuery.page = 1
-    await fetchWorkOrders()
+    updateFilters( { status : 'pending,in_progress' } )
   } else if ( view === 'table' ) {
     // Clear status filter for table view to show all items
-    listQuery.status = null
-    listQuery.page = 1
-    await fetchWorkOrders()
+    updateFilters( { status : null } )
   }
 }
 
@@ -190,19 +188,103 @@ const handleDownload = () => {
 }
 
 const handleWorkOrderCreated = async newWorkOrder => {
-  // Add the new work order to the list
-  list.value.unshift( newWorkOrder )
-  showSuccess( t( 'workOrder.messages.createSuccess' ) )
-  // Refresh the data to ensure consistency
-  await fetchWorkOrders()
+  console.log( '📨 Index.vue received work-order-created event:', newWorkOrder )
+  console.log( '📊 Current list state:', {
+    currentListLength : list.value.length,
+    currentPage : listQuery.page,
+    currentStatus : listQuery.status,
+    currentSort : listQuery.sort
+  } )
+
+  try {
+    // Reset to first page to ensure new item is visible (most recent first)
+    console.log( '📄 Resetting to page 1...' )
+    listQuery.page = 1
+
+    // Refresh the data to ensure consistency and get latest from server
+    console.log( '🔄 Fetching fresh work orders...' )
+    await fetchWorkOrders()
+
+    console.log( '📊 After fetch - list state:', {
+      newListLength : list.value.length,
+      firstItemId : list.value[0]?.id,
+      firstItemName : list.value[0]?.name,
+      targetWorkOrderId : newWorkOrder.id
+    } )
+
+    // Auto-select the newly created work order in todo view
+    if ( todoViewRef.value && newWorkOrder.id ) {
+      console.log( '🎯 Attempting to select work order by ID:', newWorkOrder.id )
+
+      // Give the Vue reactivity system a tick to update the computed properties
+      await nextTick()
+
+      const selected = todoViewRef.value.selectWorkOrderById( newWorkOrder.id )
+      if ( !selected ) {
+        console.log( '📍 Created work order not found, checking if it exists in list...' )
+        const foundInList = list.value.find( wo => wo.id === newWorkOrder.id )
+        console.log( '🔍 Work order in list:', foundInList ? 'YES' : 'NO' )
+
+        if ( !foundInList ) {
+          console.warn( '⚠️ Work order not in fetched list - possible filtering issue' )
+          // Check if status filter is excluding it
+          console.log( '🔍 Current status filter:', listQuery.status )
+          console.log( '🔍 New work order state_id:', newWorkOrder.state_id )
+
+          // Try fetching without status filter to see if it's a filtering issue
+          console.log( '🔍 Testing: fetching without status filter...' )
+          const tempStatus = listQuery.status
+          listQuery.status = null // Remove status filter temporarily
+          await fetchWorkOrders()
+          const foundWithoutFilter = list.value.find( wo => wo.id === newWorkOrder.id )
+          console.log( '🔍 Found without status filter:', foundWithoutFilter ? 'YES' : 'NO' )
+          if ( foundWithoutFilter ) {
+            console.log( '🔍 Work order status info:', {
+              state_id : foundWithoutFilter.state_id,
+              status : foundWithoutFilter.status,
+              status_name : foundWithoutFilter.status?.name
+            } )
+          }
+          // Restore status filter
+          listQuery.status = tempStatus
+          await fetchWorkOrders()
+        } else {
+          console.warn( '⚠️ Work order in list but not in paginatedWorkOrders - pagination issue?' )
+        }
+
+        // Fallback: select first available work order and switch to detail view
+        console.log( '🔄 Fallback: selecting first work order and showing detail view' )
+        todoViewRef.value.showDetailView()
+      } else {
+        console.log( '✅ Successfully selected newly created work order' )
+      }
+    }
+
+    // Show success message after everything is updated
+    showSuccess( t( 'workOrder.messages.createSuccess' ) )
+    console.log( '✅ Work order creation flow completed' )
+  } catch ( error ) {
+    console.error( '❌ Failed to refresh after work order creation:', error )
+    // Still show success since creation succeeded, just list refresh failed
+    showSuccess( t( 'workOrder.messages.createSuccess' ) )
+  }
+}
+
+const handleWorkOrderUpdated = async updatedWorkOrder => {
+  // Update the work order in the list
+  const index = list.value.findIndex( wo => wo.id === updatedWorkOrder.id )
+  if ( index !== -1 ) {
+    list.value[index] = updatedWorkOrder
+  }
+  showSuccess( t( 'workOrder.messages.updateSuccess' ) )
+  // Optionally refresh to ensure data consistency with server
+  // await fetchWorkOrders()
 }
 
 const handleTabChange = async( { tab, statusFilter } ) => {
-  // Update the status filter in listQuery
-  listQuery.status = statusFilter
-  listQuery.page = 1 // Reset to first page
-  // Fetch work orders with new status filter
-  await fetchWorkOrders()
+  // Update the status filter using the new updateFilters method
+  console.log( '🔄 handleTabChange called with:', { tab, statusFilter } )
+  updateFilters( { status : statusFilter } )
 }
 
 // Lifecycle

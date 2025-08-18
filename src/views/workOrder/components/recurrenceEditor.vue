@@ -1,13 +1,23 @@
 <template>
   <div class="recurrence-editor">
-    <el-form-item label="重复设置" prop="recurrence_type" :show-message="false" required>
-      <el-select v-model="recurrence" placeholder="请选择重复设置" style="width: 500px" clearable>
-        <el-option label="不重复" value="none"></el-option>
-        <el-option label="每日" value="daily"></el-option>
-        <el-option label="每周" value="weekly"></el-option>
-        <el-option label="每月 (按日期)" value="monthlyByDate"></el-option>
+    <el-form-item
+      :label="$t('workOrder.create.recurrenceSettings')"
+      prop="recurrence_type"
+      :show-message="false"
+      required
+    >
+      <el-select
+        v-model="recurrence"
+        :placeholder="$t('workOrder.placeholder.selectRecurrence')"
+        style="width: 500px"
+        clearable
+      >
+        <el-option :label="$t('workOrder.recurrence.none')" value="none"></el-option>
+        <el-option :label="$t('workOrder.recurrence.daily')" value="daily"></el-option>
+        <el-option :label="$t('workOrder.recurrence.weekly')" value="weekly"></el-option>
+        <el-option :label="$t('workOrder.recurrence.monthlyByDate')" value="monthlyByDate"></el-option>
         <!--        <el-option label="每月 (按星期几)" value="monthlyByWeekday"></el-option>-->
-        <el-option label="每年" value="yearly"></el-option>
+        <el-option :label="$t('workOrder.recurrence.yearly')" value="yearly"></el-option>
       </el-select>
     </el-form-item>
 
@@ -15,14 +25,14 @@
     <div v-if="recurrence === 'weekly'" class="weekly-interval-selection">
       <el-form-item label="">
         <div class="repeat-interval">
-          <span>每</span>
+          <span>{{ $t('workOrder.recurrence.every') }}</span>
           <el-input-number
             v-model="repeatInterval"
             :min="1"
             :max="52"
             style="width: 120px; margin: 0 10px"
           ></el-input-number>
-          <span>周重复</span>
+          <span>{{ $t('workOrder.recurrence.weeksRepeat') }}</span>
         </div>
       </el-form-item>
     </div>
@@ -31,13 +41,13 @@
     <div v-if="recurrence === 'weekly'" class="weekly-selection">
       <el-form-item label="">
         <el-checkbox-group v-model="selectedDays" @change="handleDaySelectionChange">
-          <el-checkbox-button :label="1">周一</el-checkbox-button>
-          <el-checkbox-button :label="2">周二</el-checkbox-button>
-          <el-checkbox-button :label="3">周三</el-checkbox-button>
-          <el-checkbox-button :label="4">周四</el-checkbox-button>
-          <el-checkbox-button :label="5">周五</el-checkbox-button>
-          <el-checkbox-button :label="6">周六</el-checkbox-button>
-          <el-checkbox-button :label="0">周日</el-checkbox-button>
+          <el-checkbox-button :label="1">{{ $t('workOrder.days.monday') }}</el-checkbox-button>
+          <el-checkbox-button :label="2">{{ $t('workOrder.days.tuesday') }}</el-checkbox-button>
+          <el-checkbox-button :label="3">{{ $t('workOrder.days.wednesday') }}</el-checkbox-button>
+          <el-checkbox-button :label="4">{{ $t('workOrder.days.thursday') }}</el-checkbox-button>
+          <el-checkbox-button :label="5">{{ $t('workOrder.days.friday') }}</el-checkbox-button>
+          <el-checkbox-button :label="6">{{ $t('workOrder.days.saturday') }}</el-checkbox-button>
+          <el-checkbox-button :label="0">{{ $t('workOrder.days.sunday') }}</el-checkbox-button>
         </el-checkbox-group>
       </el-form-item>
     </div>
@@ -47,18 +57,27 @@
   <div v-if="recurrence === 'monthlyByDate'" class="monthly-by-date-selection">
     <el-form-item label="">
       <div class="repeat-interval">
-        <span>每</span>
+        <span>{{ $t('workOrder.recurrence.every') }}</span>
         <el-input-number
           v-model="monthlyRepeatInterval"
           :min="1"
           :max="12"
           style="width: 120px; margin: 0 10px"
         ></el-input-number>
-        <span>个月的第</span>
-        <el-select v-model="monthlyDate" placeholder="选择日期" style="width: 100px; margin: 0 10px">
-          <el-option v-for="day in 31" :key="day" :label="`${day}日`" :value="day"></el-option>
+        <span>{{ $t('workOrder.recurrence.monthsOn') }}</span>
+        <el-select
+          v-model="monthlyDate"
+          :placeholder="$t('workOrder.recurrence.selectDate')"
+          style="width: 100px; margin: 0 10px"
+        >
+          <el-option
+            v-for="day in 31"
+            :key="day"
+            :label="`${day}${$t('workOrder.recurrence.dayOfMonth')}`"
+            :value="day"
+          ></el-option>
         </el-select>
-        <span>重复</span>
+        <span>{{ $t('workOrder.recurrence.repeat') }}</span>
       </div>
     </el-form-item>
   </div>
@@ -67,29 +86,52 @@
   <div v-if="recurrence === 'yearly'" class="yearly-selection">
     <el-form-item label="">
       <div class="repeat-interval">
-        <span>每</span>
+        <span>{{ $t('workOrder.recurrence.every') }}</span>
         <el-input-number v-model="yearlyRepeatInterval" :min="1" :max="10" style="width: 120px; margin: 0 6px" />
-        <span>年的</span>
+        <span>{{ $t('workOrder.recurrence.yearsOn') }}</span>
 
-        <el-select v-model="yearlyMonth" placeholder="选择月份" style="width: 100px; margin: 0 6px">
-          <el-option v-for="month in 12" :key="month" :label="`${month}月`" :value="month" />
+        <el-select
+          v-model="yearlyMonth"
+          :placeholder="$t('workOrder.recurrence.selectMonth')"
+          style="width: 100px; margin: 0 6px"
+        >
+          <el-option
+            v-for="month in 12"
+            :key="month"
+            :label="`${month}${$t('workOrder.recurrence.month')}`"
+            :value="month"
+          />
         </el-select>
 
-        <el-select v-model="yearlyDay" placeholder="选择日期" style="width: 100px; margin: 0 6px">
-          <el-option v-for="day in 31" :key="day" :label="`${day}号`" :value="day" />
+        <el-select
+          v-model="yearlyDay"
+          :placeholder="$t('workOrder.recurrence.selectDate')"
+          style="width: 100px; margin: 0 6px"
+        >
+          <el-option
+            v-for="day in 31"
+            :key="day"
+            :label="`${day}${$t('workOrder.recurrence.dayOfMonth')}`"
+            :value="day"
+          />
         </el-select>
 
-        <span>重复</span>
+        <span>{{ $t('workOrder.recurrence.repeat') }}</span>
       </div>
     </el-form-item>
   </div>
 
-  <!-- 开始时间 Selection (Always Displayed) -->
-  <el-form-item label="开始时间" prop="recurrence_setting.start_date_time" required :show-message="false">
+  <!-- Start Date Time Selection (Always Displayed) -->
+  <el-form-item
+    :label="$t('workOrder.recurrence.startDateTime')"
+    prop="recurrence_setting.start_date_time"
+    required
+    :show-message="false"
+  >
     <el-date-picker
       v-model="startDate"
       type="datetime"
-      placeholder="选择开始时间"
+      :placeholder="$t('workOrder.recurrence.selectStartTime')"
       format="YYYY-MM-DD HH:mm"
       value-format="YYYY-MM-DD HH:mm:ss"
       style="width: 500px"
@@ -106,12 +148,17 @@
   <!--    />-->
   <!--  </el-form-item>-->
 
-  <!-- 结束时间 Selection (Displayed if recurrence is not 'daily') -->
-  <el-form-item label="结束时间" prop="recurrence_setting.end_date_time" required :show-message="false">
+  <!-- End Date Time Selection (Displayed if recurrence is not 'daily') -->
+  <el-form-item
+    :label="$t('workOrder.recurrence.endDateTime')"
+    prop="recurrence_setting.end_date_time"
+    required
+    :show-message="false"
+  >
     <el-date-picker
       v-model="endDate"
       type="datetime"
-      placeholder="选择结束时间"
+      :placeholder="$t('workOrder.recurrence.selectEndTime')"
       format="YYYY-MM-DD HH:mm"
       value-format="YYYY-MM-DD HH:mm:ss"
       style="width: 500px"
@@ -120,11 +167,12 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue'
+import { ref, watch, computed, onMounted } from 'vue'
+import { getAllRecurrenceTypes } from '@/api/workorder'
 
 const startDate = ref( null )
 const endDate = ref( null )
-const recurrence = ref( '' )
+const recurrence = ref( 'none' ) // Initialize with 'none' instead of empty string
 const repeatInterval = ref( 1 ) // Control for how many weeks to repeat
 const selectedDays = ref( [] ) // Store selected days as numbers (1 to 7)
 const monthlyRepeatInterval = ref( 1 ) // Control for how many months to repeat
@@ -134,14 +182,69 @@ const yearlyMonth = ref( 1 ) // default to January
 const yearlyDay = ref( 1 ) // default to 1st
 const emit = defineEmits( ['update:recurrenceSetting'] )
 
-// should be from backend
-const recurrenceTypeMap = {
-  none : 1,
-  daily : 2,
-  weekly : 3,
-  monthlyByDate : 4,
-  yearly : 5
+// Dynamic recurrence types from backend
+const recurrenceTypes = ref( [] )
+const recurrenceTypeMap = ref( {} )
+
+// Load recurrence types from API
+const loadRecurrenceTypes = async() => {
+  try {
+    const response = await getAllRecurrenceTypes()
+    if ( response.data ) {
+      recurrenceTypes.value = response.data
+
+      // Create mapping from name/key to ID
+      const mapping = {}
+      response.data.forEach( type => {
+        // Map based on type name or create a standard mapping
+        switch ( type.name?.toLowerCase() || type.type?.toLowerCase() ) {
+          case 'none':
+          case 'does not repeat':
+          case '不重复':
+            mapping.none = type.id
+            break
+          case 'daily':
+          case '每日':
+            mapping.daily = type.id
+            break
+          case 'weekly':
+          case '每周':
+            mapping.weekly = type.id
+            break
+          case 'monthly':
+          case 'monthly (by date)':
+          case '每月 (按日期)':
+            mapping.monthlyByDate = type.id
+            break
+          case 'yearly':
+          case '每年':
+            mapping.yearly = type.id
+            break
+          default:
+            // If we can't match by name, use the ID as key
+            mapping[type.id] = type.id
+        }
+      } )
+      recurrenceTypeMap.value = mapping
+      console.log( '📅 Loaded recurrence types:', response.data )
+      console.log( '📅 Created mapping:', mapping )
+    }
+  } catch ( error ) {
+    console.error( 'Failed to load recurrence types:', error )
+    // Fallback to hardcoded values if API fails
+    recurrenceTypeMap.value = {
+      none : 1,
+      daily : 2,
+      weekly : 3,
+      monthlyByDate : 4,
+      yearly : 5
+    }
+  }
 }
+
+onMounted( () => {
+  loadRecurrenceTypes()
+} )
 
 const recurrenceSetting = computed( () => {
   const setting = {}
@@ -161,7 +264,7 @@ const recurrenceSetting = computed( () => {
   } else {
     setting.duration_minutes = 0
   }
-  setting.recurrence_type = recurrenceTypeMap[recurrence.value] || 1
+  setting.recurrence_type = recurrenceTypeMap.value[recurrence.value] || 1
   if ( recurrence.value === 'daily' ) {
     setting.interval = 1
   } else if ( recurrence.value === 'weekly' ) {

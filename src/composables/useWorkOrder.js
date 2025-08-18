@@ -18,14 +18,19 @@ export function useWorkOrder() {
   const total = ref( 0 )
   const expandedRows = ref( new Set() )
 
-  // Query parameters
+  // Query parameters - Fixed to match filter properties used in fetchWorkOrders
   const listQuery = reactive( {
     page : 1,
     limit : 20,
-    importance : undefined,
-    title : undefined,
-    type : undefined,
-    sort : '-id'
+    // Filter properties that are actually used
+    assignedTo : undefined,
+    priority : undefined,
+    workType : undefined,
+    status : undefined,
+    search : undefined,
+    dueDate : undefined,
+    customDateRange : undefined,
+    sort : 'created_at_desc' // Use consistent created_at desc sorting for most recent first
   } )
 
   // Computed properties
@@ -50,7 +55,23 @@ export function useWorkOrder() {
       if ( listQuery.dueDate ) filters.dueDate = listQuery.dueDate
       if ( listQuery.customDateRange ) filters.customDateRange = listQuery.customDateRange
 
+      console.log( '🔍 fetchWorkOrders called with filters:', {
+        page : listQuery.page,
+        limit : listQuery.limit,
+        sortField : 'createdAt',
+        sortDirection : 'DESC',
+        filters
+      } )
+
       const response = await getAllWorkOrders( listQuery.page, listQuery.limit, 'createdAt', 'DESC', filters )
+
+      console.log( '📦 fetchWorkOrders response:', {
+        totalElements : response.data.totalElements,
+        returnedCount : response.data.content?.length,
+        firstItemId : response.data.content?.[0]?.id,
+        firstItemStatus : response.data.content?.[0]?.status,
+        firstItemStateId : response.data.content?.[0]?.state_id
+      } )
 
       const data = response.data.content
       total.value = response.data.totalElements
@@ -99,13 +120,32 @@ export function useWorkOrder() {
     fetchWorkOrders()
   }
 
+  const updateFilters = newFilters => {
+    console.log( '🔍 useWorkOrder updateFilters called with:', newFilters )
+    // Update filter properties in listQuery
+    Object.keys( newFilters ).forEach( key => {
+      if ( Object.prototype.hasOwnProperty.call( listQuery, key ) ) {
+        listQuery[key] = newFilters[key]
+      }
+    } )
+    // Reset to first page when filters change
+    listQuery.page = 1
+    console.log( '📡 Updated listQuery:', { ...listQuery } )
+    fetchWorkOrders()
+  }
+
   const handleSizeChange = val => {
+    console.log( '🔄 useWorkOrder handleSizeChange:', { from : listQuery.limit, to : val } )
     listQuery.limit = val
+    listQuery.page = 1 // Reset to first page when changing page size
+    console.log( '📡 Calling fetchWorkOrders with new page size:', { page : listQuery.page, limit : listQuery.limit } )
     fetchWorkOrders()
   }
 
   const handleCurrentChange = val => {
+    console.log( '🔄 useWorkOrder handleCurrentChange:', { from : listQuery.page, to : val } )
     listQuery.page = val
+    console.log( '📡 Calling fetchWorkOrders with new page:', { page : listQuery.page, limit : listQuery.limit } )
     fetchWorkOrders()
   }
 
@@ -173,6 +213,7 @@ export function useWorkOrder() {
     fetchWorkOrders,
     loadChildren,
     handleFilter,
+    updateFilters,
     handleSizeChange,
     handleCurrentChange,
     toggleRowHighlight,

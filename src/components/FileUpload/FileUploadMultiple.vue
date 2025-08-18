@@ -84,7 +84,6 @@ const dialogVisible = ref( false )
 const dialogImageUrl = ref( '' )
 const uploading = ref( false )
 const fileList = ref( [] )
-<<<<<<< HEAD
 const removedExistingImages = ref( [] )
 const removedExistingFiles = ref( [] )
 
@@ -184,22 +183,11 @@ const combinedFileList = computed( () => {
         url,
         status : 'success',
         isExisting : true
-=======
-
-const emit = defineEmits( ['update:imageList', 'update:filesList'] )
-
-const handleFileChange = ( file, newFileList ) => {
-  const readerPromises = newFileList.map( uploadedFile => {
-    return new Promise( resolve => {
-      if ( !uploadedFile.uid ) {
-        uploadedFile.uid = Date.now().toString()
->>>>>>> a7ba4c5 (filter & work order export template)
       }
     } )
   return [...existing, ...fileList.value]
 } )
 
-<<<<<<< HEAD
 const handleFileChange = ( file, newFileList ) => {
   // Only process new files (files with raw property) and filter out existing files
   // Also filter out any files that might be from removed existing files
@@ -220,11 +208,6 @@ const handleFileChange = ( file, newFileList ) => {
     return new Promise( resolve => {
       if ( !uploadedFile.uid ) {
         uploadedFile.uid = Date.now().toString()
-=======
-      if ( !uploadedFile.raw ) {
-        resolve( uploadedFile )
-        return
->>>>>>> a7ba4c5 (filter & work order export template)
       }
 
       const reader = new FileReader()
@@ -237,18 +220,13 @@ const handleFileChange = ( file, newFileList ) => {
   } )
 
   Promise.all( readerPromises ).then( resolvedList => {
-<<<<<<< HEAD
     // Final safety check - ensure no existing files sneak into new list
     const cleanedList = resolvedList.filter( file => !file.isExisting && !removedExistingFiles.value.includes( file.url ) )
     fileList.value = cleanedList
-=======
-    fileList.value = resolvedList
->>>>>>> a7ba4c5 (filter & work order export template)
   } )
 }
 
 const handleFileRemove = file => {
-<<<<<<< HEAD
   if ( file.isExisting ) {
     // Handle removal of existing file
     if ( !removedExistingFiles.value.includes( file.url ) ) {
@@ -260,11 +238,6 @@ const handleFileRemove = file => {
     if ( index !== -1 ) {
       fileList.value.splice( index, 1 )
     }
-=======
-  const index = fileList.value.findIndex( item => item.uid === file.uid )
-  if ( index !== -1 ) {
-    fileList.value.splice( index, 1 )
->>>>>>> a7ba4c5 (filter & work order export template)
   }
 }
 
@@ -276,7 +249,6 @@ const handlePictureCardPreview = file => {
 }
 
 const handleImageRemove = file => {
-<<<<<<< HEAD
   if ( file.isExisting ) {
     // Handle removal of existing image
     if ( !removedExistingImages.value.includes( file.url ) ) {
@@ -288,16 +260,10 @@ const handleImageRemove = file => {
     if ( index !== -1 ) {
       imageList.value.splice( index, 1 )
     }
-=======
-  const index = imageList.value.findIndex( item => item.uid === file.uid )
-  if ( index !== -1 ) {
-    imageList.value.splice( index, 1 )
->>>>>>> a7ba4c5 (filter & work order export template)
   }
 }
 
 const handleImageChange = ( file, uploadFileList ) => {
-<<<<<<< HEAD
   // Only process new files (files with raw property) and filter out existing files
   // Also filter out any files that might be from removed existing images
   const newFiles = uploadFileList.filter( uploadedFile => {
@@ -317,17 +283,6 @@ const handleImageChange = ( file, uploadFileList ) => {
     return new Promise( resolve => {
       if ( !uploadedFile.uid ) {
         uploadedFile.uid = Date.now().toString()
-=======
-  const readerPromises = uploadFileList.map( uploadedFile => {
-    return new Promise( resolve => {
-      if ( !uploadedFile.uid ) {
-        uploadedFile.uid = Date.now().toString()
-      }
-
-      if ( !uploadedFile.raw ) {
-        resolve( uploadedFile )
-        return
->>>>>>> a7ba4c5 (filter & work order export template)
       }
 
       const reader = new FileReader()
@@ -340,7 +295,6 @@ const handleImageChange = ( file, uploadFileList ) => {
   } )
 
   Promise.all( readerPromises ).then( resolvedList => {
-<<<<<<< HEAD
     // Final safety check - ensure no existing files sneak into new list
     const cleanedList = resolvedList.filter( file => !file.isExisting && !removedExistingImages.value.includes( file.url ) )
     imageList.value = cleanedList
@@ -393,10 +347,6 @@ const beforeFileUpload = file => {
   }
 
   return true
-=======
-    imageList.value = resolvedList
-  } )
->>>>>>> a7ba4c5 (filter & work order export template)
 }
 
 const handleDownload = file => {
@@ -477,19 +427,19 @@ onMounted( () => {
   clearExistingFromNewLists()
 
   // Initialize with existing data if provided
-  if (props.existingImageList.length > 0 || props.existingFileList.length > 0) {
-    console.log('Initialized with existing files:', {
-      images: props.existingImageList,
-      files: props.existingFileList
-    })
+  if ( props.existingImageList.length > 0 || props.existingFileList.length > 0 ) {
+    console.log( 'Initialized with existing files:', {
+      images : props.existingImageList,
+      files : props.existingFileList
+    } )
   }
-})
+} )
 
 // Expose reset function for parent components
-defineExpose({
+defineExpose( {
   resetRemovedItems,
   clearExistingFromNewLists
-})
+} )
 </script>
 
 <style scoped>

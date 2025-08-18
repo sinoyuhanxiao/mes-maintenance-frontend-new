@@ -27,9 +27,9 @@
     <el-form ref="formRef" :model="form" :rules="rules" label-position="top" class="create-form" v-loading="loading">
       <!-- Task Title -->
       <div class="form-section">
-        <el-form-item prop="taskTitle">
+        <el-form-item prop="name">
           <el-input
-            v-model="form.taskTitle"
+            v-model="form.name"
             :placeholder="$t('workOrder.create.taskTitlePlaceholder')"
             size="large"
             class="task-title-input"
@@ -54,7 +54,7 @@
       <div class="form-section">
         <el-form-item :label="$t('workOrder.create.location')" prop="location">
           <el-tree-select
-            v-model="form.location"
+            v-model="form.location_id"
             :data="locationTreeData"
             :props="treeProps"
             :placeholder="$t('workOrder.create.locationPlaceholder')"
@@ -69,7 +69,7 @@
       <div class="form-section">
         <el-form-item :label="$t('workOrder.create.asset')" prop="asset">
           <el-tree-select
-            v-model="form.asset"
+            v-model="form.equipment_node_id"
             :data="assetTreeData"
             :props="treeProps"
             :placeholder="$t('workOrder.create.assetPlaceholder')"
@@ -77,36 +77,6 @@
             :render-after-expand="false"
             style="width: 100%"
           />
-        </el-form-item>
-      </div>
-
-      <!-- Procedure Picker -->
-      <div class="form-section">
-        <el-form-item :label="$t('workOrder.create.procedure')" prop="procedure">
-          <div class="procedure-picker">
-            <div class="procedure-placeholder">
-              <el-icon><Document /></el-icon>
-              <span>{{ $t('workOrder.create.procedurePlaceholder') }}</span>
-            </div>
-            <el-button type="primary" plain @click="handleAddProcedure">
-              + {{ $t('workOrder.create.addProcedure') }}
-            </el-button>
-          </div>
-        </el-form-item>
-      </div>
-
-      <!-- Assignee -->
-      <div class="form-section">
-        <el-form-item :label="$t('workOrder.create.assignTo')" prop="assignee">
-          <el-select
-            v-model="form.assignee"
-            :placeholder="$t('workOrder.create.assigneePlaceholder')"
-            filterable
-            remote
-            style="width: 100%"
-          >
-            <el-option v-for="user in assigneeOptions" :key="user.id" :label="user.name" :value="user.id" />
-          </el-select>
         </el-form-item>
       </div>
 
@@ -146,12 +116,12 @@
       <div class="form-section">
         <el-form-item :label="$t('workOrder.create.dueDate')" prop="dueDate">
           <el-date-picker
-            v-model="form.dueDate"
-            type="date"
+            v-model="form.due_date"
+            type="datetime"
             :placeholder="$t('workOrder.create.dueDatePlaceholder')"
             style="width: 100%"
-            format="MM/DD/YYYY"
-            value-format="YYYY-MM-DD"
+            format="MM/DD/YYYY HH:mm"
+            value-format="YYYY-MM-DDTHH:mm:ss"
           />
         </el-form-item>
       </div>
@@ -160,12 +130,12 @@
       <div class="form-section">
         <el-form-item :label="$t('workOrder.create.startDate')" prop="startDate">
           <el-date-picker
-            v-model="form.startDate"
-            type="date"
+            v-model="form.start_date"
+            type="datetime"
             :placeholder="$t('workOrder.create.startDatePlaceholder')"
             style="width: 100%"
-            format="MM/DD/YYYY"
-            value-format="YYYY-MM-DD"
+            format="MM/DD/YYYY HH:mm"
+            value-format="YYYY-MM-DDTHH:mm:ss"
           />
         </el-form-item>
       </div>
@@ -176,7 +146,7 @@
           <el-col :span="12">
             <el-form-item :label="$t('workOrder.create.workType')" prop="workType">
               <el-select
-                v-model="form.workType"
+                v-model="form.work_type_id"
                 :placeholder="$t('workOrder.create.workTypePlaceholder')"
                 style="width: 100%"
               >
@@ -187,15 +157,15 @@
           <el-col :span="12">
             <el-form-item :label="$t('workOrder.create.priority')" prop="priority">
               <el-select
-                v-model="form.priority"
+                v-model="form.priority_id"
                 :placeholder="$t('workOrder.create.priorityPlaceholder')"
                 style="width: 100%"
               >
                 <el-option
                   v-for="priority in priorityOptions"
-                  :key="priority.value"
-                  :label="priority.label"
-                  :value="priority.value"
+                  :key="priority.id"
+                  :label="priority.name"
+                  :value="priority.id"
                 />
               </el-select>
             </el-form-item>
@@ -203,162 +173,9 @@
         </el-row>
       </div>
 
-      <!-- Enhanced Recurrence Settings -->
+      <!-- Recurrence Settings -->
       <div class="form-section">
-        <div class="recurrence-editor">
-          <el-form-item :label="$t('workOrder.create.recurrenceSettings')" prop="recurrence" required>
-            <el-select
-              v-model="form.recurrence"
-              :placeholder="$t('workOrder.create.recurrencePlaceholder')"
-              style="width: 100%"
-              clearable
-            >
-              <el-option :label="$t('workOrder.recurrence.none')" value="none"></el-option>
-              <el-option :label="$t('workOrder.recurrence.daily')" value="daily"></el-option>
-              <el-option :label="$t('workOrder.recurrence.weekly')" value="weekly"></el-option>
-              <el-option :label="$t('workOrder.recurrence.monthlyByDate')" value="monthlyByDate"></el-option>
-              <el-option :label="$t('workOrder.recurrence.yearly')" value="yearly"></el-option>
-            </el-select>
-          </el-form-item>
-
-          <!-- Weekly Interval Selection -->
-          <div v-if="form.recurrence === 'weekly'" class="weekly-interval-selection">
-            <el-form-item>
-              <div class="repeat-interval">
-                <span>{{ $t('workOrder.recurrence.every') }}</span>
-                <el-input-number
-                  v-model="form.recurrenceSettings.repeatInterval"
-                  :min="1"
-                  :max="52"
-                  style="width: 120px; margin: 0 10px"
-                />
-                <span>{{ $t('workOrder.recurrence.weeksRepeat') }}</span>
-              </div>
-            </el-form-item>
-          </div>
-
-          <!-- Days of the Week Selection -->
-          <div v-if="form.recurrence === 'weekly'" class="weekly-selection">
-            <el-form-item>
-              <el-checkbox-group v-model="form.recurrenceSettings.selectedDays">
-                <el-checkbox-button :label="1">{{ $t('workOrder.days.monday') }}</el-checkbox-button>
-                <el-checkbox-button :label="2">{{ $t('workOrder.days.tuesday') }}</el-checkbox-button>
-                <el-checkbox-button :label="3">{{ $t('workOrder.days.wednesday') }}</el-checkbox-button>
-                <el-checkbox-button :label="4">{{ $t('workOrder.days.thursday') }}</el-checkbox-button>
-                <el-checkbox-button :label="5">{{ $t('workOrder.days.friday') }}</el-checkbox-button>
-                <el-checkbox-button :label="6">{{ $t('workOrder.days.saturday') }}</el-checkbox-button>
-                <el-checkbox-button :label="0">{{ $t('workOrder.days.sunday') }}</el-checkbox-button>
-              </el-checkbox-group>
-            </el-form-item>
-          </div>
-
-          <!-- Monthly By Date Selection -->
-          <div v-if="form.recurrence === 'monthlyByDate'" class="monthly-by-date-selection">
-            <el-form-item>
-              <div class="repeat-interval">
-                <span>{{ $t('workOrder.recurrence.every') }}</span>
-                <el-input-number
-                  v-model="form.recurrenceSettings.monthlyRepeatInterval"
-                  :min="1"
-                  :max="12"
-                  style="width: 120px; margin: 0 10px"
-                />
-                <span>{{ $t('workOrder.recurrence.monthsOn') }}</span>
-                <el-select
-                  v-model="form.recurrenceSettings.monthlyDate"
-                  :placeholder="$t('workOrder.recurrence.selectDate')"
-                  style="width: 100px; margin: 0 10px"
-                >
-                  <el-option
-                    v-for="day in 31"
-                    :key="day"
-                    :label="`${day}${$t('workOrder.recurrence.dayOfMonth')}`"
-                    :value="day"
-                  />
-                </el-select>
-                <span>{{ $t('workOrder.recurrence.repeat') }}</span>
-              </div>
-            </el-form-item>
-          </div>
-
-          <!-- Yearly Selection -->
-          <div v-if="form.recurrence === 'yearly'" class="yearly-selection">
-            <el-form-item>
-              <div class="repeat-interval">
-                <span>{{ $t('workOrder.recurrence.every') }}</span>
-                <el-input-number
-                  v-model="form.recurrenceSettings.yearlyRepeatInterval"
-                  :min="1"
-                  :max="10"
-                  style="width: 120px; margin: 0 6px"
-                />
-                <span>{{ $t('workOrder.recurrence.yearsOn') }}</span>
-
-                <el-select
-                  v-model="form.recurrenceSettings.yearlyMonth"
-                  :placeholder="$t('workOrder.recurrence.selectMonth')"
-                  style="width: 100px; margin: 0 6px"
-                >
-                  <el-option
-                    v-for="month in 12"
-                    :key="month"
-                    :label="`${month}${$t('workOrder.recurrence.month')}`"
-                    :value="month"
-                  />
-                </el-select>
-
-                <el-select
-                  v-model="form.recurrenceSettings.yearlyDay"
-                  :placeholder="$t('workOrder.recurrence.selectDate')"
-                  style="width: 100px; margin: 0 6px"
-                >
-                  <el-option
-                    v-for="day in 31"
-                    :key="day"
-                    :label="`${day}${$t('workOrder.recurrence.dayOfMonth')}`"
-                    :value="day"
-                  />
-                </el-select>
-
-                <span>{{ $t('workOrder.recurrence.repeat') }}</span>
-              </div>
-            </el-form-item>
-          </div>
-
-          <!-- Start Date Time (Always Displayed) -->
-          <el-form-item
-            v-if="form.recurrence !== 'none'"
-            :label="$t('workOrder.recurrence.startDateTime')"
-            prop="recurrenceSettings.startDate"
-            required
-          >
-            <el-date-picker
-              v-model="form.recurrenceSettings.startDate"
-              type="datetime"
-              :placeholder="$t('workOrder.recurrence.selectStartTime')"
-              format="YYYY-MM-DD HH:mm"
-              value-format="YYYY-MM-DD HH:mm:ss"
-              style="width: 100%"
-            />
-          </el-form-item>
-
-          <!-- End Date Time -->
-          <el-form-item
-            v-if="form.recurrence !== 'none'"
-            :label="$t('workOrder.recurrence.endDateTime')"
-            prop="recurrenceSettings.endDate"
-            required
-          >
-            <el-date-picker
-              v-model="form.recurrenceSettings.endDate"
-              type="datetime"
-              :placeholder="$t('workOrder.recurrence.selectEndTime')"
-              format="YYYY-MM-DD HH:mm"
-              value-format="YYYY-MM-DD HH:mm:ss"
-              style="width: 100%"
-            />
-          </el-form-item>
-        </div>
+        <RecurrenceEditor v-model:recurrence-setting="form.recurrence_setting" />
       </div>
 
       <!-- Categories -->
@@ -381,28 +198,13 @@
         </el-form-item>
       </div>
 
-      <!-- Vendors -->
-      <div class="form-section">
-        <el-form-item :label="$t('workOrder.create.vendors')" prop="vendors">
-          <el-select
-            v-model="form.vendors"
-            :placeholder="$t('workOrder.create.vendorsPlaceholder')"
-            multiple
-            filterable
-            style="width: 100%"
-          >
-            <el-option v-for="vendor in vendorOptions" :key="vendor.id" :label="vendor.name" :value="vendor.id" />
-          </el-select>
-        </el-form-item>
-      </div>
-
       <!-- Image and File Upload Section -->
       <div class="form-section">
         <div class="upload-section">
           <!-- Image Upload -->
           <el-form-item :label="$t('workOrder.create.imageUpload')" prop="pictures">
             <el-upload
-              v-model:file-list="form.pictures"
+              v-model:file-list="form.image_list"
               action="#"
               list-type="picture-card"
               :auto-upload="false"
@@ -445,7 +247,7 @@
           <!-- File Upload -->
           <el-form-item :label="$t('workOrder.create.fileUpload')" prop="files">
             <el-upload
-              v-model:file-list="form.files"
+              v-model:file-list="form.files_list"
               action="#"
               list-type="text"
               :auto-upload="false"
@@ -462,21 +264,35 @@
         </div>
       </div>
 
-      <!-- Submit Button -->
-      <div class="form-actions">
-        <el-button type="primary" size="large" @click="submitForm" :loading="loading" class="create-button">
-          {{ $t('workOrder.actions.create') }}
-        </el-button>
+      <!-- Submit Button - Fixed at bottom -->
+      <div class="form-actions-fixed">
+        <div class="form-actions-content">
+          <el-button type="default" size="large" @click="$emit('back-to-detail')" class="cancel-button">
+            {{ $t('workOrder.actions.cancel') }}
+          </el-button>
+          <el-button type="primary" size="large" @click="submitForm" :loading="loading" class="create-button">
+            {{ $t('workOrder.actions.create') }}
+          </el-button>
+        </div>
       </div>
     </el-form>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { ArrowLeft, RefreshLeft, Document, Plus, ZoomIn, Download, Delete } from '@element-plus/icons-vue'
+import { ArrowLeft, RefreshLeft, Plus, ZoomIn, Download, Delete } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
+import RecurrenceEditor from '@/views/workOrder/components/recurrenceEditor.vue'
+import {
+  getAllWorkTypes,
+  getAllPriorities,
+  getAllCategories,
+  getLocationNodeTrees,
+  getEquipmentNodeTrees,
+  createWorkOrder
+} from '@/api/workorder'
 
 // Props
 // const props = defineProps({
@@ -488,51 +304,46 @@ const emit = defineEmits( ['back-to-detail', 'work-order-created'] )
 
 const { t } = useI18n()
 
-// State
-const formRef = ref( null )
-const loading = ref( false )
+// Component mounted
+onMounted( () => {
+  loadFormData()
+  // Debug i18n setup
+  console.log( '🌐 WorkOrderCreateEnhanced i18n setup:', {
+    locale : t( 'workOrder.actions.create' ),
+    cancelKey : t( 'workOrder.actions.cancel' ),
+    createKey : t( 'workOrder.actions.create' ),
+    i18nInstance : !!t
+  } )
+} )
 
-// Upload dialog state
-const imageDialogVisible = ref( false )
-const dialogImageUrl = ref( '' )
-
-// Form data
+// Form data - following the working NewWorkOrder.vue pattern
 const form = reactive( {
-  taskTitle : '',
-  pictures : [],
+  name : '',
   description : '',
-  location : null,
-  asset : null,
-  procedure : null,
-  assignee : null,
-  estimatedHours : 1,
-  estimatedMinutes : 0,
-  dueDate : null,
-  startDate : null,
-  recurrence : 'none',
-  workType : 'reactive',
-  priority : 'none',
-  files : [],
+  estimated_minutes : 30,
+  location_id : null,
+  equipment_node_id : null,
+  priority_id : null,
+  work_type_id : null,
+  state_id : 1,
+  time_zone : Intl.DateTimeFormat().resolvedOptions().timeZone,
+  created_by : 37,
+  recurrence_type : null,
+  image_list : [],
+  files_list : [],
+  recurrence_setting : {},
   categories : [],
-  vendors : [],
-  recurrenceSettings : {
-    repeatInterval : 1,
-    selectedDays : [],
-    monthlyRepeatInterval : 1,
-    monthlyDate : 1,
-    yearlyRepeatInterval : 1,
-    yearlyMonth : 1,
-    yearlyDay : 1,
-    startDate : null,
-    endDate : null
-  }
+  start_date : null,
+  due_date : null
 } )
 
 // Validation rules
 const rules = reactive( {
-  taskTitle : [{ required : true, message : t( 'workOrder.validation.taskTitleRequired' ), trigger : 'blur' }],
-  location : [{ required : true, message : t( 'workOrder.validation.locationRequired' ), trigger : 'change' }],
-  asset : [{ required : true, message : t( 'workOrder.validation.assetRequired' ), trigger : 'change' }]
+  name : [{ required : true, message : t( 'workOrder.validation.taskTitleRequired' ), trigger : 'blur' }],
+  location_id : [{ required : true, message : t( 'workOrder.validation.locationRequired' ), trigger : 'change' }],
+  equipment_node_id : [{ required : true, message : t( 'workOrder.validation.assetRequired' ), trigger : 'change' }],
+  work_type_id : [{ required : true, message : t( 'workOrder.validation.workTypeRequired' ), trigger : 'change' }],
+  priority_id : [{ required : true, message : t( 'workOrder.validation.priorityRequired' ), trigger : 'change' }]
 } )
 
 // Tree props for tree selects
@@ -542,133 +353,90 @@ const treeProps = {
   value : 'id'
 }
 
-// Mock data options
-const priorityOptions = [
-  { value : 'none', label : t( 'workOrder.priority.none' ) },
-  { value : 'low', label : t( 'workOrder.priority.low' ) },
-  { value : 'medium', label : t( 'workOrder.priority.medium' ) },
-  { value : 'high', label : t( 'workOrder.priority.high' ) }
-]
+// API data options
+const priorityOptions = ref( [] )
+const workTypeOptions = ref( [] )
+const categoryOptions = ref( [] )
+const locationTreeData = ref( [] )
+const assetTreeData = ref( [] )
+const loading = ref( false )
+const formRef = ref( null )
+const imageDialogVisible = ref( false )
+const dialogImageUrl = ref( '' )
 
-// const recurrenceOptions = [
-//   { value : 'does-not-repeat', label : t( 'workOrder.recurrence.doesNotRepeat' ) },
-//   { value : 'daily', label : t( 'workOrder.recurrence.daily' ) },
-//   { value : 'weekly', label : t( 'workOrder.recurrence.weekly' ) },
-//   { value : 'monthly', label : t( 'workOrder.recurrence.monthly' ) }
-// ]
+// Load data from APIs
+const loadFormData = async() => {
+  try {
+    loading.value = true
+    console.log( 'WorkOrderCreateEnhanced: Loading form data...' )
 
-const workTypeOptions = ref( [
-  { id : 1, name : 'Preventative' },
-  { id : 2, name : 'Reactive' },
-  { id : 3, name : 'Follow-up' },
-  { id : 4, name : 'Other' }
-] )
+    const [workTypesRes, prioritiesRes, categoriesRes, locationsRes, equipmentRes] = await Promise.all( [
+      getAllWorkTypes(),
+      getAllPriorities(),
+      getAllCategories(),
+      getLocationNodeTrees(),
+      getEquipmentNodeTrees()
+    ] )
 
-const assigneeOptions = ref( [
-  { id : 1, name : 'John Doe' },
-  { id : 2, name : 'Jane Smith' },
-  { id : 3, name : 'Mike Johnson' },
-  { id : 4, name : 'Sarah Wilson' }
-] )
+    console.log( 'WorkOrderCreateEnhanced: API responses:', {
+      workTypes : workTypesRes.data,
+      priorities : prioritiesRes.data,
+      categories : categoriesRes.data,
+      locations : locationsRes.data,
+      equipment : equipmentRes.data
+    } )
 
-const categoryOptions = ref( [
-  { id : 1, name : 'Mechanical' },
-  { id : 2, name : 'Electrical' },
-  { id : 3, name : 'Hydraulic' },
-  { id : 4, name : 'Pneumatic' },
-  { id : 5, name : 'Safety' }
-] )
+    if ( workTypesRes.data ) {
+      workTypeOptions.value = workTypesRes.data
+      console.log( 'WorkOrderCreateEnhanced: Set workTypeOptions:', workTypeOptions.value )
+    }
 
-const vendorOptions = ref( [
-  { id : 1, name : 'ABC Maintenance Co.' },
-  { id : 2, name : 'XYZ Equipment Services' },
-  { id : 3, name : 'TechFix Solutions' }
-] )
+    if ( prioritiesRes.data ) {
+      priorityOptions.value = prioritiesRes.data
+      console.log( 'WorkOrderCreateEnhanced: Set priorityOptions:', priorityOptions.value )
+    }
 
-// Location tree data (reusing from WorkOrderDetail)
-const locationTreeData = ref( [
-  {
-    id : 'building-a',
-    name : 'Manufacturing Building A',
-    children : [
-      {
-        id : 'floor-1',
-        name : 'Ground Floor',
-        children : [
-          { id : 'room-101', name : 'Production Area 101' },
-          { id : 'room-102', name : 'Storage Room 102' },
-          { id : 'room-103', name : 'Quality Control Lab 103' }
-        ]
-      },
-      {
-        id : 'floor-2',
-        name : 'Second Floor',
-        children : [
-          { id : 'room-201', name : 'Processing Area 201' },
-          { id : 'room-202', name : 'Packaging Area 202' }
-        ]
-      }
-    ]
-  },
-  {
-    id : 'building-b',
-    name : 'Manufacturing Building B',
-    children : [
-      {
-        id : 'floor-b1',
-        name : 'Ground Floor',
-        children : [
-          { id : 'room-b101', name : 'Assembly Line 1' },
-          { id : 'room-b102', name : 'Assembly Line 2' }
-        ]
-      }
-    ]
+    if ( categoriesRes.data ) {
+      categoryOptions.value = categoriesRes.data
+      console.log( 'WorkOrderCreateEnhanced: Set categoryOptions:', categoryOptions.value )
+    }
+
+    if ( locationsRes.data ) {
+      locationTreeData.value = locationsRes.data
+      console.log( 'WorkOrderCreateEnhanced: Set locationTreeData:', locationTreeData.value )
+    }
+
+    if ( equipmentRes.data ) {
+      assetTreeData.value = equipmentRes.data
+      console.log( 'WorkOrderCreateEnhanced: Set assetTreeData:', assetTreeData.value )
+    }
+  } catch ( error ) {
+    console.error( 'WorkOrderCreateEnhanced: Failed to load form data:', error )
+    // Show specific error message if available
+    const errorMessage = error.response?.data?.message || error.message || t( 'workOrder.messages.loadDataFailed' )
+    ElMessage.error( errorMessage )
+
+    // Disable form if critical data loading fails
+    if ( !workTypeOptions.value.length || !priorityOptions.value.length ) {
+      ElMessage.warning( t( 'workOrder.messages.criticalDataMissing' ) )
+    }
+  } finally {
+    loading.value = false
+    console.log( 'WorkOrderCreateEnhanced: Final dropdown options:', {
+      workTypes : workTypeOptions.value,
+      priorities : priorityOptions.value,
+      categories : categoryOptions.value
+    } )
   }
-] )
+}
 
-// Asset tree data (equipment hierarchy)
-const assetTreeData = ref( [
-  {
-    id : 'line-a',
-    name : 'Food Processing Line A',
-    children : [
-      {
-        id : 'steam-equipment',
-        name : 'Steam Processing Equipment',
-        children : [
-          { id : 'steam-peeler', name : 'Steam Peeler' },
-          { id : 'steam-blancher', name : 'Steam Blancher' }
-        ]
-      },
-      {
-        id : 'conveyor-systems',
-        name : 'Conveyor Systems',
-        children : [
-          { id : 'main-conveyor', name : 'Main Conveyor Belt' },
-          { id : 'sorting-conveyor', name : 'Sorting Conveyor' }
-        ]
-      }
-    ]
-  },
-  {
-    id : 'line-b',
-    name : 'Food Processing Line B',
-    children : [
-      {
-        id : 'packaging-equipment',
-        name : 'Packaging Equipment',
-        children : [
-          { id : 'sealing-machine', name : 'Sealing Machine' },
-          { id : 'labeling-machine', name : 'Labeling Machine' }
-        ]
-      }
-    ]
-  }
-] )
-
-const handleAddProcedure = () => {
-  // TODO: Implement procedure picker modal
-  ElMessage.info( t( 'workOrder.messages.procedurePickerNotImplemented' ) )
+// Convert 'YYYY-MM-DDTHH:mm:ss' (local timezone semantics) to UTC ISO string (...Z)
+const toUtcIso = dateTimeString => {
+  if ( !dateTimeString ) return null
+  const normalized = dateTimeString.replace( ' ', 'T' ) // Fallback: in case it comes with space
+  const d = new Date( normalized ) // Parse as "local time"
+  if ( isNaN( d.getTime() ) ) return null
+  return d.toISOString() // e.g. 2025-08-12T17:15:15.425Z
 }
 
 // Image upload handlers
@@ -682,17 +450,17 @@ const handlePictureCardPreview = file => {
 }
 
 const handleImageRemove = file => {
-  const index = form.pictures.findIndex( item => item.uid === file.uid )
+  const index = form.image_list.findIndex( item => item.uid === file.uid )
   if ( index !== -1 ) {
-    form.pictures.splice( index, 1 )
+    form.image_list.splice( index, 1 )
   } else {
-    console.error( 'File not found in pictures list.' )
+    console.error( 'File not found in image list.' )
   }
 }
 
 const handleImageChange = ( file, uploadFileList ) => {
   const readerPromises = uploadFileList.map( uploadedFile => {
-    return new Promise( resolve => {
+    return new Promise( ( resolve, reject ) => {
       if ( !uploadedFile.uid ) {
         uploadedFile.uid = Date.now().toString()
       }
@@ -702,18 +470,33 @@ const handleImageChange = ( file, uploadFileList ) => {
         return
       }
 
+      // Check file size (max 10MB)
+      if ( uploadedFile.raw.size > 10 * 1024 * 1024 ) {
+        ElMessage.error( t( 'workOrder.messages.fileTooLarge' ) )
+        reject( new Error( 'File too large' ) )
+        return
+      }
+
       const reader = new FileReader()
       reader.onload = e => {
         uploadedFile.url = e.target.result
         resolve( uploadedFile )
       }
+      reader.onerror = () => {
+        ElMessage.error( t( 'workOrder.messages.fileReadError' ) )
+        reject( new Error( 'File read error' ) )
+      }
       reader.readAsDataURL( uploadedFile.raw )
     } )
   } )
 
-  Promise.all( readerPromises ).then( resolvedList => {
-    form.pictures = resolvedList
-  } )
+  Promise.all( readerPromises )
+    .then( resolvedList => {
+      form.image_list = resolvedList
+    } )
+    .catch( error => {
+      console.error( 'Error processing images:', error )
+    } )
 }
 
 const handleImageDownload = file => {
@@ -731,9 +514,9 @@ const handleImageDownload = file => {
 
 // File upload handlers
 const handleFileRemove = file => {
-  const index = form.files.findIndex( item => item.uid === file.uid )
+  const index = form.files_list.findIndex( item => item.uid === file.uid )
   if ( index !== -1 ) {
-    form.files.splice( index, 1 )
+    form.files_list.splice( index, 1 )
   } else {
     console.error( 'File not found in files list.' )
   }
@@ -741,7 +524,7 @@ const handleFileRemove = file => {
 
 const handleFileChange = ( file, newFileList ) => {
   const readerPromises = newFileList.map( uploadedFile => {
-    return new Promise( resolve => {
+    return new Promise( ( resolve, reject ) => {
       if ( !uploadedFile.uid ) {
         uploadedFile.uid = Date.now().toString()
       }
@@ -751,18 +534,33 @@ const handleFileChange = ( file, newFileList ) => {
         return
       }
 
+      // Check file size (max 50MB for documents)
+      if ( uploadedFile.raw.size > 50 * 1024 * 1024 ) {
+        ElMessage.error( t( 'workOrder.messages.fileTooLarge' ) )
+        reject( new Error( 'File too large' ) )
+        return
+      }
+
       const reader = new FileReader()
       reader.onload = e => {
         uploadedFile.url = e.target.result
         resolve( uploadedFile )
       }
+      reader.onerror = () => {
+        ElMessage.error( t( 'workOrder.messages.fileReadError' ) )
+        reject( new Error( 'File read error' ) )
+      }
       reader.readAsDataURL( uploadedFile.raw )
     } )
   } )
 
-  Promise.all( readerPromises ).then( resolvedList => {
-    form.files = resolvedList
-  } )
+  Promise.all( readerPromises )
+    .then( resolvedList => {
+      form.files_list = resolvedList
+    } )
+    .catch( error => {
+      console.error( 'Error processing files:', error )
+    } )
 }
 
 const resetForm = () => {
@@ -772,38 +570,37 @@ const resetForm = () => {
 
   // Reset form to initial values
   Object.assign( form, {
-    taskTitle : '',
-    pictures : [],
+    name : '',
     description : '',
-    location : null,
-    asset : null,
-    procedure : null,
-    assignee : null,
-    estimatedHours : 1,
-    estimatedMinutes : 0,
-    dueDate : null,
-    startDate : null,
-    recurrence : 'none',
-    workType : 'reactive',
-    priority : 'none',
-    files : [],
+    estimated_minutes : 30,
+    location_id : null,
+    equipment_node_id : null,
+    priority_id : null,
+    work_type_id : null,
+    state_id : 1,
+    time_zone : Intl.DateTimeFormat().resolvedOptions().timeZone,
+    created_by : 37,
+    recurrence_type : null,
+    image_list : [],
+    files_list : [],
+    recurrence_setting : {},
     categories : [],
-    vendors : [],
-    recurrenceSettings : {
-      repeatInterval : 1,
-      selectedDays : [],
-      monthlyRepeatInterval : 1,
-      monthlyDate : 1,
-      yearlyRepeatInterval : 1,
-      yearlyMonth : 1,
-      yearlyDay : 1,
-      startDate : null,
-      endDate : null
-    }
+    start_date : null,
+    due_date : null
   } )
 
   ElMessage.success( t( 'workOrder.messages.formReset' ) )
 }
+
+// Watcher to sync recurrence_type from recurrence_setting (like NewWorkOrder.vue)
+watch(
+  () => form.recurrence_setting,
+  newVal => {
+    form.recurrence_type = newVal.recurrence_type
+    console.log( '📅 recurrence_setting changed:', newVal )
+  },
+  { deep : true }
+)
 
 const submitForm = async() => {
   if ( !formRef.value ) return
@@ -817,37 +614,54 @@ const submitForm = async() => {
 
     loading.value = true
 
-    // Simulate API call
-    await new Promise( resolve => setTimeout( resolve, 1500 ) )
+    // Prepare properly formatted dates for backend (convert to UTC Z)
+    const formattedDueDate = toUtcIso( form.due_date )
+    const formattedStartDate = toUtcIso( form.start_date )
 
-    // Mock successful creation
-    const mockWorkOrder = {
-      id : Date.now(),
-      name : form.taskTitle,
-      description : form.description,
-      estimated_minutes : form.estimatedHours * 60 + form.estimatedMinutes,
-      due_date : form.dueDate,
-      start_date : form.startDate,
-      priority : { name : priorityOptions.find( p => p.value === form.priority )?.label || 'None' },
-      work_type : workTypeOptions.value.find( wt => wt.id === form.workType ),
-      categories : form.categories,
-      created_at : new Date().toISOString(),
-      state : { name : 'Ready' },
-      assigned_to : form.assignee,
-      location_id : form.location,
-      asset_id : form.asset
+    // Prepare payload following NewWorkOrder.vue pattern
+    const payload = {
+      ...form,
+      start_date : formattedStartDate,
+      due_date : formattedDueDate,
+      image_path : form.image_list.map( pic => pic.url || pic.response?.url ).filter( Boolean ),
+      file_path : form.files_list.map( file => file.url || file.response?.url ).filter( Boolean ),
+      // Backend expects recurrence_type_id instead of recurrence_type
+      recurrence_type_id : form.recurrence_type,
+      // Backend expects recurrence_setting_request instead of recurrence_setting
+      recurrence_setting_request : form.recurrence_setting
     }
 
-    ElMessage.success( t( 'workOrder.messages.createSuccess' ) )
+    // Remove the old fields to avoid confusion
+    delete payload.recurrence_type
+    delete payload.recurrence_setting
 
-    // Emit the created work order
-    emit( 'work-order-created', mockWorkOrder )
+    console.log( '📤 Submitting work order payload:', payload )
+
+    // Call backend API
+    const response = await createWorkOrder( payload )
+
+    console.log( '🎉 Work order creation successful! Response:', response.data )
+
+    // Emit the created work order (can be single or array)
+    const createdWorkOrders = Array.isArray( response.data ) ? response.data : [response.data]
+    console.log( '📤 Emitting created work orders:', createdWorkOrders )
+
+    createdWorkOrders.forEach( ( workOrder, index ) => {
+      console.log( `📤 Emitting work order ${index + 1}:`, {
+        id : workOrder.id,
+        name : workOrder.name,
+        state_id : workOrder.state_id,
+        status : workOrder.status
+      } )
+      emit( 'work-order-created', workOrder )
+    } )
 
     // Reset form after successful creation
     resetForm()
   } catch ( error ) {
     console.error( 'Failed to create work order:', error )
-    ElMessage.error( t( 'workOrder.messages.createFailed' ) )
+    const errorMessage = error.response?.data?.message || error.message || t( 'workOrder.messages.createFailed' )
+    ElMessage.error( errorMessage )
   } finally {
     loading.value = false
   }
@@ -862,9 +676,11 @@ defineOptions( {
 .work-order-create-enhanced {
   background: var(--el-bg-color);
   border-radius: 8px;
-  padding: 24px;
+  padding: 0px 24px 0px 24px; // Extra bottom padding for fixed buttons
+  margin-top: 24px;
   height: 100%;
   overflow-y: auto;
+  position: relative; // Enable absolute positioning for children
 }
 
 // Header styling (consistent with WorkOrderDetail)
@@ -872,6 +688,12 @@ defineOptions( {
   margin-bottom: 24px;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--el-border-color-light);
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: var(--el-bg-color);
+  z-index: 10;
 
   .header-main {
     .create-title {
@@ -1017,18 +839,30 @@ defineOptions( {
     }
   }
 
-  // Form actions
-  .form-actions {
-    display: flex;
-    justify-content: flex-end;
-    padding-top: 24px;
+  // Form actions - Fixed at bottom of parent container
+  .form-actions-fixed {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    background: var(--el-bg-color);
     border-top: 1px solid var(--el-border-color-light);
-    margin-top: 32px;
+    padding: 16px 24px;
+    box-shadow: 0 0px 1px rgba(0, 0, 0, 0.1);
 
-    .create-button {
-      padding: 12px 24px;
-      font-size: 16px;
-      font-weight: 500;
+    .form-actions-content {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+
+      .create-button,
+      .cancel-button {
+        padding: 12px 24px;
+        font-size: 16px;
+        font-weight: 500;
+        min-width: 120px;
+      }
     }
   }
 }
@@ -1036,7 +870,7 @@ defineOptions( {
 // Responsive adjustments
 @media (max-width: 768px) {
   .work-order-create-enhanced {
-    padding: 16px;
+    padding: 16px 16px 0px 16px; // Extra bottom padding for mobile
   }
 
   .create-header {
@@ -1046,18 +880,34 @@ defineOptions( {
     }
   }
 
-  .recurrence-editor {
-    .repeat-interval {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 8px;
-    }
+  // Mobile specific adjustments for fixed buttons
+  .form-actions-fixed {
+    padding: 12px 16px;
 
-    .weekly-selection {
-      :deep(.el-checkbox-group) {
-        flex-direction: column;
-        gap: 4px;
+    .form-actions-content {
+      flex-direction: column;
+      gap: 8px;
+
+      .create-button,
+      .cancel-button {
+        width: 100%;
+        min-width: auto;
       }
+    }
+  }
+}
+
+.recurrence-editor {
+  .repeat-interval {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .weekly-selection {
+    :deep(.el-checkbox-group) {
+      flex-direction: column;
+      gap: 4px;
     }
   }
 }
