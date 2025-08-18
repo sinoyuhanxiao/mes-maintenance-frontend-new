@@ -164,7 +164,8 @@ export const asyncRoutes = [
         name : 'TestView',
         props : true,
         meta : { title : 'router.viewWorkOrder', noCache : true, hidden : true }
-      }]
+      }
+    ]
   },
   {
     path : '/user',
