@@ -197,9 +197,11 @@ const handleBeforeUpload = file => {
 watch(
   fileList,
   newList => {
+    console.log( newList )
     const fileArray = newList.map( file => file.raw ).filter( file => file instanceof File )
-
-    emit( 'update:imageList', fileArray )
+    const urlArray = newList.map( file => file.url ).filter( url => url )
+    console.log( fileArray )
+    emit( 'update:imageList', urlArray )
   },
   { deep : true }
 )

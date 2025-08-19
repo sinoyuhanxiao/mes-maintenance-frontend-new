@@ -1,28 +1,31 @@
 import http from '@/utils/request'
 
 /**
- * Fetch all work orders with pagination and sorting.
+ * Search work orders with pagination.
  * @param {number} page - The page number to fetch.
  * @param {number} size - The number of items per page.
  * @param {string} sortField - The field to sort by (e.g., "createdAt").
  * @param {string} direction - Sorting direction ("ASC" or "DESC").
- * @param {Object} filters - Additional filters to apply.
- * @returns {Promise} API response with the list of all work orders.
+ * @returns {Promise} API response with the list of all found work orders.
  */
-export const getAllWorkOrders = ( page = 1, size = 10, sortField = 'createdAt', direction = 'DESC', filters = {} ) => {
+export const searchWorkOrders = (
+  page = 1,
+  size = 10,
+  sortField = 'createdAt',
+  direction = 'DESC',
+  search = { latest_per_recurrence : true }
+) => {
+  console.log(
+    http.request( {
+      method : 'post',
+      url : `/work-order/search?page=${page}&size=${size}&sortField=${sortField}&direction=${direction}`,
+      data : search
+    } )
+  )
   return http.request( {
     method : 'post',
-    url : '/work-order/search',
-    params : {
-      page,
-      size,
-      sortField,
-      direction
-    },
-    data : {
-      latest_per_recurrence : true,
-      ...filters
-    }
+    url : `/work-order/search?page=${page}&size=${size}&sortField=${sortField}&direction=${direction}`,
+    data : search
   } )
 }
 

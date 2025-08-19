@@ -7,7 +7,7 @@
             <el-text type="primary">#{{ data.id }}</el-text>
           </div>
           <div>
-            <el-text tag="b">{{ data.name }}</el-text>
+            <el-text tag="b" line-clamp="1">{{ data.name }}</el-text>
           </div>
           <div>
             <el-text>Created At: {{ convertToLocalTime(data.created_at) }}</el-text>
@@ -19,8 +19,8 @@
         <div class="img-container">
           <img
             :src="
-              data.image_path !== null
-                ? data.image_path
+              data.image_list !== null
+                ? data.image_list
                 : 'https://tse1.mm.bing.net/th/id/OIP.eFMincbRCUMEdAvlQvzyNgAAAA?rs=1&pid=ImgDetMain&o=7&rm=3'
             "
           />

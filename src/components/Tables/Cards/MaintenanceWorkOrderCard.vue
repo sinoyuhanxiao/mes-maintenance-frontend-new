@@ -12,16 +12,16 @@
         </div>
         <div class="wo-icons-card">
           <div>
-            <el-text type="info" size="small">{{ wo.state.name }}</el-text>
+            <el-text type="info" size="small">{{ wo.state?.name }}</el-text>
           </div>
           <div>
             <el-text size="small"
-:style="{ color: wo.priority.id === 1 ? 'red' : '' }"
+:style="{ color: wo.priority?.id === 1 ? 'red' : '' }"
               ><i
                 class="fa-solid fa-circle-dot"
                 style="font-size: 8px; margin-right: 2px; vertical-align: middle; margin-bottom: 3px"
               ></i
-              >{{ wo.priority.name }}</el-text
+              >{{ wo.priority?.name }}</el-text
             >
           </div>
         </div>
@@ -64,6 +64,7 @@ function handleSelectedWorkorder() {
 <style scoped>
 .card-style {
   width: 100%;
+  border-radius: 10px;
 }
 
 .wo-card {
@@ -71,6 +72,7 @@ function handleSelectedWorkorder() {
   padding: 0px;
   background-color: transparent;
   cursor: pointer;
+  border-radius: 10px;
 }
 
 .wo-card:hover {

@@ -54,3 +54,15 @@ export const getAllCategories = () => {
     url : '/common/category'
   } )
 }
+
+/**
+ * Fetch unit by type.
+ * @param { number } id - Unit type id
+ * @returns {Promise} API response with units of a given type.
+ */
+export const getUnitByType = ( id = 1 ) => {
+  return http.request( {
+    method : 'get',
+    url : `/common/unit_type/${id}`
+  } )
+}

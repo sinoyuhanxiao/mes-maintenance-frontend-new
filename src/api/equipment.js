@@ -1,5 +1,10 @@
 import http from '@/utils/request'
 
+export const productionLineTypeId = 3
+export const equipmentGroupTypeId = 4
+export const equipmentTypeId = 5
+export const componentTypeId = 6
+
 /**
  * Fetch all production lines.
  * @returns {Promise} API response with production lines.

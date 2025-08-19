@@ -66,6 +66,17 @@
       </div>
 
       <div class="filter-right">
+        <!-- Dashboard Button -->
+        <el-button
+          class="filter-item"
+          type="primary"
+          :icon="Menu"
+          @click="$emit('dashboard')"
+          :aria-label="$t('workOrder.actions.dashboard')"
+        >
+          {{ $t('workOrder.actions.dashboard') }}
+        </el-button>
+
         <!-- Create Button -->
         <el-button
           class="filter-item"
@@ -97,7 +108,7 @@
 <script setup>
 import { reactive, ref, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Search, EditPen, Download } from '@element-plus/icons-vue'
+import { Search, EditPen, Download, Menu } from '@element-plus/icons-vue'
 
 // Props
 const props = defineProps( {

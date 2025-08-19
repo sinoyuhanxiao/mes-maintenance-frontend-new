@@ -2,13 +2,13 @@
 // 高低版本兼容不同版本eslint 一键格式化
 
 module.exports = {
-  root: true,
-  env: {
-    browser: true,
-    es2021: true,
-    node: true,
+  root : true,
+  env : {
+    browser : true,
+    es2021 : true,
+    node : true
     // 'vue/setup-compiler-macros': true,
-    
+
     // // 常用
     // browser: true,             // 浏览器全局变量
     // node: true,                // Node.js 全局变量和 Node.js 作用域
@@ -40,86 +40,86 @@ module.exports = {
     // atomtest: true,            // Atom 测试助手全局变量
     // embertest: true,           // Ember 测试助手全局变量
     // webextensions: true,       // WebExtensions 全局变量
-    
+
   },
-  globals: {
-    $: "readonly",
-    $$: "readonly",
-    $ref: "readonly",
-    $shallowRef: "readonly",
-    $computed: "readonly",
-    Fn: "readonly",
-    PromiseFn: "readonly",
-    RefType: "readonly",
-    LabelValueOptions: "readonly",
-    EmitType: "readonly",
-    TargetContext: "readonly",
-    ComponentElRef: "readonly",
-    ComponentRef: "readonly",
-    ElRef: "readonly",
-    global: "readonly",
-    ForDataType: "readonly",
-    ComponentRoutes: "readonly",
-    
+  globals : {
+    $ : 'readonly',
+    $$ : 'readonly',
+    $ref : 'readonly',
+    $shallowRef : 'readonly',
+    $computed : 'readonly',
+    Fn : 'readonly',
+    PromiseFn : 'readonly',
+    RefType : 'readonly',
+    LabelValueOptions : 'readonly',
+    EmitType : 'readonly',
+    TargetContext : 'readonly',
+    ComponentElRef : 'readonly',
+    ComponentRef : 'readonly',
+    ElRef : 'readonly',
+    global : 'readonly',
+    ForDataType : 'readonly',
+    ComponentRoutes : 'readonly',
+
     // script setup
-    defineOptions: "readonly",
-    defineProps: "readonly",
-    defineEmits: "readonly",
-    defineExpose: "readonly",
-    withDefaults: "readonly",
-    
-    document: "readonly",
-    localStorage: "readonly",
-    baiduMap: "readonly",
-    window: "readonly",
+    defineOptions : 'readonly',
+    defineProps : 'readonly',
+    defineEmits : 'readonly',
+    defineExpose : 'readonly',
+    withDefaults : 'readonly',
+
+    document : 'readonly',
+    localStorage : 'readonly',
+    baiduMap : 'readonly',
+    window : 'readonly',
     // 腾讯地图
-    TMap: "readonly",
+    TMap : 'readonly'
   },
-  extends: [
+  extends : [
     'standard',
-    "plugin:vue/vue3-essential",
-    "eslint:recommended",
-    "prettier"
+    'plugin:vue/vue3-essential',
+    'eslint:recommended',
+    'prettier'
   ],
-  parser: "vue-eslint-parser",
-  parserOptions: {
+  parser : 'vue-eslint-parser',
+  parserOptions : {
     // ecmaVersion: 'latest',
-    ecmaVersion: 2020,
-    sourceType: 'module',
-    jsxPragma: "React",
-    ecmaFeatures: {
-      modules: true,
-      jsx: true
+    ecmaVersion : 2020,
+    sourceType : 'module',
+    jsxPragma : 'React',
+    ecmaFeatures : {
+      modules : true,
+      jsx : true
     },
     //  Parsing error: This experimental syntax requires enabling one of the following parser plugin(s): "jsx", "flow", "typescript"
     //  https://github.com/babel/babel/issues/14546
     babelOptions : {
-      parserOpts: {
-        plugins: ["jsx"]
+      parserOpts : {
+        plugins : ['jsx']
       }
     },
-    requireConfigFile: false,
-    parser: '@babel/eslint-parser'
+    requireConfigFile : false,
+    parser : '@babel/eslint-parser'
   },
-  plugins: [
+  plugins : [
     'vue'
   ],
   // https://eslint.vuejs.org/rules/max-attributes-per-line.html
-  rules: {
-    'import/no-unresolved': 'off',
-    'import/extensions': 'off',
-    'import/no-absolute-path': 'off',
-    'import/no-extraneous-dependencies': 'off',
-    "vue/multi-word-component-names": "off",
+  rules : {
+    'import/no-unresolved' : 'off',
+    'import/extensions' : 'off',
+    'import/no-absolute-path' : 'off',
+    'import/no-extraneous-dependencies' : 'off',
+    'vue/multi-word-component-names' : 'off',
     'vue/no-v-html' : 'off',
-    
-    'no-plusplus': [
+
+    'no-plusplus' : [
       'off',
       {
-        allowForLoopAfterthoughts: true
+        allowForLoopAfterthoughts : true
       }
     ],
-    
+
     'vue/max-attributes-per-line' : [2, {
       singleline : {
         max : 10
@@ -134,7 +134,7 @@ module.exports = {
     'vue/singleline-html-element-content-newline' : 'off',
     'vue/multiline-html-element-content-newline' : 'off',
     // 'vue/name-property-casing' : ['error', 'PascalCase'],
-    
+
     'accessor-pairs' : 2,
     'arrow-spacing' : [2, {
       before : true,

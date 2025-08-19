@@ -5,7 +5,7 @@
 import { ref, reactive, computed } from 'vue'
 import { ElMessage, ElNotification } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import { getAllWorkOrders, getWorkOrdersByRecurrence } from '@/api/workorder'
+import { searchWorkOrders, getWorkOrdersByRecurrence } from '@/api/workorder'
 import { useCommonDataStore } from '@/store/modules/commonData'
 
 export function useWorkOrder() {
@@ -41,37 +41,7 @@ export function useWorkOrder() {
   const fetchWorkOrders = async( additionalFilters = {} ) => {
     loading.value = true
     try {
-      // Prepare filters for API call
-      const filters = {
-        ...additionalFilters
-      }
-
-      // Add filters from listQuery if they exist
-      if ( listQuery.assignedTo ) filters.assignedTo = listQuery.assignedTo
-      if ( listQuery.priority ) filters.priority = listQuery.priority
-      if ( listQuery.workType ) filters.workType = listQuery.workType
-      if ( listQuery.status ) filters.status = listQuery.status
-      if ( listQuery.search ) filters.search = listQuery.search
-      if ( listQuery.dueDate ) filters.dueDate = listQuery.dueDate
-      if ( listQuery.customDateRange ) filters.customDateRange = listQuery.customDateRange
-
-      console.log( '🔍 fetchWorkOrders called with filters:', {
-        page : listQuery.page,
-        limit : listQuery.limit,
-        sortField : 'createdAt',
-        sortDirection : 'DESC',
-        filters
-      } )
-
-      const response = await getAllWorkOrders( listQuery.page, listQuery.limit, 'createdAt', 'DESC', filters )
-
-      console.log( '📦 fetchWorkOrders response:', {
-        totalElements : response.data.totalElements,
-        returnedCount : response.data.content?.length,
-        firstItemId : response.data.content?.[0]?.id,
-        firstItemStatus : response.data.content?.[0]?.status,
-        firstItemStateId : response.data.content?.[0]?.state_id
-      } )
+      const response = await searchWorkOrders( listQuery.page, listQuery.limit, 'createdAt', 'DESC' )
 
       const data = response.data.content
       total.value = response.data.totalElements

@@ -1,21 +1,31 @@
 <template>
   <div class="table-container">
     <div class="search-container">
-      <el-button v-if="searchActive === false" @click="handleSearchOption" size="small" :icon="Search" round>
-        Search
-      </el-button>
+      <!-- <i class="fa-solid fa-magnifying-glass"></i> -->
+      <el-button v-if="searchActive === false"
+@click="handleSearchOption"
+size="small"
+:icon="Search"
+round
+        >Search</el-button
+      >
       <input
         v-if="searchActive === true"
         :placeholder="searchPlaceholder"
         style="border: solid 1px #d5d5d5; border-radius: 5px; width: 100%"
       />
-      <el-button v-if="searchActive === true" @click="handleSearchOption" size="small" :icon="Close" round>
-        Cancel
-      </el-button>
+      <el-button v-if="searchActive === true"
+@click="handleSearchOption"
+size="small"
+:icon="Close"
+round
+        >Cancel</el-button
+      >
     </div>
     <div class="card-scroll-container">
       <el-row :gutter="0">
         <el-col v-for="wo in items" :key="wo.id" :xs="24" :sm="24" :md="24" :lg="24">
+          <!-- <h5>{{ wo }}</h5> -->
           <MaintenanceWorkOrderCard
             v-if="module === 1 || module === 2"
             :wo="wo"
@@ -23,8 +33,6 @@
             @requestData="handleRequestData"
           />
           <MaintenanceRequestCard v-if="module === 3" :wo="wo" @requestData="handleRequestData" />
-          <MaintenanceTaskLibraryCard v-if="module === 4" :item="wo" @click="handleCardClick(wo)" />
-          <MaintenanceSparePartCard v-if="module === 5" :item="wo" @click="handleCardClick(wo)" />
         </el-col>
       </el-row>
     </div>
@@ -34,19 +42,18 @@
       :current-page="currentPage"
       :page-size="pageSize"
       :total="totalItems"
-      :pager-count="pagerCount"
+      :pager-count="3"
       @current-change="handleCurrentChange"
       class="pagination"
     />
   </div>
+  <!-- <h1>{{ paginatedItems }}</h1> -->
 </template>
 
 <script setup>
 import { ref, computed, watch } from 'vue'
 import MaintenanceWorkOrderCard from './Cards/MaintenanceWorkOrderCard.vue'
 import MaintenanceRequestCard from './Cards/MaintenanceRequestCard.vue'
-import MaintenanceTaskLibraryCard from './Cards/MaintenanceTaskLibraryCard.vue'
-import MaintenanceSparePartCard from './Cards/MaintenanceSparePartCard.vue'
 import { Search, Close } from '@element-plus/icons-vue'
 
 const props = defineProps( {
@@ -67,10 +74,6 @@ const searchPlaceholder = computed( () => {
     return 'Search Work Orders'
   } else if ( props.module == 3 ) {
     return 'Search Requests'
-  } else if ( props.module == 4 ) {
-    return 'Search Items'
-  } else if ( props.module == 5 ) {
-    return 'Search Spare Parts'
   }
   return 'Search Work Orders'
 } )
@@ -81,6 +84,7 @@ watch(
   () => props.items,
   newItems => {
     items.value = newItems
+    console.log( 'Updated items:', items.value )
   },
   { immediate : true, deep : true }
 )
@@ -89,25 +93,8 @@ const pageSize = ref( props.pageSize )
 
 const emit = defineEmits( ['requestData'] )
 
-// Computed property to ensure pagerCount is always valid
-const pagerCount = computed( () => {
-  // Element Plus requires pagerCount to be between 5 and 21 (odd numbers)
-  // Default to 5 if props.totalItems is null/undefined or would result in invalid count
-  if ( !props.totalItems || props.totalItems <= 0 ) {
-    return 5
-  }
-
-  // Calculate reasonable pager count based on total items, but keep it odd and within bounds
-  const calculatedCount = Math.min( Math.max( 5, Math.ceil( props.totalItems / 10 ) ), 21 )
-  return calculatedCount % 2 === 0 ? calculatedCount - 1 : calculatedCount
-} )
-
 function handleRequestData( data ) {
   emit( 'requestData', data )
-}
-
-function handleCardClick( item ) {
-  emit( 'requestData', item )
 }
 
 function handleSearchOption() {
@@ -121,6 +108,7 @@ function handleSearchOption() {
 
 <style scoped>
 .search-container {
+  /* border-bottom: solid 1px darkgray; */
   padding: 5px;
   flex: 0 0 30px;
   display: flex;
@@ -145,6 +133,7 @@ function handleSearchOption() {
 }
 
 .table-container {
+  /* border: solid 1px darkgray; */
   border-radius: 10px;
   flex: 1;
   display: flex;
@@ -157,6 +146,7 @@ function handleSearchOption() {
   overflow-y: auto;
   overflow-x: hidden;
   box-sizing: border-box;
+  /* border: 1px solid #dcdfe6; */
   border-radius: 8px;
   box-sizing: border-box;
   background-color: white;
@@ -176,6 +166,7 @@ function handleSearchOption() {
     display: flex;
     flex-direction: column;
     flex: 1 1 calc(100vh - v-bind(height));
+    /* height: calc(100vh - 550px); */
     overflow-y: auto;
     overflow-x: hidden;
     box-sizing: border-box;
@@ -183,6 +174,7 @@ function handleSearchOption() {
     border-radius: 8px;
     box-sizing: border-box;
     background-color: #fff;
+    /* margin: 5px; */
     padding: 5px;
   }
 

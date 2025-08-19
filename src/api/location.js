@@ -22,3 +22,22 @@ export const getLocationTree = () => {
     url : '/location/node-trees'
   } )
 }
+
+/**
+ * Fetch all location by id.
+ * @param { number } id - Location id
+ * @returns {Promise} API response with location.
+ */
+export const getLocationById = id => {
+  console.log( 'API URL: ', `/location/${id}` )
+  console.log(
+    http.request( {
+      method : 'get',
+      url : `/location/${id}`
+    } )
+  )
+  return http.request( {
+    method : 'get',
+    url : `/location/${id}`
+  } )
+}

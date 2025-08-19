@@ -69,7 +69,9 @@ export default {
     // Actions
     actions : {
       search : 'Search',
+      dashboard : 'Dashboard',
       create : 'Create',
+      createWorkOrder : 'Create Work Order',
       export : 'Export',
       view : 'View',
       edit : 'Edit',
@@ -180,259 +182,10 @@ export default {
       recurrenceRequired : 'Please select recurrence setting',
       startDateRequired : 'Please select start date',
       endDateRequired : 'Please select end date'
-    },
-
-    // View modes
-    viewModes : {
-      table : 'Table View',
-      todo : 'To-Do View'
-    },
-
-    // Filters
-    filters : {
-      assignedToMe : 'Assigned to Me',
-      assignedTo : 'Assigned To',
-      overdue : 'Overdue',
-      today : 'Today',
-      thisWeek : 'This Week',
-      thisMonth : 'This Month',
-      custom : 'Custom',
-      highPriority : 'High Priority',
-      addFilter : 'Add Filter',
-      dueDate : 'Due Date',
-      location : 'Location',
-      priority : 'Priority',
-      maintenanceType : 'Maintenance Type',
-      myFilters : 'My Filters',
-      clearAll : 'Clear All',
-      activeFilters : 'Active Filters',
-      toggleVisibility : 'Toggle Visibility',
-      savePreset : 'Save Preset',
-      managePresets : 'Manage Presets',
-      // Filter drawer
-      filterDrawerTitle : 'Filter Settings',
-      filterDrawerSubtitle : 'Select filters to display',
-      showFilter : 'Show Filter',
-      hideFilter : 'Hide Filter',
-      filterCategories : 'Filter Categories',
-      basicFilters : 'Basic Filters',
-      advancedFilters : 'Advanced Filters',
-      workOrderFilters : 'Work Order Filters',
-      status : 'Status',
-      category : 'Category',
-      equipment : 'Equipment',
-      search : 'Search',
-      searchFiltersPlaceholder : 'Search filters'
-    },
-
-    // Tabs
-    tabs : {
-      todo : 'To Do',
-      done : 'Done'
-    },
-
-    // Sort options
-    sort : {
-      sortBy : 'Sort By',
-      priorityHighest : 'Priority: Highest First',
-      priorityLowest : 'Priority: Lowest First',
-      dueDateNearest : 'Due Date: Nearest',
-      dueDateFarthest : 'Due Date: Farthest',
-      createdNewest : 'Created: Newest',
-      createdOldest : 'Created: Oldest'
-    },
-
-    // Details
-    details : {
-      title : 'Work Order Details'
-    },
-
-    // Attachments
-    attachments : {
-      title : 'Attachments'
-    },
-
-    // Tracking
-    tracking : {
-      title : 'Tracking',
-      addParts : 'Add Part Usage',
-      addTime : 'Add Time Log',
-      addCosts : 'Add Other Costs',
-      viewProcedure : 'View Procedure',
-      viewSafetyMeasures : 'View Safety Measures',
-      viewTimeLogs : 'View Time Logs',
-      viewPartsUsage : 'View Parts Usage'
-    },
-
-    // Comments
-    comments : {
-      title : 'Comments',
-      placeholder : 'Add a comment...',
-      add : 'Add Comment'
-    },
-
-    // Schedule Conditions
-    schedule : {
-      title : 'Schedule Conditions',
-      subtitle : 'Automated recurring maintenance schedule',
-      repeatType : 'Repeat Type',
-      frequency : 'Frequency',
-      continuedFrom : 'Continued From',
-      repeatTypeLabel : 'REPEAT TYPE',
-      frequencyLabel : 'FREQUENCY',
-      continuedFromLabel : 'CONTINUED FROM',
-      weeklyPatternLabel : 'WEEKLY PATTERN',
-      timeBased : 'Time-based recurring',
-      weeklyPattern : 'Weekly: Tue, Fri, Sat',
-      nextOccurrence : 'Next Occurrence',
-      viewTimeline : 'View Work Order Timeline'
-    },
-
-    // Timeline Modal
-    timeline : {
-      title : 'Work Order Timeline',
-      description : 'Complete chronological history of this work order lifecycle',
-      totalEvents : 'Total Events',
-      activeDays : 'Active Days',
-      export : 'Export Timeline',
-      timeRange : 'Time Range',
-      to : 'to',
-      startDate : 'Start Date',
-      endDate : 'End Date',
-      apply : 'Apply',
-      avgTimeConsumed : 'Avg. Time Consumed',
-      duration : 'Duration',
-      assignees : 'Assignees',
-      overdue : 'Overdue'
-    },
-
-    // Activity Panel
-    activity : {
-      title : 'Activity',
-      tabs : {
-        all : 'All',
-        comments : 'Comments',
-        history : 'History',
-        workLog : 'Work log'
-      },
-      composer : {
-        placeholder : 'Add a comment…',
-        proTip : 'Pro tip: press M to comment',
-        quickReplies : {
-          looksGood : 'Looks good!',
-          needHelp : 'Need help?',
-          blocked : 'This is blocked…',
-          clarify : 'Can you clarify…?',
-          onTrack : 'This is on track'
-        }
-      },
-      actions : {
-        reply : 'Reply',
-        like : 'Like',
-        copyLink : 'Copy link',
-        more : 'More'
-      },
-      history : {
-        statusChanged : 'changed the **Status**',
-        pmDateUpdated : 'updated the **Next Preventive Maintenance Date**',
-        systemScheduler : 'System (Scheduler)',
-        reason : 'Oil analysis flagged abnormal viscosity – schedule pulled forward.'
-      },
-      workLog : {
-        tasksPerformed : 'Tasks Performed',
-        partsUsed : 'Parts Used',
-        duration : 'Duration',
-        startTime : 'Start Time',
-        endTime : 'End Time'
-      }
-    },
-
-    // Location
-    location : {
-      title : 'Location',
-      viewLocationTree : 'View Location Tree',
-      currentLocation : 'Current Location',
-      building : 'Building',
-      floor : 'Floor',
-      room : 'Room',
-      area : 'Area',
-      zone : 'Zone',
-      selectLocation : 'Select Location',
-      locationDetails : 'Location Details',
-      navigateToLocation : 'Navigate to Location',
-      locationTreeTitle : 'Location Tree - {location}',
-      close : 'Close',
-      viewFullTree : 'View Full Tree'
-    },
-
-    // Vendors
-    vendors : {
-      title : 'Vendors',
-      vendorName : 'Vendor Name',
-      email : 'Email',
-      address : 'Address',
-      contactVendor : 'Contact Vendor',
-      viewVendorDetails : 'View Vendor Details',
-      noVendors : 'No vendors assigned',
-      vendorCount : '{count} vendor(s) assigned'
-    },
-
-    // Create form specific
-    create : {
-      taskTitlePlaceholder : 'Work Order title...',
-      addPictures : 'Add or drag pictures',
-      descriptionPlaceholder : 'Add a description',
-      location : 'Location',
-      locationPlaceholder : 'Start typing…',
-      asset : 'Asset',
-      assetPlaceholder : 'Start typing…',
-      procedure : 'Procedure',
-      procedurePlaceholder : 'Create or attach task procedure for workers',
-      addProcedure : 'Add Procedure',
-      assignTo : 'Assign to',
-      assigneePlaceholder : 'Type name, email or phone number',
-      estimatedTime : 'Estimated Time',
-      hours : 'Hours',
-      minutes : 'Minutes',
-      dueDate : 'Due Date',
-      dueDatePlaceholder : 'mm/dd/yyyy',
-      startDate : 'Start Date',
-      startDatePlaceholder : 'mm/dd/yyyy',
-      recurrence : 'Recurrence',
-      recurrencePlaceholder : 'Does not repeat',
-      recurrenceSettings : 'Recurrence Settings',
-      workType : 'Work Type',
-      workTypePlaceholder : 'Select work type',
-      priority : 'Priority',
-      priorityPlaceholder : 'Select priority',
-      imageUpload : 'Image Upload',
-      fileUpload : 'File Upload',
-      clickToUpload : 'Click to Upload',
-      filesAndFolders : 'Files & Folders',
-      dragFilesHere : 'Drop files here or click to upload',
-      uploadHint : 'Support for multiple files',
-      categories : 'Categories',
-      categoriesPlaceholder : 'Start typing…',
-      vendors : 'Vendors',
-      vendorsPlaceholder : 'Start typing…'
-    },
-
-    // Additional messages
-    selectWorkOrder : 'Select a work order to view details',
-    statusChanged : 'Status updated successfully',
-    shareSuccess : 'Shared successfully',
-    refreshSuccess : 'Refreshed successfully',
-
-    // Pagination
-    pagination : {
-      showing : 'Showing {start} to {end} of {total} items',
-      pageSize : 'Items per page',
-      items : 'items'
     }
   },
-  maintenanceEquipment : {
-    title : 'Equipment',
-    subtitle : 'Equipment Hierarchy View'
+  requests : {
+    createRequest : 'Create Request'
   },
   common : {
     success : 'Success',
@@ -475,8 +228,15 @@ export default {
     workOrderCenter : 'Work Order Center',
     workOrderManagement : 'Work Order',
     maintenanceEquipment : 'Equipment',
+    workOrderDashboard : 'Work Order Dashboard',
     newWorkOrder : 'New Work Order',
     viewWorkOrder : 'View Work Order',
+    task : 'Tasks',
+    taskCenter : 'Task Center',
+    taskManagement : 'Task Management',
+    taskTable : 'Task Table',
+    request : 'Requests',
+    resources : 'Resources',
     userCenter : 'User Center',
     myAccount : 'My Account',
     nested : 'Nested Routes',

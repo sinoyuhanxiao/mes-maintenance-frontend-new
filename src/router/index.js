@@ -146,6 +146,12 @@ export const asyncRoutes = [
         meta : { title : 'router.workOrderManagement', noCache : true }
       },
       {
+        path : 'dashboard',
+        component : () => import( '@/views/workOrder/components/WorkOrderDashboard.vue' ),
+        name : 'WorkOrderDashboard',
+        meta : { title : 'router.workOrderDashboard', noCache : true, hidden : true }
+      },
+      {
         path : 'new',
         component : () => import( '@/views/workOrder/components/NewWorkOrder.vue' ),
         name : 'NewWorkOrder',
@@ -164,6 +170,51 @@ export const asyncRoutes = [
         name : 'TestView',
         props : true,
         meta : { title : 'router.viewWorkOrder', noCache : true, hidden : true }
+      }
+    ]
+  },
+  {
+    path : '/task',
+    name : 'Task',
+    component : Layout,
+    redirect : '/task',
+    meta : { title : 'router.task', icon : 'list', noCache : true },
+    children : [
+      {
+        path : '',
+        component : () => import( '@/views/task/index.vue' ),
+        name : 'Task Management',
+        meta : { title : 'router.taskManagement', noCache : true }
+      }
+    ]
+  },
+  {
+    path : '/request',
+    name : 'RequestsLayout',
+    component : Layout,
+    redirect : '/request',
+    meta : { title : 'router.request', icon : 'message', noCache : true },
+    children : [
+      {
+        path : '',
+        component : () => import( '@/views/request/index.vue' ),
+        name : 'Requests',
+        meta : { title : 'router.request', noCache : true }
+      }
+    ]
+  },
+  {
+    path : '/resources',
+    name : 'ResourcesLayout',
+    component : Layout,
+    redirect : '/resources',
+    meta : { title : 'router.resources', icon : 'animate', noCache : true },
+    children : [
+      {
+        path : '',
+        component : () => import( '@/views/resources/index.vue' ),
+        name : 'Resources',
+        meta : { title : 'router.resources', noCache : true }
       }
     ]
   },

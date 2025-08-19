@@ -3,6 +3,9 @@
     <h1>{{ $t('workOrder.newWorkOrder') }}</h1>
 
     <el-form ref="formRef" :model="form" :rules="rules" label-width="150px" class="work-order-form">
+      <el-form-item v-if="props.requestData" :label="'Request ID'" prop="request_id" required :show-message="false">
+        <el-input v-model="form.request_id" disabled />
+      </el-form-item>
       <!-- Work Order Name and Description -->
       <el-form-item :label="$t('workOrder.form.name')" prop="name" required :show-message="false">
         <el-input v-model="form.name" :placeholder="$t('workOrder.placeholder.workOrderName')" clearable />
@@ -153,13 +156,14 @@
         <el-button type="primary" @click="submitForm" :loading="loading">
           {{ $t('workOrder.actions.submit') }}
         </el-button>
+        <el-button @click="() => emit('cancel')" v-if="props.requestData" type="info">Cancel</el-button>
       </el-form-item>
     </el-form>
   </div>
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, watchEffect, defineEmits } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import RecurrenceEditor from '@/views/workOrder/components/RecurrenceEditor.vue'
@@ -172,6 +176,13 @@ import { useWorkOrderForm } from '@/composables/useWorkOrder'
 import { useEquipment } from '@/composables/useEquipment'
 import { useErrorHandler } from '@/composables/useErrorHandler'
 
+const props = defineProps( {
+  requestData : Object,
+  height : String
+} )
+
+const emit = defineEmits( ['cancel'] )
+
 // Composables
 const router = useRouter()
 const { t } = useI18n()
@@ -181,6 +192,14 @@ const { handleAsync, showSuccess } = useErrorHandler()
 
 // Form composable
 const { form, rules, validateForm } = useWorkOrderForm()
+
+watchEffect( () => {
+  if ( props.requestData ) {
+    form.name = props.requestData.name
+    form.description = props.requestData.description
+    form.request_id = props.requestData.id
+  }
+} )
 
 // Equipment composable
 const {
@@ -305,6 +324,8 @@ defineOptions( {
   padding: 20px;
   max-width: 1200px;
   margin: 0 auto;
+  max-height: v-bind(height);
+  overflow-y: auto;
 
   h1 {
     color: var(--el-text-color-primary);

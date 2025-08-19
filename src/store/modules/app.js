@@ -11,7 +11,7 @@ const useAppStore = defineStore( {
       },
       device : 'desktop',
       size : cookies.get( 'size' ) || 'default',
-      lang : cookies.get( 'lang' ) || 'zh'
+      lang : cookies.get( 'lang' ) || 'en'
     }
   },
   actions : {
