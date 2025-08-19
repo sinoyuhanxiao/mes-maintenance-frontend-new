@@ -90,7 +90,7 @@ import ViewTask from './components/ViewTask.vue'
 import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { EditPen, List, Menu, Search } from '@element-plus/icons-vue'
 import router from '../../router/index'
-import { getAllWorkOrders } from '../../api/workorder'
+import { searchWorkOrders } from '../../api/workorder'
 import TableView from './components/TableView.vue'
 import CardTable from '../../components/Tables/CardTable.vue'
 
@@ -114,7 +114,7 @@ const listQuery = reactive( {
 const selectedData = ref( null )
 
 async function getAllWorkOrdersData() {
-  const response = await getAllWorkOrders( listQuery.page, listQuery.limit, 'createdAt', 'DESC', search.value )
+  const response = await searchWorkOrders( listQuery.page, listQuery.limit, 'createdAt', 'DESC', search.value )
 
   items.value = response.data.content
   totalItems.value = response.data.totalElements

@@ -5,7 +5,7 @@
 import { ref, reactive, computed } from 'vue'
 import { ElMessage, ElNotification } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import { getAllWorkOrders, getWorkOrdersByRecurrence, searchWorkOrdersByList } from '@/api/workorder'
+import { searchWorkOrders, getWorkOrdersByRecurrence, searchWorkOrdersByList } from '@/api/workorder'
 import { useCommonDataStore } from '@/store/modules/commonData'
 
 export function useWorkOrder() {
@@ -73,7 +73,7 @@ export function useWorkOrder() {
         response = await searchWorkOrdersByList( getSearchFilterPayload() )
         data = response.data
       } else {
-        response = await getAllWorkOrders(
+        response = await searchWorkOrders(
           listQuery.page,
           listQuery.limit,
           'createdAt',
