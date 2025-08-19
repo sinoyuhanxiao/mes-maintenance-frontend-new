@@ -458,7 +458,7 @@ const popperWidth = computed( () => {
 
 // TODO: Sample user data, swap with data using user service api once its ready
 const temporaryUserList = [
-  { id : 1, name : 'John Doe' },
+  { id : 1, name : 'Erik Yu' },
   { id : 2, name : 'Jane Smith' },
   { id : 3, name : 'Mike Johnson' }
 ]

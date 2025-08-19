@@ -4,12 +4,12 @@
       <div class="header-title">
         <div class="left-header">
           <el-input
-              v-model="keyword"
-              placeholder="Search Work Order"
-              style="width: 240px"
-              size="small"
-              :prefix-icon="Search"
-              clearable
+            v-model="keyword"
+            placeholder="Search Work Order"
+            style="width: 240px"
+            size="small"
+            :prefix-icon="Search"
+            clearable
           >
           </el-input>
           <el-icon style="cursor: pointer" title="Filter"><Filter /></el-icon>
@@ -25,20 +25,20 @@
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item command="b"
-                ><el-icon><Menu /></el-icon> Dashboard View</el-dropdown-item
+                  ><el-icon><Menu /></el-icon> Dashboard View</el-dropdown-item
                 >
                 <el-dropdown-item command="a"
-                ><el-icon><List /></el-icon> Table View</el-dropdown-item
+                  ><el-icon><List /></el-icon> Table View</el-dropdown-item
                 >
               </el-dropdown-menu>
             </template>
           </el-dropdown>
           <el-button
-              class="filter-item"
-              type="primary"
-              :icon="EditPen"
-              @click="handleCreateWorkOrder"
-              :aria-label="$t('workOrder.actions.createWorkOrder')"
+            class="filter-item"
+            type="primary"
+            :icon="EditPen"
+            @click="handleCreateWorkOrder"
+            :aria-label="$t('workOrder.actions.createWorkOrder')"
           >
             {{ $t('workOrder.actions.createWorkOrder') }}
           </el-button>
@@ -60,23 +60,23 @@
               :currentPage="listQuery.page"
             /> -->
           <CardTable
-              @selection="getSelection"
-              :module="3"
-              :data="items"
-              :maxHeight="maxHeight"
-              :totalItems="totalItems"
-              :handleCurrentChange="handleCurrentChange"
-              :currentPage="listQuery.page"
+            @selection="getSelection"
+            :module="3"
+            :data="items"
+            :maxHeight="maxHeight"
+            :totalItems="totalItems"
+            :handleCurrentChange="handleCurrentChange"
+            :currentPage="listQuery.page"
           />
         </div>
 
         <div class="right-container">
           <ViewTask
-              v-if="selectedData"
-              :wo="selectedData"
-              :height="height"
-              :personnelList="personnel"
-              :supervisorList="supervisor"
+            v-if="selectedData"
+            :wo="selectedData"
+            :height="height"
+            :personnelList="personnel"
+            :supervisorList="supervisor"
           />
         </div>
       </div>

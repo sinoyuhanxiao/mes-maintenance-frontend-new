@@ -274,7 +274,7 @@ export class VueWorkOrderPDFExporter {
       work_type : { name : 'Preventive' },
       due_date : '2024-08-15T16:00:00Z',
       created_at : new Date().toISOString(),
-      created_by : 'John Smith',
+      created_by : 'Erik Yu',
       assigned_to : 'Mike Johnson',
       customer : 'Internal Maintenance',
       customerAddress : 'Plant A - Production Floor',

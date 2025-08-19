@@ -429,7 +429,7 @@ const availableFilters = reactive( {
 const assignedToOptions = computed( () => {
   // Get from user store or API
   return [
-    { id : 1, name : 'John Doe' },
+    { id : 1, name : 'Erik Yu' },
     { id : 2, name : 'Jane Smith' },
     { id : 3, name : 'Mike Johnson' }
   ]
@@ -720,7 +720,7 @@ const handleCustomizationCommand = command => {
       // Open preset management dialog
       break
     default:
-      console.log( 'Customization command:', command )
+      // Handle other customization commands
       break
   }
 }

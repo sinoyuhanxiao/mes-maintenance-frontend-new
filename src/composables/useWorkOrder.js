@@ -219,11 +219,11 @@ export function useWorkOrder() {
 
   // Return an object containing due_date_to and due_date_from field for filtering by due date
   const MS_IN_DAY = 24 * 60 * 60 * 1000
-  const startOfLocalDay = ( dateLike ) => {
+  const startOfLocalDay = dateLike => {
     const d = dateLike instanceof Date ? dateLike : new Date( dateLike )
     return new Date( d.getFullYear(), d.getMonth(), d.getDate() )
   }
-  const endOfLocalDay = ( dateLike ) => {
+  const endOfLocalDay = dateLike => {
     const start = startOfLocalDay( dateLike )
     return new Date( start.getTime() + MS_IN_DAY - 1 )
   }
@@ -290,7 +290,6 @@ export function useWorkOrder() {
       start_date_from : q.start_date_from,
       end_date_to : q.end_date_to
       // TODO: add more supported filter param later (equipment_node, recurrence_type_id, approved/finished at)
-
     }
 
     const dueDateObj = processDueDateOptions()

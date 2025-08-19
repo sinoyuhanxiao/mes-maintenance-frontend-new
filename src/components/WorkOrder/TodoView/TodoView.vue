@@ -102,14 +102,14 @@
       />
 
       <!-- Work Order Create View -->
-      <WorkOrderCreateEnhanced
+      <WorkOrderCreate
         v-else-if="currentRightPanelView === 'create'"
         @back-to-detail="showDetailView"
         @work-order-created="handleWorkOrderCreated"
       />
 
       <!-- Work Order Edit View -->
-      <WorkOrderEditEnhanced
+      <WorkOrderEdit
         v-else-if="currentRightPanelView === 'edit'"
         :work-order="workOrderToEdit"
         @back-to-detail="showDetailView"
@@ -223,8 +223,8 @@ import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import WorkOrderCard from './WorkOrderCard.vue'
 import WorkOrderDetail from './WorkOrderDetail.vue'
-import WorkOrderCreateEnhanced from './WorkOrderCreateEnhanced.vue'
-import WorkOrderEditEnhanced from './WorkOrderEditEnhanced.vue'
+import WorkOrderCreate from './WorkOrderCreate.vue'
+import WorkOrderEdit from './WorkOrderEdit.vue'
 import WorkOrderPdf from '../WorkOrderPdf.vue'
 import { Printer, Download, View, ArrowLeft, ArrowRight, ZoomIn, ZoomOut } from '@element-plus/icons-vue'
 

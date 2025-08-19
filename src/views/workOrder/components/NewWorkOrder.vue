@@ -171,7 +171,6 @@ import UploadEditor from '@/views/workOrder/components/Upload.vue'
 import { uploadMultipleToMinio } from '@/api/minio'
 import { useTagsViewStore } from '@/store'
 import { useCommonDataStore } from '@/store/modules/commonData'
-import { createWorkOrder } from '@/api/workorder'
 import { useWorkOrderForm } from '@/composables/useWorkOrder'
 import { useEquipment } from '@/composables/useEquipment'
 import { useErrorHandler } from '@/composables/useErrorHandler'
@@ -229,7 +228,6 @@ const uploadFilesToServer = async() => {
     if ( form.image_list.length > 0 ) {
       const imageRes = await uploadMultipleToMinio( form.image_list )
       uploadedImages = imageRes.data.uploadedFiles || []
-      console.log( '🖼 Images uploaded successfully:', uploadedImages )
       form.image_list = uploadedImages.map( file => file.url )
     }
 
@@ -237,12 +235,8 @@ const uploadFilesToServer = async() => {
     if ( form.files_list.length > 0 ) {
       const fileRes = await uploadMultipleToMinio( form.files_list )
       uploadedFiles = fileRes.data.uploadedFiles || []
-      console.log( '📄 Files uploaded successfully:', uploadedFiles )
       form.files_list = uploadedFiles.map( file => file.url )
     }
-
-    console.log( '✅ Current image list after upload:', form.image_list )
-    console.log( '✅ Current file list after upload:', form.files_list )
     showSuccess( t( 'workOrder.messages.uploadSuccess' ) )
   } catch ( err ) {
     console.error( '❌ File upload failed:', err )
@@ -268,10 +262,9 @@ const submitForm = async() => {
         form.equipment_id = selectedValues.equipmentId
         form.component_id = selectedValues.componentId
 
-        const payload = { ...form }
+        // const payload = { ...form }
 
-        const { data } = await createWorkOrder( payload )
-        console.log( '✅ Work order created successfully:', data )
+        // const { data } = await createWorkOrder( payload )
 
         showSuccess( t( 'workOrder.messages.createSuccess' ) )
 
@@ -295,7 +288,6 @@ watch(
   () => form.recurrence_setting,
   newVal => {
     form.recurrence_type = newVal.recurrence_type
-    console.log( '📅 recurrence_setting changed:', newVal )
   },
   { deep : true }
 )

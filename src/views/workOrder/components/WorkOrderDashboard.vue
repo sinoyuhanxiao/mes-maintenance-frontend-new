@@ -124,7 +124,6 @@ async function getAllWorkOrdersData() {
 
   grouped.value = Object.values( priorityMap )
   groupedStates.value = Object.values( stateMap )
-  console.log( 'GROUPED VALUE: ', grouped.value )
 }
 
 getAllWorkOrdersData()

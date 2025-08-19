@@ -128,7 +128,7 @@ const sampleWorkOrder = ref( {
   work_type : { name : 'Preventive' },
   due_date : '2024-08-15T16:00:00Z',
   created_at : new Date().toISOString(),
-  created_by : 'John Smith',
+  created_by : 'Erik Yu',
   assigned_to : 'Mike Johnson',
   customer : 'Internal Maintenance',
   customerAddress : 'Plant A - Production Floor',
@@ -231,11 +231,11 @@ const previewInNewWindow = () => {
         <meta charset="utf-8">
         <title>Work Order Preview - ${sampleWorkOrder.value.id}</title>
         <style>
-          body { 
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; 
-            margin: 0; 
-            padding: 20px; 
-            background: #f0f0f0; 
+          body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: #f0f0f0;
           }
           .preview-note {
             background: #e3f2fd;
@@ -249,7 +249,7 @@ const previewInNewWindow = () => {
       </head>
       <body>
         <div class="preview-note">
-          <strong>Preview Mode:</strong> This is a simplified preview. 
+          <strong>Preview Mode:</strong> This is a simplified preview.
           Use the Export PDF button for the full formatted document.
         </div>
         <h1>Work Order ${sampleWorkOrder.value.id}</h1>

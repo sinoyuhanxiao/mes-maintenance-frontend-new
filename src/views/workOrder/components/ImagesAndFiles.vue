@@ -146,22 +146,7 @@ watch(
     imageListUrlDeleted,
     fileListUrlDeleted
   ] ) => {
-    console.log(
-      'ImagesAndFiles Component State:',
-      JSON.stringify(
-        {
-          mode,
-          imageListUrl,
-          fileListUrl,
-          imageListMultipartAdded,
-          fileListMultipartAdded,
-          imageListUrlDeleted,
-          fileListUrlDeleted
-        },
-        null,
-        2
-      )
-    )
+    // Images and files state changed
   },
   { deep : true, immediate : true }
 )

@@ -84,8 +84,6 @@ defineProps( {
 const emit = defineEmits( ['update:imageList', 'update:filesList'] )
 
 const handleFileChange = ( file, newFileList ) => {
-  console.log( 'handle file change' )
-
   const readerPromises = newFileList.map( uploadedFile => {
     return new Promise( resolve => {
       if ( !uploadedFile.uid ) {
@@ -112,7 +110,6 @@ const handleFileChange = ( file, newFileList ) => {
 }
 
 const handleFileRemove = file => {
-  console.log( file )
   const index = fileFileList.value.findIndex( item => item.uid === file.uid )
   if ( index !== -1 ) {
     fileFileList.value.splice( index, 1 )
@@ -132,11 +129,7 @@ const handlePictureCardPreview = file => {
 }
 
 const handleRemove = file => {
-  console.log( file )
   const index = fileList.value.findIndex( item => item.uid === file.uid )
-  console.log( 'fileList.value:' )
-  console.log( fileList.value )
-  console.log( index )
   if ( index !== -1 ) {
     fileList.value.splice( index, 1 )
     // Trigger reactivity properly
@@ -147,9 +140,6 @@ const handleRemove = file => {
 }
 
 const handleChange = ( file, uploadFileList ) => {
-  console.log( 'handle change' )
-  console.log( uploadFileList )
-
   const readerPromises = uploadFileList.map( uploadedFile => {
     return new Promise( resolve => {
       if ( !uploadedFile.uid ) {
@@ -189,7 +179,6 @@ const handleDownload = file => {
 }
 
 const handleBeforeUpload = file => {
-  console.log( 'File selected for upload:', file )
   uploading.value = true // Optionally, you can trigger a loading state here
   return true // Return true to proceed with the upload, false to cancel
 }

@@ -417,7 +417,7 @@ const activityTimeline = computed( () => [
   {
     timestamp : '2024-08-08T14:30:00Z',
     action : 'Work Order Created',
-    performedBy : 'John Smith',
+    performedBy : 'Erik Yu',
     details : 'Scheduled preventive maintenance'
   },
   {

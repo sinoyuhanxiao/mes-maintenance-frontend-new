@@ -226,8 +226,6 @@ const loadRecurrenceTypes = async() => {
         }
       } )
       recurrenceTypeMap.value = mapping
-      console.log( '📅 Loaded recurrence types:', response.data )
-      console.log( '📅 Created mapping:', mapping )
     }
   } catch ( error ) {
     console.error( 'Failed to load recurrence types:', error )

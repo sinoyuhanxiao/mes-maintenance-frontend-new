@@ -91,7 +91,8 @@ export default {
       share : '分享',
       refresh : '刷新',
       backToDetail : '返回详情',
-      reset : '重置'
+      reset : '重置',
+      update : '更新'
     },
 
     // Status values

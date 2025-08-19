@@ -16,7 +16,7 @@
           </div>
           <div>
             <el-text size="small"
-                :style="{ color: wo.priority?.id === 1 ? 'red' : '' }"
+:style="{ color: wo.priority?.id === 1 ? 'red' : '' }"
               ><i
                 class="fa-solid fa-circle-dot"
                 style="font-size: 8px; margin-right: 2px; vertical-align: middle; margin-bottom: 3px"

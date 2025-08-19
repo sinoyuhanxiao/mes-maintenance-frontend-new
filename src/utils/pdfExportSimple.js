@@ -218,7 +218,7 @@ export class SimpleWorkOrderPDFExporter {
       priority : workOrder?.priority?.name || 'High',
       category : workOrder?.work_type?.name || 'Preventive',
       dueDate : workOrder?.due_date || '2024-08-15T16:00:00Z',
-      createdByName : workOrder?.created_by || 'John Smith',
+      createdByName : workOrder?.created_by || 'Erik Yu',
       assignedToName : workOrder?.assigned_to || 'Mike Johnson',
       reportedProblem :
         workOrder?.description ||

@@ -59,6 +59,9 @@
         <el-descriptions-item :label="$t('workOrder.table.assignedTo')">
           <span class="field-value">{{ workOrder.created_by || 'Unassigned' }}</span>
         </el-descriptions-item>
+        <el-descriptions-item label="Supervisor">
+          <span class="field-value">Erik Yu</span>
+        </el-descriptions-item>
         <el-descriptions-item :label="$t('workOrder.table.workType')">
           <WorkTypeTag :work-type="workOrder.work_type" />
         </el-descriptions-item>
@@ -195,8 +198,8 @@
       </div>
     </div>
 
-    <!-- Vendors Section -->
-    <div class="detail-section vendors-section">
+    <!-- Vendors Section - Hidden as requested -->
+    <!-- <div class="detail-section vendors-section">
       <el-divider />
       <h3 class="section-title">{{ $t('workOrder.vendors.title') }}</h3>
       <div class="vendors-container">
@@ -236,7 +239,7 @@
           </div>
         </div>
       </div>
-    </div>
+    </div> -->
 
     <!-- Time & Cost Tracking Card -->
     <div class="detail-section time-cost-tracking-card">
@@ -480,7 +483,7 @@
       :before-close="handlePartsCostModalClose"
     >
       <div class="modal-content">
-        <p>This is a stub modal for Parts Cost Management.</p>
+        <p>Yoyo! This is an empty modal for Procedures Library Edit.</p>
         <p>Here you would be able to add, edit, and manage parts costs for this work order.</p>
       </div>
       <template #footer>
@@ -494,7 +497,7 @@
     <!-- Time Logs Modal -->
     <el-dialog v-model="timeLogsModalVisible" title="Time Logs Management" width="700px">
       <div class="modal-content">
-        <p>This is a stub modal for Time Logs Management.</p>
+        <p>Yoyo! This is the empty Modal for Time Logs Management.</p>
         <p>Here you would be able to add, edit, and manage labor time tracking for this work order.</p>
       </div>
       <template #footer>
@@ -508,7 +511,7 @@
     <!-- Safety Modal -->
     <el-dialog v-model="safetyModalVisible" title="Safety Measures Management" width="600px">
       <div class="modal-content">
-        <p>This is a stub modal for Safety Measures Management.</p>
+        <p>Yoyo! This is an empty modal for Safety Measures Management.</p>
         <p>Here you would be able to add, edit, and manage safety checklists and procedures.</p>
       </div>
       <template #footer>
@@ -522,7 +525,7 @@
     <!-- Procedures Modal -->
     <el-dialog v-model="proceduresModalVisible" title="Procedures Management" width="800px">
       <div class="modal-content">
-        <p>This is a stub modal for Procedures Management.</p>
+        <p>Yoyo! This is an empty modal for Procedures Management.</p>
         <p>Here you would be able to add, edit, and manage maintenance procedures and steps.</p>
       </div>
       <template #footer>
@@ -760,12 +763,12 @@
       </template>
     </el-dialog>
 
-    <!-- Activity Panel Section -->
-    <div class="detail-section">
+    <!-- Activity Panel Section - Hidden as requested -->
+    <!-- <div class="detail-section">
       <el-divider />
       <h3 class="section-title">{{ $t('workOrder.activity.title') }}</h3>
       <ActivityPanel :work-order="workOrder" @add-comment="handleAddComment" />
-    </div>
+    </div> -->
   </div>
 
   <!-- Empty State -->
@@ -785,7 +788,7 @@ import {
   Setting,
   Location,
   User,
-  Phone,
+  // Phone, // Commented out since Vendors section is hidden
   Download,
   Plus,
   ShoppingCart,
@@ -798,7 +801,7 @@ import { convertToLocalTime } from '@/utils/datetime'
 import PriorityTag from '../PriorityTag.vue'
 import WorkTypeTag from '../WorkTypeTag.vue'
 import CategoryTag from '../CategoryTag.vue'
-import ActivityPanel from '../ActivityPanel.vue'
+// import ActivityPanel from '../ActivityPanel.vue' // Commented out since ActivityPanel section is hidden
 
 // Props
 const props = defineProps( {
@@ -823,7 +826,7 @@ const emit = defineEmits( [
 
 // State
 const localStatus = ref( '' )
-const activeTrackingTab = ref( 'costs' )
+const activeTrackingTab = ref( 'procedures' )
 const partsCostModalVisible = ref( false )
 const timeLogsModalVisible = ref( false )
 const safetyModalVisible = ref( false )
@@ -979,7 +982,7 @@ const timelineEvents = ref( [
     plannedEnd : '2024-06-18 10:30',
     actualEnd : '2024-06-18 10:15',
     assignees : [
-      { id : 1, name : 'John Smith', avatar : 'https://via.placeholder.com/40' },
+      { id : 1, name : 'Erik Yu', avatar : 'https://via.placeholder.com/40' },
       { id : 3, name : 'Sarah Wilson', avatar : 'https://via.placeholder.com/40' }
     ]
   },
@@ -1015,7 +1018,7 @@ const timelineEvents = ref( [
     duration : '1h 30m',
     plannedEnd : '2024-06-25 10:30',
     actualEnd : null,
-    assignees : [{ id : 1, name : 'John Smith', avatar : 'https://via.placeholder.com/40' }]
+    assignees : [{ id : 1, name : 'Erik Yu', avatar : 'https://via.placeholder.com/40' }]
   },
   {
     id : 5,
@@ -1064,7 +1067,7 @@ const timelineEvents = ref( [
     plannedEnd : '2024-07-05 10:30',
     actualEnd : null,
     assignees : [
-      { id : 1, name : 'John Smith', avatar : 'https://via.placeholder.com/40' },
+      { id : 1, name : 'Erik Yu', avatar : 'https://via.placeholder.com/40' },
       { id : 3, name : 'Sarah Wilson', avatar : 'https://via.placeholder.com/40' }
     ]
   },
@@ -1302,43 +1305,43 @@ const currentLocationName = computed( () => {
   return findLocationName( locationTreeData.value, currentLocationKey.value ) || 'Processing Area 201'
 } )
 
-// Vendor list data (hardcoded for now, will be replaced by API data later)
-const vendorList = ref( [
+// Vendor list data - Commented out since Vendors section is hidden
+/* const vendorList = ref([
   {
-    id : 'vendor-001',
-    name : 'Yellow Guy Solutions',
-    email : 'contact@yellowguy.com',
-    address : '1234 YellowGuy Blvd, Manufacturing District, City 12345',
-    avatar : 'http://10.10.12.12:9000/sv-file-bucket/yellow_guy.png',
-    rating : 4.8,
-    specialties : ['Industrial Equipment', 'Automation Systems'],
-    phone : '+1 (555) 123-4567',
-    website : 'https://techflow.com'
+    id: 'vendor-001',
+    name: 'Yellow Guy Solutions',
+    email: 'contact@yellowguy.com',
+    address: '1234 YellowGuy Blvd, Manufacturing District, City 12345',
+    avatar: 'http://10.10.12.12:9000/sv-file-bucket/yellow_guy.png',
+    rating: 4.8,
+    specialties: ['Industrial Equipment', 'Automation Systems'],
+    phone: '+1 (555) 123-4567',
+    website: 'https://techflow.com',
   },
   {
-    id : 'vendor-002',
-    name : 'Hurry-up Co.',
-    email : 'harry@up.com',
-    address : 'King Ave, Parts Valley, City Dong Yang, Zhe Jiang, China',
-    avatar : 'http://10.10.12.12:9000/sv-file-bucket/hurry.png',
-    rating : 4.5,
-    specialties : ['Mechanical Components', 'Custom Fabrication'],
-    phone : '+1 (555) 987-6543',
-    website : 'https://precisionparts.com'
+    id: 'vendor-002',
+    name: 'Hurry-up Co.',
+    email: 'harry@up.com',
+    address: 'King Ave, Parts Valley, City Dong Yang, Zhe Jiang, China',
+    avatar: 'http://10.10.12.12:9000/sv-file-bucket/hurry.png',
+    rating: 4.5,
+    specialties: ['Mechanical Components', 'Custom Fabrication'],
+    phone: '+1 (555) 987-6543',
+    website: 'https://precisionparts.com',
   },
   {
-    id : 'vendor-003',
-    name : 'FPS Food Process Solutions',
-    email : 'support@fpscorp.ca',
-    address : 'Suite 110, 13911 Wireless Way, Richmond, BC',
-    avatar :
+    id: 'vendor-003',
+    name: 'FPS Food Process Solutions',
+    email: 'support@fpscorp.ca',
+    address: 'Suite 110, 13911 Wireless Way, Richmond, BC',
+    avatar:
       'https://images.squarespace-cdn.com/content/v1/52e97c67e4b0525e2491c5ef/1504302955120-JNIRG02UAKIER9RZFC5R/favicon.ico?format=100w',
-    rating : 4.9,
-    specialties : ['Preventive Maintenance', 'Emergency Repairs'],
-    phone : '+1 (555) 456-7890',
-    website : 'https://maintainmax.com'
-  }
-] )
+    rating: 4.9,
+    specialties: ['Preventive Maintenance', 'Emergency Repairs'],
+    phone: '+1 (555) 456-7890',
+    website: 'https://maintainmax.com',
+  },
+]) */
 
 // Computed
 const isOverdue = computed( () => {
@@ -1374,9 +1377,10 @@ const handleStatusChange = newStatus => {
   emit( 'status-change', { workOrder : props.workOrder, status : newStatus } )
 }
 
-const handleAddComment = commentData => {
+// handleAddComment - Commented out since ActivityPanel section is hidden
+/* const handleAddComment = commentData => {
   emit( 'add-comment', { workOrder : props.workOrder, ...commentData } )
-}
+} */
 
 const handleHeaderAction = action => {
   switch ( action ) {
@@ -1467,18 +1471,18 @@ const handleLocationNodeClick = data => {
   ElMessage.success( `Selected location: ${data.name}` )
 }
 
-// Vendor methods
-const handleVendorClick = vendor => {
+// Vendor methods - Commented out since Vendors section is hidden
+/* const handleVendorClick = vendor => {
   // TODO: Implement vendor details view
-  console.log( `Viewing vendor details: ${vendor.name}` )
-  ElMessage.info( `Viewing details for ${vendor.name}` )
+  console.log(`Viewing vendor details: ${vendor.name}`)
+  ElMessage.info(`Viewing details for ${vendor.name}`)
 }
 
 const contactVendor = vendor => {
   // TODO: Implement vendor contact functionality
-  console.log( `Contacting vendor: ${vendor.name}` )
-  ElMessage.success( `Contacting ${vendor.name} at ${vendor.phone}` )
-}
+  console.log(`Contacting vendor: ${vendor.name}`)
+  ElMessage.success(`Contacting ${vendor.name} at ${vendor.phone}`)
+} */
 
 // Timeline modal methods
 const openTimelineModal = () => {

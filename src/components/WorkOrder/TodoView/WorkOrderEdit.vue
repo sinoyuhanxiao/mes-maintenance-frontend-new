@@ -90,6 +90,20 @@
         </el-form-item>
       </div>
 
+      <!-- Supervisor -->
+      <div class="form-section">
+        <el-form-item label="Supervisor" prop="supervisor">
+          <el-select v-model="form.supervisor" placeholder="Select Supervisor" filterable style="width: 100%">
+            <el-option
+              v-for="supervisor in supervisorOptions"
+              :key="supervisor.id"
+              :label="supervisor.name"
+              :value="supervisor.id"
+            />
+          </el-select>
+        </el-form-item>
+      </div>
+
       <!-- Procedure Picker -->
       <div class="form-section">
         <el-form-item :label="$t('workOrder.create.procedure')" prop="procedure">
@@ -393,19 +407,19 @@
       </div>
 
       <!-- Vendors -->
-      <div class="form-section">
-        <el-form-item :label="$t('workOrder.create.vendors')" prop="vendors">
-          <el-select
-            v-model="form.vendors"
-            :placeholder="$t('workOrder.create.vendorsPlaceholder')"
-            multiple
-            filterable
-            style="width: 100%"
-          >
-            <el-option v-for="vendor in vendorOptions" :key="vendor.id" :label="vendor.name" :value="vendor.id" />
-          </el-select>
-        </el-form-item>
-      </div>
+      <!--      <div class="form-section">-->
+      <!--        <el-form-item :label="$t('workOrder.create.vendors')" prop="vendors">-->
+      <!--          <el-select-->
+      <!--            v-model="form.vendors"-->
+      <!--            :placeholder="$t('workOrder.create.vendorsPlaceholder')"-->
+      <!--            multiple-->
+      <!--            filterable-->
+      <!--            style="width: 100%"-->
+      <!--          >-->
+      <!--            <el-option v-for="vendor in vendorOptions" :key="vendor.id" :label="vendor.name" :value="vendor.id" />-->
+      <!--          </el-select>-->
+      <!--        </el-form-item>-->
+      <!--      </div>-->
 
       <!-- Enhanced File Upload Section with existing files support -->
       <div class="form-section">
@@ -507,6 +521,8 @@ const form = reactive( {
   asset : null,
   procedure : null,
   assignee : null,
+  assignedTo : null,
+  supervisor : null,
   estimatedHours : 1,
   estimatedMinutes : 0,
   dueDate : null,
@@ -552,23 +568,30 @@ const locationTreeData = ref( [] )
 const assetTreeData = ref( [] )
 
 const assigneeOptions = ref( [
-  { id : 1, name : 'John Doe' },
+  { id : 1, name : 'Erik Yu' },
   { id : 2, name : 'Jane Smith' },
   { id : 3, name : 'Mike Johnson' },
   { id : 4, name : 'Sarah Wilson' }
 ] )
 
-const vendorOptions = ref( [
-  { id : 1, name : 'ABC Maintenance Co.' },
-  { id : 2, name : 'XYZ Equipment Services' },
-  { id : 3, name : 'TechFix Solutions' }
+const supervisorOptions = ref( [
+  { id : 1, name : 'Erik Yu' },
+  { id : 2, name : 'Mary Johnson' },
+  { id : 3, name : 'Robert Brown' },
+  { id : 4, name : 'Lisa Davis' }
 ] )
+
+// const vendorOptions = ref( [
+//   { id : 1, name : 'Hurry-up Co.' },
+//   { id : 2, name : 'Yellow Equipment Services' },
+//   { id : 3, name : 'Justin Gamer Solutions' }
+// ] )
 
 // Load data from APIs (same as create form)
 const loadFormData = async() => {
   try {
     loading.value = true
-    console.log( 'WorkOrderEditEnhanced: Loading form data...' )
+    console.log( 'WorkOrderEdit: Loading form data...' )
 
     const res = await Promise.all( [
       getAllWorkTypes(),
@@ -580,7 +603,7 @@ const loadFormData = async() => {
 
     const [workTypesRes, prioritiesRes, categoriesRes, locationsRes, equipmentRes] = res
 
-    console.log( 'WorkOrderEditEnhanced: API responses:', workTypesRes.data )
+    console.log( 'WorkOrderEdit: API responses:', workTypesRes.data )
 
     if ( Array.isArray( workTypesRes.data.workTypes ) ) {
       workTypeOptions.value = workTypesRes.data.workTypes
@@ -602,7 +625,7 @@ const loadFormData = async() => {
       assetTreeData.value = equipmentRes.data.equipment
     }
   } catch ( error ) {
-    console.error( 'WorkOrderEditEnhanced: Failed to load form data:', error )
+    console.error( 'WorkOrderEdit: Failed to load form data:', error )
     const errorMessage = error.response?.data?.message || error.message || t( 'workOrder.messages.loadDataFailed' )
     ElMessage.error( errorMessage )
   } finally {
@@ -877,7 +900,7 @@ watch(
 onMounted( async() => {
   await loadFormData()
   // Debug i18n setup
-  console.log( '🌐 WorkOrderEditEnhanced i18n setup:', {
+  console.log( '🌐 WorkOrderEdit i18n setup:', {
     updateKey : t( 'workOrder.actions.update' ),
     cancelKey : t( 'workOrder.actions.cancel' ),
     i18nInstance : !!t
@@ -885,12 +908,12 @@ onMounted( async() => {
 } )
 
 defineOptions( {
-  name : 'WorkOrderEditEnhanced'
+  name : 'WorkOrderEdit'
 } )
 </script>
 
 <style scoped lang="scss">
-// Import styles from WorkOrderCreateEnhanced and modify for edit
+// Import styles from WorkOrderCreate and modify for edit
 .work-order-edit-enhanced {
   background: var(--el-bg-color);
   border-radius: 8px;
@@ -943,7 +966,7 @@ defineOptions( {
   }
 }
 
-// Form styling (reuse from WorkOrderCreateEnhanced)
+// Form styling (reuse from WorkOrderCreate)
 .edit-form {
   .form-section {
     margin-bottom: 24px;
@@ -1056,13 +1079,13 @@ defineOptions( {
       }
 
       .update-button {
-        background-color: var(--el-color-warning);
-        border-color: var(--el-color-warning);
+        background-color: var(--el-color-primary);
+        border-color: var(--el-color-primary);
         color: white;
 
         &:hover {
-          background-color: var(--el-color-warning-light-3);
-          border-color: var(--el-color-warning-light-3);
+          background-color: var(--el-color-primary-light-3);
+          border-color: var(--el-color-primary-light-3);
         }
       }
     }

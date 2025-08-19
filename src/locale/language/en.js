@@ -93,7 +93,8 @@ export default {
       share : 'Share',
       refresh : 'Refresh',
       backToDetail : 'Back to Detail',
-      reset : 'Reset'
+      reset : 'Reset',
+      update : 'Update'
     },
 
     // Status values

@@ -462,7 +462,7 @@ export class WorkOrderPDFExporter {
       priority : workOrder?.priority?.name || 'High',
       category : workOrder?.work_type?.name || 'Preventive',
       dueDate : workOrder?.due_date || '2024-08-15T16:00:00Z',
-      createdByName : workOrder?.created_by || 'John Smith',
+      createdByName : workOrder?.created_by || 'Erik Yu',
       assignedToName : workOrder?.assigned_to || 'Mike Johnson',
       reportedProblem :
         workOrder?.description ||
@@ -577,7 +577,7 @@ export class WorkOrderPDFExporter {
         {
           timestamp : '2024-08-08T14:30:00Z',
           action : 'Work Order Created',
-          performedBy : 'John Smith',
+          performedBy : 'Erik Yu',
           details : 'Scheduled preventive maintenance'
         },
         {

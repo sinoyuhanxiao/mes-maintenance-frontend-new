@@ -19,8 +19,8 @@
                     <template v-else>
                       <span>{{ workOrder.name }}</span>
                       <el-icon
-                          style="cursor: pointer; margin-left: 8px; color: var(--el-color-primary)"
-                          @click="copyToClipboard(workOrder.name)"
+                        style="cursor: pointer; margin-left: 8px; color: var(--el-color-primary)"
+                        @click="copyToClipboard(workOrder.name)"
                       >
                         <CopyDocument />
                       </el-icon>
@@ -33,8 +33,8 @@
                   <div style="display: flex; align-items: center">
                     <span>{{ workOrder.code }}</span>
                     <el-icon
-                        style="cursor: pointer; margin-left: 8px; color: var(--el-color-primary)"
-                        @click="copyToClipboard(workOrder.code)"
+                      style="cursor: pointer; margin-left: 8px; color: var(--el-color-primary)"
+                      @click="copyToClipboard(workOrder.code)"
                     >
                       <CopyDocument />
                     </el-icon>
@@ -44,13 +44,13 @@
               <el-descriptions-item label="是否停机" :width="labelWidth" :span="2">
                 <template #default>
                   <el-switch
-                      v-if="editing"
-                      v-model="workOrder.halt_type"
-                      :active-value="1"
-                      :inactive-value="0"
-                      inline-prompt
-                      active-text="是"
-                      inactive-text="否"
+                    v-if="editing"
+                    v-model="workOrder.halt_type"
+                    :active-value="1"
+                    :inactive-value="0"
+                    inline-prompt
+                    active-text="是"
+                    inactive-text="否"
                   />
                   <span v-else>{{ workOrder.halt_type === 1 ? '是' : '否' }}</span>
                 </template>
@@ -78,10 +78,10 @@
                 <template #default>
                   <el-select v-if="editing" v-model="workOrder.production_line.id" placeholder="生产线">
                     <el-option
-                        v-for="item in commonDataStore.productionLines"
-                        :key="item.id"
-                        :label="item.name"
-                        :value="item.id"
+                      v-for="item in commonDataStore.productionLines"
+                      :key="item.id"
+                      :label="item.name"
+                      :value="item.id"
                     />
                   </el-select>
                   <span v-else>{{ workOrder.production_line?.name }}</span>
@@ -128,10 +128,10 @@
                 <template #default>
                   <el-select v-if="editing" v-model="workOrder.priority.id" placeholder="优先级" style="width: 100%">
                     <el-option
-                        v-for="item in commonDataStore.priorities"
-                        :key="item.id"
-                        :label="item.name"
-                        :value="item.id"
+                      v-for="item in commonDataStore.priorities"
+                      :key="item.id"
+                      :label="item.name"
+                      :value="item.id"
                     />
                   </el-select>
                   <el-tag v-else type="danger">{{ workOrder.priority?.name }}</el-tag>
@@ -142,10 +142,10 @@
                 <template #default>
                   <el-select v-if="editing" v-model="workOrder.category.id" placeholder="工单类别" style="width: 100%">
                     <el-option
-                        v-for="item in commonDataStore.categories"
-                        :key="item.id"
-                        :label="item.name"
-                        :value="item.id"
+                      v-for="item in commonDataStore.categories"
+                      :key="item.id"
+                      :label="item.name"
+                      :value="item.id"
                     />
                   </el-select>
                   <el-tag v-else>{{ workOrder.category?.name }}</el-tag>
@@ -156,10 +156,10 @@
                 <template #default>
                   <el-select v-if="editing" v-model="workOrder.work_type.id" placeholder="工作类型" style="width: 100%">
                     <el-option
-                        v-for="item in commonDataStore.workTypes"
-                        :key="item.id"
-                        :label="item.name"
-                        :value="item.id"
+                      v-for="item in commonDataStore.workTypes"
+                      :key="item.id"
+                      :label="item.name"
+                      :value="item.id"
                     />
                   </el-select>
                   <el-tag v-else type="success">{{ workOrder.work_type?.name }}</el-tag>
@@ -215,13 +215,13 @@
       <!-- 附件信息Common卡片 -->
       <div class="el-col el-col-24 is-guttered">
         <ImagesAndFiles
-            :mode="editing ? 'edit' : 'view'"
-            :imageListUrl="workOrder.image_list"
-            :fileListUrl="workOrder.file_list"
-            v-model:image_list_multipart_added="imageListMultipartAdded"
-            v-model:file_list_multipart_added="fileListMultipartAdded"
-            v-model:image_list_url_deleted="imageListUrlDeleted"
-            v-model:file_list_url_deleted="fileListUrlDeleted"
+          :mode="editing ? 'edit' : 'view'"
+          :imageListUrl="workOrder.image_list"
+          :fileListUrl="workOrder.file_list"
+          v-model:image_list_multipart_added="imageListMultipartAdded"
+          v-model:file_list_multipart_added="fileListMultipartAdded"
+          v-model:image_list_url_deleted="imageListUrlDeleted"
+          v-model:file_list_url_deleted="fileListUrlDeleted"
         />
       </div>
 
@@ -260,11 +260,11 @@
           </div>
           <div class="el-card__body">
             <el-input
-                v-model="newComment"
-                placeholder="写下评论..."
-                type="textarea"
-                :autosize="{ minRows: 3, maxRows: 5 }"
-                style="margin-bottom: 10px"
+              v-model="newComment"
+              placeholder="写下评论..."
+              type="textarea"
+              :autosize="{ minRows: 3, maxRows: 5 }"
+              style="margin-bottom: 10px"
             />
             <div style="text-align: right">
               <el-button type="primary" size="default" @click="addComment">发送</el-button>
@@ -283,12 +283,12 @@
     </div>
     <el-tooltip :content="editing ? '保存修改' : '编辑工单'" placement="top">
       <el-button
-          class="floating-edit-button"
-          :type="editing ? 'success' : 'primary'"
-          circle
-          size="large"
-          :icon="editing ? 'Check' : 'Edit'"
-          @click="editing = !editing"
+        class="floating-edit-button"
+        :type="editing ? 'success' : 'primary'"
+        circle
+        size="large"
+        :icon="editing ? 'Check' : 'Edit'"
+        @click="editing = !editing"
       />
     </el-tooltip>
 
@@ -434,7 +434,6 @@ function calculateUpdatedWorkOrder() {
   delete updated.created_at
 
   updatedWorkOrder.value = updated
-  console.log( 'updatedWorkOrder:', JSON.stringify( updated, null, 2 ) )
 }
 
 function highlightAllInputs() {
@@ -460,7 +459,7 @@ watch( editing, newVal => {
 watch(
   workOrder,
   newVal => {
-    console.log( 'workOrder changed:', JSON.stringify( newVal, null, 2 ) )
+    // Work order data changed
   },
   { deep : true }
 )
@@ -512,22 +511,7 @@ watch(
     editing
   ],
   ( [newImagesAdded, newFilesAdded, deletedImages, deletedFiles, imageListUrl, fileListUrl, mode] ) => {
-    console.log(
-      'Images and Files State:',
-      JSON.stringify(
-        {
-          mode : mode ? 'edit' : 'view',
-          imageListMultipartAdded : newImagesAdded,
-          fileListMultipartAdded : newFilesAdded,
-          imageListUrlDeleted : deletedImages,
-          fileListUrlDeleted : deletedFiles,
-          image_list_url : imageListUrl,
-          file_list_url : fileListUrl
-        },
-        null,
-        2
-      )
-    )
+    // Images and files state changed
   },
   { deep : true }
 )

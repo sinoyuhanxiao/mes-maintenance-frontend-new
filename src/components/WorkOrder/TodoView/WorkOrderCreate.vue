@@ -80,6 +80,34 @@
         </el-form-item>
       </div>
 
+      <!-- Assigned To -->
+      <div class="form-section">
+        <el-form-item :label="$t('workOrder.create.assignTo')" prop="assignedTo">
+          <el-select
+            v-model="form.assignedTo"
+            :placeholder="$t('workOrder.create.assigneePlaceholder')"
+            filterable
+            style="width: 100%"
+          >
+            <el-option v-for="user in assigneeOptions" :key="user.id" :label="user.name" :value="user.id" />
+          </el-select>
+        </el-form-item>
+      </div>
+
+      <!-- Supervisor -->
+      <div class="form-section">
+        <el-form-item label="Supervisor" prop="supervisor">
+          <el-select v-model="form.supervisor" placeholder="Select Supervisor" filterable style="width: 100%">
+            <el-option
+              v-for="supervisor in supervisorOptions"
+              :key="supervisor.id"
+              :label="supervisor.name"
+              :value="supervisor.id"
+            />
+          </el-select>
+        </el-form-item>
+      </div>
+
       <!-- Estimated Time -->
       <div class="form-section">
         <el-form-item :label="$t('workOrder.create.estimatedTime')">
@@ -307,13 +335,7 @@ const { t } = useI18n()
 // Component mounted
 onMounted( () => {
   loadFormData()
-  // Debug i18n setup
-  console.log( '🌐 WorkOrderCreateEnhanced i18n setup:', {
-    locale : t( 'workOrder.actions.create' ),
-    cancelKey : t( 'workOrder.actions.cancel' ),
-    createKey : t( 'workOrder.actions.create' ),
-    i18nInstance : !!t
-  } )
+  // i18n setup completed
 } )
 
 // Form data - following the working NewWorkOrder.vue pattern
@@ -334,7 +356,9 @@ const form = reactive( {
   recurrence_setting : {},
   categories : [],
   start_date : null,
-  due_date : null
+  due_date : null,
+  assignedTo : null,
+  supervisor : null
 } )
 
 // Validation rules
@@ -360,6 +384,20 @@ const categoryOptions = ref( [] )
 const locationTreeData = ref( [] )
 const assetTreeData = ref( [] )
 const loading = ref( false )
+
+const assigneeOptions = ref( [
+  { id : 1, name : 'Erik Yu' },
+  { id : 2, name : 'Jane Smith' },
+  { id : 3, name : 'Mike Johnson' },
+  { id : 4, name : 'Sarah Wilson' }
+] )
+
+const supervisorOptions = ref( [
+  { id : 1, name : 'Erik Yu' },
+  { id : 2, name : 'Mary Johnson' },
+  { id : 3, name : 'Robert Brown' },
+  { id : 4, name : 'Lisa Davis' }
+] )
 const formRef = ref( null )
 const imageDialogVisible = ref( false )
 const dialogImageUrl = ref( '' )
@@ -368,7 +406,7 @@ const dialogImageUrl = ref( '' )
 const loadFormData = async() => {
   try {
     loading.value = true
-    console.log( 'WorkOrderCreateEnhanced: Loading form data...' )
+    console.log( 'WorkOrderCreate: Loading form data...' )
 
     const [workTypesRes, prioritiesRes, categoriesRes, locationsRes, equipmentRes] = await Promise.all( [
       getAllWorkTypes(),
@@ -378,7 +416,7 @@ const loadFormData = async() => {
       getEquipmentNodeTrees()
     ] )
 
-    console.log( 'WorkOrderCreateEnhanced: API responses:', {
+    console.log( 'WorkOrderCreate: API responses:', {
       workTypes : workTypesRes.data,
       priorities : prioritiesRes.data,
       categories : categoriesRes.data,
@@ -388,30 +426,30 @@ const loadFormData = async() => {
 
     if ( workTypesRes.data ) {
       workTypeOptions.value = workTypesRes.data
-      console.log( 'WorkOrderCreateEnhanced: Set workTypeOptions:', workTypeOptions.value )
+      console.log( 'WorkOrderCreate: Set workTypeOptions:', workTypeOptions.value )
     }
 
     if ( prioritiesRes.data ) {
       priorityOptions.value = prioritiesRes.data
-      console.log( 'WorkOrderCreateEnhanced: Set priorityOptions:', priorityOptions.value )
+      console.log( 'WorkOrderCreate: Set priorityOptions:', priorityOptions.value )
     }
 
     if ( categoriesRes.data ) {
       categoryOptions.value = categoriesRes.data
-      console.log( 'WorkOrderCreateEnhanced: Set categoryOptions:', categoryOptions.value )
+      console.log( 'WorkOrderCreate: Set categoryOptions:', categoryOptions.value )
     }
 
     if ( locationsRes.data ) {
       locationTreeData.value = locationsRes.data
-      console.log( 'WorkOrderCreateEnhanced: Set locationTreeData:', locationTreeData.value )
+      console.log( 'WorkOrderCreate: Set locationTreeData:', locationTreeData.value )
     }
 
     if ( equipmentRes.data ) {
       assetTreeData.value = equipmentRes.data
-      console.log( 'WorkOrderCreateEnhanced: Set assetTreeData:', assetTreeData.value )
+      console.log( 'WorkOrderCreate: Set assetTreeData:', assetTreeData.value )
     }
   } catch ( error ) {
-    console.error( 'WorkOrderCreateEnhanced: Failed to load form data:', error )
+    console.error( 'WorkOrderCreate: Failed to load form data:', error )
     // Show specific error message if available
     const errorMessage = error.response?.data?.message || error.message || t( 'workOrder.messages.loadDataFailed' )
     ElMessage.error( errorMessage )
@@ -422,7 +460,7 @@ const loadFormData = async() => {
     }
   } finally {
     loading.value = false
-    console.log( 'WorkOrderCreateEnhanced: Final dropdown options:', {
+    console.log( 'WorkOrderCreate: Final dropdown options:', {
       workTypes : workTypeOptions.value,
       priorities : priorityOptions.value,
       categories : categoryOptions.value
@@ -668,7 +706,7 @@ const submitForm = async() => {
 }
 
 defineOptions( {
-  name : 'WorkOrderCreateEnhanced'
+  name : 'WorkOrderCreate'
 } )
 </script>
 
