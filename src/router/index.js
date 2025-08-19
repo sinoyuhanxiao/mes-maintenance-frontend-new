@@ -128,7 +128,7 @@ export const asyncRoutes = [
       {
         path : 'table',
         component : () => import( '@/views/workOrder/index.vue' ),
-        name : 'WorkOrderTable',
+        name : 'WorkOrderManagement',
         meta : { title : 'router.workOrderManagement', noCache : false }
       },
       {
