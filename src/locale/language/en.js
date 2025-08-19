@@ -496,6 +496,8 @@ export default {
     taskTable : 'Task Table',
     request : 'Requests',
     resources : 'Resources',
+    locations : 'Locations',
+    vendorsAndLocations : 'Vendors & Locations',
     userCenter : 'User Center',
     myAccount : 'My Account',
     nested : 'Nested Routes',

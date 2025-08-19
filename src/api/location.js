@@ -41,3 +41,15 @@ export const getLocationById = id => {
     url : `/location/${id}`
   } )
 }
+
+// export const getLocationById = id => http.request( { method : 'get', url : `/location/${id}` } )
+
+export const createLocation = payload => http.request( { method : 'post', url : '/location', data : payload } )
+
+export const updateLocationById = ( id, data ) => http.request( { method : 'patch', url : `/location/${id}`, data } )
+
+export const deactivateLocation = id => http.request( { method : 'post', url : `/location/${id}/deactivate` } )
+
+export const activateLocation = id => http.request( { method : 'post', url : `/location/${id}/activate` } )
+
+export const getLocationTypes = () => http.request( { method : 'get', url : '/location/location-type' } )

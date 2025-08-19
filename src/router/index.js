@@ -219,6 +219,20 @@ export const asyncRoutes = [
     ]
   },
   {
+    path : '/vendors-locations',
+    name : 'VendorsAndLocations',
+    component : Layout,
+    meta : { title : 'router.vendorsAndLocations', icon : 'map', breadcrumb : false }, // hide parent crumb
+    children : [
+      {
+        path : '',
+        name : 'VendorsLocationsMain',
+        component : () => import( '@/views/vendorsAndLocations/index.vue' ),
+        meta : { title : 'router.vendorsAndLocations' }
+      }
+    ]
+  },
+  {
     path : '/user',
     name : 'User',
     component : Layout,
