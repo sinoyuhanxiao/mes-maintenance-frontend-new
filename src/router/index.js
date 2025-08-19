@@ -119,20 +119,6 @@ export const asyncRoutes = [
   },
   nested,
   {
-    path : '/maintenance',
-    name : 'Equipment',
-    component : Layout,
-    meta : { title : 'router.maintenanceEquipment', icon : 'setting', noCache : true },
-    children : [
-      {
-        path : 'equipment',
-        component : () => import( '@/views/equipment/index.vue' ),
-        name : 'Maintenance Test',
-        meta : { title : 'router.maintenanceEquipment', noCache : true }
-      }
-    ]
-  },
-  {
     path : '/work-order',
     name : 'Table',
     component : Layout,
@@ -170,6 +156,20 @@ export const asyncRoutes = [
         name : 'TestView',
         props : true,
         meta : { title : 'router.viewWorkOrder', noCache : true, hidden : true }
+      }
+    ]
+  },
+  {
+    path : '/maintenance',
+    name : 'Equipment',
+    component : Layout,
+    meta : { title : 'router.maintenanceEquipment', icon : 'setting', noCache : true },
+    children : [
+      {
+        path : 'equipment',
+        component : () => import( '@/views/equipment/index.vue' ),
+        name : 'Maintenance Test',
+        meta : { title : 'router.maintenanceEquipment', noCache : true }
       }
     ]
   },
