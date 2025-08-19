@@ -12,6 +12,10 @@
             <el-icon style="margin-right: 8px"><List /></el-icon>
             {{ $t('workOrder.viewModes.todo') }}
           </el-option>
+          <el-option :label="$t('workOrder.viewModes.calendar')" value="calendar">
+            <el-icon style="margin-right: 8px"><Calendar /></el-icon>
+            {{ $t('workOrder.viewModes.calendar') }}
+          </el-option>
         </el-select>
       </div>
     </template>
@@ -19,11 +23,12 @@
     <!-- HEADER: Unified Filters Section (for both views) -->
     <template #head>
       <UnifiedWorkOrderFilters
-        v-model="listQuery"
+        :model-value="{ ...listQuery }"
+        @update:model-value="handleFilterUpdate"
         :export-loading="downloadLoading"
         :show-todo-actions="currentView === 'todo'"
+        :current-view="currentView"
         class="unified-work-order-filters"
-        @filter-change="handleFilter"
         @create="handleCreate"
         @export="handleDownload"
         @refresh="handleRefresh"
@@ -68,6 +73,17 @@
           @tab-change="handleTabChange"
         />
       </div>
+
+      <!-- Calendar View -->
+      <div v-else-if="currentView === 'calendar'" class="todo-view-container">
+        <CalendarView
+          ref="calendarViewRef"
+          :data="list"
+          :loading="listLoading"
+          @date-range-change="handleCalendarDisplayDateChange"
+          @view="handleView"
+        />
+      </div>
     </template>
 
     <!-- FOOTER: Pagination Section (only for Table View) -->
@@ -91,13 +107,15 @@
 import { ref, onMounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Grid, List } from '@element-plus/icons-vue'
+import { Calendar, Grid, List } from '@element-plus/icons-vue'
 import MesLayout from 'src/components/MesLayout'
 import UnifiedWorkOrderFilters from '@/components/WorkOrder/UnifiedWorkOrderFilters.vue'
 import WorkOrderTable from '@/components/WorkOrder/WorkOrderTable.vue'
 import TodoView from '@/components/WorkOrder/TodoView/TodoView.vue'
+import CalendarView from '@/views/workOrder/components/workOrderCalendar.vue'
 import { useWorkOrder } from '@/composables/useWorkOrder'
 import { useErrorHandler } from '@/composables/useErrorHandler'
+import { ElMessage } from 'element-plus'
 
 // Composables
 const router = useRouter()
@@ -125,6 +143,7 @@ const {
 // State
 const downloadLoading = ref( false )
 const currentView = ref( 'table' ) // 'table' or 'todo'
+const calendarViewRef = ref()
 const todoViewRef = ref( null )
 
 // Methods
@@ -157,6 +176,15 @@ const handleDelete = async( row, index ) => {
 
 const handleViewChange = async view => {
   currentView.value = view
+
+  // Reset filter params that are specific to calendar view
+  if ( view !== 'calendar' ) {
+    delete listQuery.start_date_from
+    delete listQuery.end_date_to
+    listQuery.page = 1
+    listQuery.limit = 20
+  }
+
   console.log( 'View changed to:', view )
 
   // When switching to todo view, set default status filter for "todo" tab
@@ -183,8 +211,35 @@ const handleRefresh = async() => {
   }
 }
 
+const handleFilterUpdate = newFilters => {
+  // Avoid breaking reactivity of listQuery by mutating its property
+  Object.assign( listQuery, newFilters )
+  // If current view is calendar, trigger calendar to sync its internal events with the newest version of list
+  if ( currentView.value === 'calendar' ) {
+    calendarViewRef.value?.refetchEvents()
+  } else {
+    handleFilter() // Triggers fetch
+  }
+}
+
 const handleDownload = () => {
   console.log( 'Download action triggered' )
+}
+
+const handleCalendarDisplayDateChange = async( { start_date_from, end_date_to, resolve, reject } ) => {
+  Object.assign( listQuery, { start_date_from, end_date_to } )
+
+  // Set page to -1 and limit to -1 to indicate using non page fetchWorkOrder as calendar don't have table's page concept
+  listQuery.page = -1
+  listQuery.limit = -1
+  try {
+    await fetchWorkOrders()
+    resolve( list.value )
+  } catch ( e ) {
+    reject( e )
+    console.log( e )
+    ElMessage.error( 'Unable to load work-orders' )
+  }
 }
 
 const handleWorkOrderCreated = async newWorkOrder => {

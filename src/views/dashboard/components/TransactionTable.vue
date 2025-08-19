@@ -24,7 +24,7 @@
 
 <script setup>
 import { ref, reactive, computed, onBeforeMount } from 'vue'
-import axios from 'axios'
+// import axios from 'axios'
 
 // eslint-disable-next-line prefer-const
 let list = ref( [] )
@@ -59,8 +59,10 @@ onBeforeMount( () => {
 
 const fetchData = async() => {
   try {
-    const response = await axios.get( '/api/workorders' )
-    list.value = response.data
+    // TODO: change to new work order api
+    // const response = await axios.get( '/api/workorders' )
+    // list.value = response.data
+    list.value = []
   } catch ( error ) {
     console.error( 'Failed to fetch work orders:', error )
   }

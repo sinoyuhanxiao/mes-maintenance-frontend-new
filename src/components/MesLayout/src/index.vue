@@ -1,5 +1,8 @@
 <template>
-  <div ref="wrapperRef" :class="['mes-layout', viewMode === 'todo' ? 'todo-mode' : 'table-mode']">
+  <div
+    ref="wrapperRef"
+    :class="['mes-layout', viewMode === 'todo' || viewMode === 'calendar' ? 'todo-mode' : 'table-mode']"
+  >
     <div class="header">
       <!-- Title row with optional view mode selector -->
       <div class="header-title-row">
@@ -24,7 +27,7 @@
     <div class="body">
       <slot name="body" />
     </div>
-    <div v-if="viewMode !== 'todo'" class="footer">
+    <div v-if="viewMode === 'table'" class="footer">
       <slot name="foot" />
     </div>
   </div>

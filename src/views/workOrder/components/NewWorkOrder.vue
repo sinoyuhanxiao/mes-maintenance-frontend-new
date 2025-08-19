@@ -306,8 +306,9 @@ onMounted( async() => {
     await Promise.all( [
       commonDataStore.fetchPriorities(),
       commonDataStore.fetchWorkTypes(),
-      commonDataStore.fetchCategories(),
-      commonDataStore.fetchProductionLines()
+      commonDataStore.fetchCategories()
+      // TODO: change to new equipment api
+      // commonDataStore.fetchProductionLines()
     ] )
   } catch ( error ) {
     console.error( 'Failed to initialize form data:', error )

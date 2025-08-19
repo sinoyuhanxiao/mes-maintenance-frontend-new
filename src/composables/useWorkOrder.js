@@ -5,7 +5,7 @@
 import { ref, reactive, computed } from 'vue'
 import { ElMessage, ElNotification } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import { searchWorkOrders, getWorkOrdersByRecurrence } from '@/api/workorder'
+import { getAllWorkOrders, getWorkOrdersByRecurrence, searchWorkOrdersByList } from '@/api/workorder'
 import { useCommonDataStore } from '@/store/modules/commonData'
 
 export function useWorkOrder() {
@@ -22,6 +22,10 @@ export function useWorkOrder() {
   const listQuery = reactive( {
     page : 1,
     limit : 20,
+    importance : undefined,
+    title : undefined,
+    type : undefined,
+    latest_per_recurrence : true,
     // Filter properties that are actually used
     assignedTo : undefined,
     priority : undefined,
@@ -41,10 +45,54 @@ export function useWorkOrder() {
   const fetchWorkOrders = async( additionalFilters = {} ) => {
     loading.value = true
     try {
-      const response = await searchWorkOrders( listQuery.page, listQuery.limit, 'createdAt', 'DESC' )
+      // Prepare filters for API call
+      const filters = {
+        ...additionalFilters
+      }
 
-      const data = response.data.content
-      total.value = response.data.totalElements
+      // Add filters from listQuery if they exist
+      if ( listQuery.assignedTo ) filters.assignedTo = listQuery.assignedTo
+      if ( listQuery.priority ) filters.priority = listQuery.priority
+      if ( listQuery.workType ) filters.workType = listQuery.workType
+      if ( listQuery.status ) filters.status = listQuery.status
+      if ( listQuery.search ) filters.search = listQuery.search
+      if ( listQuery.dueDate ) filters.dueDate = listQuery.dueDate
+      if ( listQuery.customDateRange ) filters.customDateRange = listQuery.customDateRange
+
+      console.log( '🔍 fetchWorkOrders called with filters:', {
+        page : listQuery.page,
+        limit : listQuery.limit,
+        sortField : 'createdAt',
+        sortDirection : 'DESC',
+        filters
+      } )
+
+      let response
+      let data
+      if ( listQuery.page === -1 && listQuery.limit === -1 ) {
+        response = await searchWorkOrdersByList( getSearchFilterPayload() )
+        data = response.data
+      } else {
+        response = await getAllWorkOrders(
+          listQuery.page,
+          listQuery.limit,
+          'createdAt',
+          'DESC',
+          getSearchFilterPayload()
+        )
+
+        console.log( '📦 fetchWorkOrders response:', {
+          totalElements : response.data.totalElements,
+          returnedCount : response.data.content?.length,
+          firstItemId : response.data.content?.[0]?.id,
+          firstItemStatus : response.data.content?.[0]?.status,
+          firstItemStateId : response.data.content?.[0]?.state_id
+        } )
+
+        data = response.data.content
+      }
+
+      total.value = response.data.totalElements || response.data.length
 
       // Add children property for expandable rows
       list.value = data.map( item => {
@@ -160,11 +208,103 @@ export function useWorkOrder() {
         commonDataStore.fetchPriorities(),
         commonDataStore.fetchWorkTypes(),
         commonDataStore.fetchCategories(),
-        commonDataStore.fetchProductionLines()
+        commonDataStore.fetchStates()
+        // TODO: REWORK USING EQUIPMENT NODE API
+        // commonDataStore.fetchProductionLines()
       ] )
     } catch ( error ) {
       console.error( 'Failed to initialize common data:', error )
     }
+  }
+
+  // Return an object containing due_date_to and due_date_from field for filtering by due date
+  const MS_IN_DAY = 24 * 60 * 60 * 1000
+  const startOfLocalDay = ( dateLike ) => {
+    const d = dateLike instanceof Date ? dateLike : new Date( dateLike )
+    return new Date( d.getFullYear(), d.getMonth(), d.getDate() )
+  }
+  const endOfLocalDay = ( dateLike ) => {
+    const start = startOfLocalDay( dateLike )
+    return new Date( start.getTime() + MS_IN_DAY - 1 )
+  }
+  const processDueDateOptions = ( now = new Date() ) => {
+    const opt = listQuery?.dueDate
+    if ( !opt ) return {}
+
+    const todayStart = startOfLocalDay( now )
+
+    const y = now.getFullYear()
+    const m = now.getMonth()
+    const d = now.getDate()
+
+    // Sunday-start week (Sun=0)
+    const dow = now.getDay()
+    const weekStart = new Date( y, m, d - dow ) // local 00:00
+    const weekEnd = new Date( y, m, d - dow + 7 ) // next Sunday 00:00
+    // Subtract 1 ms for 23:59:59.999
+    const weekEndInclusive = new Date( weekEnd.getTime() - 1 )
+
+    // Month range
+    const monthStart = new Date( y, m, 1 )
+    const nextMonthStart = new Date( y, m + 1, 1 )
+    const monthEndInclusive = new Date( nextMonthStart.getTime() - 1 )
+
+    switch ( opt ) {
+      case 'overdue':
+        // strictly before today
+        return { due_date_to : todayStart }
+      case 'today':
+        return {
+          due_date_from : todayStart,
+          due_date_to : endOfLocalDay( todayStart )
+        }
+      case 'thisWeek':
+        return {
+          due_date_from : weekStart,
+          due_date_to : weekEndInclusive
+        }
+      case 'thisMonth':
+        return {
+          due_date_from : monthStart,
+          due_date_to : monthEndInclusive
+        }
+      case 'custom':
+        // TODO later
+        return {}
+      default:
+        return {}
+    }
+  }
+
+  // Convert listQuery into searchWorkOrder api payload
+  const getSearchFilterPayload = () => {
+    const q = listQuery
+
+    const payload = {
+      keyword : q.search || null,
+      work_type_ids : q.workType ? [q.workType] : [],
+      priority_ids : q.priority ? [q.priority] : [],
+      state_ids : q.state ? [q.state] : [],
+      category_ids : q.category ? [q.category] : [],
+      latest_per_recurrence : q.latest_per_recurrence,
+      start_date_from : q.start_date_from,
+      end_date_to : q.end_date_to
+      // TODO: add more supported filter param later (equipment_node, recurrence_type_id, approved/finished at)
+
+    }
+
+    const dueDateObj = processDueDateOptions()
+    Object.assign( payload, dueDateObj )
+
+    // Clean undefined / null / empty arrays
+    Object.keys( payload ).forEach( key => {
+      const value = payload[key]
+      if ( value === undefined || value === null || ( Array.isArray( value ) && value.length === 0 ) ) {
+        delete payload[key]
+      }
+    } )
+
+    return payload
   }
 
   return {

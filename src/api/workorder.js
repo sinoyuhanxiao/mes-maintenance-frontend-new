@@ -15,17 +15,31 @@ export const searchWorkOrders = (
   direction = 'DESC',
   search = { latest_per_recurrence : true }
 ) => {
-  console.log(
-    http.request( {
-      method : 'post',
-      url : `/work-order/search?page=${page}&size=${size}&sortField=${sortField}&direction=${direction}`,
-      data : search
-    } )
-  )
   return http.request( {
     method : 'post',
-    url : `/work-order/search?page=${page}&size=${size}&sortField=${sortField}&direction=${direction}`,
+    url : '/work-order/search',
+    params : {
+      page,
+      size,
+      sortField,
+      direction
+    },
     data : search
+  } )
+}
+
+/**
+ * Search work orders using complex filters.
+ *
+ * @param {Object} filter - The WorkOrderQueryRequest payload.
+ * @returns {Promise} API response with filtered and paginated work orders.
+ */
+export const searchWorkOrdersByList = ( filter = {} ) => {
+  return http.request( {
+    method : 'post',
+    url : '/work-order/list-search',
+    data : filter,
+    params : {}
   } )
 }
 

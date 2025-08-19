@@ -34,6 +34,15 @@ export default {
       assignedTo : '分配给'
     },
 
+    // Calendar
+    calendar : {
+      endDate : '结束日期',
+      recurrenceId : '重复工单ID',
+      assignedUser : '维护人员',
+      equipment : '设备',
+      taskProgress : '任务进度'
+    },
+
     // Form fields
     form : {
       name : '工单名称',
@@ -225,7 +234,8 @@ export default {
     // View modes
     viewModes : {
       table : '表格视图',
-      todo : '待办视图'
+      todo : '待办视图',
+      calendar : '计划视图'
     },
 
     // Filters
@@ -258,6 +268,7 @@ export default {
       basicFilters : '基础筛选',
       advancedFilters : '高级筛选',
       workOrderFilters : '工单筛选',
+      state : '工单状态',
       status : '状态',
       category : '类别',
       equipment : '设备',

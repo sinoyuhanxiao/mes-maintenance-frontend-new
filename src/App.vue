@@ -1,7 +1,7 @@
 <template>
   <!--  <p class="test">{{ $t('header.home') }}</p>-->
   <el-config-provider :locale="locale" :size="size">
-    <router-view :key="$route.fullPath" />
+    <router-view />
   </el-config-provider>
 </template>
 

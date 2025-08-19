@@ -78,6 +78,21 @@
           </el-select>
         </div>
 
+        <!-- State Filter -->
+        <div v-if="isFilterVisible('state')" class="filter-item">
+          <el-select
+            v-model="localFilters.state"
+            :placeholder="$t('workOrder.filters.state')"
+            clearable
+            size="default"
+            style="width: 140px"
+            :class="{ 'highlight-animation': animatingFilters.status }"
+            @change="handleFilterChange"
+          >
+            <el-option v-for="state in stateOptions" :key="state.id" :label="state.name" :value="state.id" />
+          </el-select>
+        </div>
+
         <!-- Status Filter -->
         <div v-if="isFilterVisible('status')" class="filter-item">
           <el-select
@@ -350,6 +365,10 @@ const props = defineProps( {
   showTodoActions : {
     type : Boolean,
     default : false
+  },
+  currentView : {
+    type : String,
+    default : 'table'
   }
 } )
 
@@ -365,10 +384,12 @@ const localFilters = reactive( {
   dueDate : props.modelValue.dueDate || null,
   workType : props.modelValue.workType || null,
   priority : props.modelValue.priority || null,
+  state : props.modelValue.state || null,
+  category : props.modelValue.category || null,
   search : props.modelValue.search || '',
   customDateRange : props.modelValue.customDateRange || null,
+  latest_per_recurrence : props.currentView !== 'calendar',
   status : props.modelValue.status || null,
-  category : props.modelValue.category || null,
   equipment : props.modelValue.equipment || null,
   location : props.modelValue.location || null
 } )
@@ -383,6 +404,7 @@ const animatingFilters = reactive( {
   workType : false,
   priority : false,
   search : false,
+  state : false,
   status : false,
   category : false,
   equipment : false,
@@ -396,6 +418,7 @@ const availableFilters = reactive( {
   workType : { visible : true, category : 'basic' },
   priority : { visible : true, category : 'basic' },
   search : { visible : true, category : 'basic' },
+  state : { visible : false, category : 'advanced' },
   status : { visible : false, category : 'advanced' },
   category : { visible : false, category : 'advanced' },
   equipment : { visible : false, category : 'advanced' },
@@ -414,6 +437,8 @@ const assignedToOptions = computed( () => {
 
 const workTypeOptions = computed( () => commonDataStore.workTypes || [] )
 const priorityOptions = computed( () => commonDataStore.priorities || [] )
+const stateOptions = computed( () => commonDataStore.states || [] )
+const categoryOptions = computed( () => commonDataStore.categories || [] )
 
 // Additional filter options
 const statusOptions = computed( () => [
@@ -422,8 +447,6 @@ const statusOptions = computed( () => [
   { id : 'completed', name : t( 'workOrder.status.completed' ) },
   { id : 'cancelled', name : t( 'workOrder.status.cancelled' ) }
 ] )
-
-const categoryOptions = computed( () => commonDataStore.categories || [] )
 
 const equipmentOptions = computed( () => [
   { id : 1, name : 'Production Line A' },
@@ -470,6 +493,12 @@ const filterDefinitions = computed( () => ( {
     label : t( 'workOrder.filters.search' ),
     icon : 'Search',
     category : 'basic'
+  },
+  state : {
+    key : 'state',
+    label : t( 'workOrder.filters.state' ),
+    icon : 'CircleCheck',
+    category : 'advanced'
   },
   status : {
     key : 'status',
@@ -560,6 +589,22 @@ const activeFilterTags = computed( () => {
     } )
   }
 
+  if ( localFilters.state ) {
+    const state = stateOptions.value.find( s => s.id === localFilters.state )
+    tags.push( {
+      key : 'state',
+      label : `${t( 'workOrder.table.state' )}: ${state?.name || localFilters.state}`
+    } )
+  }
+
+  if ( localFilters.category ) {
+    const category = categoryOptions.value.find( c => c.id === localFilters.category )
+    tags.push( {
+      key : 'category',
+      label : `${t( 'workOrder.table.category' )}: ${category?.name || localFilters.category}`
+    } )
+  }
+
   if ( localFilters.search ) {
     tags.push( {
       key : 'search',
@@ -605,9 +650,8 @@ const activeFilterTags = computed( () => {
 const hasActiveFilters = computed( () => activeFilterTags.value.length > 0 )
 
 // Methods
-const handleFilterChange = () => {
+const handleFilterChange = async() => {
   emit( 'update:modelValue', { ...localFilters } )
-  emit( 'filter-change', { ...localFilters } )
 }
 
 const removeFilter = filterKey => {
@@ -625,14 +669,17 @@ const removeFilter = filterKey => {
     case 'priority':
       localFilters.priority = null
       break
+    case 'state':
+      localFilters.state = null
+      break
+    case 'category':
+      localFilters.category = null
+      break
     case 'search':
       localFilters.search = ''
       break
     case 'status':
       localFilters.status = null
-      break
-    case 'category':
-      localFilters.category = null
       break
     case 'equipment':
       localFilters.equipment = null

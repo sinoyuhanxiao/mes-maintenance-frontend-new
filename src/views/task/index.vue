@@ -1,86 +1,88 @@
 <template>
-  <div class="page-layout">
-    <div class="header-title">
-      <div class="left-header">
-        <el-input
-          v-model="keyword"
-          placeholder="Search Work Order"
-          style="width: 240px"
-          size="small"
-          :prefix-icon="Search"
-          clearable
-        >
-        </el-input>
-        <el-icon style="cursor: pointer" title="Filter"><Filter /></el-icon>
-      </div>
+  <div>
+    <div class="page-layout">
+      <div class="header-title">
+        <div class="left-header">
+          <el-input
+              v-model="keyword"
+              placeholder="Search Work Order"
+              style="width: 240px"
+              size="small"
+              :prefix-icon="Search"
+              clearable
+          >
+          </el-input>
+          <el-icon style="cursor: pointer" title="Filter"><Filter /></el-icon>
+        </div>
 
-      <div class="right-header">
-        <!-- Create Button -->
-        <el-dropdown @command="handleCommand">
-          <el-text class="el-dropdown-link" style="border: solid 1px #d5d5d5; padding: 5px">
-            <el-icon><component :is="currentIcon" /></el-icon> {{ currentLabel
-            }}<el-icon class="el-icon--right"><arrow-down /></el-icon>
-          </el-text>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="b"
+        <div class="right-header">
+          <!-- Create Button -->
+          <el-dropdown @command="handleCommand">
+            <el-text class="el-dropdown-link" style="border: solid 1px #d5d5d5; padding: 5px">
+              <el-icon><component :is="currentIcon" /></el-icon> {{ currentLabel
+              }}<el-icon class="el-icon--right"><arrow-down /></el-icon>
+            </el-text>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="b"
                 ><el-icon><Menu /></el-icon> Dashboard View</el-dropdown-item
-              >
-              <el-dropdown-item command="a"
+                >
+                <el-dropdown-item command="a"
                 ><el-icon><List /></el-icon> Table View</el-dropdown-item
-              >
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-        <el-button
-          class="filter-item"
-          type="primary"
-          :icon="EditPen"
-          @click="handleCreateWorkOrder"
-          :aria-label="$t('workOrder.actions.createWorkOrder')"
-        >
-          {{ $t('workOrder.actions.createWorkOrder') }}
-        </el-button>
+                >
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+          <el-button
+              class="filter-item"
+              type="primary"
+              :icon="EditPen"
+              @click="handleCreateWorkOrder"
+              :aria-label="$t('workOrder.actions.createWorkOrder')"
+          >
+            {{ $t('workOrder.actions.createWorkOrder') }}
+          </el-button>
+        </div>
+      </div>
+
+      <TableView v-if="currentView === 2" />
+
+      <div class="dashboard-body" v-if="currentView === 1">
+        <div class="left-container">
+          <!-- <MaintenanceCardTable
+              :items="items"
+              :pageSize="pageSize"
+              :module="parseInt(2)"
+              @requestData="handleRequestData"
+              :height="height"
+              :totalItems="totalItems"
+              :handleCurrentChange="handleCurrentChange"
+              :currentPage="listQuery.page"
+            /> -->
+          <CardTable
+              @selection="getSelection"
+              :module="3"
+              :data="items"
+              :maxHeight="maxHeight"
+              :totalItems="totalItems"
+              :handleCurrentChange="handleCurrentChange"
+              :currentPage="listQuery.page"
+          />
+        </div>
+
+        <div class="right-container">
+          <ViewTask
+              v-if="selectedData"
+              :wo="selectedData"
+              :height="height"
+              :personnelList="personnel"
+              :supervisorList="supervisor"
+          />
+        </div>
       </div>
     </div>
-
-    <TableView v-if="currentView === 2" />
-
-    <div class="dashboard-body" v-if="currentView === 1">
-      <div class="left-container">
-        <!-- <MaintenanceCardTable
-            :items="items"
-            :pageSize="pageSize"
-            :module="parseInt(2)"
-            @requestData="handleRequestData"
-            :height="height"
-            :totalItems="totalItems"
-            :handleCurrentChange="handleCurrentChange"
-            :currentPage="listQuery.page"
-          /> -->
-        <CardTable
-          @selection="getSelection"
-          :module="3"
-          :data="items"
-          :maxHeight="maxHeight"
-          :totalItems="totalItems"
-          :handleCurrentChange="handleCurrentChange"
-          :currentPage="listQuery.page"
-        />
-      </div>
-
-      <div class="right-container">
-        <ViewTask
-          v-if="selectedData"
-          :wo="selectedData"
-          :height="height"
-          :personnelList="personnel"
-          :supervisorList="supervisor"
-        />
-      </div>
-    </div>
+    <el-text>{{ items }}</el-text>
   </div>
-  <el-text>{{ items }}</el-text>
 </template>
 
 <script setup>
@@ -88,7 +90,7 @@ import ViewTask from './components/ViewTask.vue'
 import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { EditPen, List, Menu, Search } from '@element-plus/icons-vue'
 import router from '../../router/index'
-import { searchWorkOrders } from '../../api/workorder'
+import { getAllWorkOrders } from '../../api/workorder'
 import TableView from './components/TableView.vue'
 import CardTable from '../../components/Tables/CardTable.vue'
 
@@ -112,7 +114,7 @@ const listQuery = reactive( {
 const selectedData = ref( null )
 
 async function getAllWorkOrdersData() {
-  const response = await searchWorkOrders( listQuery.page, listQuery.limit, 'createdAt', 'DESC', search.value )
+  const response = await getAllWorkOrders( listQuery.page, listQuery.limit, 'createdAt', 'DESC', search.value )
 
   items.value = response.data.content
   totalItems.value = response.data.totalElements
