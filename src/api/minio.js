@@ -59,9 +59,9 @@ export async function uploadMultipleToMinio( files ) {
     body : formData
   } )
 
-  if ( !response.ok ) {
-    throw new Error( 'Multi-file upload failed' )
-  }
+  // if ( !response.ok ) {
+  //   throw new Error( 'Multi-file upload failed' )
+  // }
 
   return await response.json()
 }

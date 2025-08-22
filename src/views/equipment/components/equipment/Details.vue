@@ -5,10 +5,12 @@
         <el-descriptions :column="3" direction="vertical">
           <el-descriptions-item label="Name">{{ equipmentData.name }}</el-descriptions-item>
           <el-descriptions-item label="Code">{{ equipmentData.code }}</el-descriptions-item>
-          <el-descriptions-item label="Model">{{ equipmentData.model || 'N/A' }}</el-descriptions-item>
+          <el-descriptions-item label="Model">{{ equipmentData.serial_number || 'N/A' }}</el-descriptions-item>
           <el-descriptions-item label="PLC">{{ equipmentData.plc }}</el-descriptions-item>
-          <el-descriptions-item label="Power">{{ equipmentData.power }}</el-descriptions-item>
-          <el-descriptions-item label="Install Date">{{ equipmentData.install_date || 'N/A' }}</el-descriptions-item>
+          <el-descriptions-item label="Power">{{ equipmentData.power }}V</el-descriptions-item>
+          <el-descriptions-item label="Install Date">{{
+            formatInstallDate(equipmentData.installation_date)
+          }}</el-descriptions-item>
           <el-descriptions-item label="Description" class="highlighted-item">
             {{ equipmentData.description || 'No description available' }}
           </el-descriptions-item>
@@ -18,12 +20,12 @@
       <div class="location">
         <el-descriptions :column="1" direction="vertical">
           <el-descriptions-item label="Location Path">
-            <el-breadcrumb :separator-icon="ArrowRight" v-if="locationPath.length > 0">
+            <el-breadcrumb :separator-icon="ArrowRight">
               <el-breadcrumb-item v-for="location in locationPath" :key="location.id">
                 {{ location.name }}
               </el-breadcrumb-item>
+              <el-breadcrumb-item v-if="locationPath.length === 0"> No location path available </el-breadcrumb-item>
             </el-breadcrumb>
-            <el-text v-else type="info"> Location path not available </el-text>
           </el-descriptions-item>
         </el-descriptions>
       </div>
@@ -54,15 +56,9 @@
             <div class="file-list">
               <div v-if="equipmentData.file_list && equipmentData.file_list.length > 0">
                 <div v-for="file in equipmentData.file_list" :key="file.id || file.name" class="file-item">
-                  <el-link
-                    :href="file.url || file.path"
-                    target="_blank"
-                    :icon="getFileIcon(file.type || getFileTypeFromName(file.name))"
-                    class="file-link"
-                  >
+                  <el-link :href="file.url" target="_blank" :icon="getFileIcon(file.type)" class="file-link">
                     {{ file.name }}
                   </el-link>
-                  <span class="file-size">{{ file.size || formatFileSize(file.file_size) }}</span>
                 </div>
               </div>
               <div v-else class="no-files"><el-text> No files available </el-text></div>
@@ -72,17 +68,14 @@
       </div>
     </template>
 
-    <!-- Loading state -->
-    <div v-else-if="loading" class="loading-state">
-      <el-loading text="Loading equipment details..." />
+    <div v-else-if="loading" class="loading-state" v-loading="true" element-loading-text="Loading equipment details...">
+      <div style="height: 200px"></div>
     </div>
 
-    <!-- Error state -->
     <div v-else-if="error" class="error-state">
       <el-alert type="error" :title="error" show-icon />
     </div>
 
-    <!-- No data state -->
     <div v-else class="no-data">
       <el-empty description="No equipment data found" />
     </div>
@@ -97,8 +90,7 @@ import { getLocationPathById } from '@/api/location.js'
 
 const props = defineProps( {
   equipmentId : {
-    type : Number,
-    required : true
+    type : Number
   }
 } )
 
@@ -107,7 +99,24 @@ const locationPath = ref( [] )
 const loading = ref( false )
 const error = ref( null )
 
-// Fetch equipment data
+const parseFileList = fileArray => {
+  if ( !fileArray || !Array.isArray( fileArray ) ) return []
+
+  return fileArray.map( ( url, index ) => {
+    const urlParts = url.split( '/' )
+    const filename = urlParts[urlParts.length - 1] || `file_${index + 1}`
+
+    const cleanFilename = filename.replace( /\d{17}/, '' )
+
+    return {
+      id : index,
+      name : decodeURIComponent( cleanFilename ),
+      url,
+      type : getFileTypeFromName( cleanFilename )
+    }
+  } )
+}
+
 const fetchEquipmentData = async() => {
   if ( !props.equipmentId ) return
 
@@ -118,36 +127,35 @@ const fetchEquipmentData = async() => {
     const response = await getEquipmentById( props.equipmentId )
     equipmentData.value = response.data
 
-    console.log( 'Equipment data:', equipmentData.value )
+    if ( equipmentData.value.file_list && Array.isArray( equipmentData.value.file_list ) ) {
+      equipmentData.value.file_list = parseFileList( equipmentData.value.file_list )
+    }
 
-    // Use location_id to fetch location path
-    if ( equipmentData.value.location_id ) {
-      console.log( 'Fetching location path for location_id:', equipmentData.value.location_id )
-      await fetchLocationPath( equipmentData.value.location_id )
+    if (
+      equipmentData.value.location?.id &&
+      typeof equipmentData.value.location.id !== 'object' &&
+      equipmentData.value.location.status !== 0
+    ) {
+      await fetchLocationPath( equipmentData.value.location.id )
     } else {
-      console.log( 'No location_id found in equipment data' )
+      locationPath.value = []
     }
   } catch ( err ) {
-    console.error( 'Error fetching equipment:', err )
     error.value = err.message || 'Failed to fetch equipment data'
   } finally {
     loading.value = false
   }
 }
 
-// Fetch location path
 const fetchLocationPath = async locationId => {
   try {
     const response = await getLocationPathById( locationId )
     locationPath.value = response.data || []
-    console.log( 'Location path received:', locationPath.value )
   } catch ( err ) {
-    console.error( 'Error fetching location path:', err )
     locationPath.value = []
   }
 }
 
-// Get file icon based on file type
 function getFileIcon( fileType ) {
   switch ( fileType?.toLowerCase() ) {
     case 'image':
@@ -188,7 +196,6 @@ function getFileIcon( fileType ) {
   }
 }
 
-// Get file type from file name extension
 function getFileTypeFromName( fileName ) {
   if ( !fileName ) return 'document'
 
@@ -207,15 +214,21 @@ function getFileTypeFromName( fileName ) {
   return 'document'
 }
 
-// Format file size
-function formatFileSize( bytes ) {
-  if ( !bytes ) return 'Unknown size'
+function formatInstallDate( dateString ) {
+  if ( !dateString ) return 'N/A'
 
-  const sizes = ['Bytes', 'KB', 'MB', 'GB']
-  if ( bytes === 0 ) return '0 Bytes'
+  try {
+    // Handle ISO datetime string (e.g., "2025-08-03T00:00:00Z")
+    const date = new Date( dateString )
 
-  const i = Math.floor( Math.log( bytes ) / Math.log( 1024 ) )
-  return Math.round( ( bytes / Math.pow( 1024, i ) ) * 100 ) / 100 + ' ' + sizes[i]
+    // Check if date is valid
+    if ( isNaN( date.getTime() ) ) return 'N/A'
+
+    // Format as YYYY-MM-DD
+    return date.toISOString().split( 'T' )[0]
+  } catch ( error ) {
+    return 'N/A'
+  }
 }
 
 onMounted( () => {
@@ -234,7 +247,7 @@ watch(
 
 <style scoped>
 .t3-details {
-  flex: 1;
+  flex: 0;
   display: flex;
   flex-direction: column;
 }
@@ -292,7 +305,6 @@ watch(
 
 .file-item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   padding: 8px 12px;
   border: 1px solid #dcdfe6;
@@ -319,8 +331,5 @@ watch(
 
 .no-files {
   text-align: left;
-  color: #909399;
-  font-style: italic;
-  padding: 20px;
 }
 </style>
