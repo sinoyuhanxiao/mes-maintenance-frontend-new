@@ -168,7 +168,7 @@
 
 <script setup>
 import { ref, watch, computed, onMounted } from 'vue'
-import { getAllRecurrenceTypes } from '@/api/workorder'
+import { getAllRecurrenceTypes } from '@/api/work-order'
 
 const startDate = ref( null )
 const endDate = ref( null )

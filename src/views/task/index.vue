@@ -90,7 +90,7 @@ import ViewTask from './components/ViewTask.vue'
 import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { EditPen, List, Menu, Search } from '@element-plus/icons-vue'
 import router from '../../router/index'
-import { searchWorkOrders } from '../../api/workorder'
+import { searchWorkOrders } from '../../api/work-order'
 import TableView from './components/TableView.vue'
 import CardTable from '../../components/Tables/CardTable.vue'
 

@@ -303,7 +303,7 @@
 <script setup>
 import { onMounted, ref, computed, watch, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import { getWorkOrderById } from '@/api/workorder'
+import { getWorkOrderById } from '@/api/work-order'
 import { convertToLocalTime } from '@/utils/datetime'
 import { updateTabTitle } from '@/utils/tabs'
 import { useCommonDataStore } from '@/store/modules/commonData'

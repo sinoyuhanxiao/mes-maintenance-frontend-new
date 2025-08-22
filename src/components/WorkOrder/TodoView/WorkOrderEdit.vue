@@ -469,7 +469,7 @@ import {
   getAllCategories,
   getLocationNodeTrees,
   getEquipmentNodeTrees
-} from '@/api/workorder'
+} from '@/api/work-order'
 
 // Valid recurrence values from the UI
 const VALID_RECURRENCES = new Set( ['daily', 'weekly', 'monthlyByDate', 'yearly'] )

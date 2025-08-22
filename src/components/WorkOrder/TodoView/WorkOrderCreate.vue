@@ -320,7 +320,7 @@ import {
   getLocationNodeTrees,
   getEquipmentNodeTrees,
   createWorkOrder
-} from '@/api/workorder'
+} from '@/api/work-order'
 
 // Props
 // const props = defineProps({

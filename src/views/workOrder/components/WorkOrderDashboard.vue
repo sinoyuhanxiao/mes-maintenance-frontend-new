@@ -58,7 +58,7 @@
 import { ref, reactive } from 'vue'
 import PieChart from '../../../components/Charts/PieChart.vue'
 import MaintenanceCardTable from '../../../components/Tables/MaintenanceCardTable.vue'
-import { searchWorkOrders } from '../../../api/workorder'
+import { searchWorkOrders } from '../../../api/work-order'
 
 const height = ref( '300px' )
 const height2 = ref( '540px' )
