@@ -233,21 +233,38 @@ export const asyncRoutes = [
     ]
   },
   {
-    path : '/user',
-    name : 'User',
+    path : '/system-management',
+    name : 'SystemManagement',
     component : Layout,
-    redirect : '/user/index',
-    meta : { title : 'router.userCenter', icon : 'about', noCache : true },
+    redirect : '/system-management/user-management',
+    meta : { title : 'router.systemManagement', icon : 'map', noCache : true },
     children : [
       {
-        path : 'index',
+        path : 'user-management',
+        component : () => import( '@/views/user/index.vue' ),
+        name : 'UserManagement',
+        meta : { title : 'router.userManagement', icon : 'users', noCache : true }
+      },
+      {
+        path : 'team-management',
+        component : () => import( '@/views/team/index.vue' ),
+        name : 'TeamManagement',
+        meta : { title : 'router.teamManagement', icon : 'users', noCache : true }
+      },
+      {
+        path : 'shift-management',
+        component : () => import( '@/views/shift/index.vue' ),
+        name : 'ShiftManagement',
+        meta : { title : 'router.shiftManagement', icon : 'users', noCache : true }
+      },
+      {
+        path : 'my-account',
         component : () => import( '@/views/userCenter/index.vue' ),
-        name : 'UserCenter',
-        meta : { title : 'router.myAccount', noCache : true }
+        name : 'MyAccount',
+        meta : { title : 'router.myAccount', icon : 'users', noCache : true }
       }
     ]
   },
-
   {
     path : '/:pathMatch(.*)',
     redirect : '/404',
