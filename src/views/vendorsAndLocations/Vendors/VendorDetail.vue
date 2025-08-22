@@ -48,18 +48,29 @@
           <Images :images="vendor.image_list" />
         </div>
 
-        <el-divider v-if="equipmentList?.length" />
-        <el-descriptions v-if="equipmentList?.length" :column="1" direction="vertical">
-          <el-descriptions-item label="Related Equipment" />
-        </el-descriptions>
-        <div v-if="equipmentList?.length">
+        <!-- Related Equipment (shows only if vendor actually has equipment at all) -->
+        <div v-if="showEquipSection">
+          <el-divider />
+
+          <el-descriptions :column="1" direction="vertical">
+            <el-descriptions-item label="Related Equipment" />
+          </el-descriptions>
+
           <SearchTable
+            :key="`equip-${vendor?.id}`"
             :data="equipmentList"
             :columns="[
               { label: 'Name', prop: 'name' },
               { label: 'Code', prop: 'code' },
               { label: 'Group', prop: 'equipment_group' },
             ]"
+            :total="equipmentTotal"
+            :page="equipmentPage"
+            :page-size="equipmentPageSize"
+            :enable-search="true"
+            v-model:search="equipmentSearch"
+            empty-text="No match found"
+            @update:page="onEquipmentPageChange"
           />
         </div>
 
@@ -109,21 +120,145 @@ const editFormRef = ref( null )
 const saving = ref( false )
 
 const equipmentList = ref( [] )
+const equipmentTotal = ref( 0 ) // total for current query (can be 0 on a search)
+const equipmentPage = ref( 1 )
+const equipmentPageSize = ref( 5 )
+const equipmentSearch = ref( '' )
+
+// Sticky section visibility, based on unfiltered total
+const equipmentBaseTotal = ref( 0 ) // total for this vendor with NO search
+const showEquipSection = ref( false ) // v-if flag (only set from base fetch)
+
 const sparePartsBatchList = ref( [] )
 
 const { confirmAction, showSuccess } = useErrorHandler()
 
+// Separate request guards for base vs data to avoid races
+let equipBaseReqSeq = 0 // unfiltered totals/visibility
+let equipDataReqSeq = 0 // filtered/paged table data
+
+// ------------- Watch vendor change -------------
 watch(
   () => props.vendor?.id,
   id => {
+    // reset state for new vendor
+    equipmentSearch.value = ''
+    equipmentPage.value = 1
+    equipmentList.value = []
+    equipmentTotal.value = 0
+    equipmentBaseTotal.value = 0
+    showEquipSection.value = false
+
     if ( id ) {
-      fetchEquipment( id )
+      // run base first (sets visibility), then load first page
+      fetchEquipmentBase( id )
+      fetchEquipmentData( id )
       fetchSparePartsBatch( id )
     }
   },
   { immediate : true }
 )
 
+// ------------- Search watcher (debounced) -------------
+let searchTimer = null
+watch( equipmentSearch, val => {
+  equipmentPage.value = 1
+  clearTimeout( searchTimer )
+
+  if ( !val?.trim() ) {
+    // cleared → refresh base & data without keyword (restores original list)
+    fetchEquipmentBase()
+    fetchEquipmentData()
+  } else {
+    // typing → only data, debounced
+    searchTimer = setTimeout( () => fetchEquipmentData(), 250 )
+  }
+} )
+
+const onEquipmentPageChange = p => {
+  equipmentPage.value = p
+  fetchEquipmentData()
+}
+
+// ------------- Base fetch: unfiltered, sets section visibility -------------
+const fetchEquipmentBase = async( id = props.vendor?.id ) => {
+  const vendorId = Number( id )
+  if ( !Number.isFinite( vendorId ) ) {
+    equipmentBaseTotal.value = 0
+    showEquipSection.value = false
+    return
+  }
+
+  const seq = ++equipBaseReqSeq
+  try {
+    const res = await getEquipmentNodes(
+      1, // page 1
+      1, // tiny page is fine; we only need totals
+      'createdAt',
+      'DESC',
+      { vendor_ids : [vendorId] } // NO keyword
+    )
+    if ( seq !== equipBaseReqSeq ) return
+
+    const payload = res?.data ?? res
+    const page = payload?.data ?? payload
+    const total = Number( page?.totalElements ?? page?.total ?? ( Array.isArray( page?.content ) ? page.content.length : 0 ) )
+
+    equipmentBaseTotal.value = total
+    showEquipSection.value = total > 0
+  } catch ( e ) {
+    if ( seq !== equipBaseReqSeq ) return
+    console.error( 'fetchEquipmentBase failed:', e )
+    equipmentBaseTotal.value = 0
+    showEquipSection.value = false
+  }
+}
+
+// ------------- Data fetch: filtered/paged rows for the table -------------
+const fetchEquipmentData = async( id = props.vendor?.id ) => {
+  const vendorId = Number( id )
+  if ( !Number.isFinite( vendorId ) ) {
+    equipmentList.value = []
+    equipmentTotal.value = 0
+    return
+  }
+
+  const seq = ++equipDataReqSeq
+  try {
+    const term = equipmentSearch.value?.trim()
+    const body = { vendor_ids : [vendorId] }
+    if ( term ) body.keyword = term
+
+    const res = await getEquipmentNodes( equipmentPage.value, equipmentPageSize.value, 'createdAt', 'DESC', body )
+    if ( seq !== equipDataReqSeq ) return
+
+    const payload = res?.data ?? res
+    const page = payload?.data ?? payload
+    const list = Array.isArray( page?.content ) ? page.content : Array.isArray( page ) ? page : []
+
+    equipmentList.value = list.map( e => ( { ...e, id : Number( e.id ) } ) )
+    equipmentTotal.value = Number( page?.totalElements ?? page?.total ?? list.length )
+    // DO NOT touch equipmentBaseTotal/showEquipSection here
+  } catch ( e ) {
+    if ( seq !== equipDataReqSeq ) return
+    console.error( 'fetchEquipmentData failed:', e )
+    equipmentList.value = []
+    equipmentTotal.value = 0
+  }
+}
+
+// ------------- Spare parts batches -------------
+const fetchSparePartsBatch = async id => {
+  try {
+    const res = await axios.get( `http://10.10.12.12:8095/api/vendor/correlative-spare-part/${id}` )
+    sparePartsBatchList.value = res.data?.data || []
+  } catch ( err ) {
+    console.error( 'Failed to fetch spare parts batch:', err )
+    sparePartsBatchList.value = []
+  }
+}
+
+// ------------- Edit / Delete -------------
 const enterEditMode = () => {
   editForm.value = {
     ...JSON.parse( JSON.stringify( props.vendor ) ),
@@ -149,7 +284,7 @@ const saveEdit = async() => {
 
     const res = await getVendorById( id )
     const payload = res?.data ?? res
-    const refreshed = payload?.data ?? payload ?? null // works with or without interceptor
+    const refreshed = payload?.data ?? payload ?? null
 
     ElMessage.success( 'Vendor updated' )
     editVendor.value = false
@@ -168,46 +303,7 @@ const saveEdit = async() => {
   }
 }
 
-const fetchEquipment = async id => {
-  const vendorId = Number( id )
-  if ( !Number.isFinite( vendorId ) ) {
-    equipmentList.value = []
-    return
-  }
-
-  try {
-    const res = await getEquipmentNodes(
-      1, // page
-      10, // size
-      'createdAt', // sortField
-      'DESC', // direction
-      { vendor_ids : [vendorId] } // POST body
-    )
-
-    const payload = res?.data ?? res
-    const page = payload?.data ?? payload
-    const list = Array.isArray( page?.content ) ? page.content : Array.isArray( page ) ? page : []
-
-    // (optional) normalize ids
-    equipmentList.value = list.map( e => ( { ...e, id : Number( e.id ) } ) )
-  } catch ( err ) {
-    console.error( 'Failed to fetch equipment:', err )
-    equipmentList.value = []
-  }
-}
-
-const fetchSparePartsBatch = async id => {
-  try {
-    const res = await axios.get( `http://10.10.12.12:8095/api/vendor/correlative-spare-part/${id}` )
-    sparePartsBatchList.value = res.data?.data || []
-  } catch ( err ) {
-    console.error( 'Failed to fetch spare parts batch:', err )
-    sparePartsBatchList.value = []
-  }
-}
-
 const deleteLoading = ref( false )
-
 const handleDelete = async() => {
   const confirmed = await confirmAction( {
     title : 'Confirm',
@@ -241,7 +337,7 @@ const handleDelete = async() => {
   flex-direction: column;
   padding: 24px;
   flex: 1 1 auto;
-  min-height: 0; /* let .detail-body get its scrollbar */
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -255,8 +351,8 @@ const handleDelete = async() => {
   padding-bottom: 16px;
   margin-bottom: 0;
   border-bottom: 1px solid var(--el-border-color-light);
-  background-color: #fff; /* ensure solid */
-  z-index: 1; /* sit above scrolling body just in case */
+  background-color: #fff;
+  z-index: 1;
 
   .header-main {
     flex: 1;
@@ -291,17 +387,10 @@ const handleDelete = async() => {
   }
 }
 
-/* Body becomes the scrollbar area */
-//.detail-body {
-//  flex: 1 1 auto;
-//  overflow-y: auto;
-//  -webkit-overflow-scrolling: touch; /* smooth on iOS */
-//  padding-top: 24px; /* visual spacing under header */
-//}
 .detail-body {
   flex: 1 1 auto;
-  min-height: 0; /* important with nested flex parents */
-  overflow-y: auto; /* the actual scroller */
+  min-height: 0;
+  overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding-top: 24px;
 }
@@ -326,17 +415,17 @@ const handleDelete = async() => {
 /* Make el-descriptions truly 2 equal columns */
 .two-col {
   :deep(.el-descriptions__table) {
-    table-layout: fixed; /* equal-width columns */
+    table-layout: fixed;
     width: 100%;
   }
 
   :deep(col) {
-    width: 50% !important; /* affects <colgroup> generated by Element Plus */
+    width: 50% !important;
   }
 
   :deep(.el-descriptions__label),
   :deep(.el-descriptions__content) {
-    white-space: normal; /* allow wrapping */
+    white-space: normal;
     word-break: break-word;
     overflow-wrap: anywhere;
   }
