@@ -6,6 +6,7 @@ import {
 
 import Layout from '@/layout/index.vue'
 import nested from './modules/nested'
+import taskLibraryRoutes from './modules/taskLibrary'
 
 // 配置路由信息
 export const constantRoutes = [
@@ -128,7 +129,7 @@ export const asyncRoutes = [
       {
         path : 'table',
         component : () => import( '@/views/workOrder/index.vue' ),
-        name : 'WorkOrderTable',
+        name : 'WorkOrderManagement',
         meta : { title : 'router.workOrderManagement', noCache : false }
       },
       {
@@ -247,6 +248,9 @@ export const asyncRoutes = [
       }
     ]
   },
+
+  // Maintenance Library Routes
+  taskLibraryRoutes,
 
   {
     path : '/:pathMatch(.*)',
