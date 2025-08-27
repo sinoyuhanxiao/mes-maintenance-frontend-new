@@ -4,7 +4,6 @@ import longpress from './longpress'
 import dobounce from './dobounce'
 import waterMarker from './waterMarker'
 import draggable from './draggable'
-import pinDraggable from './pinDraggable'
 import permission from './permission'
 
 const directives = {
@@ -13,7 +12,6 @@ const directives = {
   dobounce,
   waterMarker,
   draggable,
-  pinDraggable,
   permission,
   wave
 }

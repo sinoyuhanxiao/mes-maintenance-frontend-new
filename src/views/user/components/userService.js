@@ -208,11 +208,11 @@ export const getUsers = async() => {
   return [...users.value]
 }
 
-export const getUserById = async id => {
+export const getUserById = async( id ) => {
   return users.value.find( u => u.id === id || u.sub === id )
 }
 
-export const createUser = async user => {
+export const createUser = async( user ) => {
   const newUser = {
     ...user,
     id : Date.now(),
@@ -231,7 +231,7 @@ export const updateUser = async( id, updates ) => {
   throw new Error( 'User not found' )
 }
 
-export const deleteUser = async id => {
+export const deleteUser = async( id ) => {
   const index = users.value.findIndex( u => u.id === id || u.sub === id )
   if ( index !== -1 ) {
     users.value.splice( index, 1 )

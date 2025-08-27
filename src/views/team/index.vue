@@ -9,7 +9,10 @@
 </template>
 
 <script setup>
+
 import MesLayout from '@/components/MesLayout'
 </script>
 
-<style scoped></style>
+<style scoped>
+
+</style>

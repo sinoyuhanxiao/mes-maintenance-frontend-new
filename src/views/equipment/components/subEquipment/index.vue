@@ -28,7 +28,7 @@
           <SubEquipmentDetailsTab :equipmentId="props.node.id" :key="`details-${refreshKey}`" />
         </el-tab-pane>
         <el-tab-pane label="Sub Items" name="subItems">
-          <SubItemsTab :entityId="props.node.id" :tierType="'equipment'" />
+          <SubItemsTab :key="`subitems-${refreshKey}`" />
         </el-tab-pane>
         <el-tab-pane label="Maintenance History" name="maintenanceHistory">
           <MaintenanceHistory :key="`maintenance-${refreshKey}`" />
@@ -63,8 +63,9 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
-import SubEquipmentDetailsTab from './SubEquipmentDetails.vue'
+import { ref, computed } from 'vue'
+import { MoreFilled } from '@element-plus/icons-vue'
+import SubEquipmentDetailsTab from './Details.vue'
 import SubItemsTab from './SubItems.vue'
 import MaintenanceHistory from './MaintenanceHistory.vue'
 import AddSubEquipment from './components/AddSubEquipment.vue'
@@ -79,23 +80,86 @@ const props = defineProps( {
   breadcrumb : {
     type : Array,
     default : () => []
-  },
-  activeTab : {
-    type : String,
-    default : 'details'
   }
 } )
 
-const activeTab = ref( props.activeTab )
+const emit = defineEmits( ['refresh-tree', 'refresh-data'] )
 
-// Watch for changes in activeTab prop
-watch(
-  () => props.activeTab,
-  newTab => {
-    console.log( '🔄 [SubEquipment] Active tab prop changed:', newTab )
-    activeTab.value = newTab
+const parentId = computed( () => {
+  const validBreadcrumbItems = props.breadcrumb.filter( ( item, index ) => {
+    return index > 0 && item && typeof item === 'object' && 'id' in item
+  } )
+
+  if ( validBreadcrumbItems.length >= 2 ) {
+    return validBreadcrumbItems[validBreadcrumbItems.length - 2].id
   }
-)
+
+  return null
+} )
+
+const activeTab = ref( 'details' )
+const showAddDialog = ref( false )
+const showEditDialog = ref( false )
+const showDeactivateDialog = ref( false )
+const refreshKey = ref( 0 )
+const editDialogKey = ref( 0 )
+
+const openAddDialog = () => {
+  showAddDialog.value = true
+}
+
+const closeAddDialog = () => {
+  showAddDialog.value = false
+}
+
+const openEditDialog = () => {
+  editDialogKey.value += 1
+  showEditDialog.value = true
+}
+
+const closeEditDialog = () => {
+  showEditDialog.value = false
+}
+
+const openDeactivateDialog = () => {
+  showDeactivateDialog.value = true
+}
+
+const closeDeactivateDialog = () => {
+  showDeactivateDialog.value = false
+}
+
+const handleCloseDialog = done => {
+  done()
+}
+
+const handleAddSuccess = newEquipment => {
+  closeAddDialog()
+  emit( 'refresh-tree' )
+}
+
+const handleEditSuccess = updatedEquipment => {
+  closeEditDialog()
+  emit( 'refresh-tree' )
+
+  setTimeout( () => {
+    refreshViewData()
+  }, 100 )
+}
+
+const refreshViewData = () => {
+  refreshKey.value += 1
+  emit( 'refresh-data', props.node.id )
+}
+
+const handleDeleteSuccess = deletedEquipmentId => {
+  closeDeactivateDialog()
+  emit( 'refresh-tree' )
+}
+
+const handleRefreshTree = () => {
+  emit( 'refresh-tree' )
+}
 </script>
 
 <style scoped>

@@ -2,15 +2,16 @@
   <MesLayout :title="'User Management'" :view-mode="'table'">
     <template #viewMode>
       <div class="toolbar">
-        <div class="toolbar-item"></div>
+        <div class="toolbar-item">
+        </div>
         <div class="right-group">
           <div>
             <el-input
-              v-model="searchInput"
-              :placeholder="t('common.searchByKeyword')"
-              clearable
-              @input="searchUsers"
-              style="width: 280px"
+                v-model="searchInput"
+                :placeholder="t('common.searchByKeyword')"
+                clearable
+                @input="searchUsers"
+                style="width: 280px"
             >
               <template #prefix>
                 <el-icon>
@@ -33,7 +34,7 @@
           v-loading="loading"
           :data="paginatedUsers"
           style="width: 100%"
-          @sort-change="val => (sortSettings = val)"
+          @sort-change="(val) => sortSettings = val"
           :empty-text="t('common.noData')"
           :height="tableHeight"
           border
@@ -152,9 +153,9 @@
       </div>
 
       <el-dialog
-        :title="userEntry.id == null ? t('user.form.newUser') : t('user.form.editUser')"
-        v-model="isUserFormDialogVisible"
-        width="50%"
+          :title="userEntry.id == null ? t('user.form.newUser') : t('user.form.editUser')"
+          v-model="isUserFormDialogVisible"
+          width="50%"
       >
         <div class="popup-container">
           <el-form ref="userEntryFormRef" :model="userEntry" :rules="userFormValidationRules" label-width="140px">
@@ -164,7 +165,12 @@
 
             <el-form-item :label="t('user.form.role')" prop="role">
               <el-select v-model="userEntry.role" :placeholder="t('user.form.selectRolePlaceHolder')">
-                <el-option v-for="role in rolesOptions" :key="role.id" :label="role.name" :value="role.id">
+                <el-option
+                    v-for="role in rolesOptions"
+                    :key="role.id"
+                    :label="role.name"
+                    :value="role.id"
+                >
                   <el-tag :type="role.el_tag_type">{{ role.name }}</el-tag>
                 </el-option>
               </el-select>
@@ -180,19 +186,19 @@
 
             <el-form-item :label="t('user.membershipTeams')">
               <team-membership-select
-                v-model="userEntry.membershipTeams"
-                :tree="teamsOptions"
-                :parent-map="teamsParentMap"
-                :role="userEntry.role"
+                  v-model="userEntry.membershipTeams"
+                  :tree="teamsOptions"
+                  :parent-map="teamsParentMap"
+                  :role="userEntry.role"
               />
             </el-form-item>
 
             <el-form-item :label="t('user.leadershipTeams')">
               <team-leadership-select
-                v-model="userEntry.leadershipTeams"
-                :tree="teamsOptions"
-                :parent-map="teamsParentMap"
-                :role="userEntry.role"
+                  v-model="userEntry.leadershipTeams"
+                  :tree="teamsOptions"
+                  :parent-map="teamsParentMap"
+                  :role="userEntry.role"
               />
             </el-form-item>
 
@@ -354,9 +360,7 @@ const userFormValidationRules = ref( {
     {
       validator : ( rule, value, callback ) => {
         if ( !value ) return callback()
-        const existingNames = users.value
-          .filter( user => user.id !== userEntry.id )
-          .map( user => user.username.toLowerCase() )
+        const existingNames = users.value.filter( user => user.id !== userEntry.id ).map( user => user.username.toLowerCase() )
         if ( existingNames.includes( value.toLowerCase() ) ) return callback( new Error( t( 'user.validation.usernameExists' ) ) )
         callback()
       },
@@ -378,17 +382,13 @@ function searchUsers() {
   filteredUsers.value = users.value.filter( item => {
     return (
       String( item.id ).includes( searchText ) ||
-      item.name?.toLowerCase().includes( searchText ) ||
-      item.username?.toLowerCase().includes( searchText ) ||
-      item.email?.toLowerCase().includes( searchText ) ||
-      String( item.phone_number ).toLowerCase().includes( searchText ) ||
-      rolesOptions.value
-        .find( role => role.id === item.role_id )
-        ?.name.toLowerCase()
-        .includes( searchText ) ||
-      ( item.activation_status !== undefined &&
-        ( item.activation_status === 1 ? '已激活' : '未激活' ).includes( searchText ) ) ||
-      item.teams?.some( team => team.team_name?.toLowerCase().includes( searchText ) )
+        item.name?.toLowerCase().includes( searchText ) ||
+        item.username?.toLowerCase().includes( searchText ) ||
+        item.email?.toLowerCase().includes( searchText ) ||
+        String( item.phone_number ).toLowerCase().includes( searchText ) ||
+        rolesOptions.value.find( role => role.id === item.role_id )?.name.toLowerCase().includes( searchText ) ||
+        ( item.activation_status !== undefined && ( item.activation_status === 1 ? '已激活' : '未激活' ).includes( searchText ) ) ||
+        item.teams?.some( team => team.team_name?.toLowerCase().includes( searchText ) )
     )
   } )
   currentPage.value = 1
@@ -430,8 +430,8 @@ function handleEdit( user ) {
   Object.assign( userEntry, {
     ...user,
     role : user.role?.id || '',
-    membershipTeams : [...( user.teams || [] )],
-    leadershipTeams : [...( user.leadership_teams || [] )]
+    membershipTeams : [...user.teams || []],
+    leadershipTeams : [...user.leadership_teams || []]
   } )
   isUserFormDialogVisible.value = true
 }
@@ -442,10 +442,7 @@ async function handleConfirmSubmit() {
   try {
     const valid = await form.validate()
     if ( !valid ) return ElMessage.error( t( 'user.message.pleaseCorrectErrors' ) )
-    if (
-      changePassword.value &&
-      ( !newPassword.value || newPassword.value !== confirmPassword.value || newPassword.value.length < 4 )
-    ) {
+    if ( changePassword.value && ( !newPassword.value || newPassword.value !== confirmPassword.value || newPassword.value.length < 4 ) ) {
       ElMessage.error( t( 'user.message.passwordNotMatchOrFewerCharacters' ) )
       return
     }

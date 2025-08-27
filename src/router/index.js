@@ -13,19 +13,13 @@ export const constantRoutes = [
     path : '/redirect',
     name : 'Redirect',
     component : Layout,
-    meta : {
-      title : 'Redirect',
-      hidden : true
-    },
+    meta : { title : 'Redirect', hidden : true },
     children : [
       {
         path : '/redirect/:path(.*)',
-        name : 'RedirectTo',
+        name : 'RedirectPath',
         component : () => import( '@/views/redirect/index.vue' ),
-        meta : {
-          title : 'Redirect',
-          hidden : true
-        }
+        meta : { title : 'Redirect', hidden : true }
       }
     ]
   },
@@ -79,7 +73,7 @@ export const asyncRoutes = [
     children : [
       {
         path : 'dashboard',
-        name : 'DashboardIndex',
+        name : 'Dashboard',
         component : () => import( '@/views/dashboard/index.vue' ),
         meta : {
           title : 'router.dashboard',
@@ -174,7 +168,7 @@ export const asyncRoutes = [
       {
         path : 'equipment',
         component : () => import( '@/views/equipment/index.vue' ),
-        name : 'MaintenanceEquipment',
+        name : 'Maintenance Test',
         meta : { title : 'router.maintenanceEquipment', noCache : true }
       }
     ]
