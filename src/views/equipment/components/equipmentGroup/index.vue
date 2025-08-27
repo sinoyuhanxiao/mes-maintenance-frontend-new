@@ -28,7 +28,13 @@
           <DetailsTab :equipmentId="props.node.id" :key="`details-${refreshKey}`" />
         </el-tab-pane>
         <el-tab-pane label="Sub Items" name="subItems">
-          <SubItemsTab :key="`subitems-${refreshKey}`" />
+          <SubItemsTab
+            :key="`subitems-${refreshKey}`"
+            :entityId="props.node.id"
+            :tierType="'equipment_group'"
+            :diagramId="props.node.diagram_id"
+            @sub-item-click="handleSubItemClick"
+          />
         </el-tab-pane>
         <el-tab-pane label="Work Orders" name="workOrders">
           <WorkOrderTab :key="`workorders-${refreshKey}`" />
@@ -74,7 +80,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { MoreFilled } from '@element-plus/icons-vue'
 import DetailsTab from './Details.vue'
 import SubItemsTab from './SubItems.vue'
@@ -93,10 +100,16 @@ const props = defineProps( {
   breadcrumb : {
     type : Array,
     default : () => []
+  },
+  activeTab : {
+    type : String,
+    default : 'details'
   }
 } )
 
 const emit = defineEmits( ['refresh-tree', 'refresh-data'] )
+
+const router = useRouter()
 
 const parentId = computed( () => {
   const validBreadcrumbItems = props.breadcrumb.filter( ( item, index ) => {
@@ -110,12 +123,43 @@ const parentId = computed( () => {
   return null
 } )
 
-const activeTab = ref( 'details' )
+const activeTab = ref( props.activeTab )
 const showAddDialog = ref( false )
 const showEditDialog = ref( false )
 const showDeactivateDialog = ref( false )
 const refreshKey = ref( 0 )
 const editDialogKey = ref( 0 )
+
+const handleSubItemClick = async( subItem, pinNumber ) => {
+  const simplifiedBreadcrumb = props.breadcrumb.map( item => ( {
+    label : item.label,
+    id : item.id,
+    level : item.level
+  } ) )
+  const newBreadcrumb = [...simplifiedBreadcrumb, { label : subItem.name || subItem.text, id : subItem.id }]
+
+  const navigationQuery = {
+    selectedNodeId : subItem.id,
+    breadcrumb : JSON.stringify( newBreadcrumb )
+  }
+
+  try {
+    await router.push( {
+      path : '/maintenance/equipment',
+      query : navigationQuery
+    } )
+  } catch ( error ) {
+    console.error( 'Router push failed:', error )
+  }
+}
+
+// Watch for changes in activeTab prop
+watch(
+  () => props.activeTab,
+  newTab => {
+    activeTab.value = newTab
+  }
+)
 
 const openAddDialog = () => {
   showAddDialog.value = true

@@ -1,21 +1,21 @@
 <template>
   <!-- TeamMembershipSelect.vue – multi-select -->
   <el-tree-select
-      v-model="internal"
-      :data="treeWithFlags"
-      multiple
-      show-checkbox
-      check-strictly
-      default-expand-all
-      :placeholder="t('user.membershipTeamsPlaceholder')"
-      @update:modelValue="$emit('update:modelValue', $event)"
+    v-model="internal"
+    :data="treeWithFlags"
+    multiple
+    show-checkbox
+    check-strictly
+    default-expand-all
+    :placeholder="t('user.membershipTeamsPlaceholder')"
+    @update:modelValue="$emit('update:modelValue', $event)"
   >
     <!-- add leader name in option -->
     <template #default="{ data }">
       <span>{{ data.label }}</span>
-      <span style="float:right;color:#999;font-size:12px">
-          {{ data.leader ? t('user.table.leader') + `: ${data.leader.name}` : '' }}
-        </span>
+      <span style="float: right; color: #999; font-size: 12px">
+        {{ data.leader ? t('user.table.leader') + `: ${data.leader.name}` : '' }}
+      </span>
     </template>
 
     <template #footer>
@@ -45,16 +45,18 @@ const internal = computed( {
 } )
 
 /* 👉 tree with .disabled filled in */
-const treeWithFlags = computed( () =>
-  markDisabled( props.tree, props.role, props.parentMap )
-)
+const treeWithFlags = computed( () => markDisabled( props.tree, props.role, props.parentMap ) )
 
 /** util – runs once whenever role OR the tree changes */
 function markDisabled( nodes, role, parentMap ) {
   return nodes.map( n => {
     const depth = ( () => {
-      let d = 1; let p = parentMap[n.id]
-      while ( p ) { d++; p = parentMap[p] }
+      let d = 1
+      let p = parentMap[n.id]
+      while ( p ) {
+        d++
+        p = parentMap[p]
+      }
       return d
     } )()
 
@@ -62,10 +64,15 @@ function markDisabled( nodes, role, parentMap ) {
     let disabled
     switch ( role ) {
       case 1: // supervisor
-      case 4: disabled = true; break
-      case 3: disabled = depth !== 1
+      case 4:
+        disabled = true
         break
-      case 2: disabled = false; break
+      case 3:
+        disabled = depth !== 1
+        break
+      case 2:
+        disabled = false
+        break
       default:
         disabled = false
     }
@@ -73,7 +80,9 @@ function markDisabled( nodes, role, parentMap ) {
     // clone so we don’t mutate original
     const node = { ...n, disabled }
 
-    if ( n.children?.length ) { node.children = markDisabled( n.children, role, parentMap ) }
+    if ( n.children?.length ) {
+      node.children = markDisabled( n.children, role, parentMap )
+    }
 
     return node
   } )
@@ -92,5 +101,4 @@ function assignTeamMembershipHintText( roleId ) {
       return t( 'user.workerAssignTeamMembershipHint' )
   }
 }
-
 </script>

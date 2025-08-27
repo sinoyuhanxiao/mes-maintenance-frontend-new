@@ -28,7 +28,13 @@
           <EquipmentDetailsTab :equipmentId="props.node.id" :key="`details-${refreshKey}`" />
         </el-tab-pane>
         <el-tab-pane label="Sub Items" name="subItems">
-          <SubItemsTab :key="`subitems-${refreshKey}`" />
+          <SubItemsTab
+            :key="`subitems-${refreshKey}`"
+            :entityId="props.node.id"
+            :tierType="'equipment'"
+            :diagramId="props.node.diagram_id"
+            @sub-item-click="handleSubItemClick"
+          />
         </el-tab-pane>
         <el-tab-pane label="Work Orders" name="workOrders">
           <WorkOrderTab :key="`workorders-${refreshKey}`" />
@@ -75,7 +81,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { MoreFilled } from '@element-plus/icons-vue'
 import EquipmentDetailsTab from './Details.vue'
 import SubItemsTab from './SubItems.vue'
@@ -96,10 +103,16 @@ const props = defineProps( {
   breadcrumb : {
     type : Array,
     default : () => []
+  },
+  activeTab : {
+    type : String,
+    default : 'details'
   }
 } )
 
 const emit = defineEmits( ['refresh-tree', 'refresh-data'] )
+
+const router = useRouter()
 
 const parentId = computed( () => {
   const validBreadcrumbItems = props.breadcrumb.filter( ( item, index ) => {
@@ -113,7 +126,7 @@ const parentId = computed( () => {
   return null
 } )
 
-const activeTab = ref( 'details' )
+const activeTab = ref( props.activeTab )
 const showAddDialog = ref( false )
 const showEditDialog = ref( false )
 const showDeactivateDialog = ref( false )
@@ -122,6 +135,37 @@ const editDialogKey = ref( 0 )
 
 console.log( props.node.id )
 console.log( props.breadcrumb )
+
+const handleSubItemClick = async( subItem, pinNumber ) => {
+  const simplifiedBreadcrumb = props.breadcrumb.map( item => ( {
+    label : item.label,
+    id : item.id,
+    level : item.level
+  } ) )
+  const newBreadcrumb = [...simplifiedBreadcrumb, { label : subItem.name || subItem.text, id : subItem.id }]
+
+  const navigationQuery = {
+    selectedNodeId : subItem.id,
+    breadcrumb : JSON.stringify( newBreadcrumb )
+  }
+
+  try {
+    await router.push( {
+      path : '/maintenance/equipment',
+      query : navigationQuery
+    } )
+  } catch ( error ) {
+    console.error( 'Router push failed:', error )
+  }
+}
+
+// Watch for changes in activeTab prop
+watch(
+  () => props.activeTab,
+  newTab => {
+    activeTab.value = newTab
+  }
+)
 
 const openAddDialog = () => {
   showAddDialog.value = true
@@ -203,10 +247,36 @@ const handleRefreshTree = () => {
   align-items: center;
 }
 
+.t3-sub-header {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .t3-main-details {
   flex: 1;
   display: flex;
   flex-direction: column;
+}
+
+.kebab-dropdown {
+  margin-left: auto;
+}
+
+.kebab-icon {
+  transform: rotate(90deg);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  font-size: 24px;
+  color: #409eff;
+}
+
+.kebab-icon:hover {
+  background-color: var(--el-fill-color-light);
 }
 
 .kebab-dropdown {
