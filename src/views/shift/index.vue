@@ -10,8 +10,6 @@
 
 <script setup>
 import MesLayout from 'src/components/MesLayout'
-
 </script>
 
 <style></style>
-

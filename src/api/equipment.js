@@ -98,6 +98,102 @@ export const getEquipmentById = equipmentId => {
 }
 
 /**
+ * Search equipment nodes by criteria.
+ * @param {Object} searchCriteria - Search criteria object.
+ * @returns {Promise} API response with equipment nodes.
+ */
+export const searchEquipmentNodes = searchCriteria => {
+  return http.request( {
+    method : 'post',
+    url : '/equipment/node-search',
+    data : searchCriteria
+  } )
+}
+
+/**
+ * Patch an existing equipment diagram.
+ * @param {Object} payload - The diagram creation payload with pins.
+ * @param {Number} diagramId - The equipment diagram to patch
+ * @returns {Promise} API response with the updated diagram.
+ */
+export const patchEquipmentDiagram = ( diagramId, payload ) => {
+  return http.request( {
+    method : 'patch',
+    url : `/equipment/equipment-diagram/update?diagramId=${diagramId}`,
+    data : payload
+  } )
+}
+
+/**
+ * Get equipment diagram by ID.
+ * @param {Number} diagramId - The equipment diagram ID to be fetched
+ * @returns {Promise} API response with the equipment diagram.
+ */
+export const getEquipmentDiagram = diagramId => {
+  return http.request( {
+    method : 'get',
+    url : '/equipment/equipment-diagram',
+    data : { diagramId }
+  } )
+}
+
+/**
+ * Create a new equipment diagram.
+ * @param {Object} payload - The diagram creation payload with pins.
+ * @param {Number} equipmentNodeId - The equipment node to be associated with this diagram
+ * @returns {Promise} API response with the created diagram.
+ */
+export const createEquipmentDiagram = async( payload, equipmentNodeId ) => {
+  const requestBody = {
+    equipment_node_id : equipmentNodeId,
+    pins : payload.pins
+  }
+
+  return http.request( {
+    method : 'post',
+    url : '/equipment/equipment-diagram/create',
+    data : requestBody,
+    headers : { 'Content-Type' : 'application/json' }
+  } )
+}
+
+/**
+ * Update equipment node's diagram_id field.
+ * @param {number} equipmentNodeId - The equipment node ID.
+ * @param {string} diagramId - The diagram ID to associate.
+ * @returns {Promise} API response.
+ */
+export const updateEquipmentNodeDiagramId = ( equipmentNodeId, diagramId ) => {
+  const requestData = {
+    diagram_id : diagramId
+  }
+
+  return http.request( {
+    method : 'patch',
+    url : `/equipment/equipment-node/${equipmentNodeId}`,
+    data : requestData
+  } )
+}
+
+/**
+ * Update equipment node's exploded view drawing.
+ * @param {number} equipmentNodeId - The equipment node ID.
+ * @param {string} imageUrl - The URL of the new image.
+ * @returns {Promise} API response.
+ */
+export const updateEquipmentNodeImage = ( equipmentNodeId, imageUrl ) => {
+  const requestData = {
+    exploded_view_drawing : [imageUrl]
+  }
+
+  return http.request( {
+    method : 'patch',
+    url : `/equipment/equipment-node/${equipmentNodeId}`,
+    data : requestData
+  } )
+}
+
+/**
  * Search equipment with pagination.
  * @param {number} page - The page number.
  * @param {number} size - Number of results per page.
