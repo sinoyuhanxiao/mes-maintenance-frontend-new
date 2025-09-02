@@ -61,7 +61,7 @@
 
         <!-- Status and Priority Badges -->
         <div class="card-badges">
-          <el-tag :type="getStatusTagType(workOrder.state?.name)" size="small" effect="dark">
+          <el-tag :type="getStatusTagType(workOrder.state?.name)" size="small" effect="plain">
             {{ getStatusName(workOrder.state?.name) }}
           </el-tag>
 
@@ -214,15 +214,15 @@ defineOptions( {
   }
 
   &.overdue {
-    border-left: 4px solid var(--el-color-danger);
+    border-left: 2px solid var(--el-color-danger);
   }
 
   &.high-priority {
-    border-left: 4px solid var(--el-color-warning);
+    border-left: 2px solid var(--el-color-warning);
   }
 
   &.overdue.high-priority {
-    border-left: 4px solid var(--el-color-danger);
+    border-left: 2px solid var(--el-color-danger);
   }
 }
 
@@ -348,7 +348,6 @@ defineOptions( {
   }
 }
 
-// Responsive design
 @media (max-width: 768px) {
   .work-order-card {
     padding: 12px;

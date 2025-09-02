@@ -51,9 +51,17 @@ const useTagsViewStore = defineStore( {
       )
     },
     ADD_CACHED_VIEW( view ) {
-      if ( this.cachedViews.includes( view.name ) ) return
+      console.log( '🏷️ ADD_CACHED_VIEW called with:', { name : view.name, meta : view.meta, noCache : view.meta?.noCache } )
+      if ( this.cachedViews.includes( view.name ) ) {
+        console.log( '🏷️ View already cached:', view.name )
+        return
+      }
       if ( !view.meta.noCache ) {
+        console.log( '🏷️ Adding to cache:', view.name )
         this.cachedViews.push( view.name )
+        console.log( '🏷️ Current cached views:', this.cachedViews )
+      } else {
+        console.log( '🏷️ Not caching (noCache=true):', view.name )
       }
     },
 

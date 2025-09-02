@@ -12,6 +12,30 @@
 // 对Element Ui 部分样式进行改写
 @import './element.scss';
 
+// Global scroll bar styling for consistency
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+::-webkit-scrollbar-corner {
+  background: #f1f1f1;
+}
+
 /*ICONFONT*/
 [class*='yu-icon-'],
 [class^='yu-icon-'] {

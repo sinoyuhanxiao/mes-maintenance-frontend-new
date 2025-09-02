@@ -59,14 +59,6 @@ export function useWorkOrder() {
       if ( listQuery.dueDate ) filters.dueDate = listQuery.dueDate
       if ( listQuery.customDateRange ) filters.customDateRange = listQuery.customDateRange
 
-      console.log( '🔍 fetchWorkOrders called with filters:', {
-        page : listQuery.page,
-        limit : listQuery.limit,
-        sortField : 'createdAt',
-        sortDirection : 'DESC',
-        filters
-      } )
-
       let response
       let data
       if ( listQuery.page === -1 && listQuery.limit === -1 ) {
@@ -80,14 +72,6 @@ export function useWorkOrder() {
           'DESC',
           getSearchFilterPayload()
         )
-
-        console.log( '📦 fetchWorkOrders response:', {
-          totalElements : response.data.totalElements,
-          returnedCount : response.data.content?.length,
-          firstItemId : response.data.content?.[0]?.id,
-          firstItemStatus : response.data.content?.[0]?.status,
-          firstItemStateId : response.data.content?.[0]?.state_id
-        } )
 
         data = response.data.content
       }
@@ -139,7 +123,6 @@ export function useWorkOrder() {
   }
 
   const updateFilters = newFilters => {
-    console.log( '🔍 useWorkOrder updateFilters called with:', newFilters )
     // Update filter properties in listQuery
     Object.keys( newFilters ).forEach( key => {
       if ( Object.prototype.hasOwnProperty.call( listQuery, key ) ) {
@@ -148,22 +131,17 @@ export function useWorkOrder() {
     } )
     // Reset to first page when filters change
     listQuery.page = 1
-    console.log( '📡 Updated listQuery:', { ...listQuery } )
     fetchWorkOrders()
   }
 
   const handleSizeChange = val => {
-    console.log( '🔄 useWorkOrder handleSizeChange:', { from : listQuery.limit, to : val } )
     listQuery.limit = val
     listQuery.page = 1 // Reset to first page when changing page size
-    console.log( '📡 Calling fetchWorkOrders with new page size:', { page : listQuery.page, limit : listQuery.limit } )
     fetchWorkOrders()
   }
 
   const handleCurrentChange = val => {
-    console.log( '🔄 useWorkOrder handleCurrentChange:', { from : listQuery.page, to : val } )
     listQuery.page = val
-    console.log( '📡 Calling fetchWorkOrders with new page:', { page : listQuery.page, limit : listQuery.limit } )
     fetchWorkOrders()
   }
 

@@ -235,26 +235,6 @@
           </el-dropdown>
         </div>
       </div>
-
-      <!-- Active Filters Display -->
-      <div v-if="hasActiveFilters" class="active-filters-row">
-        <div class="active-filters-label">{{ $t('workOrder.filters.activeFilters') }}:</div>
-        <div class="active-filters-tags">
-          <el-tag
-            v-for="filter in activeFilterTags"
-            :key="filter.key"
-            closable
-            @close="removeFilter(filter.key)"
-            size="small"
-            type="info"
-          >
-            {{ filter.label }}
-          </el-tag>
-        </div>
-        <el-button type="text" size="small" @click="clearAllFilters" class="clear-all-button">
-          {{ $t('workOrder.filters.clearAll') }}
-        </el-button>
-      </div>
     </div>
 
     <!-- Custom Date Range Picker (shown when due date filter is 'custom') -->
@@ -374,7 +354,6 @@ const props = defineProps( {
 
 // Emits
 const emit = defineEmits( ['update:modelValue', 'filter-change', 'create', 'export', 'refresh'] )
-
 const { t } = useI18n()
 const commonDataStore = useCommonDataStore()
 
@@ -427,7 +406,7 @@ const availableFilters = reactive( {
 
 // Filter options
 const assignedToOptions = computed( () => {
-  // Get from user store or API
+  // TODO: Get from user store or API
   return [
     { id : 1, name : 'Erik Yu' },
     { id : 2, name : 'Jane Smith' },
@@ -528,7 +507,6 @@ const filterDefinitions = computed( () => ( {
 
 // Computed filter categories
 const basicFilters = computed( () => Object.values( filterDefinitions.value ).filter( f => f.category === 'basic' ) )
-
 const advancedFilters = computed( () => Object.values( filterDefinitions.value ).filter( f => f.category === 'advanced' ) )
 
 // Search term for filtering the drawer lists
@@ -548,7 +526,7 @@ const filteredAdvancedFilters = computed( () => {
 } )
 
 // Active filters
-const activeFilterTags = computed( () => {
+computed( () => {
   const tags = []
 
   if ( localFilters.assignedTo ) {
@@ -646,63 +624,9 @@ const activeFilterTags = computed( () => {
 
   return tags
 } )
-
-const hasActiveFilters = computed( () => activeFilterTags.value.length > 0 )
-
 // Methods
 const handleFilterChange = async() => {
   emit( 'update:modelValue', { ...localFilters } )
-}
-
-const removeFilter = filterKey => {
-  switch ( filterKey ) {
-    case 'assignedTo':
-      localFilters.assignedTo = null
-      break
-    case 'dueDate':
-      localFilters.dueDate = null
-      localFilters.customDateRange = null
-      break
-    case 'workType':
-      localFilters.workType = null
-      break
-    case 'priority':
-      localFilters.priority = null
-      break
-    case 'state':
-      localFilters.state = null
-      break
-    case 'category':
-      localFilters.category = null
-      break
-    case 'search':
-      localFilters.search = ''
-      break
-    case 'status':
-      localFilters.status = null
-      break
-    case 'equipment':
-      localFilters.equipment = null
-      break
-    case 'location':
-      localFilters.location = null
-      break
-    default:
-      console.warn( `Unknown filter key: ${filterKey}` )
-      break
-  }
-  handleFilterChange()
-}
-
-const clearAllFilters = () => {
-  Object.keys( localFilters ).forEach( key => {
-    if ( typeof localFilters[key] === 'string' ) {
-      localFilters[key] = ''
-    } else {
-      localFilters[key] = null
-    }
-  } )
-  handleFilterChange()
 }
 
 const handleCustomizationCommand = command => {
@@ -742,7 +666,6 @@ const triggerFilterHighlightAnimation = async filterKey => {
   // Wait for DOM update to ensure the filter item is rendered/removed
   await nextTick()
 
-  // Only animate if the filter is now visible (showing animation)
   // For hiding animation, the element will be removed by v-if, so we skip it
   if ( availableFilters[filterKey].visible ) {
     // Start animation
@@ -1016,7 +939,6 @@ defineOptions( {
   padding: 20px;
 }
 
-// Responsive design
 @media (max-width: 1200px) {
   .filters-row {
     .filter-item {

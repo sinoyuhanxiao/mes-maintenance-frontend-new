@@ -174,8 +174,7 @@ export default {
       loadingData : 'Loading data...',
       noData : 'No data available',
       formReset : 'Form has been reset',
-      validationFailed : 'Please fix validation errors',
-      procedurePickerNotImplemented : 'Procedure picker will be implemented'
+      validationFailed : 'Please fix validation errors'
     },
 
     // Validation messages

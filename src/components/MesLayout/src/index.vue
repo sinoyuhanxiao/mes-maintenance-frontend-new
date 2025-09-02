@@ -114,7 +114,6 @@ export default defineComponent( {
     }
   }
 
-  // Responsive design for title row
   @media (max-width: 768px) {
     .header {
       .header-title-row {

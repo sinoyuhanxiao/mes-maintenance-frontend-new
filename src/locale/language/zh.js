@@ -172,8 +172,7 @@ export default {
       loadingData : '加载数据中...',
       noData : '暂无数据',
       formReset : '表单已重置',
-      validationFailed : '请修正验证错误',
-      procedurePickerNotImplemented : '程序选择器将被实现'
+      validationFailed : '请修正验证错误'
     },
 
     // Create form specific

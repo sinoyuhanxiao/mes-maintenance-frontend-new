@@ -581,17 +581,9 @@ const supervisorOptions = ref( [
   { id : 4, name : 'Lisa Davis' }
 ] )
 
-// const vendorOptions = ref( [
-//   { id : 1, name : 'Hurry-up Co.' },
-//   { id : 2, name : 'Yellow Equipment Services' },
-//   { id : 3, name : 'Justin Gamer Solutions' }
-// ] )
-
-// Load data from APIs (same as create form)
 const loadFormData = async() => {
   try {
     loading.value = true
-    console.log( 'WorkOrderEdit: Loading form data...' )
 
     const res = await Promise.all( [
       getAllWorkTypes(),
@@ -602,8 +594,6 @@ const loadFormData = async() => {
     ] )
 
     const [workTypesRes, prioritiesRes, categoriesRes, locationsRes, equipmentRes] = res
-
-    console.log( 'WorkOrderEdit: API responses:', workTypesRes.data )
 
     if ( Array.isArray( workTypesRes.data.workTypes ) ) {
       workTypeOptions.value = workTypesRes.data.workTypes
@@ -708,33 +698,25 @@ const populateForm = () => {
       form.recurrence = 'none'
     }
   }
-
-  console.log( 'Form populated with work order data:', wo )
 }
 
-const handleAddProcedure = () => {
-  ElMessage.info( t( 'workOrder.messages.procedurePickerNotImplemented' ) )
-}
+const handleAddProcedure = () => {}
 
 // File upload handlers
 const handleImageListUpdate = imageFiles => {
   newImageFiles.value = imageFiles
-  console.log( 'New image files:', imageFiles )
 }
 
 const handleFilesListUpdate = files => {
   newFiles.value = files
-  console.log( 'New files:', files )
 }
 
 const handleRemoveExistingImage = imageUrl => {
   removedExistingImages.value.push( imageUrl )
-  console.log( 'Marked existing image for removal:', imageUrl )
 }
 
 const handleRemoveExistingFile = fileUrl => {
   removedExistingFiles.value.push( fileUrl )
-  console.log( 'Marked existing file for removal:', fileUrl )
 }
 
 const resetForm = () => {
@@ -778,11 +760,6 @@ watch(
   }
 )
 
-// Remove debugger for production
-// onMounted( () => {
-//   debugger
-// } )
-
 const submitForm = async() => {
   if ( !formRef.value ) return
 
@@ -799,28 +776,7 @@ const submitForm = async() => {
     const formattedDueDate = toUtcIso( form.dueDate )
     const formattedStartDate = toUtcIso( form.startDate )
 
-    // Log update data for debugging
-    console.log( 'Updating work order with data:', {
-      id : props.workOrder.id,
-      name : form.taskTitle,
-      description : form.description,
-      estimated_minutes : form.estimatedHours * 60 + form.estimatedMinutes,
-      due_date : formattedDueDate,
-      start_date : formattedStartDate,
-      priority : form.priority,
-      work_type : form.workType,
-      categories : form.categories,
-      equipment_node_id : form.asset,
-      removedExistingImages : removedExistingImages.value,
-      removedExistingFiles : removedExistingFiles.value,
-      newImageFiles : newImageFiles.value,
-      newFiles : newFiles.value
-    } )
-
-    // Simulate API call
     await new Promise( resolve => setTimeout( resolve, 1500 ) )
-
-    // Mock successful update
     const updatedWorkOrder = {
       ...props.workOrder,
       name : form.taskTitle,
@@ -856,7 +812,6 @@ watch(
     if ( !optionsLoaded.value ) {
       await loadFormData()
     }
-
     const wo = newWorkOrder
 
     // Basic fields
@@ -896,15 +851,8 @@ watch(
   { immediate : true }
 )
 
-// Lifecycle
 onMounted( async() => {
   await loadFormData()
-  // Debug i18n setup
-  console.log( '🌐 WorkOrderEdit i18n setup:', {
-    updateKey : t( 'workOrder.actions.update' ),
-    cancelKey : t( 'workOrder.actions.cancel' ),
-    i18nInstance : !!t
-  } )
 } )
 
 defineOptions( {
@@ -913,18 +861,16 @@ defineOptions( {
 </script>
 
 <style scoped lang="scss">
-// Import styles from WorkOrderCreate and modify for edit
 .work-order-edit-enhanced {
   background: var(--el-bg-color);
   border-radius: 8px;
   margin-top: 24px;
-  padding: 0px 24px 0px 24px; // Extra bottom padding for fixed buttons
+  padding: 0px 24px 0px 24px;
   height: 100%;
   overflow-y: auto;
-  position: relative; // Enable absolute positioning for children
+  position: relative;
 }
 
-// Header styling (consistent with WorkOrderDetail and Create)
 .edit-header {
   margin-bottom: 24px;
   padding-bottom: 16px;

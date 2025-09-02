@@ -261,11 +261,6 @@ const submitForm = async() => {
         form.equipment_group_id = selectedValues.equipmentGroupId
         form.equipment_id = selectedValues.equipmentId
         form.component_id = selectedValues.componentId
-
-        // const payload = { ...form }
-
-        // const { data } = await createWorkOrder( payload )
-
         showSuccess( t( 'workOrder.messages.createSuccess' ) )
 
         // Close current tab and navigate
@@ -359,7 +354,6 @@ defineOptions( {
   }
 }
 
-// Responsive design
 @media (max-width: 768px) {
   .new-work-order {
     padding: 10px;

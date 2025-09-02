@@ -322,11 +322,6 @@ import {
   createWorkOrder
 } from '@/api/work-order'
 
-// Props
-// const props = defineProps({
-//   // No props needed for now
-// })
-
 // Emits
 const emit = defineEmits( ['back-to-detail', 'work-order-created'] )
 
@@ -335,10 +330,9 @@ const { t } = useI18n()
 // Component mounted
 onMounted( () => {
   loadFormData()
-  // i18n setup completed
 } )
 
-// Form data - following the working NewWorkOrder.vue pattern
+// Form data - some hardcoded because waiting for yellow's banff trip
 const form = reactive( {
   name : '',
   description : '',
@@ -406,7 +400,6 @@ const dialogImageUrl = ref( '' )
 const loadFormData = async() => {
   try {
     loading.value = true
-    console.log( 'WorkOrderCreate: Loading form data...' )
 
     const [workTypesRes, prioritiesRes, categoriesRes, locationsRes, equipmentRes] = await Promise.all( [
       getAllWorkTypes(),
@@ -416,37 +409,24 @@ const loadFormData = async() => {
       getEquipmentNodeTrees()
     ] )
 
-    console.log( 'WorkOrderCreate: API responses:', {
-      workTypes : workTypesRes.data,
-      priorities : prioritiesRes.data,
-      categories : categoriesRes.data,
-      locations : locationsRes.data,
-      equipment : equipmentRes.data
-    } )
-
     if ( workTypesRes.data ) {
       workTypeOptions.value = workTypesRes.data
-      console.log( 'WorkOrderCreate: Set workTypeOptions:', workTypeOptions.value )
     }
 
     if ( prioritiesRes.data ) {
       priorityOptions.value = prioritiesRes.data
-      console.log( 'WorkOrderCreate: Set priorityOptions:', priorityOptions.value )
     }
 
     if ( categoriesRes.data ) {
       categoryOptions.value = categoriesRes.data
-      console.log( 'WorkOrderCreate: Set categoryOptions:', categoryOptions.value )
     }
 
     if ( locationsRes.data ) {
       locationTreeData.value = locationsRes.data
-      console.log( 'WorkOrderCreate: Set locationTreeData:', locationTreeData.value )
     }
 
     if ( equipmentRes.data ) {
       assetTreeData.value = equipmentRes.data
-      console.log( 'WorkOrderCreate: Set assetTreeData:', assetTreeData.value )
     }
   } catch ( error ) {
     console.error( 'WorkOrderCreate: Failed to load form data:', error )
@@ -460,11 +440,6 @@ const loadFormData = async() => {
     }
   } finally {
     loading.value = false
-    console.log( 'WorkOrderCreate: Final dropdown options:', {
-      workTypes : workTypeOptions.value,
-      priorities : priorityOptions.value,
-      categories : categoryOptions.value
-    } )
   }
 }
 
@@ -635,7 +610,6 @@ watch(
   () => form.recurrence_setting,
   newVal => {
     form.recurrence_type = newVal.recurrence_type
-    console.log( '📅 recurrence_setting changed:', newVal )
   },
   { deep : true }
 )
@@ -673,24 +647,13 @@ const submitForm = async() => {
     delete payload.recurrence_type
     delete payload.recurrence_setting
 
-    console.log( '📤 Submitting work order payload:', payload )
-
     // Call backend API
     const response = await createWorkOrder( payload )
 
-    console.log( '🎉 Work order creation successful! Response:', response.data )
-
     // Emit the created work order (can be single or array)
     const createdWorkOrders = Array.isArray( response.data ) ? response.data : [response.data]
-    console.log( '📤 Emitting created work orders:', createdWorkOrders )
 
     createdWorkOrders.forEach( ( workOrder, index ) => {
-      console.log( `📤 Emitting work order ${index + 1}:`, {
-        id : workOrder.id,
-        name : workOrder.name,
-        state_id : workOrder.state_id,
-        status : workOrder.status
-      } )
       emit( 'work-order-created', workOrder )
     } )
 
@@ -714,14 +677,13 @@ defineOptions( {
 .work-order-create-enhanced {
   background: var(--el-bg-color);
   border-radius: 8px;
-  padding: 0px 24px 0px 24px; // Extra bottom padding for fixed buttons
+  padding: 0px 24px 0px 24px;
   margin-top: 24px;
   height: 100%;
   overflow-y: auto;
-  position: relative; // Enable absolute positioning for children
+  position: relative;
 }
 
-// Header styling (consistent with WorkOrderDetail)
 .create-header {
   margin-bottom: 24px;
   padding-bottom: 16px;

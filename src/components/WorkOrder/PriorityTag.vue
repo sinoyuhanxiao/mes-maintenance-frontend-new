@@ -27,7 +27,6 @@ const { t } = useI18n()
 const priorityName = computed( () => {
   if ( !props.priority?.name ) return '-'
 
-  // Map English priority names to translated names
   const priorityMap = {
     Urgent : t( 'workOrder.priority.urgent' ),
     High : t( 'workOrder.priority.high' ),

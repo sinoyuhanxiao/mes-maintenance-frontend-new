@@ -187,7 +187,6 @@ watch(
   fileList,
   newList => {
     const fileArray = newList.map( file => file.raw ).filter( file => file instanceof File )
-
     emit( 'update:imageList', fileArray )
   },
   { deep : true }
