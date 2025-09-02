@@ -254,8 +254,14 @@ export const asyncRoutes = [
       {
         path : 'my-account',
         component : () => import( '@/views/userCenter/index.vue' ),
-        name : 'UserCenter',
-        meta : { title : 'router.myAccount', noCache : true }
+        name : 'MyAccount',
+        meta : { title : 'router.myAccount', icon : 'users', noCache : true }
+      },
+      {
+        path : 'user-detail/:id',
+        component : () => import ( '@/views/user/components/UserDetail.vue' ),
+        name : 'UserDetail',
+        meta : { title : 'router.userDetail', icon : 'users', noCache : true }
       }
     ]
   },

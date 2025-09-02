@@ -1,10 +1,67 @@
 <template>
-  <MesLayout :title="'User Management'" :view-mode="'table'">
-    <template #viewMode>
+  <MesLayout :title="t('router.userManagement')" :view-mode="'table'">
+    <template #viewMode> </template>
+
+    <template #head>
+      <!-- User local filters -->
       <div class="toolbar">
-        <div class="toolbar-item"></div>
-        <div class="right-group">
-          <div>
+        <div class="filters-container">
+          <div class="filter-item">
+            <el-select
+              v-model="localFilters.assignedTeam"
+              :placeholder="$t('user.assignedTeam')"
+              clearable
+              size="default"
+              style="width: 180px"
+              @change="handleFilterChange"
+            >
+              <el-option v-for="team in teamOptions" :key="team.id" :label="team.name" :value="team.id" />
+            </el-select>
+          </div>
+
+          <div class="filter-item">
+            <el-select
+              v-model="localFilters.department_id"
+              :placeholder="$t('user.department')"
+              clearable
+              size="default"
+              style="width: 180px"
+              @change="handleFilterChange"
+            >
+              <el-option v-for="d in departmentOptions" :key="d.id" :label="d.name" :value="d.id" />
+            </el-select>
+          </div>
+
+          <div class="filter-item">
+            <el-select
+              v-model="localFilters.role_id"
+              :placeholder="$t('user.table.role')"
+              clearable
+              size="default"
+              style="width: 200px"
+              @change="handleFilterChange"
+            >
+              <el-option v-for="r in roleOptions" :key="r.id" :label="r.name" :value="r.id" />
+            </el-select>
+          </div>
+
+          <div class="filter-item">
+            <el-select
+              v-model="localFilters.status"
+              :placeholder="$t('user.table.status')"
+              clearable
+              size="default"
+              style="width: 140px"
+              @change="handleFilterChange"
+            >
+              <el-option :label="'Active'" :value="1" />
+              <el-option :label="'Inactive'" :value="0" />
+            </el-select>
+          </div>
+        </div>
+
+        <div class="actions-row">
+          <div class="actions-item">
             <el-input
               v-model="searchInput"
               :placeholder="t('common.searchByKeyword')"
@@ -20,15 +77,18 @@
             </el-input>
           </div>
 
-          <div class="actions-row">
-            <el-button type="primary" @click="openCreateForm"> Add User </el-button>
+          <div class="actions-item">
+            <el-button :icon="EditPen" type="primary" @click="openCreateForm">
+              {{ t('workOrder.actions.create') }}
+            </el-button>
           </div>
         </div>
       </div>
     </template>
 
     <template #body>
-      <div class="tableContainer" style="overflow-x: auto; max-width: 100%">
+      <!-- User table -->
+      <div style="overflow-x: auto; max-width: 100%">
         <el-table
           v-loading="loading"
           :data="paginatedUsers"
@@ -40,66 +100,60 @@
           fit
           highlight-current-row
         >
-          <el-table-column :label="t('user.table.id')" width="100" prop="id" sortable>
+          <el-table-column :label="t('user.table.id')" width="100" prop="id" sortable align="center" fixed="left">
             <template #default="scope">
               <span>{{ scope.row.id }}</span>
             </template>
           </el-table-column>
 
-          <el-table-column :label="t('user.table.name')" prop="name" width="180" sortable>
+          <el-table-column :label="t('user.table.name')" prop="name" width="150" sortable align="center" fixed="left">
             <template #default="scope">
-              <el-popover trigger="hover" placement="top">
-                <template #default>
-                  <p>{{ t('user.table.name') }}: {{ scope.row.name }}</p>
-                </template>
-                <template #reference>
-                  <el-tag size="default">{{ scope.row.name }}</el-tag>
-                </template>
-              </el-popover>
+              <el-link @click="handleView(scope.row)">{{ scope.row.name }}</el-link>
             </template>
           </el-table-column>
 
-          <el-table-column :label="t('user.table.username')" prop="username" width="180" sortable>
+          <el-table-column :label="t('user.table.teams')" prop="teams" width="200" align="center" sortable>
             <template #default="scope">
-              <span>{{ scope.row.username ?? '-' }}</span>
-            </template>
-          </el-table-column>
+              <div style="margin-right: 5px">
+                <el-popover v-for="team in scope.row.teams" :key="team.id" trigger="hover" placement="top" width="250">
+                  <template #default>
+                    <div class="popover-text-wrapper">
+                      <el-text>ID: {{ team.id }}</el-text>
+                      <el-text>{{ t('user.table.teams') }}: {{ team.name }}</el-text>
+                      <el-text>{{ t('user.table.leader') }}: {{ team.leader_name }}</el-text>
+                      <el-text>{{ 'Number of members' }}: {{ team.members?.length || 0 }}</el-text>
+                      <el-text>{{ 'Associated Equipment' }}: {{ 15 }}</el-text>
+                      <el-text>{{ 'Associated Location' }}: {{ 'Site A' }}</el-text>
+                    </div>
+                  </template>
 
-          <el-table-column :label="t('user.table.teams')" prop="teams" width="280">
-            <template #default="scope">
-              <div>
-                <el-tag
-                  v-for="(team, index) in scope.row.teams"
-                  :key="index"
-                  size="small"
-                  style="margin-right: 5px"
-                  round
-                  :effect="scope.row.leadership_teams?.includes(team.id) ? 'dark' : 'light'"
-                >
-                  <el-popover trigger="hover" placement="top">
-                    <template #default>
-                      <p>ID: {{ team.id }}</p>
-                      <p>{{ t('user.table.teams') }}: {{ team.team_name }}</p>
-                      <p>{{ t('user.table.leader') }}: {{ team.leader_name }}</p>
-                    </template>
-                    <template #reference>
-                      {{ team.team_name }}
-                    </template>
-                  </el-popover>
-                </el-tag>
+                  <template #reference>
+                    <el-tag size="small" round :effect="scope.row.teams.isLeader ? 'dark' : 'light'">
+                      {{ team.name }}
+                    </el-tag>
+                  </template>
+                </el-popover>
               </div>
             </template>
           </el-table-column>
 
-          <el-table-column :label="t('user.table.role')" prop="role.name" width="150" sortable>
+          <el-table-column :label="t('user.department')" prop="department" width="150" sortable align="center">
             <template #default="scope">
-              <el-tag :type="scope.row.role?.el_tag_type || 'info'" size="default" style="font-weight: bold">
-                {{ scope.row.role?.name || '-' }}
-              </el-tag>
+              <el-text>
+                {{ scope.row.department?.name || '-' }}
+              </el-text>
             </template>
           </el-table-column>
 
-          <el-table-column :label="t('user.table.status')" prop="activation_status" width="140" sortable>
+          <el-table-column :label="t('user.table.role')" prop="role.name" width="180" sortable align="center">
+            <template #default="scope">
+              <div v-for="role in scope.row.roles" :key="role.id">
+                <RoleTag :role="role" />
+              </div>
+            </template>
+          </el-table-column>
+
+          <el-table-column :label="t('user.table.status')" prop="activation_status" width="140" sortable align="center">
             <template #header>
               <span>
                 {{ t('user.table.status') }}
@@ -120,13 +174,33 @@
             </template>
           </el-table-column>
 
-          <el-table-column :label="t('user.table.email')" prop="email" width="220px" sortable>
+          <el-table-column :label="t('user.lastVisited')" prop="last_visited" width="220" sortable align="center">
+            <template #default="scope">
+              <span>
+                {{ formatDateTime(scope.row.last_visited) }}
+              </span>
+            </template>
+          </el-table-column>
+
+          <el-table-column :label="t('user.table.certificate')" prop="certificate" width="150" sortable align="center">
+            <template #default="scope">
+              <certificate-hover-detail :certificates="scope.row.certificates || []" />
+            </template>
+          </el-table-column>
+
+          <el-table-column :label="t('user.table.username')" prop="username" width="180" sortable align="center">
+            <template #default="scope">
+              <span>{{ scope.row.username ?? '-' }}</span>
+            </template>
+          </el-table-column>
+
+          <el-table-column :label="t('user.table.email')" prop="email" width="220" sortable align="center">
             <template #default="scope">
               <span>{{ scope.row.email ?? '-' }}</span>
             </template>
           </el-table-column>
 
-          <el-table-column :label="t('user.table.phoneNumber')" prop="phone_number" width="180px" sortable>
+          <el-table-column :label="t('user.table.phoneNumber')" prop="phone_number" width="180" sortable align="center">
             <template #default="scope">
               <span>{{ scope.row.phone_number ?? '-' }}</span>
             </template>
@@ -134,16 +208,20 @@
 
           <el-table-column
             :label="t('user.table.actions')"
-            align="right"
-            header-align="right"
-            width="180"
+            align="center"
+            header-align="center"
+            width="270"
             fixed="right"
           >
             <template #default="scope">
-              <el-button size="small" @click="handleEdit(scope.row)">
+              <el-button :icon="View" size="small" @click="handleView(scope.row)">
+                {{ t('common.view') }}
+              </el-button>
+              <el-button :icon="Edit" size="small" @click="handleEdit(scope.row)">
                 {{ t('common.edit') }}
               </el-button>
-              <el-button size="small" type="danger" @click="handleDelete(scope.row.id)">
+
+              <el-button :icon="Delete" size="small" type="danger" @click="confirmDelete(scope.row)">
                 {{ t('common.delete') }}
               </el-button>
             </template>
@@ -151,25 +229,53 @@
         </el-table>
       </div>
 
+      <!-- User create/edit popup -->
       <el-dialog
         :title="userEntry.id == null ? t('user.form.newUser') : t('user.form.editUser')"
         v-model="isUserFormDialogVisible"
         width="50%"
       >
-        <div class="popup-container">
-          <el-form ref="userEntryFormRef" :model="userEntry" :rules="userFormValidationRules" label-width="140px">
+        <el-form
+          ref="userEntryFormRef"
+          :model="userEntry"
+          :rules="userFormValidationRules"
+          label-width="140"
+          class="two-col-form"
+        >
+          <div class="form-row">
             <el-form-item :label="t('user.form.name')" prop="name">
               <el-input v-model="userEntry.name" />
             </el-form-item>
+          </div>
 
-            <el-form-item :label="t('user.form.role')" prop="role">
-              <el-select v-model="userEntry.role" :placeholder="t('user.form.selectRolePlaceHolder')">
-                <el-option v-for="role in rolesOptions" :key="role.id" :label="role.name" :value="role.id">
-                  <el-tag :type="role.el_tag_type">{{ role.name }}</el-tag>
+          <div class="form-row">
+            <el-form-item :label="t('user.department')" prop="department_id">
+              <el-select v-model="userEntry.department_id" :placeholder="t('user.form.selectDepartmentPlaceHolder')">
+                <el-option
+                  v-for="department in departmentOptions"
+                  :key="department.id"
+                  :label="department.name"
+                  :value="department.id"
+                >
+                  <el-tag :type="department.el_tag_type">{{ department.name }}</el-tag>
                 </el-option>
               </el-select>
             </el-form-item>
 
+            <el-form-item :label="t('user.form.role')" prop="role_list">
+              <el-select
+                v-model="userEntry.role_list"
+                multiple
+                :placeholder="t('user.form.selectRolePlaceHolder')"
+                :disabled="!userEntry.department_id"
+              >
+                <el-option v-for="role in filteredRoleOptions" :key="role.id" :label="role.name" :value="role.id">
+                  <el-tag :type="role.el_tag_type">{{ role.name }}</el-tag>
+                </el-option>
+              </el-select>
+            </el-form-item>
+          </div>
+          <div class="form-row">
             <el-form-item :label="t('user.form.email')" prop="email">
               <el-input v-model="userEntry.email" />
             </el-form-item>
@@ -177,23 +283,36 @@
             <el-form-item :label="t('user.form.phoneNumber')" prop="phone_number">
               <el-input v-model="userEntry.phone_number" />
             </el-form-item>
+          </div>
 
-            <el-form-item :label="t('user.membershipTeams')">
-              <team-membership-select
-                v-model="userEntry.membershipTeams"
-                :tree="teamsOptions"
-                :parent-map="teamsParentMap"
-                :role="userEntry.role"
-              />
-            </el-form-item>
+          <el-divider>
+            {{ t('team.team') }}
+          </el-divider>
 
-            <el-form-item :label="t('user.leadershipTeams')">
-              <team-leadership-select
-                v-model="userEntry.leadershipTeams"
-                :tree="teamsOptions"
-                :parent-map="teamsParentMap"
-                :role="userEntry.role"
-              />
+          <el-form-item :label="t('user.assignedTeam')" prop="teams">
+            <associated-team-select v-model="userEntry.teams" />
+          </el-form-item>
+
+          <el-divider>
+            {{ t('user.certificate') }}
+          </el-divider>
+
+          <el-form-item :label="t('user.certificate')" prop="certificates">
+            <certificate-list
+              :certificates="userEntry.certificates"
+              @edit="handleEditCert"
+              @delete="handleDeleteCert"
+              @add="handleAddCert"
+            />
+          </el-form-item>
+
+          <el-divider>
+            {{ t('user.loginCredential') }}
+          </el-divider>
+
+          <div class="form-row">
+            <el-form-item :label="t('user.form.username')" prop="username">
+              <el-input v-model="userEntry.username" />
             </el-form-item>
 
             <el-form-item :label="t('user.form.status')" prop="activation_status">
@@ -202,13 +321,11 @@
                 <el-option :label="t('user.status.inactive')" :value="0" />
               </el-select>
             </el-form-item>
+          </div>
 
-            <el-form-item :label="t('user.form.username')" prop="username">
-              <el-input v-model="userEntry.username" />
-            </el-form-item>
-
-            <!-- Show only for new user -->
-            <template v-if="userEntry.id == null">
+          <!-- Show only for new user -->
+          <template v-if="userEntry.id == null">
+            <div class="form-row">
               <el-form-item :label="t('user.form.newPassword')" prop="newPassword">
                 <el-input v-model="newPassword" type="password" show-password />
               </el-form-item>
@@ -216,16 +333,20 @@
               <el-form-item :label="t('user.form.confirmPassword')" prop="confirmPassword">
                 <el-input v-model="confirmPassword" type="password" show-password />
               </el-form-item>
-            </template>
+            </div>
+          </template>
 
-            <!-- Show only for editing existing user -->
-            <template v-else>
+          <!-- Show only for editing existing user -->
+          <template v-else>
+            <div class="form-row">
               <el-form-item>
                 <el-checkbox v-model="changePassword">
                   {{ t('user.form.changePassword') }}
                 </el-checkbox>
               </el-form-item>
+            </div>
 
+            <div class="form-row">
               <el-form-item v-if="changePassword" :label="t('user.form.newPassword')" prop="newPassword">
                 <el-input v-model="newPassword" type="password" show-password />
               </el-form-item>
@@ -233,23 +354,31 @@
               <el-form-item v-if="changePassword" :label="t('user.form.confirmPassword')" prop="confirmPassword">
                 <el-input v-model="confirmPassword" type="password" show-password />
               </el-form-item>
-            </template>
-          </el-form>
-        </div>
+            </div>
+          </template>
+        </el-form>
 
         <template #footer>
-          <div class="popup-container">
+          <div>
             <el-button @click="isUserFormDialogVisible = false">{{ t('user.form.cancelButton') }}</el-button>
             <el-button type="primary" @click="handleConfirmSubmit">{{ t('user.form.confirmButton') }}</el-button>
           </div>
         </template>
+
+        <!-- Certificate Form Dialog -->
+        <certificate-form-dialog
+          :visible="showCertForm"
+          :certificate="editingCert"
+          @save="handleCertFormSave"
+          @close="showCertForm = false"
+        />
       </el-dialog>
     </template>
 
+    <!-- User table pagination -->
     <template #foot>
       <el-pagination
         v-if="shouldShowPagination"
-        style="margin-top: 10px"
         @current-change="handleCurrentPageChange"
         @size-change="handleSizeChange"
         :current-page="currentPage"
@@ -281,24 +410,28 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch, onBeforeUnmount } from 'vue'
+import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import MesLayout from 'src/components/MesLayout'
-import { Search } from '@element-plus/icons-vue'
+import { EditPen, Edit, View, Delete, QuestionFilled, Search } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import TeamMembershipSelect from '@/views/user/components/TeamMembershipSelect.vue'
-import TeamLeadershipSelect from '@/views/user/components/TeamLeadershipSelect.vue'
 import * as userService from '@/views/user/components/userService.js'
+import { convertToLocalTime } from '@/utils/datetime'
+import RoleTag from '@/views/user/components/RoleTag.vue'
+import AssociatedTeamSelect from '@/views/user/components/AssociatedTeamSelect.vue'
+import CertificateHoverDetail from '@/views/user/components/CertificateHoverDetail.vue'
+import CertificateFormDialog from '@/views/user/components/CertificateFormDialog.vue'
+import CertificateList from '@/views/user/components/CertificateList.vue'
+import { useRouter } from 'vue-router'
 
 const { t } = useI18n()
 
 const isUserFormDialogVisible = ref( false )
 const searchInput = ref( '' )
-const teamsOptions = ref( [] )
-const teamsParentMap = ref( {} )
 const users = userService.useUserList()
 const filteredUsers = ref( [] )
-const rolesOptions = ref( [] )
+const roleOptions = ref( [] )
+const departmentOptions = ref( [] )
 const sortSettings = ref( { prop : '', order : '' } )
 const loading = ref( false )
 const changePassword = ref( false )
@@ -306,8 +439,7 @@ const newPassword = ref( '' )
 const confirmPassword = ref( '' )
 const tableHeight = ref( window.innerHeight - 250 )
 const currentPage = ref( 1 )
-const pageSize = ref( 10 )
-
+const pageSize = ref( 20 )
 const paginatedUsers = computed( () => {
   const sortedData = [...filteredUsers.value].sort( ( a, b ) => {
     if ( !sortSettings.value.prop || !sortSettings.value.order ) return 0
@@ -323,30 +455,36 @@ const paginatedUsers = computed( () => {
   return sortedData.slice( start, end )
 } )
 
+const teamOptions = ref( [] )
 const shouldShowPagination = computed( () => filteredUsers.value.length > 10 && Array.isArray( filteredUsers.value ) )
+const filteredRoleOptions = computed( () => {
+  const depId = userEntry.department_id
+  if ( !depId ) return []
 
-watch( filteredUsers, newVal => {
-  console.log( 'filteredUsers changed:', newVal.length )
+  return roleOptions.value.filter( r => {
+    return r.department_id === depId
+  } )
 } )
 
 const userEntryFormRef = ref()
 const userEntry = reactive( {
   id : null,
-  name : '',
-  role : '',
+  name : null,
+  department_id : null,
+  role_list : [],
   username : '',
   email : '',
   phone_number : '',
   activation_status : 1,
   password : '',
-  membershipTeams : [],
-  leadershipTeams : [],
-  teamAssignment : null
+  teams : [],
+  certificates : []
 } )
 
 const userFormValidationRules = ref( {
   name : [{ required : true, message : t( 'user.validation.nameRequired' ), trigger : 'blur' }],
-  role : [{ required : true, message : t( 'user.validation.roleRequired' ), trigger : 'change' }],
+  department_id : [{ required : true, message : t( 'user.validation.departmentRequired' ), trigger : 'change' }],
+  role_list : [{ required : true, message : t( 'user.validation.roleRequired' ), trigger : 'change' }],
   activation_status : [{ required : true, message : t( 'user.validation.statusRequired' ), trigger : 'change' }],
   username : [
     { required : true, message : t( 'user.validation.usernameRequired' ), trigger : 'blur' },
@@ -373,6 +511,11 @@ const userFormValidationRules = ref( {
   ]
 } )
 
+const formatDateTime = dateString => {
+  return dateString ? convertToLocalTime( dateString ) : '-'
+}
+
+// TODO: Delegate to backend user api later
 function searchUsers() {
   const searchText = searchInput.value.toLowerCase()
   filteredUsers.value = users.value.filter( item => {
@@ -382,7 +525,7 @@ function searchUsers() {
       item.username?.toLowerCase().includes( searchText ) ||
       item.email?.toLowerCase().includes( searchText ) ||
       String( item.phone_number ).toLowerCase().includes( searchText ) ||
-      rolesOptions.value
+      roleOptions.value
         .find( role => role.id === item.role_id )
         ?.name.toLowerCase()
         .includes( searchText ) ||
@@ -397,16 +540,16 @@ function searchUsers() {
 function resetUserEntry() {
   Object.assign( userEntry, {
     id : null,
+    department_id : null,
+    role_list : [],
     name : '',
-    role : '',
     username : '',
     email : '',
     phone_number : '',
     activation_status : 1,
     password : '',
-    membershipTeams : [],
-    leadershipTeams : [],
-    teamAssignment : null
+    associated_teams : [],
+    certificates : []
   } )
   newPassword.value = ''
   confirmPassword.value = ''
@@ -422,16 +565,23 @@ function openCreateForm() {
   isUserFormDialogVisible.value = true
 }
 
+const router = useRouter()
+
+function handleView( user ) {
+  router.push( { name : 'UserDetail', params : { id : user.id }} )
+}
+
 function handleEdit( user ) {
+  resetUserEntry()
+
   if ( userEntryFormRef.value ) {
     userEntryFormRef.value.resetFields()
   }
 
   Object.assign( userEntry, {
-    ...user,
-    role : user.role?.id || '',
-    membershipTeams : [...( user.teams || [] )],
-    leadershipTeams : [...( user.leadership_teams || [] )]
+    role_list : user.roles.map( r => r.id ),
+    department_id : user.department.id,
+    ...user
   } )
   isUserFormDialogVisible.value = true
 }
@@ -451,14 +601,7 @@ async function handleConfirmSubmit() {
     }
     const newUser = {
       id : userEntry.id ?? Date.now(),
-      name : userEntry.name,
-      username : userEntry.username,
-      email : userEntry.email,
-      phone_number : userEntry.phone_number,
-      role : rolesOptions.value.find( r => r.id === userEntry.role ),
-      activation_status : userEntry.activation_status,
-      teams : [],
-      leadership_teams : []
+      ...userEntry
     }
     if ( userEntry.id != null ) {
       await userService.updateUser( userEntry.id, newUser )
@@ -473,6 +616,26 @@ async function handleConfirmSubmit() {
   } catch ( err ) {
     console.error( 'Error submitting user form:', err )
     ElMessage.error( t( 'user.message.userUpdatedFailed' ) )
+  }
+}
+
+async function confirmDelete( row ) {
+  try {
+    await ElMessageBox.confirm(
+      t( 'common.deleteConfirmMessage', { name : row.name } ), // message
+      t( 'common.warning' ), // title
+      {
+        type : 'warning',
+        confirmButtonText : t( 'common.confirm' ),
+        cancelButtonText : t( 'common.cancel' ),
+        distinguishCancelAndClose : true
+      }
+    )
+
+    await handleDelete( row.id )
+    ElMessage.success( t( 'common.confirmDeleteSuccess' ) )
+  } catch {
+    // user canceled/closed — do nothing
   }
 }
 
@@ -513,15 +676,132 @@ async function handleActivationStatusChange( userId, newStatus ) {
   }
 }
 
+const localFilters = reactive( {
+  assignedTeam : [],
+  department_id : null,
+  role_id : null,
+  status : null
+} )
+
+// Certificates
+
+const showCertForm = ref( false )
+const editingCert = ref( null )
+
+const handleEditCert = cert => {
+  editingCert.value = { ...cert }
+  showCertForm.value = true
+}
+
+const handleAddCert = () => {
+  editingCert.value = null
+  showCertForm.value = true
+}
+
+const handleDeleteCert = cert => {
+  userEntry.certificates = userEntry.certificates.filter( c => c.id !== cert.id )
+}
+
+const handleCertFormSave = certData => {
+  if ( certData.id ) {
+    // Replace target certificate with new data
+    const index = userEntry.certificates.findIndex( c => c.id === certData.id )
+
+    if ( index !== -1 ) {
+      userEntry.certificates[index] = certData
+    }
+  } else {
+    // TODO: remove later when connected to backend
+    certData.id = Date.now() // mock id
+    userEntry.certificates.push( certData )
+  }
+  showCertForm.value = false
+}
+
 onMounted( async() => {
   filteredUsers.value = await userService.getUsers()
-  rolesOptions.value = [
-    { id : 1, name : 'Manager', el_tag_type : 'danger' },
-    { id : 2, name : 'Supervisor', el_tag_type : 'primary' },
-    { id : 3, name : 'Team Lead', el_tag_type : 'warning' },
-    { id : 4, name : 'Worker', el_tag_type : 'success' }
+  // TODO: Change mock roles data with actual api
+  roleOptions.value = [
+    { id : 1, name : 'Maintenance Manager', el_tag_type : 'danger', department_id : 1 },
+    { id : 2, name : 'Maintenance Supervisor', el_tag_type : 'primary', department_id : 1 },
+    { id : 3, name : 'Maintenance Team Lead', el_tag_type : 'warning', department_id : 1 },
+    { id : 4, name : 'Maintenance Worker', el_tag_type : 'success', department_id : 1 },
+    { id : 5, name : 'QC Manager', el_tag_type : 'danger', department_id : 2 },
+    { id : 6, name : 'QC Supervisor', el_tag_type : 'primary', department_id : 2 },
+    { id : 7, name : 'QC Team Lead', el_tag_type : 'warning', department_id : 2 },
+    { id : 8, name : 'QC Worker', el_tag_type : 'success', department_id : 2 },
+    { id : 9, name : 'Production Manager', el_tag_type : 'danger', department_id : 3 },
+    { id : 10, name : 'Production Supervisor', el_tag_type : 'primary', department_id : 3 },
+    { id : 11, name : 'Production Team Lead', el_tag_type : 'warning', department_id : 3 },
+    { id : 12, name : 'Production Worker', el_tag_type : 'success', department_id : 3 }
+  ]
+
+  // TODO: Change mock department data with actual api
+  departmentOptions.value = [
+    { id : 1, name : 'Maintenance', el_tag_type : 'success' },
+    { id : 2, name : 'Quality Control', el_tag_type : 'primary' },
+    { id : 3, name : 'Production', el_tag_type : 'danger' }
+  ]
+
+  teamOptions.value = [
+    {
+      id : 1,
+      name : 'QC Team A',
+      parent_team_id : null,
+      level : 1,
+      description : '',
+      members : [
+        { user_id : 101, isLeader : true },
+        { user_id : 102, isLeader : false },
+        { user_id : 103, isLeader : false }
+      ],
+      status : 1,
+      created_at : '2025-08-15T18:53:38.624593Z',
+      created_by : 1,
+      updated_at : 2
+    },
+    {
+      id : 2,
+      name : 'Maintenance Team B',
+      parent_team_id : null,
+      level : 1,
+      description : '',
+      members : [{ user_id : 107, isLeader : true }],
+      status : 1,
+      created_at : '2025-08-15T18:53:38.624593Z',
+      created_by : 1,
+      updated_at : 2
+    },
+    {
+      id : 3,
+      name : 'Maintenance Team C',
+      parent_team_id : null,
+      level : 1,
+      description : '',
+      members : [{ user_id : 106, isLeader : true }],
+      status : 1,
+      created_at : '2025-08-15T18:53:38.624593Z',
+      created_by : 1,
+      updated_at : 2
+    },
+    {
+      id : 4,
+      name : 'Maintenance Team D',
+      parent_team_id : null,
+      level : 1,
+      description : '',
+      members : [{ user_id : 105, isLeader : true }],
+      status : 1,
+      created_at : '2025-08-15T18:53:38.624593Z',
+      created_by : 1,
+      updated_at : 2
+    }
   ]
 } )
+
+function handleFilterChange() {
+  // TODO: trigger search user api with localFilters
+}
 
 const updateTableHeight = () => {
   tableHeight.value = window.innerHeight - 320
@@ -538,32 +818,41 @@ onBeforeUnmount( () => {
 
 <style scoped>
 .toolbar {
-  padding: 12px;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
 
-  .toolbar-item {
-    width: 100%;
-
-    .el-select,
-    .el-input {
-      width: 100% !important;
-    }
-  }
-
-  .right-group {
-    margin-left: auto;
+  .filters-container {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
+  }
+
+  .filter-item {
+    display: flex;
+    align-items: center;
   }
 
   .actions-row {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-left: 10px;
+    gap: 12px;
   }
+}
+
+.popover-text-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+::v-deep(.popover-text-wrapper .el-text) {
+}
+
+.two-col-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
 }
 </style>
