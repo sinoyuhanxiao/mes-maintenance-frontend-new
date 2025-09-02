@@ -1,0 +1,315 @@
+<template>
+  <el-dialog
+    :model-value="visible"
+    title="Select Tools"
+    width="600px"
+    @update:model-value="$emit('close')"
+    @close="$emit('close')"
+    top="8vh"
+  >
+    <div class="tools-picker">
+      <!-- Search -->
+      <div class="search-section">
+        <el-input v-model="searchQuery" placeholder="Search tools..." clearable>
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
+      </div>
+
+      <!-- Available Tools -->
+      <div class="available-section">
+        <h4>Available Tools</h4>
+        <div v-if="loading" class="loading-container">
+          <el-skeleton :rows="3" animated />
+        </div>
+        <div v-else-if="filteredTools.length === 0" class="empty-tools">
+          <el-empty description="No tools found" :image-size="60" />
+        </div>
+        <div v-else class="tools-list">
+          <div
+            v-for="tool in filteredTools"
+            :key="tool.tool_id"
+            class="tool-item"
+            :class="{ selected: isToolSelected(tool.tool_id) }"
+            @click="toggleTool(tool)"
+          >
+            <div class="tool-info">
+              <div class="tool-name">{{ tool.name }}</div>
+              <div v-if="tool.spec" class="tool-spec">{{ tool.spec }}</div>
+            </div>
+            <div class="tool-actions">
+              <el-checkbox :model-value="isToolSelected(tool.tool_id)" @click.stop @change="toggleTool(tool)" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Selected Tools -->
+      <div v-if="localSelectedTools.length > 0" class="selected-section">
+        <h4>Selected Tools ({{ localSelectedTools.length }})</h4>
+        <div class="selected-tools">
+          <el-tag
+            v-for="tool in getSelectedToolObjects()"
+            :key="tool.tool_id"
+            closable
+            @close="removeSelectedTool(tool.tool_id)"
+            class="selected-tool-tag"
+          >
+            {{ tool.name }}
+            <span v-if="tool.spec" class="tool-spec">- {{ tool.spec }}</span>
+          </el-tag>
+        </div>
+      </div>
+    </div>
+
+    <template #footer>
+      <span class="dialog-footer">
+        <el-button @click="$emit('close')">Cancel</el-button>
+        <el-button type="primary" @click="handleSave" :loading="saveLoading">
+          Save Selection ({{ localSelectedTools.length }})
+        </el-button>
+      </span>
+    </template>
+  </el-dialog>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, watch } from 'vue'
+import { Search } from '@element-plus/icons-vue'
+import { getAvailableTools } from '@/api/taskLibrary'
+
+const props = defineProps( {
+  visible : {
+    type : Boolean,
+    default : false
+  },
+  stepId : {
+    type : String,
+    required : true
+  },
+  selectedTools : {
+    type : Array,
+    default : () => []
+  },
+  loading : {
+    type : Boolean,
+    default : false
+  }
+} )
+
+const emit = defineEmits( ['save', 'close'] )
+
+const searchQuery = ref( '' )
+const availableTools = ref( [] )
+const localSelectedTools = ref( [] )
+const saveLoading = ref( false )
+// eslint-disable-next-line vue/no-dupe-keys
+const loading = ref( false )
+
+// Watch for selected tools changes
+watch(
+  () => props.selectedTools,
+  newTools => {
+    // Handle both array of IDs and array of objects
+    if ( newTools.length > 0 && typeof newTools[0] === 'object' ) {
+      localSelectedTools.value = newTools.map( tool => tool.tool_id )
+    } else {
+      localSelectedTools.value = [...newTools]
+    }
+  },
+  { immediate : true }
+)
+
+const filteredTools = computed( () => {
+  if ( !searchQuery.value ) {
+    return availableTools.value
+  }
+
+  const query = searchQuery.value.toLowerCase()
+  return availableTools.value.filter(
+    tool => tool.name.toLowerCase().includes( query ) || ( tool.spec && tool.spec.toLowerCase().includes( query ) )
+  )
+} )
+
+const isToolSelected = toolId => {
+  return localSelectedTools.value.includes( toolId )
+}
+
+const toggleTool = tool => {
+  const isSelected = isToolSelected( tool.tool_id )
+
+  if ( isSelected ) {
+    removeSelectedTool( tool.tool_id )
+  } else {
+    addSelectedTool( tool.tool_id )
+  }
+}
+
+const addSelectedTool = toolId => {
+  if ( !localSelectedTools.value.includes( toolId ) ) {
+    localSelectedTools.value.push( toolId )
+  }
+}
+
+const removeSelectedTool = toolId => {
+  localSelectedTools.value = localSelectedTools.value.filter( id => id !== toolId )
+}
+
+const getSelectedToolObjects = () => {
+  return availableTools.value.filter( tool => localSelectedTools.value.includes( tool.tool_id ) )
+}
+
+const handleSave = () => {
+  saveLoading.value = true
+
+  // Convert tool IDs to tool objects for the save event
+  const selectedToolObjects = getSelectedToolObjects().map( tool => ( {
+    tool_id : tool.tool_id,
+    name : tool.name,
+    spec : tool.spec
+  } ) )
+
+  setTimeout( () => {
+    emit( 'save', props.stepId, selectedToolObjects )
+    saveLoading.value = false
+  }, 300 ) // Simulate save delay
+}
+
+const loadTools = async() => {
+  loading.value = true
+  try {
+    const response = await getAvailableTools()
+    availableTools.value = response.data
+  } catch ( error ) {
+    console.error( 'Failed to load tools:', error )
+  } finally {
+    loading.value = false
+  }
+}
+
+// Load tools when dialog opens
+watch(
+  () => props.visible,
+  isVisible => {
+    if ( isVisible && availableTools.value.length === 0 ) {
+      loadTools()
+    }
+  }
+)
+
+onMounted( () => {
+  if ( props.visible ) {
+    loadTools()
+  }
+} )
+</script>
+
+<style scoped>
+.tools-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 500px;
+}
+
+.search-section {
+  margin-bottom: 8px;
+}
+
+.selected-section h4,
+.available-section h4 {
+  margin: 0 0 12px 0;
+  color: #303133;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.selected-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.selected-tool-tag {
+  margin: 0;
+}
+
+.tool-spec {
+  opacity: 0.7;
+  font-size: 11px;
+}
+
+.available-section {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.loading-container {
+  padding: 20px;
+}
+
+.empty-tools {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.tools-list {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  max-height: 300px;
+}
+
+.tool-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.tool-item:last-child {
+  border-bottom: none;
+}
+
+.tool-item:hover {
+  background: #f5f7fa;
+}
+
+.tool-item.selected {
+  background: #e6f7ff;
+  border-color: #91d5ff;
+}
+
+.tool-info {
+  flex: 1;
+}
+
+.tool-name {
+  font-weight: 500;
+  color: #303133;
+  margin-bottom: 2px;
+}
+
+.tool-item .tool-spec {
+  font-size: 12px;
+  color: #606266;
+}
+
+.tool-actions {
+  margin-left: 12px;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+</style>

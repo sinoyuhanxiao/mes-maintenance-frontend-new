@@ -16,7 +16,6 @@
         <el-option :label="$t('workOrder.recurrence.daily')" value="daily"></el-option>
         <el-option :label="$t('workOrder.recurrence.weekly')" value="weekly"></el-option>
         <el-option :label="$t('workOrder.recurrence.monthlyByDate')" value="monthlyByDate"></el-option>
-        <!--        <el-option label="每月 (按星期几)" value="monthlyByWeekday"></el-option>-->
         <el-option :label="$t('workOrder.recurrence.yearly')" value="yearly"></el-option>
       </el-select>
     </el-form-item>
@@ -137,16 +136,6 @@
       style="width: 500px"
     />
   </el-form-item>
-
-  <!--  <el-form-item label="预估分钟">-->
-  <!--    <el-input-number-->
-  <!--        v-model="durationMinutes"-->
-  <!--        :min="1"-->
-  <!--        :step="5"-->
-  <!--        style="width: 120px"-->
-  <!--        controls-position="right"-->
-  <!--    />-->
-  <!--  </el-form-item>-->
 
   <!-- End Date Time Selection (Displayed if recurrence is not 'daily') -->
   <el-form-item

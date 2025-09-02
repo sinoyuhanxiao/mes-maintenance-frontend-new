@@ -2,11 +2,11 @@
   <div class="el-col el-col-24 is-guttered card-container">
     <el-card class="card-shadow">
       <div class="el-card__header">
-        <div class="card-header"><span>附件信息</span></div>
+        <div class="card-header"><span>Attachment Information</span></div>
       </div>
       <div class="el-card__body">
         <el-descriptions border :column="1">
-          <el-descriptions-item label="图片预览">
+          <el-descriptions-item label="Image Preview">
             <div class="image-list">
               <template v-if="mode === 'view'">
                 <el-image
@@ -40,7 +40,7 @@
             </div>
           </el-descriptions-item>
 
-          <el-descriptions-item label="文件下载">
+          <el-descriptions-item label="File Download">
             <div class="file-list">
               <template v-if="mode === 'view'">
                 <div v-for="(file, index) in fileListUrlComputed" :key="index" style="margin-bottom: 8px">
@@ -57,7 +57,7 @@
                   :on-change="handleFileChange"
                   accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar,.csv,.json,.xml,.ppt,.pptx"
                 >
-                  <el-button size="small" type="success">点击上传</el-button>
+                  <el-button size="small" type="success">Click to Upload</el-button>
                 </el-upload>
               </template>
             </div>

@@ -191,14 +191,6 @@ import {
   Clock
 } from '@element-plus/icons-vue'
 
-// Props
-// const props = defineProps( {
-//   workOrder : {
-//     type : Object,
-//     default : null
-//   }
-// } )
-
 // Emits
 const emit = defineEmits( ['add-comment'] )
 
@@ -207,7 +199,7 @@ const activeTab = ref( 'comments' )
 const newComment = ref( '' )
 const attachmentFiles = ref( [] )
 
-// Enhanced Mock Comments with 5 total comments including attachments
+// GPT generated mock comments
 const mockComments = ref( [
   {
     id : 'cmt-001',
@@ -438,7 +430,7 @@ const removeAttachment = index => {
 
 const downloadAttachment = attachment => {
   ElMessage.info( `Downloading ${attachment.name}...` )
-  // In a real implementation, this would trigger a file download
+  // TODO: this would trigger a file download
 }
 
 const getCommentTypeColor = type => {

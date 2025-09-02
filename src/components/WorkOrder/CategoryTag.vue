@@ -6,7 +6,6 @@
 
 <script setup>
 import { computed } from 'vue'
-// import { useI18n } from 'vue-i18n'
 import { getCategoryTagType } from '@/utils/general'
 
 // Props
@@ -16,8 +15,6 @@ const props = defineProps( {
     default : () => ( {} )
   }
 } )
-
-// const { t } = useI18n()
 
 // Computed
 const categoryName = computed( () => {

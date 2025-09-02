@@ -6,6 +6,7 @@ import {
 
 import Layout from '@/layout/index.vue'
 import nested from './modules/nested'
+import taskLibraryRoutes from './modules/taskLibrary'
 
 // 配置路由信息
 export const constantRoutes = [
@@ -149,13 +150,6 @@ export const asyncRoutes = [
         name : 'ViewWorkOrder',
         props : true,
         meta : { title : 'router.viewWorkOrder', noCache : true, hidden : true }
-      },
-      {
-        path : 'test-view',
-        component : () => import( '@/views/workOrder/TestView.vue' ),
-        name : 'TestView',
-        props : true,
-        meta : { title : 'router.viewWorkOrder', noCache : true, hidden : true }
       }
     ]
   },
@@ -260,11 +254,15 @@ export const asyncRoutes = [
       {
         path : 'my-account',
         component : () => import( '@/views/userCenter/index.vue' ),
-        name : 'MyAccount',
-        meta : { title : 'router.myAccount', icon : 'users', noCache : true }
+        name : 'UserCenter',
+        meta : { title : 'router.myAccount', noCache : true }
       }
     ]
   },
+
+  // Maintenance Library Routes
+  taskLibraryRoutes,
+
   {
     path : '/:pathMatch(.*)',
     redirect : '/404',

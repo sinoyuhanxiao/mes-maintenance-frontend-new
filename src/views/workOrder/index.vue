@@ -153,7 +153,7 @@ const handleView = row => {
 
 const handleCreate = () => {
   if ( currentView.value === 'todo' ) {
-    // For todo view, emit create event to TodoView
+    // For this view, emit create event to TodoView
     todoViewRef.value?.showCreateForm()
   } else {
     // For table view, navigate to separate page
@@ -185,7 +185,7 @@ const handleViewChange = async view => {
     listQuery.limit = 20
   }
 
-  // When switching to todo view, set default status filter for "todo" tab
+  // When switching to to-do view, set default status filter for "to-do" tab
   if ( view === 'todo' ) {
     updateFilters( { status : 'pending,in_progress' } )
   } else if ( view === 'table' ) {
@@ -351,7 +351,6 @@ defineOptions( {
   border-radius: 8px;
 }
 
-// Responsive design
 @media (max-width: 768px) {
   .view-mode-selector {
     .el-select {

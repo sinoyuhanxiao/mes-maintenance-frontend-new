@@ -6,13 +6,13 @@
         <el-card class="card-shadow">
           <div class="el-card__header">
             <div class="card-header">
-              <span>工单基本信息</span>
+              <span>Work Order Basic Information</span>
               <span class="workorder-id">#{{ workOrder.id }}</span>
             </div>
           </div>
           <div class="el-card__body">
             <el-descriptions border :column="2">
-              <el-descriptions-item label="工单名称" :width="labelWidth" :span="1">
+              <el-descriptions-item label="Work Order Name" :width="labelWidth" :span="1">
                 <template #default>
                   <div style="display: flex; align-items: center">
                     <el-input v-if="editing" v-model="workOrder.name" ref="nameInputRef" size="default" />
@@ -28,7 +28,7 @@
                   </div>
                 </template>
               </el-descriptions-item>
-              <el-descriptions-item label="工单号" :width="labelWidth" :span="1">
+              <el-descriptions-item label="Work Order Number" :width="labelWidth" :span="1">
                 <template #default>
                   <div style="display: flex; align-items: center">
                     <span>{{ workOrder.code }}</span>
@@ -41,7 +41,7 @@
                   </div>
                 </template>
               </el-descriptions-item>
-              <el-descriptions-item label="是否停机" :width="labelWidth" :span="2">
+              <el-descriptions-item label="Halt" :width="labelWidth" :span="2">
                 <template #default>
                   <el-switch
                     v-if="editing"
@@ -49,13 +49,13 @@
                     :active-value="1"
                     :inactive-value="0"
                     inline-prompt
-                    active-text="是"
-                    inactive-text="否"
+                    active-text="Yes"
+                    inactive-text="No"
                   />
-                  <span v-else>{{ workOrder.halt_type === 1 ? '是' : '否' }}</span>
+                  <span v-else>{{ workOrder.halt_type === 1 ? 'Yes' : 'No' }}</span>
                 </template>
               </el-descriptions-item>
-              <el-descriptions-item label="描述" :width="labelWidth" :span="2">
+              <el-descriptions-item label="Description" :width="labelWidth" :span="2">
                 <template #default>
                   <el-input v-if="editing" v-model="workOrder.description" type="textarea" />
                   <span v-else>{{ workOrder.description }}</span>
@@ -70,13 +70,13 @@
       <div class="el-col el-col-24 is-guttered card-container">
         <el-card class="card-shadow">
           <div class="el-card__header">
-            <div class="card-header"><span>设备与资产信息</span></div>
+            <div class="card-header"><span>Equipment & Asset Information</span></div>
           </div>
           <div class="el-card__body">
             <el-descriptions border :column="2">
-              <el-descriptions-item label="生产线" :width="labelWidth">
+              <el-descriptions-item label="Production Line" :width="labelWidth">
                 <template #default>
-                  <el-select v-if="editing" v-model="workOrder.production_line.id" placeholder="生产线">
+                  <el-select v-if="editing" v-model="workOrder.production_line.id" placeholder="Production Line">
                     <el-option
                       v-for="item in commonDataStore.productionLines"
                       :key="item.id"
@@ -87,25 +87,25 @@
                   <span v-else>{{ workOrder.production_line?.name }}</span>
                 </template>
               </el-descriptions-item>
-              <el-descriptions-item label="设备组" :width="labelWidth">
+              <el-descriptions-item label="Equipment Group" :width="labelWidth">
                 <template #default>
-                  <el-select v-if="editing" v-model="workOrder.equipment_group.id" placeholder="设备组">
+                  <el-select v-if="editing" v-model="workOrder.equipment_group.id" placeholder="Equipment Group">
                     <el-option v-for="item in equipmentGroups" :key="item.id" :label="item.name" :value="item.id" />
                   </el-select>
                   <span v-else>{{ workOrder.equipment_group?.name }}</span>
                 </template>
               </el-descriptions-item>
-              <el-descriptions-item label="设备" :width="labelWidth">
+              <el-descriptions-item label="Equipment" :width="labelWidth">
                 <template #default>
-                  <el-select v-if="editing" v-model="workOrder.equipment.id" placeholder="设备">
+                  <el-select v-if="editing" v-model="workOrder.equipment.id" placeholder="Equipment">
                     <el-option v-for="item in equipments" :key="item.id" :label="item.name" :value="item.id" />
                   </el-select>
                   <span v-else>{{ workOrder.equipment?.name }}</span>
                 </template>
               </el-descriptions-item>
-              <el-descriptions-item label="组件" :width="labelWidth">
+              <el-descriptions-item label="Component" :width="labelWidth">
                 <template #default>
-                  <el-select v-if="editing" v-model="workOrder.component.id" placeholder="组件">
+                  <el-select v-if="editing" v-model="workOrder.component.id" placeholder="Component">
                     <el-option v-for="item in components" :key="item.id" :label="item.name" :value="item.id" />
                   </el-select>
                   <span v-else>{{ workOrder.component?.name }}</span>
@@ -120,13 +120,13 @@
       <div class="el-col el-col-24 is-guttered card-container">
         <el-card class="card-shadow">
           <div class="el-card__header">
-            <div class="card-header"><span>分类信息</span></div>
+            <div class="card-header"><span>Classification Information</span></div>
           </div>
           <div class="el-card__body">
             <el-descriptions border :column="2">
-              <el-descriptions-item label="优先级" :width="labelWidth">
+              <el-descriptions-item label="Priority" :width="labelWidth">
                 <template #default>
-                  <el-select v-if="editing" v-model="workOrder.priority.id" placeholder="优先级" style="width: 100%">
+                  <el-select v-if="editing" v-model="workOrder.priority.id" placeholder="Priority" style="width: 100%">
                     <el-option
                       v-for="item in commonDataStore.priorities"
                       :key="item.id"
@@ -138,9 +138,14 @@
                 </template>
               </el-descriptions-item>
 
-              <el-descriptions-item label="工单类别" :width="labelWidth">
+              <el-descriptions-item label="Work Order Category" :width="labelWidth">
                 <template #default>
-                  <el-select v-if="editing" v-model="workOrder.category.id" placeholder="工单类别" style="width: 100%">
+                  <el-select
+                    v-if="editing"
+                    v-model="workOrder.category.id"
+                    placeholder="Work Order Category"
+                    style="width: 100%"
+                  >
                     <el-option
                       v-for="item in commonDataStore.categories"
                       :key="item.id"
@@ -152,9 +157,14 @@
                 </template>
               </el-descriptions-item>
 
-              <el-descriptions-item label="工作类型" :width="labelWidth">
+              <el-descriptions-item label="Work Type" :width="labelWidth">
                 <template #default>
-                  <el-select v-if="editing" v-model="workOrder.work_type.id" placeholder="工作类型" style="width: 100%">
+                  <el-select
+                    v-if="editing"
+                    v-model="workOrder.work_type.id"
+                    placeholder="Work Type"
+                    style="width: 100%"
+                  >
                     <el-option
                       v-for="item in commonDataStore.workTypes"
                       :key="item.id"
@@ -169,48 +179,6 @@
           </div>
         </el-card>
       </div>
-
-      <!-- 附件信息卡片 -->
-      <!--    <div class="el-col el-col-24 is-guttered card-container">-->
-      <!--      <el-card class="card-shadow">-->
-      <!--        <div class="el-card__header">-->
-      <!--          <div class="card-header"><span>附件信息</span></div>-->
-      <!--        </div>-->
-      <!--        <div class="el-card__body">-->
-      <!--          <el-descriptions border :column="1">-->
-      <!--            <el-descriptions-item label="图片预览">-->
-      <!--              <div class="image-list">-->
-      <!--                <el-image-->
-      <!--                    v-for="(img, index) in workOrder.image_list"-->
-      <!--                    :key="index"-->
-      <!--                    :src="img"-->
-      <!--                    style="width: 100px; height: 100px; margin-right: 10px"-->
-      <!--                    fit="cover"-->
-      <!--                    :preview-src-list="workOrder.image_list"-->
-      <!--                />-->
-      <!--              </div>-->
-      <!--            </el-descriptions-item>-->
-      <!--            <el-descriptions-item label="文件下载" >-->
-      <!--              <div class="file-list">-->
-      <!--                <div-->
-      <!--                    v-for="(file, index) in workOrder.file_list"-->
-      <!--                    :key="index"-->
-      <!--                    style="margin-bottom: 8px"-->
-      <!--                >-->
-      <!--                  <el-link-->
-      <!--                      :href="file"-->
-      <!--                      target="_blank"-->
-      <!--                      type="primary"-->
-      <!--                  >-->
-      <!--                    {{ getFileName(file) }}-->
-      <!--                  </el-link>-->
-      <!--                </div>-->
-      <!--              </div>-->
-      <!--            </el-descriptions-item>-->
-      <!--          </el-descriptions>-->
-      <!--        </div>-->
-      <!--      </el-card>-->
-      <!--    </div>-->
 
       <!-- 附件信息Common卡片 -->
       <div class="el-col el-col-24 is-guttered">
@@ -229,24 +197,24 @@
       <div class="el-col el-col-24 is-guttered card-container">
         <el-card class="card-shadow">
           <div class="el-card__header">
-            <div class="card-header"><span>任务进度</span></div>
+            <div class="card-header"><span>Task Progress</span></div>
           </div>
           <div class="el-card__body progress-body">
             <div class="progress-left">
               <el-progress type="circle" :percentage="taskProgress" :stroke-width="8" status="success" />
               <div class="progress-text">
-                已完成 {{ workOrder.work_order_progress.completed_task_amount || 0 }} /
+                Completed {{ workOrder.work_order_progress.completed_task_amount || 0 }} /
                 {{ workOrder.work_order_progress.total_task_amount || 0 }}
               </div>
             </div>
             <el-descriptions border :column="1" class="progress-descriptions">
-              <el-descriptions-item label="开始时间">
+              <el-descriptions-item label="Start Time">
                 {{ convertToLocalTime(workOrder.start_date) }}
               </el-descriptions-item>
-              <el-descriptions-item label="截止时间">
+              <el-descriptions-item label="End Time">
                 {{ convertToLocalTime(workOrder.end_date) }}
               </el-descriptions-item>
-              <el-descriptions-item label="状态"> 进行中 </el-descriptions-item>
+              <el-descriptions-item label="Status">In Progress</el-descriptions-item>
             </el-descriptions>
           </div>
         </el-card>
@@ -256,18 +224,18 @@
       <div class="el-col el-col-24 is-guttered card-container">
         <el-card class="card-shadow">
           <div class="el-card__header">
-            <div class="card-header"><span>评论</span></div>
+            <div class="card-header"><span>Comments</span></div>
           </div>
           <div class="el-card__body">
             <el-input
               v-model="newComment"
-              placeholder="写下评论..."
+              placeholder="Write a comment..."
               type="textarea"
               :autosize="{ minRows: 3, maxRows: 5 }"
               style="margin-bottom: 10px"
             />
             <div style="text-align: right">
-              <el-button type="primary" size="default" @click="addComment">发送</el-button>
+              <el-button type="primary" size="default" @click="addComment">Send</el-button>
             </div>
             <div v-for="(comment, index) in comments" :key="index" style="margin-top: 15px">
               <div style="font-weight: bold">Erik Yu <span style="color: #999; font-size: 12px">2:15 PM</span></div>
@@ -281,7 +249,7 @@
       <el-skeleton :rows="8" animated />
       <!-- optional skeleton UI -->
     </div>
-    <el-tooltip :content="editing ? '保存修改' : '编辑工单'" placement="top">
+    <el-tooltip :content="editing ? 'Save Changes' : 'Edit Work Order'" placement="top">
       <el-button
         class="floating-edit-button"
         :type="editing ? 'success' : 'primary'"
@@ -293,7 +261,7 @@
     </el-tooltip>
 
     <transition name="slide-fade">
-      <el-tooltip v-if="editing" content="删除工单" placement="bottom">
+      <el-tooltip v-if="editing" content="Delete Work Order" placement="bottom">
         <el-button class="floating-delete-button" type="danger" circle size="large" icon="Delete" />
       </el-tooltip>
     </transition>
@@ -344,7 +312,7 @@ const imageListMultipartAdded = ref( [] )
 const fileListMultipartAdded = ref( [] )
 const imageListUrlDeleted = ref( [] )
 const fileListUrlDeleted = ref( [] )
-const comments = ref( ['喝口腌笃鲜，郭郝每一天', '工单工单，非同一般。要想吃饱，先得不堪。'] ) // initial mock comments
+const comments = ref( ['Sample comment 1', 'Sample comment 2'] )
 const newComment = ref( '' )
 const addComment = () => {
   if ( newComment.value.trim() ) {
@@ -354,7 +322,7 @@ const addComment = () => {
 }
 const copyToClipboard = text => {
   navigator.clipboard.writeText( text ).then( () => {
-    ElMessage.success( '已复制到剪贴板' )
+    ElMessage.success( 'Copied to clipboard' )
   } )
 }
 
@@ -366,9 +334,7 @@ onMounted( async() => {
   await commonDataStore.fetchWorkTypes()
   await commonDataStore.fetchCategories()
 
-  // TODO: update with new equipment api
-  // await commonDataStore.fetchProductionLines()
-  originalWorkOrder.value = JSON.parse( JSON.stringify( workOrder.value ) ) // snapshot
+  originalWorkOrder.value = JSON.parse( JSON.stringify( workOrder.value ) )
 
   workOrder.value = {
     id : data.id,
@@ -399,9 +365,8 @@ onMounted( async() => {
 
   loading.value = false
 
-  // update the title TODO: make the slicing util functions
   const shortName = workOrder.value.name.length > 5 ? `${workOrder.value.name.slice( 0, 5 )}...` : workOrder.value.name
-  updateTabTitle( route, `工单#${workOrder.value.id} - ${shortName}` )
+  updateTabTitle( route, `Work Order #${workOrder.value.id} - ${shortName}` )
 } )
 
 function calculateUpdatedWorkOrder() {
@@ -416,9 +381,7 @@ function calculateUpdatedWorkOrder() {
           updated[key + '_id'] = currentId
         }
       } else if ( Array.isArray( workOrder.value[key] ) ) {
-        // skip array fields (or handle as needed)
       } else {
-        // nested object without 'id' (skip or handle)
       }
     } else {
       if ( workOrder.value[key] !== originalWorkOrder.value[key] ) {
@@ -427,7 +390,6 @@ function calculateUpdatedWorkOrder() {
     }
   }
 
-  // Add updated_by and updated_at
   updated.updated_by = 37
   updated.updated_at = new Date().toISOString()
   delete updated.created_by
@@ -456,13 +418,7 @@ watch( editing, newVal => {
   }
 } )
 
-watch(
-  workOrder,
-  newVal => {
-    // Work order data changed
-  },
-  { deep : true }
-)
+watch( workOrder, newVal => {}, { deep : true } )
 
 watch(
   () => workOrder.value.production_line?.id,
@@ -496,7 +452,7 @@ watch(
 
 watch( editing, newVal => {
   if ( !newVal ) {
-    calculateUpdatedWorkOrder() // when exiting edit mode
+    calculateUpdatedWorkOrder()
   }
 } )
 
@@ -510,9 +466,7 @@ watch(
     () => workOrder.value.file_list,
     editing
   ],
-  ( [newImagesAdded, newFilesAdded, deletedImages, deletedFiles, imageListUrl, fileListUrl, mode] ) => {
-    // Images and files state changed
-  },
+  ( [newImagesAdded, newFilesAdded, deletedImages, deletedFiles, imageListUrl, fileListUrl, mode] ) => {},
   { deep : true }
 )
 
@@ -523,7 +477,6 @@ watch(
       const { data } = await getEquipmentGroups( val )
       equipmentGroups.value = data.data
     }
-    // 清空下级选择
     workOrder.value.equipment_group.id = null
     workOrder.value.equipment.id = null
     workOrder.value.component.id = null
@@ -537,7 +490,6 @@ watch(
       const { data } = await getEquipments( val )
       equipments.value = data.data
     }
-    // 清空下级选择
     workOrder.value.equipment.id = null
     workOrder.value.component.id = null
   }
@@ -550,7 +502,6 @@ watch(
       const { data } = await getEquipmentComponents( val )
       components.value = data.data
     }
-    // 清空下级选择
     workOrder.value.component.id = null
   }
 )
