@@ -453,6 +453,7 @@ export default {
     confirm : 'Confirm',
     cancel : 'Cancel',
     delete : 'Delete',
+    view : 'View',
     edit : 'Edit',
     save : 'Save',
     loading : 'Loading...',
@@ -467,7 +468,18 @@ export default {
     startDate : 'Start Date',
     endDate : 'End Date',
     searchByKeyword : 'Search by keyword',
-    paginationTotal : 'Total'
+    paginationTotal : 'Total',
+    imageUpload : 'Image Upload',
+    name : 'Name',
+    namePlaceholder : 'Input Name',
+    nameRequired : 'Name is required',
+    description : 'Description',
+    descriptionPlaceholder : 'Input Description',
+    createdAt : 'Created At',
+    createdBy : 'Created By',
+    updatedAt : 'Updated At',
+    updatedBy : 'Updated By',
+    actions : 'Actions'
   },
   errors : {
     badRequest : 'Bad request',
@@ -502,6 +514,7 @@ export default {
     locations : 'Locations',
     vendorsAndLocations : 'Vendors & Locations',
     userCenter : 'User Center',
+    userDetail : 'User Detail',
     systemManagement : 'System Management',
     userManagement : 'User Management',
     teamManagement : 'Team Management',
@@ -517,6 +530,12 @@ export default {
     menu2 : 'Menu 2'
   },
   user : {
+    unknownUser : 'Unknown User',
+    department : 'Department',
+    assignedTeam : 'Assigned Team',
+    lastVisited : 'Last Visited',
+    loginCredential : 'Login Credential',
+    userInformation : 'User Information',
     managerAssignTeamMembershipHint : 'Manager can not be assign as member under any team',
     managerAssignTeamLeadershipHint : 'Manager can not be assign as leader under any team',
     supervisorAssignTeamMembershipHint : 'Supervisor can not be assign as member under any team',
@@ -529,11 +548,20 @@ export default {
     leadershipTeamsPlaceholder : 'Select team to set this user as leader this team',
     membershipTeams : 'Membership Team',
     membershipTeamsPlaceholder : 'Select teams to set this user as members under these teams',
+    certificate : 'Certificate',
+    noCertificates : 'No Certificates',
+    addCertificate : 'Add Certificate',
+    editCertificate : 'Edit Certificate',
+    certificateName : 'Certificate Name',
+    certificateNumber : 'Certificate Number',
+    reviewer : 'Reviewer',
+    issueDate : 'Issued date',
+    expiryDate : 'Expiry date',
     table : {
       id : 'ID',
       name : 'Name',
       username : 'Username',
-      teams : 'Assigned Teams',
+      teams : 'Assigned Team',
       role : 'Role',
       status : 'Status',
       email : 'Email',
@@ -542,7 +570,8 @@ export default {
       statusTooltip : "If inactive, the user won't be able to use this account",
       editButton : 'Edit',
       deleteButton : 'Delete',
-      leader : 'Leader'
+      leader : 'Leader',
+      certificate : 'Certificate'
     },
     form : {
       newUser : 'New User',
@@ -557,9 +586,10 @@ export default {
       password : 'Password',
       cancelButton : 'Cancel',
       confirmButton : 'Confirm',
-      assignedTeamPlaceHolder : 'Select Assigned Teams',
+      selectTeamPlaceHolder : 'Select Team',
       selectRolePlaceHolder : 'Select Role',
       selectStatusPlaceHolder : 'Select Status',
+      selectDepartmentPlaceHolder : 'Select Department',
       changePassword : 'Change Password',
       newPassword : 'New Password',
       confirmPassword : 'Confirm Password'
@@ -569,8 +599,8 @@ export default {
       inactive : 'Inactive'
     },
     message : {
-      userAddedSuccess : 'User added successfully',
-      userAddedFailed : 'Failed to add user',
+      userCreatedSuccess : 'User added successfully',
+      userCreatedFailed : 'Failed to add user',
       userUpdatedSuccess : 'User updated successfully',
       userUpdatedFailed : 'Failed to update user',
       userDeletedSuccess : 'User deleted successfully',
@@ -593,7 +623,8 @@ export default {
       pleaseCorrectErrors : 'Please correct the errors.',
       passwordNotMatchOrFewerCharacters : 'Password does not match or fewer than 4 characters',
       yourAccountIsDeletedAndUnableToLogin : 'Your account is deleted, once you log out you are not able to log in.',
-      deletionFailed : 'Deletion failed'
+      deletionFailed : 'Deletion failed',
+      errorLoadingUsersData : 'Error loading user data'
     },
     validation : {
       nameRequired : 'Name is required',
@@ -608,10 +639,12 @@ export default {
       emailRequired : 'Email is required',
       emailFormat : 'Invalid email format',
       phoneNumberRequired : 'Phone number is required',
-      phoneNumberFormat : 'Invalid phone number format'
+      phoneNumberFormat : 'Invalid phone number format',
+      departmentRequired : 'Department is required'
     }
   },
   team : {
+    team : 'Team',
     table : {
       id : 'ID',
       name : 'Team Name',
@@ -675,6 +708,16 @@ export default {
       selectType : 'Select team type',
       selectStatus : 'Select status'
     }
+  },
+  shift : {
+    graceTimeMinute : 'Grace Period (Minute)',
+    createShift : 'New Shift',
+    editShift : 'Edit Shift',
+    startTime : 'Start Time',
+    startTimeRequired : 'Start time is required',
+    endTimeRequired : 'End time is required',
+    endTime : 'End Time',
+    minute : 'Minute'
   },
   userCenter : {
     myAccount : 'My Account',

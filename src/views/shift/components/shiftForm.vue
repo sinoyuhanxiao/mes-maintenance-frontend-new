@@ -1,128 +1,101 @@
-<!--<template>-->
-<!--  <el-form :model="shift" ref="shiftFormRef" label-width="120px" :rules="validationRules">-->
-<!--    &lt;!&ndash; Name (Required) &ndash;&gt;-->
-<!--    <el-form-item-->
-<!--        :label="translate('common.addDialog.name')"-->
-<!--        prop="name"-->
-<!--    >-->
-<!--      <el-input-->
-<!--          v-model="shift.name"-->
-<!--          :placeholder="translate('shiftManagement.namePlaceholder')"-->
-<!--          maxlength="255"-->
-<!--      />-->
-<!--    </el-form-item>-->
+<template>
+  <el-form :model="shift" ref="shiftFormRef" :rules="validationRules" label-width="170px">
+    <template v-for="item in formItems" :key="item.prop">
+      <el-form-item :label="item.label" :prop="item.prop" v-if="item.type === 'input'">
+        <el-input v-model="shift[item.prop]" :placeholder="item.placeholder" :maxlength="item.maxlength" />
+      </el-form-item>
 
-<!--    &lt;!&ndash; Description (Optional) &ndash;&gt;-->
-<!--    <el-form-item-->
-<!--        :label="translate('orderManagement.description')"-->
-<!--    >-->
-<!--      <el-input-->
-<!--          type="textarea"-->
-<!--          v-model="shift.description"-->
-<!--          :placeholder="translate('shiftManagement.descriptionPlaceholder')"-->
-<!--      />-->
-<!--    </el-form-item>-->
+      <el-form-item :label="item.label" :prop="item.prop" v-else-if="item.type === 'textarea'">
+        <el-input type="textarea" v-model="shift[item.prop]" :placeholder="item.placeholder" />
+      </el-form-item>
+    </template>
 
-<!--    <el-row>-->
-<!--      <el-col :span="7">-->
+    <el-row>
+      <el-col :span="7">
+        <el-form-item :label="t('shift.startTime')" prop="start_time">
+          <el-time-picker v-model="shift.start_time" />
+        </el-form-item>
+      </el-col>
 
-<!--        &lt;!&ndash; Start Time (Required) &ndash;&gt;-->
-<!--        <el-form-item-->
-<!--            :label="translate('shiftManagement.startTime')"-->
-<!--            prop="start_time"-->
-<!--        >-->
-<!--          <el-time-picker-->
-<!--              v-model="shift.start_time"-->
-<!--              :placeholder="translate('shiftManagement.startTimePlaceholder')"-->
-<!--          />-->
-<!--        </el-form-item>-->
-<!--      </el-col>-->
+      <el-col :span="7">
+        <el-form-item :label="t('shift.endTime')" prop="end_time">
+          <el-time-picker v-model="shift.end_time" />
+        </el-form-item>
+      </el-col>
 
-<!--      <el-col :span="7">-->
+      <el-col :span="10">
+        <el-form-item :label="t('shift.graceTimeMinute')">
+          <el-input-number v-model="shift.grace_minute" :min="0" :max="120" style="margin-right: 10px" />
+        </el-form-item>
+      </el-col>
+    </el-row>
 
-<!--        &lt;!&ndash; End Time (Required) &ndash;&gt;-->
-<!--        <el-form-item-->
-<!--            :label="translate('shiftManagement.endTime')"-->
-<!--            prop="end_time"-->
-<!--        >-->
-<!--          <el-time-picker-->
-<!--              v-model="shift.end_time"-->
-<!--              :placeholder="translate('shiftManagement.endTimePlaceholder')"-->
-<!--          />-->
-<!--        </el-form-item>-->
-<!--      </el-col>-->
+    <div style="display: flex; justify-content: end">
+      <el-button @click="emit('cancel')">{{ t('common.cancel') }}</el-button>
+      <el-button type="primary" @click="validateAndSubmit">{{ t('common.confirm') }}</el-button>
+    </div>
+  </el-form>
+</template>
 
-<!--      <el-col :span="10">-->
-<!--        &lt;!&ndash; Grace Minute &ndash;&gt;-->
-<!--        <el-form-item-->
-<!--            :label="translate('shiftManagement.graceMinute')"-->
-<!--        >-->
-<!--          <el-input-number-->
-<!--              v-model="shift.grace_minute"-->
-<!--              :min="0"-->
-<!--              :max="120"-->
-<!--              :placeholder="translate('shiftManagement.graceMinute')"-->
-<!--              style="margin-right: 10px;"-->
-<!--          />-->
-<!--          <span>{{translate('MyTaskTable.time.minute')}}</span>-->
-<!--        </el-form-item>-->
-<!--      </el-col>-->
-<!--    </el-row>-->
+<script setup>
+import { ref, computed, toRef } from 'vue'
+// import { useStore } from 'vuex'
+import { useI18n } from 'vue-i18n'
 
-<!--    &lt;!&ndash; Buttons &ndash;&gt;-->
-<!--    <div style="display: flex; justify-content: end;">-->
-<!--      <el-button @click="$emit('cancel')">{{ translate('orderManagement.cancel') }}</el-button>-->
-<!--      <el-button type="primary" @click="validateAndSubmit">{{ translate('orderManagement.confirm') }}</el-button>-->
-<!--    </div>-->
-<!--  </el-form>-->
-<!--</template>-->
+const props = defineProps( {
+  shift : { type : Object, required : true },
+  isEditMode : { type : Boolean, required : true }
+} )
+const emit = defineEmits( ['submit', 'cancel'] )
+const { t } = useI18n()
 
-<!--<script>-->
-<!--import { translate } from '@/utils/i18n'-->
+const shiftFormRef = ref( null )
+defineExpose( { shiftFormRef } )
 
-<!--export default {-->
-<!--  props : {-->
-<!--    shift : {-->
-<!--      type : Object,-->
-<!--      required : true-->
-<!--    },-->
-<!--    isEditMode : {-->
-<!--      type : Boolean,-->
-<!--      required : true-->
-<!--    }-->
-<!--  },-->
-<!--  data() {-->
-<!--    return {-->
-<!--      validationRules : {-->
-<!--        name : [{ required : true, message : translate( 'shiftManagement.validation.nameRequired' ), trigger : 'blur' }],-->
-<!--        start_time : [{ required : true, message : translate( 'shiftManagement.validation.startTimeRequired' ), trigger : 'change' }],-->
-<!--        end_time : [{ required : true, message : translate( 'shiftManagement.validation.endTimeRequired' ), trigger : 'change' }]-->
-<!--      }-->
-<!--    }-->
-<!--  },-->
-<!--  methods : {-->
-<!--    translate,-->
-<!--    validateAndSubmit() {-->
-<!--      this.$refs.shiftFormRef.validate( ( valid ) => {-->
-<!--        if ( valid ) {-->
-<!--          const payload = { ...this.shift }-->
-<!--          payload.status = 1-->
-<!--          if ( payload.id == null ) {-->
-<!--            payload.created_by = this.$store.getters.getUser.id-->
-<!--            payload.created_at = new Date().toISOString()-->
-<!--          } else {-->
-<!--            payload.updated_by = this.$store.getters.getUser.id-->
-<!--            payload.updated_at = new Date().toISOString()-->
-<!--          }-->
-<!--          this.$emit( 'submit', payload )-->
-<!--        } else {-->
-<!--          console.error( 'Form validation failed!' )-->
-<!--        }-->
-<!--      } )-->
-<!--    }-->
-<!--  }-->
-<!--}-->
-<!--</script>-->
+const shift = computed( () => toRef( props, 'shift' ).value )
 
-<!--<style scoped>-->
-<!--</style>-->
+const validationRules = {
+  name : [{ required : true, message : t( 'common.nameRequired' ), trigger : 'blur' }],
+  start_time : [{ required : true, message : t( 'shift.startTimeRequired' ), trigger : 'change' }],
+  end_time : [{ required : true, message : t( 'shift.endTimeRequired' ), trigger : 'change' }]
+}
+
+const formItems = [
+  {
+    prop : 'name',
+    label : t( 'common.name' ),
+    placeholder : t( 'common.namePlaceholder' ),
+    type : 'input',
+    maxlength : 255
+  },
+  {
+    prop : 'description',
+    label : t( 'common.description' ),
+    placeholder : t( 'common.descriptionPlaceholder' ),
+    type : 'textarea'
+  }
+]
+
+function validateAndSubmit() {
+  shiftFormRef.value?.validate( valid => {
+    if ( !valid ) return console.error( 'Form validation failed!' )
+
+    const payload = { ...shift.value, status : 1 }
+    // TODO: Add create/update by param later
+    // const userId = store.getters.getUser?.id
+    const now = new Date().toISOString()
+
+    if ( payload.id == null ) {
+      // payload.created_by = userId
+      payload.created_at = now
+    } else {
+      // payload.updated_by = userId
+      payload.updated_at = now
+    }
+
+    emit( 'submit', payload )
+  } )
+}
+</script>
+
+<style scoped></style>

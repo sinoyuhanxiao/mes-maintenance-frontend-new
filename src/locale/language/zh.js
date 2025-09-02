@@ -449,6 +449,7 @@ export default {
     cancel : '取消',
     delete : '删除',
     edit : '编辑',
+    view : '查看',
     save : '保存',
     loading : '加载中...',
     noData : '暂无数据',
@@ -462,7 +463,19 @@ export default {
     startDate : '开始日期',
     endDate : '结束日期',
     searchByKeyword : '关键字搜索',
-    paginationTotal : '总数'
+    paginationTotal : '总数',
+    imageUpload : '图片上传',
+    id : 'ID',
+    name : '名称',
+    namePlaceholder : '请输入名称',
+    nameRequired : '名称为必填项',
+    description : '描述',
+    descriptionPlaceholder : '请输入描述',
+    createdAt : '创建时间',
+    createdBy : '创建人',
+    updatedAt : '更新时间',
+    updatedBy : '更新人',
+    actions : '操作'
   },
   errors : {
     badRequest : '请求参数错误',
@@ -492,9 +505,11 @@ export default {
     vendors : '供应商',
     vendorsAndLocations : '供应商和地址',
     userCenter : '个人中心',
+    userDetail : '用户信息',
     userManagement : '用户管理',
     teamManagement : '班组管理',
     shiftManagement : '班次管理',
+    systemManagement : '系统管理',
     myAccount : '我的账号',
     nested : '嵌套路由',
     menu1 : '菜单1',
@@ -506,6 +521,12 @@ export default {
     menu2 : '菜单2'
   },
   user : {
+    unknownUser : '未知用户',
+    department : '部门',
+    assignedTeam : '所属班组',
+    lastVisited : '最近登陆时间',
+    loginCredential : '登陆信息',
+    userInformation : '用户信息',
     managerAssignTeamMembershipHint : '经理不能被分配为班组成员',
     managerAssignTeamLeadershipHint : '经理不能被分配为班组组长',
     supervisorAssignTeamMembershipHint : '主管不能被分配为班组成员',
@@ -518,6 +539,15 @@ export default {
     leadershipTeamsPlaceholder : '选择班组, 用户将设为已选班组组长',
     membershipTeams : '所属班组(成员关联)',
     membershipTeamsPlaceholder : '选择班组, 用户将设为已选班组成员',
+    certificate : '证书',
+    noCertificates : '暂无证书',
+    addCertificate : '添加证书',
+    editCertificate : '编辑证书',
+    certificateName : '证书名称',
+    certificateNumber : '证书编号',
+    reviewer : '审核人',
+    issueDate : '签发日期',
+    expiryDate : '到期日期',
     table : {
       id : 'ID',
       name : '姓名',
@@ -531,7 +561,8 @@ export default {
       statusTooltip : '如果未激活，用户将无法使用此账号',
       editButton : '编辑',
       deleteButton : '删除',
-      leader : '组长'
+      leader : '组长',
+      certificate : '证书'
     },
     form : {
       newUser : '创建用户',
@@ -546,9 +577,10 @@ export default {
       password : '密码',
       cancelButton : '取消',
       confirmButton : '确认',
-      assignedTeamPlaceHolder : '选择所属班组',
+      selectTeamPlaceHolder : '选择班组',
       selectRolePlaceHolder : '选择角色',
       selectStatusPlaceHolder : '选择激活状态',
+      selectDepartmentPlaceHolder : '选择部门',
       changePassword : '修改密码',
       newPassword : '新密码',
       confirmPassword : '确认密码'
@@ -558,8 +590,8 @@ export default {
       inactive : '未激活'
     },
     message : {
-      userAddedSuccess : '用户添加成功',
-      userAddedFailed : '用户添加失败',
+      userCreatedSuccess : '用户添加成功',
+      userCreatedFailed : '用户添加失败',
       userUpdatedSuccess : '用户更新成功',
       userUpdatedFailed : '用户更新失败',
       userDeletedSuccess : '用户删除成功',
@@ -580,7 +612,8 @@ export default {
       pleaseCorrectErrors : '请修正错误！',
       passwordNotMatchOrFewerCharacters : '密码不匹配或少于4个字符！',
       yourAccountIsDeletedAndUnableToLogin : '你的账户已被删除，登出后将无法登入',
-      deletionFailed : '删除失败'
+      deletionFailed : '删除失败',
+      errorLoadingUsersData : '加载用户数据出错'
     },
     validation : {
       nameRequired : '姓名是必填项',
@@ -595,75 +628,85 @@ export default {
       emailRequired : '邮箱是必填项',
       emailInvalid : '邮箱格式不正确',
       phoneNumberRequired : '电话号码是必填项',
-      phoneNumberFormat : '电话号码格式不正确'
+      phoneNumberFormat : '电话号码格式不正确',
+      departmentRequired : '部门为必选项'
     }
   },
   team : {
-    team : {
-      table : {
-        id : '编号',
-        name : '班组名称',
-        type : '类型',
-        leader : '负责人',
-        parentTeam : '上级班组',
-        level : '层级',
-        members : '成员',
-        forms : '分配表单',
-        description : '描述',
-        status : '状态',
-        createdAt : '创建时间',
-        updatedAt : '更新时间',
-        actions : '操作'
-      },
-      form : {
-        newTeam : '新建班组',
-        editTeam : '编辑班组',
-        name : '班组名称',
-        type : '类型',
-        leader : '班组负责人',
-        parentTeam : '上级班组',
-        description : '描述',
-        members : '班组成员',
-        forms : '分配表单',
-        status : '状态',
-        cancelButton : '取消',
-        confirmButton : '确认',
-        selectLeaderPlaceholder : '请选择负责人',
-        selectMembersPlaceholder : '请选择成员',
-        selectParentPlaceholder : '请选择上级班组',
-        selectFormsPlaceholder : '请选择表单'
-      },
-      status : {
-        active : '启用',
-        inactive : '停用'
-      },
-      message : {
-        teamAddedSuccess : '班组创建成功',
-        teamAddedFailed : '班组创建失败',
-        teamUpdatedSuccess : '班组更新成功',
-        teamUpdatedFailed : '班组更新失败',
-        teamDeletedSuccess : '班组删除成功',
-        teamDeletedFailed : '班组删除失败',
-        pleaseCorrectErrors : '请先修正表单中的错误',
-        deletionTitle : '删除班组',
-        deletionConfirmation : '确定要删除班组{name}吗？',
-        deletionCanceled : '已取消删除'
-      },
-      validation : {
-        nameRequired : '请输入班组名称',
-        typeRequired : '请选择班组类型',
-        leaderRequired : '请选择负责人',
-        parentTeamRequired : '请选择上级班组',
-        descriptionRequired : '请输入描述'
-      },
-      placeholder : {
-        teamName : '请输入班组名称',
-        description : '请输入描述',
-        selectLeader : '请选择负责人',
-        selectType : '请选择班组类型',
-        selectStatus : '请选择状态'
-      }
+    team : '班组',
+    table : {
+      id : '编号',
+      name : '班组名称',
+      type : '类型',
+      leader : '负责人',
+      parentTeam : '上级班组',
+      level : '层级',
+      members : '成员',
+      forms : '分配表单',
+      description : '描述',
+      status : '状态',
+      createdAt : '创建时间',
+      updatedAt : '更新时间',
+      actions : '操作'
+    },
+    form : {
+      newTeam : '新建班组',
+      editTeam : '编辑班组',
+      name : '班组名称',
+      type : '类型',
+      leader : '班组负责人',
+      parentTeam : '上级班组',
+      description : '描述',
+      members : '班组成员',
+      forms : '分配表单',
+      status : '状态',
+      cancelButton : '取消',
+      confirmButton : '确认',
+      selectLeaderPlaceholder : '请选择负责人',
+      selectMembersPlaceholder : '请选择成员',
+      selectParentPlaceholder : '请选择上级班组',
+      selectFormsPlaceholder : '请选择表单'
+    },
+    status : {
+      active : '启用',
+      inactive : '停用'
+    },
+    message : {
+      teamAddedSuccess : '班组创建成功',
+      teamAddedFailed : '班组创建失败',
+      teamUpdatedSuccess : '班组更新成功',
+      teamUpdatedFailed : '班组更新失败',
+      teamDeletedSuccess : '班组删除成功',
+      teamDeletedFailed : '班组删除失败',
+      pleaseCorrectErrors : '请先修正表单中的错误',
+      deletionTitle : '删除班组',
+      deletionConfirmation : '确定要删除班组{name}吗？',
+      deletionCanceled : '已取消删除'
+    },
+    validation : {
+      nameRequired : '请输入班组名称',
+      typeRequired : '请选择班组类型',
+      leaderRequired : '请选择负责人',
+      parentTeamRequired : '请选择上级班组',
+      descriptionRequired : '请输入描述'
+    },
+    placeholder : {
+      teamName : '请输入班组名称',
+      description : '请输入描述',
+      selectLeader : '请选择负责人',
+      selectType : '请选择班组类型',
+      selectStatus : '请选择状态'
     }
+  },
+  shift : {
+    graceTimeMinute : '缓冲时间(分鐘)',
+    createShift : '新增班次',
+    editShift : '编辑班次',
+    startTime : '开始时间',
+    startTimeRequired : '开始时间为必填项',
+    endTimeRequired : '结束时间为必填项',
+    endTime : '结束时间',
+    minute : '分鐘'
   },
   userCenter : {
     myAccount : '我的账号',

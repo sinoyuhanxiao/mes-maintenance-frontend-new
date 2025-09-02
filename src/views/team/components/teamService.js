@@ -2,27 +2,65 @@
 
 import { ref, computed } from 'vue'
 
-// In-memory team data mock
+// TODO: In-memory team data mock, replace with backend service later
 const mockTeamData = ref( [
   {
     id : 1,
-    name : 'QA Team',
-    type : 'QA',
-    leader_id : 101,
-    parent_id : null,
+    name : 'QC Team A',
+    parent_team_id : null,
     level : 1,
-    description : 'Main QA team',
-    member_ids : [101, 102, 103],
-    form_ids : [1, 2],
+    description : '',
+    members : [
+      { user_id : 101, isLeader : true },
+      { user_id : 102, isLeader : false },
+      { user_id : 103, isLeader : false }
+    ],
     status : 1,
-    created_at : new Date().toISOString(),
-    updated_at : new Date().toISOString()
+    created_at : '2025-08-15T18:53:38.624593Z',
+    created_by : 1,
+    updated_at : 2
+  },
+  {
+    id : 2,
+    name : 'Maintenance Team B',
+    parent_team_id : null,
+    level : 1,
+    description : '',
+    members : [{ user_id : 107, isLeader : true }],
+    status : 1,
+    created_at : '2025-08-15T18:53:38.624593Z',
+    created_by : 1,
+    updated_at : 2
+  },
+  {
+    id : 3,
+    name : 'Maintenance Team C',
+    parent_team_id : null,
+    level : 1,
+    description : '',
+    members : [{ user_id : 106, isLeader : true }],
+    status : 1,
+    created_at : '2025-08-15T18:53:38.624593Z',
+    created_by : 1,
+    updated_at : 2
+  },
+  {
+    id : 4,
+    name : 'Maintenance Team D',
+    parent_team_id : null,
+    level : 1,
+    description : '',
+    members : [{ user_id : 105, isLeader : true }],
+    status : 1,
+    created_at : '2025-08-15T18:53:38.624593Z',
+    created_by : 1,
+    updated_at : 2
   }
 ] )
 
 let idCounter = 2
 
-export function getTeams() {
+export function getAllTeams() {
   return Promise.resolve( { data : { status : '200', data : mockTeamData.value }} )
 }
 

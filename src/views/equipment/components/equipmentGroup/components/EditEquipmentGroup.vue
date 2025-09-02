@@ -116,6 +116,7 @@
           :max-files="5"
           :existingImageList="formData.imageList"
           :existingFileList="formData.filesList"
+          :title-label-position="labelPosition"
         />
       </div>
       <div class="dialog-footer">

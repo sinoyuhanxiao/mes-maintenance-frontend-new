@@ -105,6 +105,7 @@
           image-label="Upload Exploded View"
           upload-type="images"
           :max-images="1"
+          :title-label-position="labelPosition"
         />
       </div>
       <el-divider />
@@ -115,6 +116,7 @@
           upload-type="both"
           :max-images="5"
           :max-files="5"
+          :title-label-position="labelPosition"
         />
       </div>
       <div class="dialog-footer">
