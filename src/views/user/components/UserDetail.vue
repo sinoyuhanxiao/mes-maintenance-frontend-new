@@ -19,19 +19,17 @@
             {{ role.name || '-' }}
           </div>
 
-          <div class="user-text">
-            {{ t('user.lastVisited') }}: {{ user?.last_visited || '-' }}
-          </div>
+          <div class="user-text">{{ t('user.lastVisited') }}: {{ user?.last_visited || '-' }}</div>
         </div>
       </div>
 
       <div class="actions-group">
         <div style="flex: 1">
-          <el-button :icon="Edit" type="warning" @click="handleWIP">{{ t('common.edit')}}</el-button>
+          <el-button :icon="Edit" type="warning" @click="handleWIP">{{ t('common.edit') }}</el-button>
         </div>
 
         <div>
-          <el-button :icon="SwitchButton" type="danger" @click="handleLogout">{{t('userCenter.logout')}}</el-button>
+          <el-button :icon="SwitchButton" type="danger" @click="handleLogout">{{ t('userCenter.logout') }}</el-button>
         </div>
       </div>
     </div>
@@ -161,10 +159,18 @@
 
             <div class="cert-info detail-section">
               <el-descriptions class="general-details-descriptions" :column="4">
-                <el-descriptions-item :label="t('user.certificateName')">{{ cert.certificate_name }}</el-descriptions-item>
-                <el-descriptions-item :label="t('user.certificateNumber')">{{ cert.certificate_number }}</el-descriptions-item>
-                <el-descriptions-item :label="t('user.issueDate')">{{ cert.issue_date.slice(0, 10) }}</el-descriptions-item>
-                <el-descriptions-item :label="t('user.expiryDate')">{{ cert.expiration_date.slice(0, 10) }}</el-descriptions-item>
+                <el-descriptions-item :label="t('user.certificateName')">{{
+                  cert.certificate_name
+                }}</el-descriptions-item>
+                <el-descriptions-item :label="t('user.certificateNumber')">{{
+                  cert.certificate_number
+                }}</el-descriptions-item>
+                <el-descriptions-item :label="t('user.issueDate')">{{
+                  cert.issue_date.slice(0, 10)
+                }}</el-descriptions-item>
+                <el-descriptions-item :label="t('user.expiryDate')">{{
+                  cert.expiration_date.slice(0, 10)
+                }}</el-descriptions-item>
                 <el-descriptions-item :label="t('user.reviewer')">{{ cert.reviewer?.name }}</el-descriptions-item>
               </el-descriptions>
             </div>

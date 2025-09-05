@@ -20,7 +20,7 @@
         </div>
       </div>
       <div class="header-actions">
-<!--        <el-button @click="handlePreview" :disabled="!isTemplateValid">-->
+        <!--        <el-button @click="handlePreview" :disabled="!isTemplateValid">-->
         <el-button @click="handlePreview" :disabled="true">
           <el-icon><View /></el-icon>
           Preview

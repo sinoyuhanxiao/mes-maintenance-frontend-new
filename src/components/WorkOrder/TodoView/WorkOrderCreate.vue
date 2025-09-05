@@ -108,6 +108,58 @@
         </el-form-item>
       </div>
 
+      <!-- Tasks -->
+      <el-divider />
+      <div class="form-section">
+        <el-form-item label="Tasks">
+          <!-- Task Action Buttons -->
+          <div class="task-actions">
+            <el-button size="small" @click="handleAddTask" :icon="Plus"> Add Task </el-button>
+            <el-button size="small" @click="handleDeleteAllTasks" :icon="Delete">
+              Clear All ({{ form.tasks.length }})
+            </el-button>
+          </div>
+          <CardTable
+            @selection="handleTaskAction"
+            :module="4"
+            :data="form.tasks"
+            :maxHeight="maxHeight"
+            :totalItems="totalItems"
+            :currentPage="currentPage"
+            :pageSize="pageSize"
+            :showBorder="true"
+            :showPagination="false"
+            :showSearch="false"
+          />
+        </el-form-item>
+      </div>
+
+      <!-- Standards -->
+      <el-divider />
+      <div class="form-section">
+        <el-form-item label="Standards">
+          <!-- Standards Action Buttons -->
+          <div class="standards-actions">
+            <el-button size="small" @click="handleAddStandard" :icon="Plus"> Add Standard </el-button>
+            <el-button size="small" @click="handleDeleteAllStandards" :icon="Delete">
+              Clear All ({{ form.standards.length }})
+            </el-button>
+          </div>
+          <CardTable
+            @selection="handleStandardAction"
+            :module="6"
+            :data="form.standards"
+            :maxHeight="maxHeight"
+            :totalItems="form.standards.length"
+            :currentPage="currentPage"
+            :pageSize="pageSize"
+            :showBorder="true"
+            :showPagination="false"
+            :showSearch="false"
+          />
+        </el-form-item>
+      </div>
+
       <!-- Estimated Time -->
       <div class="form-section">
         <el-form-item :label="$t('workOrder.create.estimatedTime')">
@@ -272,6 +324,26 @@
             </el-dialog>
           </el-form-item>
 
+          <!-- Add Task Dialog -->
+          <el-dialog
+            v-model="showAddTaskDialog"
+            title="Add New Task"
+            width="600px"
+            :before-close="handleCloseAddTaskDialog"
+          >
+            <AddTask v-if="showAddTaskDialog" @close="closeAddTaskDialog" @add-templates="onAddTaskTemplates" />
+          </el-dialog>
+
+          <!-- Add Standard Dialog -->
+          <el-dialog
+            v-model="showAddStandardDialog"
+            title="Add New Standard"
+            width="600px"
+            :before-close="handleCloseAddStandardDialog"
+          >
+            <AddStandard v-if="showAddStandardDialog" @close="closeAddStandardDialog" @add-standards="onAddStandards" />
+          </el-dialog>
+
           <!-- File Upload -->
           <el-form-item :label="$t('workOrder.create.fileUpload')" prop="files">
             <el-upload
@@ -295,10 +367,10 @@
       <!-- Submit Button - Fixed at bottom -->
       <div class="form-actions-fixed">
         <div class="form-actions-content">
-          <el-button type="default" size="large" @click="$emit('back-to-detail')" class="cancel-button">
+          <el-button type="default" @click="$emit('back-to-detail')" class="cancel-button">
             {{ $t('workOrder.actions.cancel') }}
           </el-button>
-          <el-button type="primary" size="large" @click="submitForm" :loading="loading" class="create-button">
+          <el-button type="primary" @click="submitForm" :loading="loading" class="create-button">
             {{ $t('workOrder.actions.create') }}
           </el-button>
         </div>
@@ -313,6 +385,9 @@ import { ElMessage } from 'element-plus'
 import { ArrowLeft, RefreshLeft, Plus, ZoomIn, Download, Delete } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import RecurrenceEditor from '@/views/workOrder/components/RecurrenceEditor.vue'
+import CardTable from '../../Tables/CardTable.vue'
+import AddTask from '../../Task/AddTask.vue'
+import AddStandard from '../../Standard/AddStandard.vue'
 import {
   getAllWorkTypes,
   getAllPriorities,
@@ -321,6 +396,222 @@ import {
   getEquipmentNodeTrees,
   createWorkOrder
 } from '@/api/work-order'
+
+// Initialize form.tasks with sample data
+onMounted( () => {
+  form.tasks = [
+    {
+      id : 1,
+      name : 'HVAC Filter Replacement',
+      category : 'Preventive Maintenance',
+      estimated_minutes : 30
+    },
+    {
+      id : 2,
+      name : 'Fire Extinguisher Inspection',
+      category : 'Safety',
+      estimated_minutes : 15
+    },
+    {
+      id : 3,
+      name : 'Electrical Panel Check',
+      category : 'Safety Inspection',
+      estimated_minutes : 45
+    },
+    {
+      id : 4,
+      name : 'Emergency Lighting Test',
+      category : 'Safety Testing',
+      estimated_minutes : 20
+    },
+    {
+      id : 5,
+      name : 'Conveyor Belt Maintenance',
+      category : 'Equipment Maintenance',
+      estimated_minutes : 90
+    },
+    {
+      id : 6,
+      name : 'Water System Pressure Check',
+      category : 'Plumbing',
+      estimated_minutes : 25
+    },
+    {
+      id : 7,
+      name : 'Generator Monthly Test',
+      category : 'Power Systems',
+      estimated_minutes : 60
+    },
+    {
+      id : 8,
+      name : 'Roof Drain Cleaning',
+      category : 'Building Maintenance',
+      estimated_minutes : 40
+    }
+  ]
+
+  form.standards = [
+    {
+      id : 1,
+      name : 'Safety Protocol Checklist',
+      category : 'Safety Standards',
+      estimated_minutes : 20
+    },
+    {
+      id : 2,
+      name : 'Equipment Inspection Standard',
+      category : 'Quality Control',
+      estimated_minutes : 35
+    },
+    {
+      id : 3,
+      name : 'Environmental Compliance Check',
+      category : 'Environmental',
+      estimated_minutes : 40
+    },
+    {
+      id : 4,
+      name : 'Documentation Standard',
+      category : 'Administrative',
+      estimated_minutes : 15
+    }
+  ]
+
+  loadFormData()
+} )
+
+const showAddTaskDialog = ref( false )
+const showAddStandardDialog = ref( false )
+
+const handleAddStandard = () => {
+  showAddStandardDialog.value = true
+}
+
+const closeAddStandardDialog = () => {
+  showAddStandardDialog.value = false
+}
+
+const handleAddTask = () => {
+  showAddTaskDialog.value = true
+}
+
+// Pagination variables for Tasks and Standards
+const totalItems = ref( 8 )
+const maxHeight = ref( '200px' )
+const currentPage = ref( 1 )
+const pageSize = ref( 10 )
+
+const closeAddTaskDialog = () => {
+  showAddTaskDialog.value = false
+}
+
+const handleTaskAction = ( { id, action, data } ) => {
+  console.log( 'Task action received:', id, action, data )
+  if ( action === 'edit' ) {
+    // something here later
+  } else if ( action === 'delete' ) {
+    form.tasks = form.tasks.filter( t => t.id !== id )
+    ElMessage.success( `Task "${data.name}" removed` )
+  }
+}
+
+const handleStandardAction = ( { id, action, data } ) => {
+  console.log( 'Standard action received:', id, action, data )
+  if ( action === 'edit' ) {
+    // something here later
+  } else if ( action === 'delete' ) {
+    form.standards = form.standards.filter( s => s.id !== id )
+    ElMessage.success( `Standard "${data.name}" removed` )
+  }
+}
+
+const handleCloseAddTaskDialog = done => {
+  done()
+}
+
+const onAddTaskTemplates = selectedTemplates => {
+  console.log( 'Adding templates:', selectedTemplates )
+
+  if ( selectedTemplates && selectedTemplates.length > 0 ) {
+    // Get the highest existing ID to generate new unique IDs
+    const maxId = form.tasks.length > 0 ? Math.max( ...form.tasks.map( task => task.id ) ) : 0
+
+    // Append selected templates to form.tasks with new unique IDs
+    const newTasks = selectedTemplates.map( ( template, index ) => ( {
+      id : maxId + index + 1, // Generate new unique ID
+      name : template.name,
+      category : template.category,
+      estimated_minutes : template.estimated_minutes,
+      // Add any other properties from template that you need
+      ...template
+    } ) )
+
+    // Append to existing tasks
+    form.tasks.push( ...newTasks )
+
+    // Show success message
+    ElMessage.success(
+      `${selectedTemplates.length} task template${selectedTemplates.length > 1 ? 's' : ''} added successfully`
+    )
+
+    // Close the dialog
+    closeAddTaskDialog()
+  }
+}
+
+const handleDeleteAllTasks = () => {
+  if ( form.tasks.length === 0 ) {
+    ElMessage.warning( 'No tasks selected to delete' )
+    return
+  }
+
+  form.tasks = []
+  ElMessage.success( 'All task selections cleared' )
+}
+
+const onAddStandards = selectedStandards => {
+  console.log( 'Adding standards:', selectedStandards )
+
+  if ( selectedStandards && selectedStandards.length > 0 ) {
+    // Get the highest existing ID to generate new unique IDs
+    const maxId = form.standards.length > 0 ? Math.max( ...form.standards.map( standard => standard.id ) ) : 0
+
+    // Append selected standards to form.standards with new unique IDs
+    const newStandards = selectedStandards.map( ( standard, index ) => ( {
+      id : maxId + index + 1, // Generate new unique ID
+      name : standard.name,
+      category : standard.category,
+      estimated_minutes : standard.estimated_minutes,
+      // Add any other properties from standard that you need
+      ...standard
+    } ) )
+
+    // Append to existing standards
+    form.standards.push( ...newStandards )
+
+    // Show success message
+    ElMessage.success(
+      `${selectedStandards.length} standard${selectedStandards.length > 1 ? 's' : ''} added successfully`
+    )
+
+    // Close the dialog
+    closeAddStandardDialog()
+  }
+}
+
+const handleDeleteAllStandards = () => {
+  if ( form.standards.length === 0 ) {
+    ElMessage.warning( 'No standards selected to delete' )
+    return
+  }
+
+  form.standards = []
+  ElMessage.success( 'All standard selections cleared' )
+}
+
+const handleCloseAddStandardDialog = done => {
+  done()
+}
 
 // Emits
 const emit = defineEmits( ['back-to-detail', 'work-order-created'] )
@@ -352,7 +643,9 @@ const form = reactive( {
   start_date : null,
   due_date : null,
   assignedTo : null,
-  supervisor : null
+  supervisor : null,
+  tasks : [],
+  standards : []
 } )
 
 // Validation rules
@@ -802,6 +1095,20 @@ defineOptions( {
     }
   }
 
+  // Task action buttons
+  .task-actions {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 10px;
+  }
+
+  // Task action buttons
+  .standards-actions {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 10px;
+  }
+
   // Estimated time inputs
   .input-label {
     text-align: center;
@@ -848,7 +1155,7 @@ defineOptions( {
     z-index: 10;
     background: var(--el-bg-color);
     border-top: 1px solid var(--el-border-color-light);
-    padding: 16px 24px;
+    padding: 10px 24px;
     box-shadow: 0 0px 1px rgba(0, 0, 0, 0.1);
 
     .form-actions-content {

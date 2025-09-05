@@ -259,7 +259,7 @@ export const asyncRoutes = [
       },
       {
         path : 'user-detail/:id',
-        component : () => import ( '@/views/user/components/UserDetail.vue' ),
+        component : () => import( '@/views/user/components/UserDetail.vue' ),
         name : 'UserDetail',
         meta : { title : 'router.userDetail', icon : 'users', noCache : true }
       }

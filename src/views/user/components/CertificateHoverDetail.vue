@@ -32,11 +32,11 @@
               <el-tag size="small" type="info">{{ c.certificate_name }}</el-tag>
             </div>
             <div class="row">
-              <span class="label">{{t('user.issueDate')}}</span>
+              <span class="label">{{ t('user.issueDate') }}</span>
               <span class="value">{{ fmt(c.issue_date) }}</span>
             </div>
             <div class="row">
-              <span class="label">{{t('user.expiryDate')}}</span>
+              <span class="label">{{ t('user.expiryDate') }}</span>
               <span class="value" :class="{ expired: isExpired(c.expiration_date) }">
                 {{ fmt(c.expiration_date) }}
               </span>
