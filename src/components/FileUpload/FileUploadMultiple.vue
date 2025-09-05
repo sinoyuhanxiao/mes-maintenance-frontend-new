@@ -70,7 +70,7 @@
       <div v-if="maxFiles > 0" class="upload-count">Files: {{ combinedFileList.length }}/{{ maxFiles }}</div>
     </el-form-item>
 
-<!--    <el-button type="primary" size="small" @click="logEmitInfo"> Log Emitted Info </el-button>-->
+    <!--    <el-button type="primary" size="small" @click="logEmitInfo"> Log Emitted Info </el-button>-->
   </div>
 </template>
 

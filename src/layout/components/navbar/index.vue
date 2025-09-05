@@ -16,14 +16,23 @@
 
     <div class="right-menu" :class="{ mobile: set.device === 'mobile' }">
       <HeaderSearch id="header-search" class="p8" v-if="set.device !== 'mobile'" />
+      <el-tooltip content="AI Chatbot" effect="dark" placement="bottom" :show-after="150">
+        <button type="button" class="ai-icon hover-effect" aria-label="Open AI Assistant" @click="chatbot.show()">
+          <img src="@/icons/svg/ai-icon.svg" alt="" class="ai-icon" />
+        </button>
+      </el-tooltip>
 
-      <ScreenFull id="screenfull" class="p8 hover-effect" />
+      <el-tooltip content="Full Size" effect="dark" placement="bottom">
+        <ScreenFull id="screenfull" class="p8 hover-effect" />
+      </el-tooltip>
 
       <el-tooltip content="全局size设置" effect="dark" placement="bottom">
         <size-select id="size-select" class="p8 hover-effect" />
       </el-tooltip>
 
-      <LangSelect class="p8 hover-effect" />
+      <el-tooltip content="Switch Language" effect="dark" placement="bottom">
+        <LangSelect class="hover-effect" />
+      </el-tooltip>
 
       <el-dropdown class="p8 avatar-container right-menu-item hover-effect" trigger="click">
         <div class="avatar-wrapper">
@@ -81,7 +90,9 @@ import { emitter } from '@/utils/mitt'
 
 import Logo from '@/layout/components/sidebar/Logo'
 import MenuBar from '../sidebar/Menu'
+import { useChatbotStore } from '@/store/modules/ai-chatbot'
 
+const chatbot = useChatbotStore()
 const router = useRouter()
 const appStore = useAppStore()
 const userStore = useUserStore()
@@ -314,5 +325,11 @@ defineOptions( {
       }
     }
   }
+}
+.ai-icon {
+  width: 30px; /* adjust size as needed */
+  height: 30px; /* p8 class supplies horizontal padding already */
+  cursor: pointer;
+  margin-right: 8px;
 }
 </style>

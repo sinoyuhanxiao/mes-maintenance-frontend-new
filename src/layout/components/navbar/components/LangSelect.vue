@@ -1,7 +1,7 @@
 <template>
   <el-dropdown trigger="click" class="international" @command="handleSetLanguage">
     <div>
-      <svg-icon class-name="international-icon" icon-class="language" />
+      <img src="@/icons/svg/change-language.svg" alt="Change Language" class="international-icon" />
     </div>
     <template #dropdown>
       <el-dropdown-menu>
@@ -43,4 +43,11 @@ defineOptions( {
 } )
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.international-icon {
+  width: 28px; /* or 16px to match Element Plus icon size */
+  height: 28px;
+  object-fit: contain;
+  cursor: pointer; /* optional, if clickable */
+}
+</style>
