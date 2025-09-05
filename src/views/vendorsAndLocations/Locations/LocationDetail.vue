@@ -40,13 +40,26 @@
           <el-descriptions-item label="Description">{{ location.description || '--' }}</el-descriptions-item>
         </el-descriptions>
 
-        <el-divider v-if="location?.image_list?.length" />
-        <div v-if="location?.image_list?.length">
+        <!-- Images -->
+        <el-divider v-if="validImageUrls.length" />
+        <div v-if="validImageUrls.length">
           <el-descriptions title="Images" />
-          <Images :images="location.image_list" />
+          <div class="image-grid">
+            <button
+              v-for="(u, i) in validImageUrls"
+              :key="u + '_' + i"
+              class="thumb"
+              type="button"
+              @click="openPreview(u)"
+              @keydown.enter.prevent="openPreview(u)"
+              aria-label="Preview image"
+            >
+              <img :src="u" alt="" />
+            </button>
+          </div>
         </div>
 
-        <!-- Related Equipment (sticky visibility based on unfiltered total) -->
+        <!-- Related Equipment -->
         <div v-if="showEquipSection" style="margin-bottom: 48px">
           <el-divider />
           <el-descriptions title="Related Equipment" />
@@ -85,26 +98,45 @@
   </div>
 
   <!-- Edit Dialog -->
-  <el-dialog v-model="editLocation" title="Edit Location" width="600px">
+  <el-dialog
+    v-model="editLocation"
+    title="Edit Location"
+    width="600px"
+    align-center
+    append-to-body
+    destroy-on-close
+    class="ld-edit-dialog"
+    modal-class="ld-edit-overlay"
+    transition="ld-fade"
+  >
+    <!-- Keep your existing form -->
     <LocationForm v-model="editForm" :location-types="props.locationTypes" ref="editFormRef" />
+
     <template #footer>
       <el-button @click="editLocation = false">Cancel</el-button>
       <el-button type="primary" :loading="saving" :disabled="saving" class="btn-save" @click="saveEdit">Save</el-button>
     </template>
   </el-dialog>
+
+  <!-- Image Preview -->
+  <el-dialog v-model="preview.open" :width="'80%'" :top="'5vh'" append-to-body destroy-on-close>
+    <div class="preview-wrapper">
+      <img :src="preview.url" alt="Preview" class="preview-image" />
+    </div>
+  </el-dialog>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import axios from 'axios'
 import { Plus, Delete, Edit } from '@element-plus/icons-vue'
 import SearchTable from '@/views/vendorsAndLocations/Locations/SearchTable.vue'
-import Images from './Images.vue'
 import LocationForm from './LocationForm.vue'
 import { useErrorHandler } from '@/composables/useErrorHandler'
 import { ElMessage } from 'element-plus'
 import { updateLocationById, deactivateLocation } from '@/api/location'
 import { getEquipmentNodes } from '@/api/equipment.js'
+import { uploadMultipleToMinio, deleteObjectList } from '@/api/minio'
 
 const props = defineProps( {
   location : Object,
@@ -117,16 +149,59 @@ const editForm = ref( {} )
 const editFormRef = ref( null )
 const saving = ref( false )
 
+const imageUrls = computed( () => {
+  const list = props.location?.image_list || []
+  return list.map( x => ( typeof x === 'string' ? x : x?.url ) ).filter( Boolean )
+} )
+
+const validImageUrls = ref( [] )
+
+/** check each URL with a HEAD request (cheap, no download) */
+const checkImageUrls = async() => {
+  const checks = await Promise.all(
+    imageUrls.value.map( async u => {
+      try {
+        const res = await fetch( u, { method : 'HEAD' } )
+        return res.ok ? u : null
+      } catch {
+        return null
+      }
+    } )
+  )
+  validImageUrls.value = checks.filter( Boolean )
+}
+
+// re-check whenever imageUrls changes
+watch(
+  imageUrls,
+  () => {
+    if ( imageUrls.value.length ) {
+      checkImageUrls()
+    } else {
+      validImageUrls.value = []
+    }
+  },
+  { immediate : true }
+)
+
+/** Simple preview dialog state */
+const preview = ref( { open : false, url : '' } )
+const openPreview = u => {
+  preview.value.url = u
+  preview.value.open = true
+}
+
 /** Equipment table state (server-side search/pagination) */
 const equipmentList = ref( [] )
-const equipmentTotal = ref( 0 ) // total for current query (can be 0 when searching)
+const equipmentTotal = ref( 0 )
+
 const equipmentPage = ref( 1 )
 const equipmentPageSize = ref( 5 )
 const equipmentSearch = ref( '' )
 
 // Sticky visibility: based on unfiltered/base total
-const equipmentBaseTotal = ref( 0 ) // total with NO search
-const showEquipSection = ref( false ) // v-if flag (only set by base fetch)
+const equipmentBaseTotal = ref( 0 )
+const showEquipSection = ref( false )
 
 // Request guards to avoid races
 let equipBaseReqSeq = 0
@@ -150,7 +225,6 @@ watch(
     showEquipSection.value = false
 
     if ( id ) {
-      // Base first (sets visibility), then table data
       fetchEquipmentBase( id )
       fetchEquipmentData( id )
       fetchSparePartsBatch( id )
@@ -166,11 +240,9 @@ watch( equipmentSearch, val => {
   clearTimeout( searchTimer )
 
   if ( !val?.trim() ) {
-    // Cleared → refresh base & data (no keyword)
     fetchEquipmentBase()
     fetchEquipmentData()
   } else {
-    // Typing → only data, debounced
     searchTimer = setTimeout( () => fetchEquipmentData(), 250 )
   }
 } )
@@ -193,7 +265,7 @@ const fetchEquipmentBase = async( id = props.location?.id ) => {
   try {
     const res = await getEquipmentNodes(
       1, // page
-      1, // tiny page; we only need totals
+      1, // we only need totals
       'createdAt',
       'DESC',
       { location_ids : [locId] } // NO keyword
@@ -238,7 +310,6 @@ const fetchEquipmentData = async( id = props.location?.id ) => {
 
     equipmentList.value = list.map( e => ( { ...e, id : Number( e.id ) } ) )
     equipmentTotal.value = Number( page?.totalElements ?? page?.total ?? list.length )
-    // Do NOT touch equipmentBaseTotal/showEquipSection here
   } catch ( err ) {
     if ( seq !== equipDataReqSeq ) return
     console.error( 'fetchEquipmentData failed:', err )
@@ -277,11 +348,75 @@ const saveEdit = async() => {
     showed = true
   }, 150 )
 
+  // helper: normalize uploaded URLs from various possible shapes
+  const extractUploadedUrls = resp => {
+    // Common shapes to support:
+    // { uploadedFiles: [{url}] }
+    // { data: { uploadedFiles: [{url}] } }
+    // { data: { uploadedFiles: [{fileUrl|path|location}] } }
+    // { uploadedFiles: [{fileUrl|path|location}] }
+    const list =
+      resp?.uploadedFiles ??
+      resp?.data?.uploadedFiles ??
+      resp?.data?.data?.uploadedFiles ??
+      resp?.files ?? // just in case
+      []
+
+    return ( Array.isArray( list ) ? list : [] ).map( f => f?.url || f?.fileUrl || f?.location || f?.path ).filter( Boolean )
+  }
+
   try {
     const id = Number( props.location?.id )
     if ( !Number.isFinite( id ) ) throw new Error( 'Invalid location id' )
 
-    await updateLocationById( id, editForm.value )
+    // 1) original URLs from current location
+    const originalUrls = ( props.location?.image_list ?? [] )
+      .map( x => ( typeof x === 'string' ? x : x?.url ) )
+      .filter( Boolean )
+
+    // 2) removed URLs from child form
+    const removed = Array.isArray( editForm.value?.removed_existing_images ) ? editForm.value.removed_existing_images : []
+
+    // 3) keep existing minus removed
+    const keptExisting = originalUrls.filter( u => !removed.includes( u ) )
+
+    const newFiles = Array.isArray( editForm.value?.image_files )
+      ? editForm.value.image_files.filter( f => f instanceof File )
+      : []
+
+    // 5) upload new files (if any)
+    let uploadedUrls = []
+    if ( newFiles.length ) {
+      const uploadResp = await uploadMultipleToMinio( newFiles )
+      // console.log('uploadMultipleToMinio response:', uploadResp) // <- uncomment to inspect
+      uploadedUrls = extractUploadedUrls( uploadResp )
+    }
+
+    // 6) final list = kept existing + newly uploaded (dedup)
+    const finalImageList = Array.from( new Set( [...keptExisting, ...uploadedUrls] ) )
+
+    // 7) build payload; do not leak the helper field
+    const payload = {
+      ...editForm.value,
+      image_list : finalImageList
+    }
+    delete payload.removed_existing_images
+
+    // 8) update record
+    await updateLocationById( id, payload )
+
+    // 9) best-effort delete removed objects after save
+    if ( removed.length ) {
+      Promise.resolve().then( async() => {
+        try {
+          await deleteObjectList( {
+            bucketName : 'sv-file-bucket',
+            objectUrls : removed
+          } )
+        } catch {}
+      } )
+    }
+
     showSuccess( 'Location updated' )
     editLocation.value = false
     emit( 'updated', { id } )
@@ -341,7 +476,7 @@ const handleDelete = async() => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: hidden; /* keep if you want; dialog is teleported so no clipping */
 }
 
 /* The scrolling area starts below the header */
@@ -408,6 +543,49 @@ const handleDelete = async() => {
 }
 
 /* ================================
+   Image grid
+   ================================ */
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.thumb {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.thumb img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+}
+
+/* Preview dialog content */
+.preview-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: min(80vh, 70vw);
+}
+
+.preview-image {
+  max-width: 100%;
+  max-height: 75vh;
+  display: block;
+  border-radius: 6px;
+}
+
+/* ================================
    Descriptions: two equal columns
    ================================ */
 .two-col {
@@ -423,6 +601,37 @@ const handleDelete = async() => {
     white-space: normal;
     word-break: break-word;
     overflow-wrap: anywhere;
+  }
+}
+/* Only affects THIS dialog instance because we use the classes we set on the tag */
+:deep(.ld-edit-overlay) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+:deep(.ld-edit-dialog) {
+  margin: 0 !important; /* remove default top offset */
+  transform: none !important; /* kill slide-from-corner */
+  animation: ld-fade-in 0.22s ease;
+}
+
+/* Match the custom transition="ld-fade" set on the dialog */
+:deep(.ld-fade-enter-active),
+:deep(.ld-fade-leave-active) {
+  transition: opacity 0.22s ease;
+}
+:deep(.ld-fade-enter-from),
+:deep(.ld-fade-leave-to) {
+  opacity: 0;
+}
+
+@keyframes ld-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 </style>

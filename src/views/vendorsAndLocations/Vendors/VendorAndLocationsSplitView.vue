@@ -113,7 +113,7 @@
       title="Create New Vendor"
       width="600px"
     >
-      <VendorForm v-model="newVendor" ref="vendorFormRef" />
+      <VendorForm :key="vendorCreateKey" v-model="newVendor" :original-urls="[]" ref="vendorFormRef" />
       <template #footer>
         <el-button @click="emit('update:showCreateDialog', false)">Cancel</el-button>
         <el-button type="primary" @click="submitNewVendor">Create</el-button>
@@ -126,6 +126,7 @@
       @update:modelValue="val => emit('update:showCreateDialog', val)"
       :title="'Create Location'"
       width="600px"
+      destroy-on-close
     >
       <LocationForm v-model="newLocation" :location-types="locationTypes" ref="locationFormRef" />
       <template #footer>
@@ -149,12 +150,19 @@ import LocationTree from '@/views/vendorsAndLocations/Locations/LocationTree.vue
 import LocationDetail from '@/views/vendorsAndLocations/Locations/LocationDetail.vue'
 import { getLocationTree, getLocationById, createLocation } from '@/api/location.js'
 import { createVendor, searchVendorsGeneral } from '@/api/vendor.js'
+import { uploadMultipleToMinio } from '@/api/minio.js'
 
 const props = defineProps( {
   activeTab : String,
   showCreateDialog : Boolean,
   search : String
 } )
+
+/** robust MinIO response normalizer */
+const extractUploadedUrls = resp => {
+  const list = resp?.uploadedFiles ?? resp?.data?.uploadedFiles ?? resp?.data?.data?.uploadedFiles ?? resp?.files ?? []
+  return ( Array.isArray( list ) ? list : [] ).map( f => f?.url || f?.fileUrl || f?.location || f?.path ).filter( Boolean )
+}
 
 const emit = defineEmits( ['update:activeTab', 'update:showCreateDialog'] )
 
@@ -175,6 +183,7 @@ const pageSize = ref( 10 )
 const totalVendors = ref( 0 )
 // const totalPages = computed( () => Math.max( 1, Math.ceil( totalVendors.value / pageSize.value ) ) )
 const isChildCreate = ref( false )
+const vendorCreateKey = ref( 0 )
 
 watch(
   () => props.activeTab,
@@ -202,7 +211,7 @@ const newVendor = ref( {
   website : '',
   description : '',
   image_list : [],
-  files_list : []
+  file_list : []
 } )
 
 const newLocation = ref( {
@@ -213,7 +222,7 @@ const newLocation = ref( {
   address : '',
   description : '',
   image_list : [],
-  files_list : [],
+  file_list : [],
   parent_id : null
 } )
 
@@ -452,7 +461,7 @@ const openAddChildDialog = parent => {
     address : '',
     description : '',
     image_list : [],
-    files_list : [],
+    file_list : [],
     parent_id : parent.id
   }
   emit( 'update:showCreateDialog', true )
@@ -463,27 +472,59 @@ const selectVendor = vendor => {
 }
 
 const submitNewVendor = async() => {
-  if ( !( await vendorFormRef.value?.validate() ) ) return
+  if ( !( await vendorFormRef.value?.validate?.() ) ) return
 
-  const f = vendorFormRef.value.getFormData()
+  // 1) Pull form data
+  const f = vendorFormRef.value.getFormData?.() ?? {}
+
+  // 2) Upload new Files → URLs
+  let uploadedImageUrls = []
+  let uploadedFileUrls = []
+  try {
+    if ( Array.isArray( f.image_files ) && f.image_files.length ) {
+      const res = await uploadMultipleToMinio( f.image_files )
+      uploadedImageUrls = extractUploadedUrls( res )
+    }
+    if ( Array.isArray( f.file_files ) && f.file_files.length ) {
+      const res = await uploadMultipleToMinio( f.file_files )
+      uploadedFileUrls = extractUploadedUrls( res )
+    }
+  } catch ( e ) {
+    ElMessage.error( 'File upload failed' )
+    console.error( 'uploadMultipleToMinio failed:', e?.response?.data || e )
+    return
+  }
+
+  // 3) Merge existing URL strings with newly uploaded (no File objects)
+  const onlyUrls = arr => ( Array.isArray( arr ) ? arr.filter( x => typeof x === 'string' ) : [] )
+  const image_list = [...onlyUrls( f.image_list ), ...uploadedImageUrls]
+  const file_list = [...onlyUrls( f.file_list ), ...uploadedFileUrls] // <-- singular
+
+  // 4) Build payload
   const payload = {
-    ...f,
-    code : f.code?.trim(),
-    file_list : f.file_list || []
+    name : ( f.name ?? '' ).trim(),
+    code : ( f.code ?? '' ).trim(),
+    address : ( f.address ?? '' ).trim(),
+    phone_number : ( f.phone_number ?? '' ).trim(),
+    email : ( f.email ?? '' ).trim(),
+    website : ( f.website ?? '' ).trim(),
+    description : ( f.description ?? '' ).trim(),
+    image_list,
+    file_list // <-- what your backend expects
   }
 
   try {
-    const res = await createVendor( payload ) // ✅ no hardcoded host
-    const payloadRes = res?.data ?? res // interceptor-safe
-    const created = payloadRes?.data ?? payloadRes // {data:{...}} or {...}
+    const res = await createVendor( payload )
+    const payloadRes = res?.data ?? res
+    const created = payloadRes?.data ?? payloadRes
     const newId = Number( created?.id )
 
     ElMessage.success( 'Vendor created' )
+    // close dialog in your code...
     emit( 'update:showCreateDialog', false )
 
-    await fetchVendors() // refresh list
-    await nextTick() // wait for render
-
+    await fetchVendors()
+    await nextTick()
     selected.value =
       ( Number.isFinite( newId ) ? vendors.value.find( v => Number( v.id ) === newId ) : null ) || vendors.value[0] || null
   } catch ( e ) {
@@ -523,13 +564,30 @@ const submitNewLocation = async() => {
   const typeId = f.location_type_id == null ? null : Number( f.location_type_id )
   const cap = f.capacity == null || f.capacity === '' ? null : parseInt( f.capacity, 10 )
 
+  // Upload new images only
+  let uploadedImageUrls = []
+  try {
+    if ( Array.isArray( f.image_files ) && f.image_files.length ) {
+      const res = await uploadMultipleToMinio( f.image_files )
+      uploadedImageUrls = extractUploadedUrls( res )
+    }
+  } catch ( e ) {
+    ElMessage.error( 'Image upload failed' )
+    console.error( 'uploadMultipleToMinio failed:', e?.response?.data || e )
+    return
+  }
+
+  // Merge existing URL strings with newly uploaded
+  const onlyUrls = arr => ( Array.isArray( arr ) ? arr.filter( x => typeof x === 'string' ) : [] )
+  const image_list = Array.from( new Set( [...onlyUrls( f.image_list ), ...uploadedImageUrls] ) )
+
   const payload = {
     name : f.name?.trim() || '',
     code : f.code?.trim() || '',
     description : f.description?.trim() || '',
     parent_id : newLocation.value?.parent_id ?? f.parent_id ?? null,
-    image_list : Array.isArray( f.image_list ) ? f.image_list : [],
     address : f.address?.trim() || '',
+    image_list,
     ...( typeId != null ? { location_type_id : typeId } : {} ),
     ...( cap != null ? { capacity : cap } : {} )
   }
@@ -550,8 +608,6 @@ const submitNewLocation = async() => {
       await handleLocationClick( { id : newId } )
       await nextTick()
       locationTreeRef.value?.treeRef?.setCurrentKey( newId )
-    } else {
-      console.warn( 'createLocation returned no id; skipping auto-select', created )
     }
   } catch ( e ) {
     const s = e?.response?.status
@@ -614,8 +670,10 @@ watch(
         website : '',
         description : '',
         image_list : [],
-        files_list : []
+        file_list : [],
+        removed_existing_images : []
       } )
+      vendorCreateKey.value += 1
     } else {
       Object.assign( newLocation.value, {
         name : '',
@@ -625,7 +683,7 @@ watch(
         address : '',
         description : '',
         image_list : [],
-        files_list : [],
+        file_list : [],
         parent_id : isChildCreate.value ? newLocation.value.parent_id : null
       } )
     }
