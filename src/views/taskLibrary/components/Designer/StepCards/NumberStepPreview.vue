@@ -8,9 +8,9 @@
     </div>
     <div class="number-input-preview">
       <el-input-number
-        :model-value="step.config?.default || 0"
+        v-model="currentValue"
         :precision="step.config?.decimal_places || 0"
-        disabled
+        :disabled="!interactive"
         style="width: 100%"
       />
       <span v-if="step.config?.unit" class="unit-label">{{ step.config.unit }}</span>
@@ -24,6 +24,7 @@
 </template>
 
 <script setup>
+import { ref, watch } from 'vue'
 import { InfoFilled } from '@element-plus/icons-vue'
 
 // eslint-disable-next-line no-unused-vars
@@ -35,8 +36,26 @@ const props = defineProps( {
   previewMode : {
     type : Boolean,
     default : true
+  },
+  interactive : {
+    type : Boolean,
+    default : false
   }
 } )
+
+// Reactive state for user input
+const currentValue = ref( props.step.config?.default || 0 )
+
+// Watch for prop changes to sync initial values
+watch(
+  () => props.step.config?.default,
+  newValue => {
+    if ( !props.interactive ) {
+      currentValue.value = newValue || 0
+    }
+  },
+  { immediate : true }
+)
 </script>
 
 <style scoped>

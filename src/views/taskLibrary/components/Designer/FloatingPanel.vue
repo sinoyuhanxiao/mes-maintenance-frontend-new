@@ -7,7 +7,7 @@
             <el-button-group>
               <el-button
                 :type="mode === 'add_step' ? 'primary' : ''"
-                size="default"
+                size="small"
                 @click="setMode('add_step')"
                 class="mode-button"
               >
@@ -16,7 +16,7 @@
               </el-button>
               <el-button
                 :type="mode === 'reorder_steps' ? 'primary' : ''"
-                size="default"
+                size="small"
                 @click="setMode('reorder_steps')"
                 class="mode-button"
               >
@@ -36,9 +36,21 @@
               v-for="stepType in stepTypes"
               :key="stepType.type"
               class="step-type-card"
-              @click="handleAddStep(stepType.type)"
+              :class="{ disabled: stepType.disabled }"
+              @click="!stepType.disabled && handleAddStep(stepType.type)"
             >
-              <div class="step-type-icon" :style="{ backgroundColor: stepType.color }">
+              <el-tooltip
+                v-if="stepType.disabled"
+                content="Purchase FPS MES Pro to enable this feature"
+                placement="bottom"
+              >
+                <div class="step-type-icon" :style="{ backgroundColor: stepType.color }">
+                  <el-icon>
+                    <component :is="stepType.icon" />
+                  </el-icon>
+                </div>
+              </el-tooltip>
+              <div v-else class="step-type-icon" :style="{ backgroundColor: stepType.color }">
                 <el-icon>
                   <component :is="stepType.icon" />
                 </el-icon>
@@ -291,7 +303,8 @@ const stepTypes = [
     name : 'Service',
     description : 'Replace/Repair ops',
     icon : Tools,
-    color : '#df869d'
+    color : '#df869d',
+    disabled : true
   }
 ]
 
@@ -855,6 +868,30 @@ watch(
 .step-type-inspection {
   --step-type-color: #67c23a;
   --step-type-color-rgb: 103, 194, 58;
+}
+
+.step-type-card.disabled {
+  cursor: not-allowed;
+  background: #f5f7fa;
+  transform: none;
+  box-shadow: none;
+}
+
+.step-type-card.disabled:hover {
+  background: #f5f7fa;
+  border-color: #e4e7ed;
+}
+
+.step-type-card.disabled .step-type-icon {
+  background-color: #c0c4cc;
+}
+
+.step-type-card.disabled .step-type-name {
+  color: #909399;
+}
+
+.step-type-card.disabled .step-type-desc {
+  color: #c0c4cc;
 }
 
 .step-type-checkbox {

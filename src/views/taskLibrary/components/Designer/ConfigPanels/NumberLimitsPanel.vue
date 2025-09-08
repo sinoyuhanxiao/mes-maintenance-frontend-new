@@ -171,7 +171,7 @@ const handleSave = async() => {
 
     emit( 'save', props.stepId, limitsData )
   } catch ( error ) {
-    console.error( 'Validation failed:', error )
+    console.error( 'Number limits validation failed:', error )
   }
 }
 

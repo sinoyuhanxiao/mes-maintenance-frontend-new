@@ -432,7 +432,7 @@ export class WorkOrderPDFExporter {
     // Compliance standards
     this.doc.setFontSize( 8 )
     this.doc.setFont( 'helvetica', 'normal' )
-    const complianceText = `Compliance Standards: ${data.complianceStandards.join( ', ' )}`
+    const complianceText = `Compliance standards: ${data.compliancestandards.join( ', ' )}`
     this.doc.text( complianceText, this.margin, this.currentY )
     this.currentY += 5
 
@@ -619,7 +619,7 @@ export class WorkOrderPDFExporter {
       ],
 
       // Compliance and metadata
-      complianceStandards : ['ISO55000', '21CFR11', 'ISA-95'],
+      compliancestandards : ['ISO55000', '21CFR11', 'ISA-95'],
       digitalSignature : 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
       exportTimestamp : new Date().toISOString(),
       exportedBy : {

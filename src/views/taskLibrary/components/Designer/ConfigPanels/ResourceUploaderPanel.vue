@@ -22,7 +22,7 @@
           accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif"
         >
           <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
-          <div class="el-upload__text">Drop files here or <em>click to upload</em></div>
+          <div class="el-upload__text">Add images or files</div>
           <template #tip>
             <div class="el-upload__tip">Supported formats: PDF, DOC, DOCX, JPG, PNG, GIF (max 25MB each)</div>
           </template>
@@ -225,7 +225,7 @@ const handleSave = async() => {
       } catch ( error ) {
         fileItem.error = 'Upload failed'
         fileItem.uploading = false
-        console.error( 'File upload error:', error )
+        console.error( 'Upload failed:', error )
       }
     }
 
@@ -235,7 +235,7 @@ const handleSave = async() => {
     emit( 'save', props.stepId, allResources )
   } catch ( error ) {
     ElMessage.error( 'Failed to upload resources' )
-    console.error( 'Upload error:', error )
+    console.error( 'Upload failed:', error )
   }
 }
 

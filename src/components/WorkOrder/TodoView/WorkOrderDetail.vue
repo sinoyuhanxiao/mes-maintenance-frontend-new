@@ -181,8 +181,8 @@
           </div>
         </el-tab-pane>
 
-        <!-- Safety Measures Tab -->
-        <el-tab-pane label="Safety Measures" name="safetyMeasures">
+        <!-- standards Tab -->
+        <el-tab-pane label="standards" name="standards">
           <div class="tab-content">
             <div class="no-data-placeholder">
               <el-empty description="No Data" :image-size="120" />

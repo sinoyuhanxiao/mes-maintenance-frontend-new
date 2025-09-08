@@ -18,10 +18,7 @@
       <!-- Toolbar Section -->
       <div class="preview-toolbar" v-if="showToolbar">
         <div class="toolbar-left">
-          <el-button v-if="toolbarConfig.showStepNumbersToggle" type="text" size="small" @click="toggleStepNumbers">
-            <el-icon><List /></el-icon>
-            {{ layoutConfig.showStepNumbers ? 'Hide Numbers' : 'Show Numbers' }}
-          </el-button>
+          <!-- Reset button moved to main designer header -->
         </div>
 
         <div class="toolbar-right">
@@ -29,20 +26,20 @@
             <el-button-group>
               <el-button
                 :type="currentViewport === 'desktop' ? 'primary' : ''"
-                size="small"
+                size="default"
                 @click="setViewport('desktop')"
               >
-                <el-icon>
+                <el-icon style="margin-right: 5px">
                   <Monitor />
                 </el-icon>
                 Desktop
               </el-button>
               <el-button
                 :type="currentViewport === 'mobile' ? 'primary' : ''"
-                size="small"
+                size="default"
                 @click="setViewport('mobile')"
               >
-                <el-icon>
+                <el-icon style="margin-right: 5px">
                   <Iphone />
                 </el-icon>
                 Mobile
@@ -52,7 +49,7 @@
 
           <el-switch
             v-model="isInteractive"
-            size="small"
+            size="default"
             active-text="Interactive"
             inactive-text="Static"
             class="interaction-toggle"
@@ -69,91 +66,40 @@
           { 'interactive-mode': isInteractive },
         ]"
       >
-        <!-- Sections -->
-        <div v-for="section in renderSnapshot.sections" :key="section.sectionId" class="preview-section">
-          <div
-            class="section-header"
-            :class="{ collapsible: layoutConfig.sectionCollapsible }"
-            @click="toggleSection(section.sectionId)"
-          >
-            <h3 class="section-title">{{ section.title }}</h3>
-            <el-icon v-if="layoutConfig.sectionCollapsible" class="collapse-icon">
-              <ArrowDown v-if="section.expanded" />
-              <ArrowRight v-else />
-            </el-icon>
-          </div>
+        <!-- Steps (simplified to show only step-config-preview) -->
+        <div class="preview-section">
+          <div class="section-content">
+            <div v-for="(step, index) in templateForm.steps" :key="step.step_id || index" class="preview-step-simple">
+              <!-- Step Config Preview with numbered title -->
+              <div class="step-config-preview">
+                <component
+                  :is="getStepComponent(step.type)"
+                  :step="getStepWithNumber(step, index)"
+                  :preview-mode="true"
+                  :interactive="isInteractive"
+                />
 
-          <div v-if="section.expanded" class="section-content">
-            <div
-              v-for="step in section.steps"
-              :key="step.id"
-              class="preview-step"
-              :class="[{ 'required-step': step.required }, `step-type-${step.type}`]"
-            >
-              <!-- Step Header -->
-              <div class="step-header">
-                <div
-                  class="step-number"
-                  v-if="layoutConfig.showStepNumbers"
-                  :style="{ backgroundColor: getStepTypeColor(step.type) }"
-                >
-                  {{ step.order }}
-                </div>
-                <div class="step-info">
-                  <div class="step-type-badge" :style="{ backgroundColor: getStepTypeColor(step.type) }">
-                    {{ getStepTypeLabel(step.type) }}
+                <!-- Preview Bottom Section (only show if required image is checked) -->
+                <div v-if="step.required_image" class="preview-bottom-section">
+                  <div v-if="isMobileView" class="mobile-upload-section">
+                    <div class="upload-preview">
+                      <el-upload
+                        class="upload-demo"
+                        drag
+                        :disabled="!isInteractive"
+                        :show-file-list="false"
+                        :list-type="step.config?.upload_style?.list_type || 'picture-card'"
+                      >
+                        <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
+                        <div class="el-upload__text">Add images or files</div>
+                      </el-upload>
+                    </div>
                   </div>
-                  <div v-if="step.required" class="required-badge">Required</div>
-                </div>
-              </div>
-
-              <!-- Step Content -->
-              <div class="step-content">
-                <!-- Step Label -->
-                <div class="step-label-section">
-                  <div class="step-title">{{ step.title }}</div>
-                </div>
-
-                <!-- Step Description -->
-                <div v-if="step.ui.description" class="step-description-section">
-                  <div class="step-description">{{ step.ui.description }}</div>
-                </div>
-
-                <!-- Step Widget -->
-                <div class="step-config-preview">
-                  <component
-                    :is="getStepWidget(step.type)"
-                    :step="step"
-                    :interactive="isInteractive"
-                    :config="contentConfig.widgets[step.type] || {}"
-                  />
-                </div>
-
-                <!-- Step Meta -->
-                <div
-                  v-if="step.ui.relevant_tools?.length > 0 || step.ui.relevant_resources?.length > 0"
-                  class="step-options"
-                >
-                  <div class="step-meta">
-                    <el-button
-                      v-if="step.ui.relevant_tools?.length > 0"
-                      type="info"
-                      size="small"
-                      plain
-                      class="meta-button"
-                    >
-                      <el-icon><Tools /></el-icon>
-                      {{ step.ui.relevant_tools.length }} tool(s)
-                    </el-button>
-                    <el-button
-                      v-if="step.ui.relevant_resources?.length > 0"
-                      type="warning"
-                      size="small"
-                      plain
-                      class="meta-button"
-                    >
-                      <el-icon><Folder /></el-icon>
-                      {{ step.ui.relevant_resources.length }} resource(s)
+                  <div v-else class="desktop-upload-button">
+                    <el-button type="info" size="small" :disabled="!isInteractive">
+                      <span class="required-asterisk">*</span>
+                      <el-icon><Upload /></el-icon>
+                      Upload Image
                     </el-button>
                   </div>
                 </div>
@@ -163,7 +109,7 @@
         </div>
 
         <!-- Empty State -->
-        <div v-if="renderSnapshot.sections.length === 0" class="empty-preview">
+        <div v-if="!templateForm.steps || templateForm.steps.length === 0" class="empty-preview">
           <el-empty description="No steps to preview" :image-size="80" />
         </div>
       </div>
@@ -183,22 +129,23 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, reactive } from 'vue'
-import { List, Monitor, Iphone, ArrowDown, ArrowRight, Printer, Tools, Folder } from '@element-plus/icons-vue'
+import { ref, computed, watch, reactive, onMounted, onUnmounted } from 'vue'
+import { Monitor, Iphone, Printer, UploadFilled, Upload } from '@element-plus/icons-vue'
 
-// Import step widget components
-import InspectionWidget from './PreviewWidgets/InspectionWidget.vue'
-import CheckboxWidget from './PreviewWidgets/CheckboxWidget.vue'
-import NumberWidget from './PreviewWidgets/NumberWidget.vue'
-import TextWidget from './PreviewWidgets/TextWidget.vue'
-import FilesWidget from './PreviewWidgets/FilesWidget.vue'
+// Import step preview components (reused from BaseStepCard)
+import InspectionStepPreview from './StepCards/InspectionStepPreview.vue'
+import CheckboxStepPreview from './StepCards/CheckboxStepPreview.vue'
+import NumberStepPreview from './StepCards/NumberStepPreview.vue'
+import TextStepPreview from './StepCards/TextStepPreview.vue'
+import AttachmentStepPreview from './StepCards/AttachmentStepPreview.vue'
+import ServiceStepPreview from './StepCards/ServiceStepPreview.vue'
 
 const props = defineProps( {
   visible : {
     type : Boolean,
     default : false
   },
-  template : {
+  templateForm : {
     type : Object,
     required : true
   },
@@ -286,14 +233,18 @@ const emit = defineEmits( ['open', 'close', 'print'] )
 const currentViewport = ref( 'desktop' )
 const isInteractive = ref( false )
 const sectionStates = reactive( {} )
+const windowWidth = ref( window.innerWidth )
 
 // Computed properties
+// Use preview's viewport switcher primarily for deciding mobile vs desktop
+const isMobileView = computed( () => currentViewport.value === 'mobile' )
+
 const showToolbar = computed( () => {
   return props.toolbarConfig.showStepNumbersToggle || props.toolbarConfig.showViewportSwitcher
 } )
 
 const renderSnapshot = computed( () => {
-  if ( !props.template || !props.template.steps ) {
+  if ( !props.templateForm || !props.templateForm.steps ) {
     return {
       title : '',
       subtitle : '',
@@ -302,9 +253,9 @@ const renderSnapshot = computed( () => {
   }
 
   return {
-    title : props.template.name || 'Untitled Procedure',
-    subtitle : props.template.description || '',
-    sections : groupStepsIntoSections( props.template.steps )
+    title : props.templateForm.name || 'Untitled Procedure',
+    subtitle : props.templateForm.description || '',
+    sections : []
   }
 } )
 
@@ -320,6 +271,7 @@ watch(
 )
 
 // Methods
+// eslint-disable-next-line no-unused-vars
 const groupStepsIntoSections = steps => {
   if ( props.contentConfig.grouping === 'none' ) {
     return [
@@ -370,16 +322,29 @@ const transformStepForPreview = step => {
   }
 }
 
-const getStepWidget = stepType => {
-  const widgets = {
-    inspection : InspectionWidget,
-    checkbox : CheckboxWidget,
-    number : NumberWidget,
-    text : TextWidget,
-    files : FilesWidget,
-    attachments : FilesWidget // alias
+const getStepComponent = stepType => {
+  const components = {
+    inspection : InspectionStepPreview,
+    checkbox : CheckboxStepPreview,
+    number : NumberStepPreview,
+    text : TextStepPreview,
+    files : AttachmentStepPreview,
+    attachments : AttachmentStepPreview,
+    service : ServiceStepPreview
   }
-  return widgets[stepType] || 'div'
+  return components[stepType] || 'div'
+}
+
+const getStepWithNumber = ( step, index ) => {
+  if ( !props.layoutConfig.showStepNumbers ) {
+    return step
+  }
+
+  // Create a modified copy of the step with numbered label
+  return {
+    ...step,
+    label : `${index + 1}. ${step.label || `${getStepTypeLabel( step.type )} step`}`
+  }
 }
 
 // eslint-disable-next-line no-unused-vars
@@ -394,9 +359,9 @@ const getMetaLabel = field => {
 
 // eslint-disable-next-line no-unused-vars
 const getMetaValue = field => {
-  if ( !props.template ) return ''
+  if ( !props.templateForm ) return ''
 
-  const value = props.template[field]
+  const value = props.templateForm[field]
   if ( field === 'estimated_minutes' ) {
     return `${value || 0} min`
   }
@@ -412,27 +377,34 @@ const getStepTypeLabel = type => {
     checkbox : 'Checkbox',
     number : 'Number',
     text : 'Text',
-    attachments : 'Files'
+    attachments : 'Files',
+    files : 'Files',
+    service : 'Service'
   }
   return labels[type] || type
 }
 
+// eslint-disable-next-line no-unused-vars
 const getStepTypeColor = type => {
   const colors = {
     inspection : '#67c23a',
     checkbox : '#409eff',
     number : '#e6a23c',
     text : '#909399',
-    attachments : '#849aec'
+    attachments : '#849aec',
+    files : '#849aec',
+    service : '#df869d'
   }
   return colors[type] || '#c0c4cc'
 }
 
+// eslint-disable-next-line no-unused-vars
 const toggleStepNumbers = () => {
   // This would need to be handled by parent component, but for sinec I do not have much time just emit it
   emit( 'toggle-step-numbers' )
 }
 
+// eslint-disable-next-line no-unused-vars
 const toggleSection = sectionId => {
   if ( props.layoutConfig.sectionCollapsible ) {
     sectionStates[sectionId] = !sectionStates[sectionId]
@@ -456,6 +428,18 @@ const handlePrint = () => {
   // Could implement actual print functionality here
   window.print()
 }
+
+const handleResize = () => {
+  windowWidth.value = window.innerWidth
+}
+
+onMounted( () => {
+  window.addEventListener( 'resize', handleResize )
+} )
+
+onUnmounted( () => {
+  window.removeEventListener( 'resize', handleResize )
+} )
 
 // Initialize section states
 watch(
@@ -567,7 +551,7 @@ watch(
 }
 
 .preview-main.viewport-mobile {
-  max-width: 393px;
+  width: 430px;
   margin: 0 auto;
   padding: 20px;
   background: #f5f5f5;
@@ -624,144 +608,94 @@ watch(
   transition: transform 0.2s;
 }
 
-.section-content {
-  padding-left: 16px;
-}
-
-.preview-step {
-  position: relative;
-  border: 2px solid #e4e7ed;
-  border-radius: 8px;
-  background: white;
-  padding: 16px;
-  margin-bottom: 12px;
-  transition: all 0.3s ease;
-}
-
-.preview-step:hover {
-  border-color: #409eff;
-  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.1);
-}
-
-.preview-step.required-step {
-  border-left: 4px solid #f56c6c;
-}
-
-.step-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.step-number {
-  width: 32px;
-  height: 32px;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 14px;
-  flex-shrink: 0;
-}
-
-.step-info {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.step-type-badge {
-  color: white;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.required-badge {
-  background: #f56c6c;
-  color: white;
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-size: 10px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.step-content {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.step-label-section .step-title {
-  font-weight: 500;
-  font-size: 16px;
-  color: #303133;
-}
-
-.step-description-section .step-description {
+::v-deep(.el-checkbox__input.is-disabled+span.el-checkbox__label) {
   color: #606266;
-  font-size: 14px;
-  line-height: 1.4;
+}
+
+.section-content {
+}
+
+.preview-step-simple {
+  margin-bottom: 12px;
+  padding: 0;
 }
 
 .step-config-preview {
-  padding: 12px;
+  padding: 16px;
   background: #fafafa;
-  border-radius: 6px;
+  border-radius: 8px;
   border: 1px solid #e4e7ed;
 }
 
-.step-options {
-  display: flex;
-  justify-content: flex-end;
-  align-items: center;
+.preview-bottom-section {
+  margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px solid #f0f0f0;
-}
-
-.step-meta {
-  margin-right: 20px;
+  border-top: 1px dashed #e4e7ed;
   display: flex;
-  gap: 5px;
   align-items: center;
 }
 
-.meta-button {
-  height: 24px;
-  font-size: 11px;
-  padding: 0 8px;
+.mobile-upload-section {
+  width: 100%;
 }
 
-.meta-button .el-icon {
+.mobile-upload-section .upload-preview {
+  width: 100%;
+}
+
+.mobile-upload-section .upload-preview :deep(.el-upload-dragger) {
+  border: 2px dashed #d3d3d3 !important;
+  background-color: #fafafa !important;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.mobile-upload-section :deep(.el-upload.el-upload--picture-card) {
+  height: 90px !important;
+}
+
+.mobile-upload-section .upload-preview :deep(.el-upload__text) {
+  color: #c0c4cc !important;
+}
+
+.mobile-upload-section .upload-preview :deep(.el-icon--upload) {
+  color: #c0c4cc !important;
+  font-size: 40px;
+  line-height: 1;
+}
+
+.mobile-upload-section .upload-demo {
+  height: 100%;
+}
+
+.mobile-upload-section .upload-demo :deep(.el-upload) {
+  width: 100%;
+}
+
+.el-icon.el-icon--upload {
+  margin-bottom: 2px;
+}
+
+.desktop-upload-button {
+  width: 100%;
+  text-align: left; /* Center the button */
+}
+
+.desktop-upload-button .el-button {
+  width: auto; /* Allow button to size naturally */
+  min-width: 130px; /* Give it a reasonable minimum width */
+  border: 1px dashed #dcdfe6;
+  color: #606266;
+  background: white;
+}
+
+.required-asterisk {
+  color: #f56c6c;
   margin-right: 4px;
-}
-
-/* Step type specific styling */
-.step-type-inspection {
-  border-left: 4px solid #67c23a;
-}
-
-.step-type-checkbox {
-  border-left: 4px solid #409eff;
-}
-
-.step-type-number {
-  border-left: 4px solid #e6a23c;
-}
-
-.step-type-text {
-  border-left: 4px solid #909399;
-}
-
-.step-type-attachments {
-  border-left: 4px solid #849aec;
 }
 
 .empty-preview {
@@ -789,26 +723,7 @@ watch(
   transform: translateY(-1px);
 }
 
-/* Step type specific styling */
-.step-number[data-type='inspection'] {
-  background: linear-gradient(135deg, var(--preview-success-color) 0%, #5cb85c 100%);
-}
-
-.step-number[data-type='checkbox'] {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
-}
-
-.step-number[data-type='number'] {
-  background: linear-gradient(135deg, var(--preview-warning-color) 0%, #d97706 100%);
-}
-
-.step-number[data-type='text'] {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-}
-
-.step-number[data-type='attachments'] {
-  background: linear-gradient(135deg, var(--preview-danger-color) 0%, #dc2626 100%);
-}
+/* Simplified preview structure - no type-specific styling needed */
 
 /* Widget styling to match step card preview */
 :deep(.widget-content) {
@@ -834,6 +749,14 @@ watch(
 :deep(.text-widget:hover),
 :deep(.files-widget:hover) {
   box-shadow: none;
+}
+
+:deep(.attachment-step-preview .upload-preview .upload-demo .el-upload--picture-card) {
+  height: 100% !important;
+}
+
+:deep(.attachment-step-preview .el-upload-dragger) {
+  height: 100% !important;
 }
 
 /* Responsive Design */
@@ -867,23 +790,12 @@ watch(
     padding: 20px;
   }
 
-  .preview-step {
-    flex-direction: column;
-    gap: 16px;
+  .preview-step-simple {
+    margin-bottom: 20px;
   }
 
-  .step-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .step-title {
-    padding-left: 0;
-  }
-
-  .step-widget {
-    margin-left: 0;
+  .step-config-preview {
+    padding: 12px;
   }
 }
 
@@ -896,18 +808,12 @@ watch(
     font-size: 18px;
   }
 
-  .preview-step {
-    padding: 16px;
+  .preview-step-simple {
+    margin-bottom: 16px;
   }
 
-  .step-number {
-    width: 32px;
-    height: 32px;
-    font-size: 14px;
-  }
-
-  .step-title {
-    font-size: 16px;
+  .step-config-preview {
+    padding: 12px;
   }
 }
 </style>

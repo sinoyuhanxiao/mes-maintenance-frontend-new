@@ -92,11 +92,14 @@ const getOptionLabel = option => {
 }
 
 const getOptionType = option => {
-  const types = {
-    pass : 'success',
-    fail : 'danger'
+  if ( selectedOption.value === option ) {
+    const types = {
+      pass : 'success',
+      fail : 'danger'
+    }
+    return types[option] || 'primary'
   }
-  return types[option] || 'primary'
+  return '' // Use default button styling (no type) for unselected buttons
 }
 </script>
 

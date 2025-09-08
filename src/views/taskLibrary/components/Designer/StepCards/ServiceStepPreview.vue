@@ -27,13 +27,13 @@
           <div class="config-item" style="width: 100%">
             <span class="config-label">Quantity:</span>
             <el-input-number
-              :model-value="step.config?.quantity || 1"
+              v-model="currentQuantity"
               :min="1"
               :max="999"
               :step="1"
               :precision="0"
               size="small"
-              disabled
+              :disabled="!interactive"
               style="width: 100%"
               class="quantity-input-preview"
             />
@@ -45,11 +45,23 @@
       <div class="config-row">
         <div class="config-item status-row">
           <el-button-group class="pass-fail-group">
-            <el-button :type="getStatusButtonType('pass')" size="small" disabled class="status-button">
+            <el-button
+              :type="getStatusButtonType('pass')"
+              size="small"
+              :disabled="!interactive"
+              class="status-button"
+              @click="interactive && setStatus('pass')"
+            >
               <el-icon><Check /></el-icon>
               Pass
             </el-button>
-            <el-button :type="getStatusButtonType('fail')" size="small" disabled class="status-button">
+            <el-button
+              :type="getStatusButtonType('fail')"
+              size="small"
+              :disabled="!interactive"
+              class="status-button"
+              @click="interactive && setStatus('fail')"
+            >
               <el-icon><Close /></el-icon>
               Fail
             </el-button>
@@ -61,6 +73,7 @@
 </template>
 
 <script setup>
+import { ref, watch } from 'vue'
 import { Check, Close } from '@element-plus/icons-vue'
 
 const props = defineProps( {
@@ -71,19 +84,53 @@ const props = defineProps( {
   previewMode : {
     type : Boolean,
     default : true
+  },
+  interactive : {
+    type : Boolean,
+    default : false
   }
 } )
+
+// Reactive state for user input
+const currentQuantity = ref( props.step.config?.quantity || 1 )
+const currentStatus = ref( props.step.config?.status || 'fail' )
+
+// Watch for prop changes to sync initial values
+watch(
+  () => props.step.config?.quantity,
+  newValue => {
+    if ( !props.interactive ) {
+      currentQuantity.value = newValue || 1
+    }
+  },
+  { immediate : true }
+)
+
+watch(
+  () => props.step.config?.status,
+  newValue => {
+    if ( !props.interactive ) {
+      currentStatus.value = newValue || 'fail'
+    }
+  },
+  { immediate : true }
+)
 
 const getServiceTypeTagType = serviceType => {
   return serviceType === 'Replace' ? 'danger' : 'warning'
 }
 
 const getStatusButtonType = status => {
-  const currentStatus = props.step.config?.status || 'fail'
-  if ( status === currentStatus ) {
+  if ( status === currentStatus.value ) {
     return status === 'pass' ? 'success' : 'danger'
   }
   return 'info'
+}
+
+const setStatus = status => {
+  if ( props.interactive ) {
+    currentStatus.value = status
+  }
 }
 </script>
 

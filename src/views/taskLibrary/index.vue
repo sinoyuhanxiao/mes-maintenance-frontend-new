@@ -28,28 +28,7 @@
             </div>
           </el-card>
         </el-col>
-        <el-col :span="6">
-          <el-card class="stat-card">
-            <div class="stat-content">
-              <div class="stat-value">{{ publishedTemplates }}</div>
-              <div class="stat-label">Published</div>
-            </div>
-            <div class="stat-icon published">
-              <el-icon><Check /></el-icon>
-            </div>
-          </el-card>
-        </el-col>
-        <el-col :span="6">
-          <el-card class="stat-card">
-            <div class="stat-content">
-              <div class="stat-value">{{ draftTemplates }}</div>
-              <div class="stat-label">Drafts</div>
-            </div>
-            <div class="stat-icon draft">
-              <el-icon><Edit /></el-icon>
-            </div>
-          </el-card>
-        </el-col>
+
         <el-col :span="6">
           <el-card class="stat-card">
             <div class="stat-content">
@@ -128,9 +107,6 @@
               <h4 class="template-name">{{ template.name }}</h4>
               <p class="template-description">{{ template.description || 'No description' }}</p>
               <div class="template-meta">
-                <el-tag :type="getStatusType(template.status)" size="small">
-                  {{ template.status }}
-                </el-tag>
                 <span class="template-category">{{ template.category }}</span>
                 <span class="template-time">{{ template.estimated_minutes }}min</span>
               </div>
@@ -150,7 +126,7 @@
 <script setup>
 import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Plus, Document, Check, Edit, Collection, Folder, Search } from '@element-plus/icons-vue'
+import { Plus, Document, Edit, Collection, Folder, Search } from '@element-plus/icons-vue'
 import { useTaskLibrary } from '@/composables/useTaskLibrary'
 
 const router = useRouter()
@@ -158,8 +134,7 @@ const { loading, templates, loadTemplates } = useTaskLibrary()
 
 // Computed properties for stats
 const totalTemplates = computed( () => templates.value.length )
-const publishedTemplates = computed( () => templates.value.filter( t => t.status === 'published' ).length )
-const draftTemplates = computed( () => templates.value.filter( t => t.status === 'draft' ).length )
+
 const uniqueCategories = computed( () => {
   const categories = new Set( templates.value.map( t => t.category ).filter( Boolean ) )
   return categories.size
@@ -191,20 +166,6 @@ const editTemplate = template => {
     name : 'TemplateDesignerEdit',
     params : { id : template.template_id }
   } )
-}
-
-// Helper methods
-const getStatusType = status => {
-  switch ( status ) {
-    case 'published':
-      return 'success'
-    case 'draft':
-      return 'warning'
-    case 'archived':
-      return 'info'
-    default:
-      return 'info'
-  }
 }
 
 // Initialize data
@@ -266,14 +227,6 @@ onMounted( () => {
     right: 20px;
     font-size: 32px;
     color: #409eff;
-
-    &.published {
-      color: #67c23a;
-    }
-
-    &.draft {
-      color: #e6a23c;
-    }
 
     &.categories {
       color: #909399;

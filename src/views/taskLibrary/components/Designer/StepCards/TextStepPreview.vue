@@ -7,7 +7,7 @@
       {{ step.description }}
     </div>
     <el-input
-      :model-value="step.config?.default || ''"
+      v-model="currentValue"
       :type="step.config?.multiline ? 'textarea' : 'text'"
       :rows="step.config?.multiline ? 3 : 1"
       :placeholder="step.placeholder || 'Enter text here...'"
@@ -15,7 +15,7 @@
       :show-word-limit="step.config?.input_style?.show_word_limit !== false"
       :clearable="step.config?.input_style?.clearable !== false"
       :size="step.config?.input_style?.size || 'default'"
-      disabled
+      :disabled="!interactive"
     />
     <div v-if="step.config?.max_length" class="config-note">
       <el-icon><InfoFilled /></el-icon>
@@ -25,6 +25,7 @@
 </template>
 
 <script setup>
+import { ref, watch } from 'vue'
 import { InfoFilled } from '@element-plus/icons-vue'
 
 // eslint-disable-next-line no-unused-vars
@@ -36,8 +37,26 @@ const props = defineProps( {
   previewMode : {
     type : Boolean,
     default : true
+  },
+  interactive : {
+    type : Boolean,
+    default : false
   }
 } )
+
+// Reactive state for user input
+const currentValue = ref( props.step.config?.default || '' )
+
+// Watch for prop changes to sync initial values
+watch(
+  () => props.step.config?.default,
+  newValue => {
+    if ( !props.interactive ) {
+      currentValue.value = newValue || ''
+    }
+  },
+  { immediate : true }
+)
 </script>
 
 <style scoped>

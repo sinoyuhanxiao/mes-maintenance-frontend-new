@@ -71,7 +71,13 @@
           @change="handleTypeChange"
           class="step-type-dropdown"
         >
-          <el-option v-for="stepType in stepTypes" :key="stepType.type" :label="stepType.name" :value="stepType.type">
+          <el-option
+            v-for="stepType in stepTypes"
+            :key="stepType.type"
+            :label="stepType.name"
+            :value="stepType.type"
+            :disabled="stepType.disabled"
+          >
             <div class="type-option">
               <div class="type-option-color" :style="{ backgroundColor: stepType.color }"></div>
               <span class="type-option-name">{{ stepType.name }}</span>
@@ -338,7 +344,8 @@ const stepTypes = [
   {
     type : 'service',
     name : 'Service',
-    color : '#df869d'
+    color : '#df869d',
+    disabled : true
   }
 ]
 
@@ -387,7 +394,6 @@ const handleAction = command => {
       emit( 'duplicate', props.step.step_id )
       break
     default:
-      console.warn( 'Unknown action command:', command )
       break
   }
 }
@@ -525,7 +531,7 @@ const getStepComponent = type => {
   border-radius: 8px;
   background: white;
   padding: 16px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   cursor: pointer;
   transition: all 0.3s ease;
 }

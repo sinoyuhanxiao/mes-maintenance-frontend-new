@@ -12,8 +12,8 @@
 
       <!-- Row 2: Tags (conditional) -->
       <div class="row-2 card-tags">
-        <el-tag v-if="template.category" size="small" class="tag-item">
-          {{ template.category }}
+        <el-tag v-if="categoryLabel" size="small" class="tag-item">
+          {{ categoryLabel }}
         </el-tag>
 
         <el-tag v-if="assetLabel" size="small" type="info" class="tag-item">
@@ -43,9 +43,16 @@ const props = defineProps( {
 } )
 
 // eslint-disable-next-line no-unused-vars
-const emit = defineEmits( ['select', 'edit', 'duplicate', 'delete', 'publish'] )
+const emit = defineEmits( ['select', 'edit', 'duplicate', 'delete'] )
 
 const stepsCount = computed( () => props.template?.steps?.length || 0 )
+
+const categoryLabel = computed( () => {
+  const category = props.template?.category
+  if ( !category ) return ''
+  // Handle both string and object formats
+  return typeof category === 'object' ? category.name : category
+} )
 
 const assetLabel = computed( () => {
   const a = props.template?.applicable_assets
@@ -75,14 +82,6 @@ const assetLabel = computed( () => {
   border-color: #409eff;
   box-shadow: 0 2px 8px rgba(64, 158, 255, 0.15);
   background: #f0f7ff;
-}
-
-.template-card.draft {
-  border-left: 4px solid #e6a23c;
-}
-
-.template-card.published {
-  border-left: 4px solid #67c23a;
 }
 
 .template-card.archived {
@@ -127,6 +126,7 @@ const assetLabel = computed( () => {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
+  min-height: 24px; /* Ensure consistent height even when no tags are present */
 }
 
 .tag-item {
@@ -257,10 +257,6 @@ const assetLabel = computed( () => {
 
 .footer-button:hover {
   color: #409eff;
-}
-
-.publish-button:hover {
-  color: #67c23a;
 }
 
 /* Responsive adjustments */
