@@ -25,9 +25,19 @@ const taskLibraryRoutes = {
       }
     },
     {
+      path : 'standards',
+      name : 'StandardLibrary',
+      component : () => import( '@/views/taskLibrary/views/StandardsLibraryView.vue' ),
+      meta : {
+        title : 'Standards',
+        hidden : false,
+        noCache : false
+      }
+    },
+    {
       path : 'designer',
       name : 'TaskDesigner',
-      component : () => import( '@/views/taskLibrary/views/TemplateDesignerView.vue' ),
+      component : () => import( '@/views/taskLibrary/views/TaskDesignerCreateView.vue' ),
       meta : {
         title : 'Designer',
         hidden : false,
@@ -37,7 +47,7 @@ const taskLibraryRoutes = {
     {
       path : 'designer/:id',
       name : 'TaskDesignerEdit',
-      component : () => import( '@/views/taskLibrary/views/TemplateDesignerView.vue' ),
+      component : () => import( '@/views/taskLibrary/views/TaskDesignerEditView.vue' ),
       meta : {
         title : 'Edit Task',
         hidden : true,

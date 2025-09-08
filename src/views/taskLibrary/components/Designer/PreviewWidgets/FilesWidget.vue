@@ -40,10 +40,6 @@
         </ul>
       </div>
 
-      <div v-if="step.ui.capture_from_camera && interactive" class="camera-section">
-        <el-button type="primary" @click="captureFromCamera" :icon="Camera" size="small"> Take Photo </el-button>
-      </div>
-
       <div v-if="existingAttachments.length > 0" class="existing-files">
         <div class="existing-header">
           <el-icon><Paperclip /></el-icon>
@@ -78,7 +74,6 @@ import { ref, computed } from 'vue'
 import {
   Plus,
   InfoFilled,
-  Camera,
   Paperclip,
   View,
   Delete,
@@ -187,7 +182,6 @@ const getUploadTip = () => {
 const handleFileChange = ( file, fileListParam ) => {
   if ( !props.interactive ) return
 
-  console.log( 'File added:', file.name )
   // Handle file validation and processing
 }
 
@@ -202,11 +196,6 @@ const beforeUpload = file => {
   }
 
   return false // Prevent auto upload in preview
-}
-
-const captureFromCamera = () => {
-  // In a real implementation, this would open camera interface
-  ElMessage.info( 'Camera capture would be available in the actual application' )
 }
 
 const viewFile = file => {
@@ -300,10 +289,6 @@ const formatFileSize = bytes => {
   padding-left: 16px;
   color: #606266;
   font-size: 11px;
-}
-
-.camera-section {
-  margin-bottom: 16px;
 }
 
 .existing-files {

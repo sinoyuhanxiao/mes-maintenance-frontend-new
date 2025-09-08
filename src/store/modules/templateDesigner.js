@@ -31,6 +31,17 @@ export const useTemplateDesignerStore = defineStore( 'templateDesigner', {
         upload_progress : 0,
         uploading : false,
         form_data : {}
+      },
+      change_summary : {
+        visible : false,
+        loading : false,
+        changes : {
+          metadata : [],
+          steps_added : [],
+          steps_modified : [],
+          steps_deleted : [],
+          steps_reordered : []
+        }
       }
     },
     validation : {
@@ -132,6 +143,9 @@ export const useTemplateDesignerStore = defineStore( 'templateDesigner', {
             this.dialogs[dialogName].uploading = false
             this.dialogs[dialogName].form_data = { ...initialData }
             break
+          case 'change_summary':
+            this.dialogs[dialogName].changes = { ...initialData }
+            break
         }
       }
     },
@@ -155,6 +169,15 @@ export const useTemplateDesignerStore = defineStore( 'templateDesigner', {
             this.dialogs[dialogName].upload_progress = 0
             this.dialogs[dialogName].uploading = false
             this.dialogs[dialogName].form_data = {}
+            break
+          case 'change_summary':
+            this.dialogs[dialogName].changes = {
+              metadata : [],
+              steps_added : [],
+              steps_modified : [],
+              steps_deleted : [],
+              steps_reordered : []
+            }
             break
         }
       }
@@ -230,6 +253,19 @@ export const useTemplateDesignerStore = defineStore( 'templateDesigner', {
 
     toggleStepNumbers() {
       this.ui_preferences.show_step_numbers = !this.ui_preferences.show_step_numbers
+    },
+
+    // Change summary dialog specific actions
+    openChangeSummaryDialog( changes ) {
+      this.openDialog( 'change_summary', null, changes )
+    },
+
+    closeChangeSummaryDialog() {
+      this.closeDialog( 'change_summary' )
+    },
+
+    setChangeSummaryLoading( loading ) {
+      this.dialogs.change_summary.loading = loading
     },
 
     // Reset all state

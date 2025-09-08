@@ -6,16 +6,16 @@
     <div v-if="step.description && step.description.trim()" class="step-description">
       {{ step.description }}
     </div>
-    <div class="upload-preview">
+    <div class="upload-preview" :class="{ interactive }">
       <el-upload
         class="upload-demo"
         drag
-        :disabled="true"
+        :disabled="!interactive"
         :show-file-list="false"
         :list-type="step.config?.upload_style?.list_type || 'picture-card'"
       >
         <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
-        <div class="el-upload__text">Drop files here or <em>click to upload</em></div>
+        <div class="el-upload__text">Add images or files</div>
       </el-upload>
     </div>
     <div class="upload-config">
@@ -31,16 +31,12 @@
         <el-icon><DataAnalysis /></el-icon>
         Max {{ step.config?.max_file_size_mb || 25 }}MB per file
       </div>
-      <div v-if="step.config?.capture_from_camera" class="config-item">
-        <el-icon><Camera /></el-icon>
-        Camera capture enabled
-      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { UploadFilled, Files, DocumentAdd, DataAnalysis, Camera } from '@element-plus/icons-vue'
+import { UploadFilled, Files, DocumentAdd, DataAnalysis } from '@element-plus/icons-vue'
 
 // eslint-disable-next-line no-unused-vars
 const props = defineProps( {
@@ -51,6 +47,10 @@ const props = defineProps( {
   previewMode : {
     type : Boolean,
     default : true
+  },
+  interactive : {
+    type : Boolean,
+    default : false
   }
 } )
 </script>
@@ -75,7 +75,7 @@ const props = defineProps( {
   font-size: 20px;
 }
 
-.upload-preview {
+.upload-preview:not(.interactive) {
   pointer-events: none;
 }
 
@@ -127,5 +127,13 @@ const props = defineProps( {
 
 :deep(.upload-demo .el-upload) {
   width: 100%;
+}
+
+:deep(.attachment-step-preview .upload-preview .upload-demo .el-upload--picture-card) {
+  height: 100% !important;
+}
+
+:deep(.attachment-step-preview .el-upload-dragger) {
+  height: 100% !important;
 }
 </style>

@@ -7,6 +7,7 @@ export function useTaskLibrary() {
 
   // Reactive references
   const loading = computed( () => store.loading )
+  const templateDetailLoading = computed( () => store.templateDetailLoading )
   const templates = computed( () => store.templates )
   const filteredTemplates = computed( () => store.filteredTemplates )
   const currentTemplate = computed( () => store.currentTemplate )
@@ -19,18 +20,17 @@ export function useTaskLibrary() {
       await store.fetchTemplates( params )
     } catch ( error ) {
       ElMessage.error( 'Failed to load templates' )
-      console.error( 'Load templates error:', error )
+      console.error( 'Failed to load templates:', error )
     }
   }
 
   const loadTemplate = async id => {
     try {
       const template = await store.fetchTemplate( id )
-      ElMessage.success( 'Template loaded successfully' )
       return template
     } catch ( error ) {
       ElMessage.error( 'Failed to load template' )
-      console.error( 'Load template error:', error )
+      console.error( 'Failed to load template:', error )
       throw error
     }
   }
@@ -46,19 +46,19 @@ export function useTaskLibrary() {
       return newTemplate
     } catch ( error ) {
       ElMessage.error( 'Failed to create template' )
-      console.error( 'Create template error:', error )
+      console.error( 'Failed to create template:', error )
       throw error
     }
   }
 
-  const updateTemplate = async templateData => {
+  const updateTemplate = async( templateId, templateData ) => {
     try {
-      const updatedTemplate = await store.updateCurrentTemplate( templateData )
+      const updatedTemplate = await store.updateTemplateById( templateId, templateData )
       ElMessage.success( 'Template updated successfully' )
       return updatedTemplate
     } catch ( error ) {
       ElMessage.error( 'Failed to update template' )
-      console.error( 'Update template error:', error )
+      console.error( 'Failed to update template:', error )
       throw error
     }
   }
@@ -73,7 +73,7 @@ export function useTaskLibrary() {
       } )
     } catch ( error ) {
       ElMessage.error( 'Failed to delete template' )
-      console.error( 'Delete template error:', error )
+      console.error( 'Failed to delete template:', error )
       throw error
     }
   }
@@ -88,7 +88,7 @@ export function useTaskLibrary() {
       } )
     } catch ( error ) {
       ElMessage.error( 'Failed to publish template' )
-      console.error( 'Publish template error:', error )
+      console.error( 'Failed to publish template:', error )
       throw error
     }
   }
@@ -136,11 +136,15 @@ export function useTaskLibrary() {
   const validateTemplate = template => {
     const errors = []
 
-    if ( !template.name || template.name.trim().length === 0 ) {
+    if ( !template.name || ( typeof template.name === 'string' && template.name.trim().length === 0 ) ) {
       errors.push( 'Template name is required' )
     }
 
-    if ( !template.category || template.category.trim().length === 0 ) {
+    if ( template.name && typeof template.name === 'string' && template.name.trim().length > 255 ) {
+      errors.push( 'Template name must be 255 characters or less' )
+    }
+
+    if ( !template.category || ( typeof template.category === 'string' && template.category.trim().length === 0 ) ) {
       errors.push( 'Category is required' )
     }
 
@@ -148,8 +152,36 @@ export function useTaskLibrary() {
       errors.push( 'Estimated minutes must be greater than 0' )
     }
 
+    if ( template.estimated_minutes > 480 ) {
+      errors.push( 'Estimated minutes cannot exceed 480 (8 hours)' )
+    }
+
     if ( !template.steps || template.steps.length === 0 ) {
       errors.push( 'Template must have at least one step' )
+    }
+
+    // Validate individual steps
+    if ( template.steps && template.steps.length > 0 ) {
+      template.steps.forEach( ( step, index ) => {
+        if ( !step.label || ( typeof step.label === 'string' && step.label.trim().length === 0 ) ) {
+          errors.push( `Step ${index + 1}: Name is required` )
+        }
+
+        if ( step.type === 'service' ) {
+          errors.push( `Step ${index + 1}: Service step type is currently not supported` )
+        }
+
+        const validFrontendStepTypes = ['inspection', 'checkbox', 'number', 'text', 'attachments']
+        if ( step.type && !validFrontendStepTypes.includes( step.type ) ) {
+          errors.push(
+            `Step ${index + 1}: Invalid step type '${step.type}'. Allowed types: ${validFrontendStepTypes.join( ', ' )}`
+          )
+        }
+      } )
+    }
+
+    if ( template.description && typeof template.description === 'string' && template.description.length > 500 ) {
+      errors.push( 'Description must be 500 characters or less' )
     }
 
     return errors
@@ -162,6 +194,7 @@ export function useTaskLibrary() {
   return {
     // State
     loading,
+    templateDetailLoading,
     templates,
     filteredTemplates,
     currentTemplate,

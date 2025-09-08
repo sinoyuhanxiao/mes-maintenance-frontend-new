@@ -76,8 +76,9 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { debounce } from 'lodash-unified'
 import { Search } from '@element-plus/icons-vue'
-import { getAvailableTools } from '@/api/taskLibrary'
+import { searchTools } from '@/api/resources'
 
 const props = defineProps( {
   visible : {
@@ -111,11 +112,11 @@ const loading = ref( false )
 watch(
   () => props.selectedTools,
   newTools => {
-    // Handle both array of IDs and array of objects
+    // Normalize to numeric IDs to avoid string/number mismatches
     if ( newTools.length > 0 && typeof newTools[0] === 'object' ) {
-      localSelectedTools.value = newTools.map( tool => tool.tool_id )
+      localSelectedTools.value = newTools.map( tool => Number( tool.tool_id ) )
     } else {
-      localSelectedTools.value = [...newTools]
+      localSelectedTools.value = newTools.map( id => Number( id ) )
     }
   },
   { immediate : true }
@@ -157,7 +158,7 @@ const removeSelectedTool = toolId => {
 }
 
 const getSelectedToolObjects = () => {
-  return availableTools.value.filter( tool => localSelectedTools.value.includes( tool.tool_id ) )
+  return availableTools.value.filter( tool => localSelectedTools.value.includes( Number( tool.tool_id ) ) )
 }
 
 const handleSave = () => {
@@ -179,14 +180,39 @@ const handleSave = () => {
 const loadTools = async() => {
   loading.value = true
   try {
-    const response = await getAvailableTools()
-    availableTools.value = response.data
+    const response = await searchTools( 1, 20, 'name', 'ASC', {
+      keyword : searchQuery.value || null
+    } )
+    const list = response?.data?.content || []
+    // Normalize backend payload to the panel's expected structure
+    availableTools.value = list.map( item => ( {
+      tool_id : Number( item.id ),
+      name : item.name,
+      // Use code primarily; fallback to tool class name
+      spec : item.code || ( item.tool_class && item.tool_class.name ) || ''
+    } ) )
   } catch ( error ) {
-    console.error( 'Failed to load tools:', error )
+    console.error( 'Tool load failed:', error )
+    availableTools.value = []
   } finally {
     loading.value = false
   }
 }
+
+// Debounced server-side search when keyword changes
+const debouncedSearch = debounce( () => {
+  // Only query when dialog is visible to avoid unnecessary calls
+  if ( props.visible ) {
+    loadTools()
+  }
+}, 300 )
+
+watch(
+  () => searchQuery.value,
+  () => {
+    debouncedSearch()
+  }
+)
 
 // Load tools when dialog opens
 watch(
