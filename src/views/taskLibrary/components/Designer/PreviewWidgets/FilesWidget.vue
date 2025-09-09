@@ -180,6 +180,7 @@ const getUploadTip = () => {
 }
 
 const handleFileChange = ( file, fileListParam ) => {
+  // eslint-disable-next-line no-useless-return
   if ( !props.interactive ) return
 
   // Handle file validation and processing

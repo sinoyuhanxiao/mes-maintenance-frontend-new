@@ -519,6 +519,14 @@ watch(
   background: #fafafa;
 }
 
+.step-type-card,
+.step-type-card * {
+  user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  -webkit-touch-callout: none;
+}
+
 .step-type-card:hover {
   background: white;
   border-color: rgba(64, 158, 255, 0.3);

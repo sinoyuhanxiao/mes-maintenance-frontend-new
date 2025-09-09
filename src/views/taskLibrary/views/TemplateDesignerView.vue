@@ -140,6 +140,7 @@
                 check-strictly
                 node-key="value"
                 :props="{ children: 'children', label: 'label' }"
+                :multiple="false"
                 style="width: 100%"
                 @change="markAsChanged"
               />
@@ -456,6 +457,12 @@ import ToolPickerPanel from '../components/Designer/ConfigPanels/ToolPickerPanel
 import ResourceUploaderPanel from '../components/Designer/ConfigPanels/ResourceUploaderPanel.vue'
 import PreviewDialog from '../components/Designer/PreviewDialog.vue'
 import ChangeSummaryDialog from '../components/Designer/ChangeSummaryDialog.vue'
+import { usePreviewConfigs } from '../composables/usePreviewConfigs'
+import {
+  getDefaultStepConfig,
+  transformApiStepToDesignerStep,
+  formatLimitsText
+} from '../utils/stepTransforms'
 
 const route = useRoute()
 const router = useRouter()
@@ -670,7 +677,7 @@ const {
 } = useDesignerStateCache()
 
 // Snapshot of route identity for this instance (prevents cross-tab bleed)
-const routeSnapshot = ref( { path : route.path, params : { ...( route.params || {} ) } } )
+const routeSnapshot = ref( { path : route.path, params : { ...( route.params || {} ) }} )
 // Stable cache key for this instance (does not change across tab switches)
 const stableCacheKey = ref( null )
 
@@ -679,10 +686,12 @@ const metadataFormRef = ref( null )
 const stepsListRef = ref( null )
 
 // Helpers to use snapshot for caching operations
-const snapshotRoute = () => ( { path : routeSnapshot.value.path, params : { ...( routeSnapshot.value.params || {} ) } } )
+const snapshotRoute = () => ( { path : routeSnapshot.value.path, params : { ...( routeSnapshot.value.params || {} ) }} )
 const hasCache = () => hasCachedState( snapshotRoute() )
 const restoreCache = () => restoreState( snapshotRoute() )
+// eslint-disable-next-line no-unused-vars
 const saveCache = state => saveState( snapshotRoute(), state )
+// eslint-disable-next-line no-unused-vars
 const clearCache = () => clearState( snapshotRoute() )
 // Track whether this keep-alive instance is currently active (visible)
 const isComponentActive = ref( false )
@@ -691,7 +700,7 @@ const templateForm = ref( {
   description : '',
   category : '',
   estimated_minutes : 30,
-  applicable_assets : [],
+  applicable_assets : null,
   steps : []
 } )
 
@@ -733,9 +742,9 @@ const isEditing = computed( () => !!route.params.id )
 const validationErrors = computed( () => validateTemplate( templateForm.value ) )
 
 // Local detail loading to avoid mutating global store currentTemplate
-const detailLoading = ref(false)
+const detailLoading = ref( false )
 // Render readiness gate to prevent blank panels before data is ready
-const renderReady = ref(false)
+const renderReady = ref( false )
 // Overall loading state for panels; also block render until ready
 const isDataLoading = computed(
   () => detailLoading.value || categoriesLoading.value || equipmentTreeLoading.value || !renderReady.value
@@ -754,7 +763,7 @@ const componentUsageTips = computed( () => {
     attachments :
       'Critical for visual documentation, before/after photos, and creating comprehensive maintenance records for compliance and audit trails.',
     service :
-      'Designed for maintenance operations requiring specific device tag identification and service type specification, supporting Replace and Repair workflows with quantity tracking.',
+      'Designed for maintenance operations requiring specific device tag identification and service type specification, supporting Replace and Repair workflows with quantity tracking.'
   }
   return tips
 } )
@@ -873,70 +882,15 @@ const floatingPanelInteractions = computed( () => ( {
 
 const enabledBulkActions = computed( () => ['duplicate', 'mark_required', 'mark_optional', 'delete'] )
 
-// Preview dialog configuration
-const previewDialogConfig = computed( () => ( {
-  title : 'Preview Procedure',
-  width : '70%',
-  fullscreen : false,
-  closeOnClickModal : true,
-  appendToBody : true,
-  customClass : 'template-preview-dialog'
-} ) )
-
-const previewHeaderConfig = computed( () => ( {
-  showSubtitle : true,
-  showMeta : true,
-  metaFields : ['category', 'estimated_minutes', 'applicable_assets']
-} ) )
-
-const previewToolbarConfig = computed( () => ( {
-  showStepNumbersToggle : true,
-  showViewportSwitcher : true,
-  viewportOptions : ['desktop', 'mobile'],
-  interactionMode : 'static'
-} ) )
-
-const previewLayoutConfig = computed( () => ( {
-  sectionCollapsible : true,
-  sectionsInitiallyExpanded : true,
-  showStepNumbers : true,
-  requiredMark : '*',
-  density : 'comfortable'
-} ) )
-
-const previewContentConfig = computed( () => ( {
-  grouping : 'by_section_field',
-  sectionTitleField : 'section',
-  unknownSectionTitle : 'General',
-  widgets : {
-    inspection : {
-      options : ['pass', 'flag', 'fail'],
-      buttonStyle : 'pill'
-    },
-    checkbox : {
-      stackDirection : 'vertical'
-    },
-    number : {
-      showUnits : true,
-      showLimits : true,
-      unitsField : 'unit',
-      limitsField : 'limits'
-    },
-    text : {
-      placeholderField : 'placeholder',
-      rows : 3
-    },
-    files : {
-      acceptImages : true,
-      acceptDocuments : true
-    }
-  }
-} ) )
-
-const previewFooterConfig = computed( () => ( {
-  showClose : true,
-  showPrint : false
-} ) )
+// Preview dialog configuration (extracted)
+const {
+  previewDialogConfig,
+  previewHeaderConfig,
+  previewToolbarConfig,
+  previewLayoutConfig,
+  previewContentConfig,
+  previewFooterConfig
+} = usePreviewConfigs()
 
 // Form validation rules
 const metadataRules = {
@@ -1115,7 +1069,7 @@ const handleReset = async() => {
         templateForm.value.description = originalData.description || ''
         templateForm.value.category = originalData.category || ''
         templateForm.value.estimated_minutes = originalData.estimated_minutes || 30
-        templateForm.value.applicable_assets = originalData.applicable_assets || []
+        templateForm.value.applicable_assets = originalData.applicable_assets || null
         templateForm.value.steps = originalData.steps || []
 
         // Reset all designer state (focus, dialogs, etc.)
@@ -1138,7 +1092,7 @@ const handleReset = async() => {
       templateForm.value.description = ''
       templateForm.value.category = ''
       templateForm.value.estimated_minutes = 30
-      templateForm.value.applicable_assets = []
+      templateForm.value.applicable_assets = null
       templateForm.value.steps = []
 
       // Reset all designer state (focus, dialogs, etc.)
@@ -1523,52 +1477,110 @@ const handleResize = () => {
   calculateDynamicHeights()
 }
 
-// Utility functions
-const getDefaultStepConfig = stepType => {
-  const configs = {
-    inspection : {
-      kind : 'inspection',
-      choices : ['pass', 'fail'],
-      default : 'pass',
-      require_comment_on_fail : false,
-      require_photo_on_fail : false
-    },
-    checkbox : {
-      kind : 'checkbox',
-      default : false
-    },
-    number : {
-      kind : 'number',
-      unit : '',
-      decimal_places : 0,
-      limits : null,
-      default_value : 0
-    },
-    text : {
-      kind : 'text',
-      multiline : true,
-      max_length : 1000,
-      default_value : ''
-    },
-    attachments : {
-      kind : 'attachments',
-      allow_types : ['image', 'pdf'],
-      max_files : 5,
-      max_file_size_mb : 10
-    }
-    // Note: service step type is disabled per backend requirements
-    // service: {
-    //   kind: 'service',
-    //   service_type: 'Replace',
-    //   device_tag: 'P100016',
-    //   quantity: 1,
-    // },
-  }
-
-  return configs[stepType] || {}
-}
+// Utility functions moved to ../utils/stepTransforms
 
 // Change detection utilities (localized copy; avoids global store dependency)
+const getDetailedConfigChanges = ( originalStep, currentStep ) => {
+  const changes = []
+  const originalConfig = originalStep.config || {}
+  const currentConfig = currentStep.config || {}
+
+  // For number steps, check limits specifically
+  if ( currentStep.type === 'number' ) {
+    const originalLimits = originalConfig.limits
+    const currentLimits = currentConfig.limits
+
+    // Check if limits changed
+    if ( JSON.stringify( originalLimits ) !== JSON.stringify( currentLimits ) ) {
+      const originalText = formatLimitsText( originalLimits, originalConfig.unit )
+      const currentText = formatLimitsText( currentLimits, currentConfig.unit )
+      changes.push( {
+        field : 'limits',
+        label : 'Range',
+        original : originalText,
+        current : currentText
+      } )
+    }
+
+    // Check if unit changed
+    if ( originalConfig.unit !== currentConfig.unit ) {
+      changes.push( {
+        field : 'unit',
+        label : 'Unit',
+        original : originalConfig.unit || 'None',
+        current : currentConfig.unit || 'None'
+      } )
+    }
+
+    // Check if decimal places changed
+    if ( originalConfig.decimal_places !== currentConfig.decimal_places ) {
+      changes.push( {
+        field : 'decimal_places',
+        label : 'Decimal Places',
+        original : originalConfig.decimal_places?.toString() || '0',
+        current : currentConfig.decimal_places?.toString() || '0'
+      } )
+    }
+
+    // Check if default value changed
+    if ( originalConfig.default_value !== currentConfig.default_value ) {
+      changes.push( {
+        field : 'default_value',
+        label : 'Default Value',
+        original : originalConfig.default_value?.toString() || 'None',
+        current : currentConfig.default_value?.toString() || 'None'
+      } )
+    }
+  } else if ( currentStep.type === 'checkbox' ) {
+    if ( originalConfig.default !== currentConfig.default ) {
+      changes.push( {
+        field : 'default',
+        label : 'Default Value',
+        original : originalConfig.default ? 'Checked' : 'Unchecked',
+        current : currentConfig.default ? 'Checked' : 'Unchecked'
+      } )
+    }
+  } else if ( currentStep.type === 'text' ) {
+    if ( originalConfig.default_value !== currentConfig.default_value ) {
+      changes.push( {
+        field : 'default_value',
+        label : 'Default Value',
+        original : originalConfig.default_value || 'None',
+        current : currentConfig.default_value || 'None'
+      } )
+    }
+    if ( originalConfig.max_length !== currentConfig.max_length ) {
+      changes.push( {
+        field : 'max_length',
+        label : 'Max Length',
+        original : originalConfig.max_length?.toString() || 'Unlimited',
+        current : currentConfig.max_length?.toString() || 'Unlimited'
+      } )
+    }
+  } else if ( currentStep.type === 'inspection' ) {
+    if ( originalConfig.default !== currentConfig.default ) {
+      changes.push( {
+        field : 'default',
+        label : 'Default Value',
+        original : originalConfig.default || 'None',
+        current : currentConfig.default || 'None'
+      } )
+    }
+  }
+
+  // If no specific config changes detected but configs are different, fall back to generic
+  if ( changes.length === 0 && JSON.stringify( originalConfig ) !== JSON.stringify( currentConfig ) ) {
+    changes.push( {
+      field : 'config',
+      label : 'Configuration',
+      original : 'Modified',
+      current : 'Modified'
+    } )
+  }
+
+  return changes
+}
+
 const generateChangesSummary = ( originalTemplate, currentTemplate, referenceData = {} ) => {
   const changes = {
     metadata : [],
@@ -1652,8 +1664,10 @@ const generateChangesSummary = ( originalTemplate, currentTemplate, referenceDat
           } )
         }
       } )
-      if ( JSON.stringify( originalStep.config ) !== JSON.stringify( currentStep.config ) ) {
-        stepChanges.push( { field : 'config', label : 'Configuration', original : 'Modified', current : 'Modified' } )
+      // Detailed config comparison
+      const configChanges = getDetailedConfigChanges( originalStep, currentStep )
+      if ( configChanges.length > 0 ) {
+        stepChanges.push( ...configChanges )
       }
       if ( JSON.stringify( originalStep.relevant_tools ) !== JSON.stringify( currentStep.relevant_tools ) ) {
         stepChanges.push( {
@@ -1818,106 +1832,7 @@ const fetchCategories = async() => {
   }
 }
 
-// Helper functions for data transformation
-const transformApiStepToDesignerStep = ( apiStep, index ) => {
-  const stepValue = apiStep.value || {}
-  const stepType = mapApiStepTypeToDesigner( stepValue.type )
-
-  return {
-    step_id : apiStep.id || apiStep._id || `step-${Date.now()}-${index}`, // Use backend ID for proper update tracking
-    order : index + 1,
-    type : stepType,
-    label : apiStep.name || `Step ${index + 1}`,
-    description : apiStep.description || '',
-    required : Boolean( apiStep.required ),
-    required_image : Boolean( stepValue.require_image ),
-    relevant_tools : transformApiToolsToDesigner( apiStep.tools || [] ),
-    relevant_resources : apiStep.relevant_resources || [],
-    config : transformApiStepConfigToDesigner( stepType, stepValue )
-  }
-}
-
-const mapApiStepTypeToDesigner = apiType => {
-  const typeMap = {
-    numeric : 'number',
-    boolean : 'checkbox',
-    checkbox : 'checkbox',
-    text : 'text',
-    file : 'attachments',
-    inspection : 'inspection',
-    service : 'service'
-  }
-  return typeMap[apiType] || 'text'
-}
-
-const transformApiToolsToDesigner = apiTools => {
-  if ( !Array.isArray( apiTools ) ) return []
-  return apiTools.map( tool => ( {
-    tool_id : tool.id,
-    name : tool.name || 'Unnamed Tool'
-  } ) )
-}
-
-const transformApiStepConfigToDesigner = ( stepType, apiValue ) => {
-  const baseConfig = {
-    required_image : Boolean( apiValue.require_image )
-  }
-
-  switch ( stepType ) {
-    case 'number':
-      return {
-        ...baseConfig,
-        kind : 'number',
-        unit : apiValue.unit || '',
-        decimal_places : apiValue.decimal_places || 0,
-        default_value : typeof apiValue.value === 'number' ? apiValue.value : 0,
-        limits : apiValue.numeric_limit_bounds || null
-      }
-
-    case 'checkbox':
-      return {
-        ...baseConfig,
-        kind : 'checkbox',
-        default : Boolean( apiValue.value )
-      }
-
-    case 'text':
-      return {
-        ...baseConfig,
-        kind : 'text',
-        multiline : true,
-        max_length : 1000,
-        default_value : String( apiValue.value || '' )
-      }
-
-    case 'inspection':
-      return {
-        ...baseConfig,
-        kind : 'inspection',
-        choices : ['pass', 'fail'],
-        default : apiValue.value ? 'pass' : 'fail',
-        require_comment_on_fail : false,
-        require_photo_on_fail : false
-      }
-
-    case 'attachments':
-      return {
-        ...baseConfig,
-        kind : 'attachments',
-        allow_types : ['image', 'pdf'],
-        max_files : 5,
-        max_file_size_mb : 10
-      }
-
-    default:
-      return baseConfig
-  }
-}
-
-const transformApplicableAssets = equipmentNodeId => {
-  if ( !equipmentNodeId ) return []
-  return Array.isArray( equipmentNodeId ) ? equipmentNodeId : [equipmentNodeId]
-}
+// Data transformation helpers moved to ../utils/stepTransforms
 
 const resolveCategoryFromApiTemplate = apiTemplate => {
   // Handle different category formats from API
@@ -1945,11 +1860,11 @@ const resolveCategoryFromApiTemplate = apiTemplate => {
 }
 
 // Fetch template by ID without touching global store
-const fetchTemplateByIdLocal = async (id) => {
+const fetchTemplateByIdLocal = async id => {
   detailLoading.value = true
   try {
-    const resp = await getTaskTemplateById(id)
-    if (resp?.data?.data) return resp.data.data
+    const resp = await getTaskTemplateById( id )
+    if ( resp?.data?.data ) return resp.data.data
     return resp?.data
   } finally {
     detailLoading.value = false
@@ -1973,7 +1888,7 @@ const initializeTemplate = async() => {
         estimated_minutes : template.time_estimate_sec
           ? Math.round( template.time_estimate_sec / 60 )
           : template.estimated_minutes || 30,
-        applicable_assets : transformApplicableAssets( template.equipment_node_id ),
+        applicable_assets : template.equipment_node_id || null,
         steps : Array.isArray( template.steps ) ? template.steps.map( transformApiStepToDesignerStep ) : []
       }
 
@@ -2009,7 +1924,7 @@ const initializeTemplate = async() => {
       description : '',
       category : '',
       estimated_minutes : 30,
-      applicable_assets : [],
+      applicable_assets : null,
       steps : []
     }
     hasUnsavedChanges.value = false
@@ -2025,9 +1940,9 @@ const initializeTemplate = async() => {
 onMounted( async() => {
   console.log( '[Designer] onMounted called for route:', route.path, 'tagViews:', settingsStore.tagsView )
   // Capture route identity for this keep-alive instance
-  routeSnapshot.value = { path : route.path, params : { ...( route.params || {} ) } }
+  routeSnapshot.value = { path : route.path, params : { ...( route.params || {} ) }}
   // Dev helper to inspect designer state cache
-  if (typeof window !== 'undefined') {
+  if ( typeof window !== 'undefined' ) {
     window.__designerCacheStats = getCacheStats
   }
   renderReady.value = false
@@ -2080,7 +1995,7 @@ onActivated( async() => {
   console.log( '[Designer] onActivated called for route:', route.path, 'tagViews:', settingsStore.tagsView )
   isComponentActive.value = true
   // Refresh snapshot to current route identity when (re)activating
-  routeSnapshot.value = { path : route.path, params : { ...( route.params || {} ) } }
+  routeSnapshot.value = { path : route.path, params : { ...( route.params || {} ) }}
 
   // Recalculate heights when component is activated
   calculateDynamicHeights()
@@ -2135,12 +2050,14 @@ onActivated( async() => {
       if (
         isEditing.value &&
         currentTemplate.value &&
-        ( ( currentTemplate.value.id || currentTemplate.value.template_id ) !== route.params.id )
+        ( currentTemplate.value.id || currentTemplate.value.template_id ) !== route.params.id
       ) {
         console.warn(
           '[Designer] Cached template id mismatch; reloading by route id',
-          'cached:', currentTemplate.value.id || currentTemplate.value.template_id,
-          'route:', route.params.id
+          'cached:',
+          currentTemplate.value.id || currentTemplate.value.template_id,
+          'route:',
+          route.params.id
         )
         await initializeTemplate()
         renderReady.value = true
@@ -2225,7 +2142,12 @@ onDeactivated( () => {
     }
 
     console.log( '[Designer] Saving state to cache (stable key):', stableCacheKey.value, currentState )
-    saveStateByKey( stableCacheKey.value, currentState, snapshotRoute(), currentTemplate.value?.id || currentTemplate.value?.template_id || route.params.id || null )
+    saveStateByKey(
+      stableCacheKey.value,
+      currentState,
+      snapshotRoute(),
+      currentTemplate.value?.id || currentTemplate.value?.template_id || route.params.id || null
+    )
     console.log( '[Designer] Saved state to cache for route:', route.path )
   }
 } )
@@ -2283,7 +2205,10 @@ watch(
       let effectiveForm = templateForm.value
       const previous = restoreStateByKey( stableCacheKey.value )
       if ( formIsEmpty( effectiveForm ) && previous?.templateForm ) {
-        console.warn( '[Designer] Avoiding empty-form preemptive save by using previous cached form for key:', stableCacheKey.value )
+        console.warn(
+          '[Designer] Avoiding empty-form preemptive save by using previous cached form for key:',
+          stableCacheKey.value
+        )
         effectiveForm = previous.templateForm
       }
 
@@ -2295,7 +2220,12 @@ watch(
         designerState : designerState.value
       }
       console.log( '[Designer] Preemptive save before id change (stable key):', stableCacheKey.value, oldId, '->', newId )
-      saveStateByKey( stableCacheKey.value, currentState, snapshotRoute(), currentTemplate.value?.id || currentTemplate.value?.template_id || oldId || null )
+      saveStateByKey(
+        stableCacheKey.value,
+        currentState,
+        snapshotRoute(),
+        currentTemplate.value?.id || currentTemplate.value?.template_id || oldId || null
+      )
       renderReady.value = false
     }
     if ( hasUnsavedChanges.value && !settingsStore.tagsView ) {
@@ -2563,7 +2493,7 @@ defineOptions( {
   color: #909399;
 }
 
-::v-deep(.el-checkbox__input.is-disabled+span.el-checkbox__label) {
+::v-deep(.el-checkbox__input.is-disabled + span.el-checkbox__label) {
   color: #606266;
 }
 

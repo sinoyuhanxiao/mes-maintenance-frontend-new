@@ -397,11 +397,10 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useSettingsStore } from '@/store'
+import { useSettingsStore, useTagsViewStore } from '@/store'
 import { Filter, Search, Plus, Edit, Delete, DocumentCopy, MoreFilled, Calendar, Upload } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useTaskLibrary } from '@/composables/useTaskLibrary'
-import { useTagsViewStore } from '@/store'
 import { getEquipmentTree } from '@/api/equipment.js'
 import { getAllCategories } from '@/api/common.js'
 import TemplateCard from '../components/Library/TemplateCard.vue'
@@ -412,6 +411,7 @@ import NumberStepPreview from '../components/Designer/StepCards/NumberStepPrevie
 import TextStepPreview from '../components/Designer/StepCards/TextStepPreview.vue'
 import AttachmentStepPreview from '../components/Designer/StepCards/AttachmentStepPreview.vue'
 import ServiceStepPreview from '../components/Designer/StepCards/ServiceStepPreview.vue'
+import { transformLimitsFromBackend } from '../utils/stepTransforms'
 
 const router = useRouter()
 const route = useRoute()
@@ -564,7 +564,7 @@ const previewSteps = computed( () => {
     if ( type === 'number' ) {
       base.config = {
         default_value : typeof v.value === 'number' ? v.value : undefined,
-        limits : v.numeric_limit_bounds || {},
+        limits : transformLimitsFromBackend( v.numeric_limit_bounds ),
         required_image : base.required_image
       }
     } else if ( type === 'checkbox' ) {
@@ -1214,7 +1214,7 @@ defineOptions( {
   overflow: hidden;
 }
 
-::v-deep(.el-checkbox__input.is-disabled+span.el-checkbox__label) {
+::v-deep(.el-checkbox__input.is-disabled + span.el-checkbox__label) {
   color: #606266;
 }
 
@@ -1781,5 +1781,14 @@ defineOptions( {
 :deep(.delete-dropdown-item:hover) {
   color: var(--el-color-danger);
   background-color: var(--el-color-danger-light-9);
+}
+
+:deep(.el-tabs__item.is-top) {
+  font-size: 16px;
+  width: 50%;
+}
+
+:deep(.el-tabs__nav.is-top) {
+  width: 100%;
 }
 </style>

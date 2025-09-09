@@ -261,6 +261,7 @@ import NumberStepPreview from './NumberStepPreview.vue'
 import TextStepPreview from './TextStepPreview.vue'
 import AttachmentStepPreview from './AttachmentStepPreview.vue'
 import ServiceStepPreview from './ServiceStepPreview.vue'
+import { formatLimitsText } from 'src/views/taskLibrary/utils/stepTransforms'
 
 const props = defineProps( {
   step : {
@@ -488,27 +489,7 @@ const getStepTypeLabel = type => {
 }
 
 const getLimitationsText = () => {
-  const limits = localStep.config?.limits
-  if ( !limits ) return 'No limits set'
-
-  const lower = limits.lower
-  const upper = limits.upper
-  const lowerIncl = limits.inclusive?.lower !== false
-  const upperIncl = limits.inclusive?.upper !== false
-  const unit = localStep.config?.unit || ''
-
-  let text = ''
-
-  if ( lower !== null && lower !== undefined ) {
-    text += `${lowerIncl ? '≥' : '>'} ${lower}${unit ? ' ' + unit : ''}`
-  }
-
-  if ( upper !== null && upper !== undefined ) {
-    if ( text ) text += ' and '
-    text += `${upperIncl ? '≤' : '<'} ${upper}${unit ? ' ' + unit : ''}`
-  }
-
-  return text || 'No limits set'
+  return formatLimitsText( localStep.config?.limits, localStep.config?.unit )
 }
 
 const getStepComponent = type => {

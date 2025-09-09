@@ -1,4 +1,5 @@
 import http from '@/utils/request'
+import { transformLimitsToBackend } from '@/views/taskLibrary/utils/stepTransforms'
 
 // Transform frontend template data to backend API format
 const transformTemplateForBackend = frontendData => {
@@ -46,13 +47,7 @@ const transformTemplateForBackend = frontendData => {
           backendStep.value = {
             type : 'numeric',
             value : parseFloat( stepConfig.default_value ) || 0,
-            numeric_limit_bounds : stepConfig.limits || {
-              lower_limit_exclusive : null,
-              lower_limit_inclusive : null,
-              upper_limit_exclusive : null,
-              upper_limit_inclusive : null,
-              equal_to : null
-            },
+            numeric_limit_bounds : transformLimitsToBackend( stepConfig.limits ),
             require_image : Boolean( step.required_image ),
             image : []
           }
@@ -114,14 +109,20 @@ const transformTemplateForBackend = frontendData => {
     steps : transformedSteps
   }
 
-  // Add equipment_node_id if applicable_assets contains numeric IDs
-  if ( frontendData.applicable_assets && frontendData.applicable_assets.length > 0 ) {
-    // Take the first asset as the primary equipment_node_id
-    const firstAsset = frontendData.applicable_assets[0]
-    if ( typeof firstAsset === 'number' ) {
-      backendPayload.equipment_node_id = firstAsset
-    } else if ( typeof firstAsset === 'string' && !isNaN( firstAsset ) ) {
-      backendPayload.equipment_node_id = parseInt( firstAsset )
+  // Add equipment_node_id if applicable_assets contains a numeric ID
+  if ( frontendData.applicable_assets ) {
+    if ( typeof frontendData.applicable_assets === 'number' ) {
+      backendPayload.equipment_node_id = frontendData.applicable_assets
+    } else if ( typeof frontendData.applicable_assets === 'string' && !isNaN( frontendData.applicable_assets ) ) {
+      backendPayload.equipment_node_id = parseInt( frontendData.applicable_assets )
+    } else if ( Array.isArray( frontendData.applicable_assets ) && frontendData.applicable_assets.length > 0 ) {
+      // Fallback for legacy array format - take the first asset
+      const firstAsset = frontendData.applicable_assets[0]
+      if ( typeof firstAsset === 'number' ) {
+        backendPayload.equipment_node_id = firstAsset
+      } else if ( typeof firstAsset === 'string' && !isNaN( firstAsset ) ) {
+        backendPayload.equipment_node_id = parseInt( firstAsset )
+      }
     }
   }
 
@@ -214,12 +215,23 @@ const transformTemplateForUpdate = ( frontendData, originalTemplate ) => {
   }
 
   // Handle equipment_node_id
-  if ( frontendData.applicable_assets && frontendData.applicable_assets.length > 0 ) {
-    const firstAsset = frontendData.applicable_assets[0]
-    if ( typeof firstAsset === 'number' ) {
-      updatePayload.equipment_node_id = firstAsset
-    } else if ( typeof firstAsset === 'string' && !isNaN( firstAsset ) ) {
-      updatePayload.equipment_node_id = parseInt( firstAsset )
+  if ( frontendData.applicable_assets !== undefined ) {
+    if ( frontendData.applicable_assets === null || frontendData.applicable_assets === '' ) {
+      updatePayload.equipment_node_id = null
+    } else if ( typeof frontendData.applicable_assets === 'number' ) {
+      updatePayload.equipment_node_id = frontendData.applicable_assets
+    } else if ( typeof frontendData.applicable_assets === 'string' && !isNaN( frontendData.applicable_assets ) ) {
+      updatePayload.equipment_node_id = parseInt( frontendData.applicable_assets )
+    } else if ( Array.isArray( frontendData.applicable_assets ) && frontendData.applicable_assets.length > 0 ) {
+      // Fallback for legacy array format - take the first asset
+      const firstAsset = frontendData.applicable_assets[0]
+      if ( typeof firstAsset === 'number' ) {
+        updatePayload.equipment_node_id = firstAsset
+      } else if ( typeof firstAsset === 'string' && !isNaN( firstAsset ) ) {
+        updatePayload.equipment_node_id = parseInt( firstAsset )
+      }
+    } else if ( Array.isArray( frontendData.applicable_assets ) && frontendData.applicable_assets.length === 0 ) {
+      updatePayload.equipment_node_id = null
     }
   }
 
@@ -349,13 +361,7 @@ const transformStepForBackend = ( step, includeId = false ) => {
       backendStep.value = {
         type : 'numeric',
         value : parseFloat( stepConfig.default_value ) || 0,
-        numeric_limit_bounds : stepConfig.limits || {
-          lower_limit_exclusive : null,
-          lower_limit_inclusive : null,
-          upper_limit_exclusive : null,
-          upper_limit_inclusive : null,
-          equal_to : null
-        },
+        numeric_limit_bounds : transformLimitsToBackend( stepConfig.limits ),
         require_image : Boolean( step.required_image ),
         image : []
       }

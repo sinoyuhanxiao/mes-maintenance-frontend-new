@@ -40,8 +40,10 @@ export function useDesignerStateCache() {
       hasUnsavedChanges : state.hasUnsavedChanges || false,
       designerState : state.designerState ? JSON.parse( JSON.stringify( state.designerState ) ) : null,
       // Track template identity for validation
-      templateId : ( state.currentTemplate && ( state.currentTemplate.id || state.currentTemplate.template_id ) )
-        || ( route.params && route.params.id ) || null,
+      templateId :
+        ( state.currentTemplate && ( state.currentTemplate.id || state.currentTemplate.template_id ) ) ||
+        ( route.params && route.params.id ) ||
+        null,
       // Cache timestamp for cleanup purposes
       timestamp : Date.now(),
       // Store route info for validation
@@ -61,7 +63,10 @@ export function useDesignerStateCache() {
       currentTemplate : state.currentTemplate ? JSON.parse( JSON.stringify( state.currentTemplate ) ) : null,
       hasUnsavedChanges : state.hasUnsavedChanges || false,
       designerState : state.designerState ? JSON.parse( JSON.stringify( state.designerState ) ) : null,
-      templateId : templateId || ( state.currentTemplate && ( state.currentTemplate.id || state.currentTemplate.template_id ) ) || null,
+      templateId :
+        templateId ||
+        ( state.currentTemplate && ( state.currentTemplate.id || state.currentTemplate.template_id ) ) ||
+        null,
       timestamp : Date.now(),
       routePath : routeLike?.path || null,
       routeParams : routeLike?.params ? JSON.parse( JSON.stringify( routeLike.params ) ) : {}
@@ -79,8 +84,8 @@ export function useDesignerStateCache() {
       // Validate that cached state matches current route
       const routeMatches = cachedState.routePath === route.path
       const paramsMatch = JSON.stringify( cachedState.routeParams ) === JSON.stringify( route.params || {} )
-      const idMatch = !route.params?.id || !cachedState.templateId
-        || String( cachedState.templateId ) === String( route.params.id )
+      const idMatch =
+        !route.params?.id || !cachedState.templateId || String( cachedState.templateId ) === String( route.params.id )
 
       if ( routeMatches && paramsMatch && idMatch ) {
         console.log( `[Designer State Cache] Restored state for key: ${cacheKey}` )
@@ -116,44 +121,44 @@ export function useDesignerStateCache() {
   }
 
   // Restore state by templateId with optional migration to the correct key for the given route
-  const restoreStateByTemplateId = (templateId, route = null) => {
-    if (!templateId) return null
+  const restoreStateByTemplateId = ( templateId, route = null ) => {
+    if ( !templateId ) return null
 
     let foundEntry = null
     let foundKey = null
-    for (const [key, state] of stateCache.entries()) {
+    for ( const [key, state] of stateCache.entries() ) {
       const stateId = state.templateId || state.currentTemplate?.id || state.currentTemplate?.template_id
-      if (String(stateId) === String(templateId)) {
+      if ( String( stateId ) === String( templateId ) ) {
         foundEntry = state
         foundKey = key
         break
       }
     }
 
-    if (!foundEntry) return null
+    if ( !foundEntry ) return null
 
     // If a target route is provided, migrate this entry under the correct key
-    if (route) {
-      const newKey = generateCacheKey(route)
+    if ( route ) {
+      const newKey = generateCacheKey( route )
       const migrated = {
         ...foundEntry,
-        routePath: route.path,
-        routeParams: route.params ? JSON.parse(JSON.stringify(route.params)) : {},
-        timestamp: Date.now(),
+        routePath : route.path,
+        routeParams : route.params ? JSON.parse( JSON.stringify( route.params ) ) : {},
+        timestamp : Date.now()
       }
-      stateCache.set(newKey, migrated)
-      if (foundKey !== newKey) {
-        stateCache.delete(foundKey)
+      stateCache.set( newKey, migrated )
+      if ( foundKey !== newKey ) {
+        stateCache.delete( foundKey )
       }
       foundEntry = migrated
     }
 
     return {
-      templateForm: foundEntry.templateForm,
-      originalTemplate: foundEntry.originalTemplate,
-      currentTemplate: foundEntry.currentTemplate,
-      hasUnsavedChanges: foundEntry.hasUnsavedChanges,
-      designerState: foundEntry.designerState,
+      templateForm : foundEntry.templateForm,
+      originalTemplate : foundEntry.originalTemplate,
+      currentTemplate : foundEntry.currentTemplate,
+      hasUnsavedChanges : foundEntry.hasUnsavedChanges,
+      designerState : foundEntry.designerState
     }
   }
 

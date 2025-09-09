@@ -26,7 +26,12 @@
           <div class="section-header">
             <el-icon class="section-icon"><Edit /></el-icon>
             <h4>Template Information</h4>
-            <el-tag size="default" type="info" effect="plain" style="font-size: 14px">{{ changes.metadata.length }} change(s)</el-tag>
+            <el-tag size="default"
+type="warning"
+effect="plain"
+style="font-size: 14px"
+              >{{ changes.metadata.length }} change(s)</el-tag
+            >
           </div>
           <div class="changes-list">
             <div v-for="change in changes.metadata" :key="change.field" class="change-item metadata-change">
@@ -51,7 +56,11 @@
           <div class="section-header">
             <el-icon class="section-icon"><Plus /></el-icon>
             <h4>Steps Added</h4>
-            <el-tag size="default" type="info" effect="plain" style="font-size: 14px;">{{ changes.steps_added.length }} step(s)</el-tag>
+            <el-tag size="default"
+effect="plain"
+style="font-size: 14px"
+              >{{ changes.steps_added.length }} step(s)</el-tag
+            >
           </div>
           <div class="changes-list">
             <div v-for="step in changes.steps_added" :key="step.step_id" class="change-item step-added">
@@ -73,7 +82,11 @@
           <div class="section-header">
             <el-icon class="section-icon"><Edit /></el-icon>
             <h4>Steps Modified</h4>
-            <el-tag size="default" type="warning" effect="plain" style="font-size: 14px">{{ changes.steps_modified.length }} step(s)</el-tag>
+            <el-tag size="default"
+effect="plain"
+style="font-size: 14px"
+              >{{ changes.steps_modified.length }} step(s)</el-tag
+            >
           </div>
           <div class="changes-list">
             <div v-for="step in changes.steps_modified" :key="step.step_id" class="change-item step-modified">
@@ -102,7 +115,12 @@
           <div class="section-header">
             <el-icon class="section-icon"><Delete /></el-icon>
             <h4>Steps Deleted</h4>
-            <el-tag size="default" type="danger" effect="plain" style="font-size: 14px">{{ changes.steps_deleted.length }} step(s)</el-tag>
+            <el-tag size="default"
+type="danger"
+effect="plain"
+style="font-size: 14px"
+              >{{ changes.steps_deleted.length }} step(s)</el-tag
+            >
           </div>
           <div class="changes-list">
             <div v-for="step in changes.steps_deleted" :key="step.step_id" class="change-item step-deleted">
@@ -126,7 +144,11 @@
           <div class="section-header">
             <el-icon class="section-icon"><Sort /></el-icon>
             <h4>Steps Reordered</h4>
-            <el-tag size="default" type="info" effect="plain" style="font-size: 14px">{{ changes.steps_reordered.length }} step(s)</el-tag>
+            <el-tag size="default"
+effect="plain"
+style="font-size: 14px"
+              >{{ changes.steps_reordered.length }} step(s)</el-tag
+            >
           </div>
           <div class="changes-list">
             <div v-for="step in changes.steps_reordered" :key="step.step_id" class="change-item step-reordered">
@@ -167,22 +189,7 @@
 
 <script setup>
 import { computed } from 'vue'
-import {
-  Edit,
-  Plus,
-  Delete,
-  Sort,
-  Right,
-  Check,
-  Close,
-  InfoFilled,
-  CircleCheck, // inspection (correct icon name)
-  Select, // checkbox (available icon)
-  Odometer, // number (available icon for measurements)
-  // Edit, // text (already imported)
-  Paperclip, // attachments
-  Tools // service
-} from '@element-plus/icons-vue'
+import { Edit, Plus, Delete, Sort, Right, Check, Close, InfoFilled } from '@element-plus/icons-vue'
 
 // Props
 const props = defineProps( {
@@ -241,7 +248,7 @@ const getStepNumberStyle = type => {
   const color = getStepTypeColor( type )
   return {
     backgroundColor : 'white',
-    color : color,
+    color,
     border : `2px solid ${color}`
   }
 }
@@ -250,28 +257,6 @@ const getStepPosition = stepId => {
   // Find the step in currentSteps and return its position (1-indexed)
   const stepIndex = props.currentSteps.findIndex( s => s.step_id === stepId )
   return stepIndex !== -1 ? stepIndex + 1 : '?'
-}
-
-const getStepTypeStyle = type => {
-  const color = getStepTypeColor( type )
-  // Create a subtle style with light background, colored border and colored icon
-  return {
-    backgroundColor : `${color}10`, // Very light tint (~6% opacity)
-    border : `1px solid ${color}50`, // Light border (~18% opacity)
-    color // Icon color
-  }
-}
-
-const getStepTypeIconComponent = type => {
-  const icons = {
-    inspection : CircleCheck,
-    checkbox : Select,
-    number : Odometer,
-    text : Edit,
-    attachments : Paperclip,
-    service : Tools
-  }
-  return icons[type] || Select
 }
 
 const getStepType = stepId => {
@@ -447,10 +432,11 @@ defineOptions( {
 
 .current-value .value {
   color: var(--el-color-success);
+  font-weight: 500;
   background: #f0f9ff;
   padding: 2px 8px;
   border-radius: 4px;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .arrow-icon {
@@ -545,6 +531,7 @@ defineOptions( {
   background: #f0f9ff;
   padding: 1px 6px;
   border-radius: 3px;
+  font-size: 15px;
 }
 
 .arrow-mini {

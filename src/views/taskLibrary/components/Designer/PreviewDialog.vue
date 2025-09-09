@@ -608,7 +608,7 @@ watch(
   transition: transform 0.2s;
 }
 
-::v-deep(.el-checkbox__input.is-disabled+span.el-checkbox__label) {
+::v-deep(.el-checkbox__input.is-disabled + span.el-checkbox__label) {
   color: #606266;
 }
 

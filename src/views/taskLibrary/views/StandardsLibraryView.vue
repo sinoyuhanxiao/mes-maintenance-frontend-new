@@ -1138,4 +1138,13 @@ defineOptions( {
   color: var(--el-color-danger);
   background-color: var(--el-color-danger-light-9);
 }
+
+:deep(.el-tabs__item.is-top) {
+  font-size: 16px;
+  width: 50%;
+}
+
+:deep(.el-tabs__nav.is-top) {
+  width: 100%;
+}
 </style>
