@@ -23,14 +23,7 @@
           <!-- Clear chat keeps its slot; just hidden on homepage -->
           <div class="header-icon" :class="{ 'is-hidden': showHomepage }">
             <el-tooltip content="Clear Chat History" placement="bottom">
-              <el-button
-                text
-                circle
-                type="default"
-                aria-label="Clear chat"
-                @click="clearChat"
-                :disabled="isResponding"
-              >
+              <el-button text circle type="default" aria-label="Clear chat" @click="clearChat" :disabled="isResponding">
                 <el-icon><Delete /></el-icon>
               </el-button>
             </el-tooltip>
@@ -63,7 +56,7 @@
             How Does This AI Chatbot Work
           </button>
           <button class="chip chip--outline" @click="startChat('Any Alarms Today')">Any Alarms Today</button>
-          <button class="chip chip--outline" @click="startChat('Contact Support')">Contact Support</button>
+          <button class="chip chip--outline" @click="startChat('How to contact 24/7 service?')">Contact Support</button>
           <button class="chip chip--outline" @click="startChat('Where To Check Maintenance Report')">
             How To Check Maintenance Report
           </button>
@@ -493,9 +486,9 @@ onMounted( () => {
 }
 
 .header-right .el-button {
-  margin: 0;         /* kill any extra margin */
-  padding: 0;        /* remove Element Plus inner spacing */
-  width: 28px;       /* smaller circle if desired */
+  margin: 0; /* kill any extra margin */
+  padding: 0; /* remove Element Plus inner spacing */
+  width: 28px; /* smaller circle if desired */
   height: 28px;
 }
 

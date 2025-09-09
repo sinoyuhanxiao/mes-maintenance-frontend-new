@@ -1,3 +1,4 @@
+import http from '@/utils/request'
 // Placeholder functions for backend integration
 // These will be replaced with actual HTTP calls once backend is ready
 
@@ -157,5 +158,78 @@ export const uploadResource = async( file, stepId ) => {
       url : `https://cdn.example.com/files/${file.name}`,
       mime : file.type
     }
+  }
+}
+
+// standards CRUD operations
+export const getStandards = async params => {
+  try {
+    // Using http.request for real API calls
+    const response = await http.request( {
+      method : 'get',
+      url : '/library/standards',
+      params
+    } )
+    return {
+      data : response.data?.data || response.data,
+      total : response.data?.total || response.data?.length || 0
+    }
+  } catch ( error ) {
+    console.error( 'Failed to fetch standards:', error )
+    throw error
+  }
+}
+
+export const getStandard = async id => {
+  try {
+    const response = await http.request( {
+      method : 'get',
+      url : `/library/standard/${id}`
+    } )
+    return { data : response.data }
+  } catch ( error ) {
+    console.error( 'Failed to fetch standard:', error )
+    throw error
+  }
+}
+
+export const createStandard = async data => {
+  try {
+    const response = await http.request( {
+      method : 'post',
+      url : '/library/standard',
+      data
+    } )
+    return { data : response.data }
+  } catch ( error ) {
+    console.error( 'Failed to create standard:', error )
+    throw error
+  }
+}
+
+export const updateStandard = async( id, data ) => {
+  try {
+    const response = await http.request( {
+      method : 'put',
+      url : '/library/standards',
+      data : { _id : id, ...data }
+    } )
+    return { data : response.data }
+  } catch ( error ) {
+    console.error( 'Failed to update standard:', error )
+    throw error
+  }
+}
+
+export const deleteStandard = async id => {
+  try {
+    await http.request( {
+      method : 'delete',
+      url : `/library/standard/${id}`
+    } )
+    return { success : true }
+  } catch ( error ) {
+    console.error( 'Failed to delete standard:', error )
+    throw error
   }
 }

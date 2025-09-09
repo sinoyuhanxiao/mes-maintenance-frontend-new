@@ -8,12 +8,14 @@
         :module="7"
         :data="standardTemplates"
         :maxHeight="'340px'"
-        :totalItems="standardTemplates.length"
-        :currentPage="1"
-        :pageSize="10"
+        :totalItems="totalItems"
+        :currentPage="currentPage"
+        :pageSize="pageSize"
         :showBorder="true"
         :showPagination="true"
+        :loading="loading"
         @selection="handleStandardAction"
+        @page-change="handlePageChange"
       />
     </div>
 
@@ -26,39 +28,19 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import CardTable from '../Tables/CardTable.vue'
+import { getStandards } from '@/api/taskLibrary.js'
 
 // Define emits
 const emit = defineEmits( ['close', 'addStandards'] )
 
-// Sample standard templates data
-const standardTemplates = ref( [
-  {
-    id : 16,
-    name : 'Safety Protocol Checklist',
-    category : 'Safety Standards',
-    estimated_minutes : 20
-  },
-  {
-    id : 13513,
-    name : 'Equipment Inspection Standard',
-    category : 'Quality Control',
-    estimated_minutes : 35
-  },
-  {
-    id : 23,
-    name : 'Environmental Compliance Check',
-    category : 'Environmental',
-    estimated_minutes : 40
-  },
-  {
-    id : 756,
-    name : 'Documentation Standard',
-    category : 'Administrative',
-    estimated_minutes : 15
-  }
-] )
+// Reactive data
+const standardTemplates = ref( [] )
+const totalItems = ref( 0 )
+const currentPage = ref( 1 )
+const pageSize = ref( 10 )
+const loading = ref( false )
 
 // Track selected standards
 const selectedStandards = ref( new Set() )
@@ -67,6 +49,36 @@ const selectedStandards = ref( new Set() )
 const selectedStandardsList = computed( () => {
   return standardTemplates.value.filter( standard => selectedStandards.value.has( standard.id ) )
 } )
+
+// Fetch standards data from API
+const fetchStandards = async( page = 1 ) => {
+  loading.value = true
+  try {
+    const params = {
+      page,
+      limit : pageSize.value
+    }
+
+    const response = await getStandards( params )
+    standardTemplates.value = response.data || []
+    totalItems.value = response.total || 0
+    currentPage.value = page
+  } catch ( error ) {
+    console.error( 'Error fetching standards:', error )
+    // You might want to show an error message to the user here
+    standardTemplates.value = []
+    totalItems.value = 0
+  } finally {
+    loading.value = false
+  }
+}
+
+// Handle page changes
+const handlePageChange = page => {
+  // Clear selections when changing pages if needed
+  // selectedStandards.value.clear()
+  fetchStandards( page )
+}
 
 const handleStandardAction = selectionData => {
   console.log( 'Selection data:', selectionData )
@@ -89,6 +101,11 @@ const handleAddStandards = () => {
     emit( 'close' )
   }
 }
+
+// Fetch data on component mount
+onMounted( () => {
+  fetchStandards()
+} )
 </script>
 
 <style>

@@ -41,7 +41,7 @@ const emit = defineEmits( ['selection'] )
 
 const checked = ref( props.selected )
 
-const rulesCount = computed( () => props.template?.rules?.length || 0 )
+const rulesCount = computed( () => props.template?.items?.length || 0 )
 
 // Watch for external changes to selected prop
 watch(
