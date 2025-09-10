@@ -6,7 +6,13 @@
       <div class="filters-section" :class="{ 'filters-collapsed': !showFilters }">
         <!-- Search Input -->
         <div class="search-bar">
-          <el-input v-model="searchQuery" placeholder="Search standards..." clearable @input="handleSearch">
+          <el-input
+            v-model="searchQuery"
+            placeholder="Search Keyword..."
+            clearable
+            @input="handleSearch"
+            @clear="handleSearch"
+          >
             <template #prefix>
               <el-icon><Search /></el-icon>
             </template>
@@ -45,7 +51,7 @@
           <el-skeleton :rows="3" animated />
         </div>
 
-        <div v-else-if="displayedstandards.length === 0" class="empty-list">
+        <div v-else-if="paginatedStandards.length === 0" class="empty-list">
           <el-empty description="No standards found" :image-size="80" />
         </div>
 
@@ -53,7 +59,7 @@
           <!-- Pagination Info -->
           <div class="pagination-info">
             <div class="info-text">
-              Showing {{ paginationInfo.start }}-{{ paginationInfo.end }} of {{ paginationInfo.total }} standards
+              Showing {{ paginationInfo.start }}-{{ paginationInfo.end }} of {{ pagination.total }} standards
             </div>
             <el-select v-model="pageSize" @change="handlePageSizeChange" size="small" style="width: 100px">
               <el-option label="10" :value="10" />
@@ -65,10 +71,10 @@
           <!-- standard Cards List -->
           <div class="standards-container">
             <standardCard
-              v-for="standard in displayedstandards"
-              :key="standard._id"
+              v-for="standard in paginatedStandards"
+              :key="getStandardId(standard)"
               :standard="standard"
-              :is-selected="selectedstandardId === standard._id"
+              :is-selected="selectedstandardId === getStandardId(standard)"
               @select="handlestandardSelect"
               @edit="handlestandardEdit"
               @duplicate="handlestandardDuplicate"
@@ -81,7 +87,7 @@
             <el-pagination
               v-model:current-page="currentPage"
               v-model:page-size="pageSize"
-              :total="filteredstandards.length"
+              :total="pagination.total"
               :page-sizes="[10, 20, 50]"
               :pager-count="3"
               layout="total, prev, pager, next, jumper"
@@ -168,8 +174,11 @@
                     <el-descriptions-item width="50%" label="Total Rules">
                       <span class="info-value highlight">{{ selectedstandard.items?.length || 0 }} rules</span>
                     </el-descriptions-item>
-                    <el-descriptions-item width="50%" label="standard ID">
-                      <span class="standard-id">{{ selectedstandard._id }}</span>
+<!--                    <el-descriptions-item width="50%" label="Standard ID">-->
+<!--                      <span class="standard-id">{{ getStandardId(selectedstandard) }}</span>-->
+<!--                    </el-descriptions-item>-->
+                    <el-descriptions-item width="50%" label="Standard Code">
+                      <span class="standard-id">{{ selectedstandard.code || "N/A"}}</span>
                     </el-descriptions-item>
                   </el-descriptions>
                 </div>
@@ -307,6 +316,7 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { debounce } from 'lodash-es'
 import { useSettingsStore } from '@/store'
 import {
   Filter,
@@ -328,20 +338,30 @@ const settingsStore = useSettingsStore()
 const {
   loading,
   standards,
-  filteredstandards,
+  paginatedStandards,
   loadstandards,
   createStandard,
   updateStandard,
   deleteStandard,
   setFilter,
-  clearFilters
+  clearFilters,
+  pagination,
+  setPage,
+  setPageSize,
+  getStandardId
 } = useStandards()
 
 // Local state
 const searchQuery = ref( '' )
 const categoryFilter = ref( '' )
-const currentPage = ref( 1 )
-const pageSize = ref( 20 )
+const currentPage = computed( {
+  get : () => pagination.value.currentPage,
+  set : val => setPage( val )
+} )
+const pageSize = computed( {
+  get : () => pagination.value.pageSize,
+  set : val => setPageSize( val )
+} )
 const selectedstandardId = ref( null )
 const deleteDialogVisible = ref( false )
 const standardToDelete = ref( null )
@@ -388,50 +408,34 @@ const availableCategories = computed( () => {
   return ['food-safety', 'general']
 } )
 
-const displayedstandards = computed( () => {
-  const sorted = [...filteredstandards.value].sort( ( a, b ) => {
-    const dateA = a.created_at ? new Date( a.created_at ) : null
-    const dateB = b.created_at ? new Date( b.created_at ) : null
-    if ( dateA && dateB ) {
-      return dateB.getTime() - dateA.getTime()
-    }
-    if ( dateA ) return -1
-    if ( dateB ) return 1
-    return 0
-  } )
-
-  const start = ( currentPage.value - 1 ) * pageSize.value
-  const end = start + pageSize.value
-  return sorted.slice( start, end )
-} )
+// Removed displayedstandards - now using server-side pagination and sorting
 
 const selectedstandard = computed( () => {
-  return standards.value.find( s => s._id === selectedstandardId.value )
+  return standards.value.find( s => getStandardId( s ) === selectedstandardId.value )
 } )
 
 const paginationInfo = computed( () => {
-  const total = filteredstandards.value.length
+  const total = pagination.value.total
   const start = total === 0 ? 0 : ( currentPage.value - 1 ) * pageSize.value + 1
   const end = Math.min( currentPage.value * pageSize.value, total )
   return { start, end, total }
 } )
 
-// Event handlers
-const handleSearch = () => {
+// Event handlers with debouncing
+const handleSearchImmediate = () => {
   setFilter( 'search', searchQuery.value )
-  currentPage.value = 1
 }
+
+const handleSearch = debounce( handleSearchImmediate, 300 )
 
 const handleCategoryFilter = () => {
   setFilter( 'category', categoryFilter.value )
-  currentPage.value = 1
 }
 
 const clearAllFilters = () => {
   searchQuery.value = ''
   categoryFilter.value = ''
   clearFilters()
-  currentPage.value = 1
 }
 
 const clearNonSearchFilters = () => {
@@ -439,7 +443,6 @@ const clearNonSearchFilters = () => {
   const currentSearch = searchQuery.value
   clearFilters() // from composable
   setFilter( 'search', currentSearch )
-  currentPage.value = 1
 }
 
 const handleFilterToggle = () => {
@@ -448,16 +451,17 @@ const handleFilterToggle = () => {
 }
 
 const handlePageChange = page => {
+  // Handled by computed setter
   currentPage.value = page
 }
 
 const handlePageSizeChange = size => {
+  // Handled by computed setter
   pageSize.value = size
-  currentPage.value = 1
 }
 
 const handlestandardSelect = standard => {
-  selectedstandardId.value = standard._id
+  selectedstandardId.value = getStandardId( standard )
 }
 
 const handlestandardEdit = ( standard = selectedstandard.value ) => {
@@ -508,9 +512,9 @@ const handleDeleteConfirm = async() => {
 
   deleteLoading.value = true
   try {
-    await deleteStandard( standardToDelete.value._id )
+    await deleteStandard( getStandardId( standardToDelete.value ) )
 
-    if ( selectedstandardId.value === standardToDelete.value._id ) {
+    if ( selectedstandardId.value === getStandardId( standardToDelete.value ) ) {
       selectedstandardId.value = null
     }
 

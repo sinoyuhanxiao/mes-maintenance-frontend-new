@@ -1,7 +1,7 @@
 import { ref, computed } from 'vue'
 import { ElMessage, ElNotification } from 'element-plus'
 import {
-  getStandards,
+  searchStandards,
   getStandard,
   createStandard as createStandardApi,
   updateStandard as updateStandardApi,
@@ -21,44 +21,61 @@ export function useStandards() {
   const pagination = ref( {
     currentPage : 1,
     pageSize : 20,
-    total : 0
+    total : 0,
+    totalPages : 0
   } )
 
-  // Computed properties
+  // Since API returns all data at once, we'll use client-side pagination for display
   const filteredstandards = computed( () => {
-    let filtered = [...standards.value]
-
-    // Search filter
-    if ( filters.value.search ) {
-      const searchLower = filters.value.search.toLowerCase()
-      filtered = filtered.filter(
-        sm =>
-          sm.name.toLowerCase().includes( searchLower ) ||
-          sm.description?.toLowerCase().includes( searchLower ) ||
-          sm.items?.some( item => item.toLowerCase().includes( searchLower ) )
-      )
-    }
-
-    // Category filter
-    if ( filters.value.category ) {
-      filtered = filtered.filter( sm => sm.category === filters.value.category )
-    }
-
-    // Module filter
-    if ( filters.value.module ) {
-      filtered = filtered.filter( sm => sm.module === filters.value.module )
-    }
-
-    return filtered
+    return standards.value
   } )
 
-  // standard operations
+  // Return all standards since server now handles pagination
+  const paginatedStandards = computed( () => {
+    return standards.value || []
+  } )
+
+  // standard operations - using server-side filtering (API doesn't support pagination)
   const loadstandards = async( params = {} ) => {
     try {
       loading.value = true
-      const response = await getStandards( params )
-      standards.value = response.data || []
-      pagination.value.total = response.total || 0
+
+      // Build filter object for server-side filtering
+      const filter = {}
+      if ( filters.value.search ) filter.keyword = filters.value.search
+      if ( filters.value.category ) filter.category = filters.value.category
+      // Note: module filtering not supported by API according to spec
+
+      // Prepare pagination parameters
+      const paginationParams = {
+        page : pagination.value.currentPage, // Use 1-based indexing (no conversion needed)
+        size : pagination.value.pageSize
+      }
+
+      const response = await searchStandards( { ...filter, ...params }, paginationParams )
+      const standardsData = response.data || []
+
+      // Ensure consistent id field for all standards (based on API spec, should already use 'id')
+      standardsData.forEach( standard => {
+        if ( standard._id && !standard.id ) {
+          standard.id = standard._id
+        }
+      } )
+
+      standards.value = standardsData
+      // Handle pagination: if server provides pagination metadata, use it; otherwise calculate from data
+      const serverTotal = response.total || response.totalElements
+      const serverTotalPages = response.totalPages
+
+      if ( serverTotal && serverTotal > standardsData.length ) {
+        // Server has more data than what was returned - use server pagination
+        pagination.value.total = serverTotal
+        pagination.value.totalPages = serverTotalPages || Math.ceil( serverTotal / pagination.value.pageSize )
+      } else {
+        // Server returned all data - use client-side pagination
+        pagination.value.total = standardsData.length
+        pagination.value.totalPages = Math.ceil( standardsData.length / pagination.value.pageSize )
+      }
     } catch ( error ) {
       ElMessage.error( 'Failed to load standards' )
       console.error( 'Failed to load standards:', error )
@@ -85,6 +102,10 @@ export function useStandards() {
     try {
       const response = await createStandardApi( standardData )
       const newstandard = response.data
+      // Ensure consistent id field
+      if ( newstandard._id && !newstandard.id ) {
+        newstandard.id = newstandard._id
+      }
       standards.value.push( newstandard )
       ElNotification( {
         title : 'Success',
@@ -104,14 +125,19 @@ export function useStandards() {
       const response = await updateStandardApi( id, standardData )
       const updatedstandard = response.data
 
+      // Ensure consistent id field
+      if ( updatedstandard._id && !updatedstandard.id ) {
+        updatedstandard.id = updatedstandard._id
+      }
+
       // Update in local array
-      const index = standards.value.findIndex( sm => sm._id === id )
+      const index = standards.value.findIndex( sm => getStandardId( sm ) === id )
       if ( index !== -1 ) {
         standards.value[index] = updatedstandard
       }
 
       // Update current standard if it's the one being updated
-      if ( currentstandard.value?._id === id ) {
+      if ( currentstandard.value && getStandardId( currentstandard.value ) === id ) {
         currentstandard.value = updatedstandard
       }
 
@@ -129,13 +155,13 @@ export function useStandards() {
       await deleteStandardApi( id )
 
       // Remove from local array
-      const index = standards.value.findIndex( sm => sm._id === id )
+      const index = standards.value.findIndex( sm => getStandardId( sm ) === id )
       if ( index !== -1 ) {
         standards.value.splice( index, 1 )
       }
 
       // Clear current standard if it's the one being deleted
-      if ( currentstandard.value?._id === id ) {
+      if ( currentstandard.value && getStandardId( currentstandard.value ) === id ) {
         currentstandard.value = null
       }
 
@@ -151,9 +177,13 @@ export function useStandards() {
     }
   }
 
-  // Filter and search operations
+  // Filter and search operations - now triggers server-side reload
   const setFilter = ( key, value ) => {
     filters.value[key] = value
+    // Reset to first page when filtering
+    pagination.value.currentPage = 1
+    // Trigger reload with new filters
+    loadstandards()
   }
 
   const clearFilters = () => {
@@ -162,14 +192,22 @@ export function useStandards() {
       category : '',
       module : ''
     }
+    // Reset to first page and reload
+    pagination.value.currentPage = 1
+    loadstandards()
   }
 
   const setPage = page => {
     pagination.value.currentPage = page
+    // Reload data with new page
+    loadstandards()
   }
 
   const setPageSize = size => {
     pagination.value.pageSize = size
+    pagination.value.currentPage = 1
+    // Reload data with new page size
+    loadstandards()
   }
 
   // Safety measure selection
@@ -182,8 +220,12 @@ export function useStandards() {
   }
 
   // Utility functions
+  const getStandardId = standard => {
+    return standard.id || standard._id
+  }
+
   const getStandardById = id => {
-    return standards.value.find( sm => sm._id === id )
+    return standards.value.find( sm => getStandardId( sm ) === id )
   }
 
   const getStandardsByCategory = category => {
@@ -231,6 +273,7 @@ export function useStandards() {
     loading,
     standards,
     filteredstandards,
+    paginatedStandards,
     currentstandard,
     filters,
     pagination,
@@ -253,6 +296,7 @@ export function useStandards() {
     clearSelection,
 
     // Utilities
+    getStandardId,
     getStandardById,
     getStandardsByCategory,
     getStandardsByModule,

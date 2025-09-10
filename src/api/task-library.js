@@ -24,19 +24,19 @@ const transformTemplateForBackend = frontendData => {
         remarks : step.remarks || ''
       }
 
-      // Add tools if they exist
+      // Add tools if they exist (send as ID array per new API)
       if ( step.relevant_tools && Array.isArray( step.relevant_tools ) && step.relevant_tools.length > 0 ) {
         backendStep.tools = step.relevant_tools
           .map( tool => {
             if ( typeof tool === 'object' && tool.tool_id ) {
-              return { id : parseInt( tool.tool_id ) || 0 }
+              return parseInt( tool.tool_id ) || 0
             } else if ( typeof tool === 'object' && tool.id ) {
-              return { id : parseInt( tool.id ) || 0 }
+              return parseInt( tool.id ) || 0
             } else {
-              return { id : parseInt( tool ) || 0 }
+              return parseInt( tool ) || 0
             }
           } )
-          .filter( tool => tool.id > 0 ) // Remove invalid tool IDs
+          .filter( id => id > 0 ) // Remove invalid tool IDs
       }
 
       // Transform step value based on frontend step type
@@ -339,19 +339,19 @@ const transformStepForBackend = ( step, includeId = false ) => {
     backendStep.id = step.step_id || step.id || step._id
   }
 
-  // Add tools if they exist
+  // Add tools if they exist (send as ID array per new API)
   if ( step.relevant_tools && Array.isArray( step.relevant_tools ) && step.relevant_tools.length > 0 ) {
     backendStep.tools = step.relevant_tools
       .map( tool => {
         if ( typeof tool === 'object' && tool.tool_id ) {
-          return { id : parseInt( tool.tool_id ) || 0 }
+          return parseInt( tool.tool_id ) || 0
         } else if ( typeof tool === 'object' && tool.id ) {
-          return { id : parseInt( tool.id ) || 0 }
+          return parseInt( tool.id ) || 0
         } else {
-          return { id : parseInt( tool ) || 0 }
+          return parseInt( tool ) || 0
         }
       } )
-      .filter( tool => tool.id > 0 )
+      .filter( id => id > 0 )
   }
 
   // Transform step value based on frontend step type
@@ -547,22 +547,73 @@ export const uploadResource = async( file, stepId ) => {
 }
 
 // standards CRUD operations
-export const getStandards = async params => {
+export const searchStandards = async( filter = {}, pagination = {} ) => {
   try {
-    // Using http.request for real API calls
+    // Build request data (body) - only filter criteria
+    const requestData = {}
+    
+    // Only add keyword if it has a non-empty value
+    if ( filter.keyword && filter.keyword.trim() !== '' ) {
+      requestData.keyword = filter.keyword
+    }
+    
+    // Add other filters if they have values
+    if ( filter.category && filter.category.trim() !== '' ) {
+      requestData.category = filter.category
+    }
+
+    // Build query parameters for pagination
+    const queryParams = {}
+    if ( pagination.page !== undefined ) queryParams.page = pagination.page
+    if ( pagination.size !== undefined ) queryParams.size = pagination.size
+    if ( pagination.sortField !== undefined ) queryParams.sortField = pagination.sortField
+    if ( pagination.direction !== undefined ) queryParams.direction = pagination.direction
+
     const response = await http.request( {
-      method : 'get',
-      url : '/library/standards',
-      params
+      method : 'post',
+      url : '/library/standards/search',
+      params : queryParams,
+      data : requestData
     } )
+
+    // Handle different possible response structures
+    let extractedData = []
+    if ( Array.isArray( response.data ) ) {
+      extractedData = response.data
+    } else if ( response.data?.data?.content ) {
+      extractedData = response.data.data.content
+    } else if ( response.data?.content ) {
+      extractedData = response.data.content
+    } else if ( response.data?.data ) {
+      extractedData = response.data.data
+    } else if ( response.data ) {
+      extractedData = response.data
+    }
+
     return {
-      data : response.data?.data || response.data,
-      total : response.data?.total || response.data?.length || 0
+      data : extractedData,
+      total : response.data?.data?.totalElements || response.data?.totalElements || extractedData.length,
+      totalPages : response.data?.data?.totalPages || response.data?.totalPages || Math.ceil( extractedData.length / 20 ),
+      page : response.data?.data?.page || response.data?.page || 0,
+      size : response.data?.data?.size || response.data?.size || 20,
+      empty : response.data?.data?.empty || response.data?.empty || extractedData.length === 0
     }
   } catch ( error ) {
-    console.error( 'Failed to fetch standards:', error )
+    console.error( 'Failed to search standards:', error )
     throw error
   }
+}
+
+// Backward compatibility wrapper
+export const getStandards = async params => {
+  console.warn( 'getStandards is deprecated. Use searchStandards instead.' )
+  // Convert old params to new format
+  const filter = {}
+  if ( params?.search ) filter.keyword = params.search
+  if ( params?.category ) filter.category = params.category
+  // Note: API doesn't support module filtering based on the spec
+
+  return searchStandards( filter )
 }
 
 export const getStandard = async id => {

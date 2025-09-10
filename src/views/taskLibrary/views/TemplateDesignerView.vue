@@ -7,7 +7,12 @@
           <el-icon><ArrowLeft /></el-icon>
         </el-button>
         <div class="header-title">
-          <h1>{{ isEditing ? 'Edit Task' : 'Create New Task' }}</h1>
+          <div class="title-with-help">
+            <h1>{{ isEditing ? 'Edit Task' : 'Create New Task' }}</h1>
+            <el-tooltip content="Show guided tour" placement="bottom" effect="dark">
+              <el-button type="text" size="small" @click="startTour" class="help-button" :icon="QuestionFilled" />
+            </el-tooltip>
+          </div>
           <el-tag v-if="isEditing && currentTemplate?.reference_id" type="info" class="template-id-header">
             #{{ currentTemplate.reference_id }}
           </el-tag>
@@ -424,6 +429,55 @@
         </span>
       </template>
     </el-dialog>
+
+    <!-- Tour Component -->
+    <el-tour v-model="tourOpen" type="primary" :mask="true" @finish="onTourFinish">
+      <el-tour-step
+        target=".designer-header"
+        title="Designer Header"
+        description="This is the header of the designer with all the main actions."
+      />
+      <el-tour-step
+        target="div.designer-header > div.header-actions > button.el-button"
+        title="Reset"
+        description="This is where you can reset the entire task template to its original state."
+      />
+      <el-tour-step
+        target="div.designer-header > div.header-actions > button.el-button:nth-child(2)"
+        title="Preview"
+        description="You can preview your task on both mobile and desktop devices."
+      />
+      <el-tour-step
+        target="div.designer-header > div.header-actions > button.el-button:nth-child(3)"
+        title="Save Task"
+        description="This will save the task template you created to the system, where it can be used for work orders."
+      />
+      <el-tour-step
+        target=".left-panel"
+        title="Task Information"
+        description="Edit the task name, description, and other required metadata fields here."
+      />
+      <el-tour-step
+        target=".center-panel"
+        title="Procedure Designer"
+        description="This is your main design area. Add and arrange procedure steps here. Start by adding your first step to build the task workflow."
+      />
+      <el-tour-step
+        target=".right-panel"
+        title="+ Add Panel"
+        description="Click any step type card here to append a new step to your procedure."
+      />
+      <el-tour-step
+        target=".mode-selector .el-button-group button.el-button:nth-of-type(2)"
+        title="Click the Config Tab"
+        description="Please click the Config tab now to switch to Configuration mode."
+      />
+      <el-tour-step
+        target="div.panel-content > div.reorder-steps-mode > div.steps-list-container"
+        title="Configuration Panel"
+        description="Here you can duplicate multiple steps, mark them as required/optional, delete selected steps, and drag-drop to reorder positions."
+      />
+    </el-tour>
   </div>
 </template>
 
@@ -439,13 +493,15 @@ import {
   Plus,
   Switch,
   CircleCheck,
-  RefreshLeft
+  RefreshLeft,
+  QuestionFilled
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 // Native drag and drop implementation
 import { useTaskLibrary } from '@/composables/useTaskLibrary'
 import { getTaskTemplateById } from '@/api/task-library'
 import { useDesignerStateCache } from '@/composables/useDesignerStateCache'
+import { useDesignerTour } from '@/composables/useDesignerTour'
 import { useAppStore, useSettingsStore, useTagsViewStore } from '@/store'
 import { getEquipmentTree } from '@/api/equipment.js'
 import { getAllCategories } from '@/api/common.js'
@@ -458,16 +514,15 @@ import ResourceUploaderPanel from '../components/Designer/ConfigPanels/ResourceU
 import PreviewDialog from '../components/Designer/PreviewDialog.vue'
 import ChangeSummaryDialog from '../components/Designer/ChangeSummaryDialog.vue'
 import { usePreviewConfigs } from '../composables/usePreviewConfigs'
-import {
-  getDefaultStepConfig,
-  transformApiStepToDesignerStep,
-  formatLimitsText
-} from '../utils/stepTransforms'
+import { getDefaultStepConfig, transformApiStepToDesignerStep, formatLimitsText } from '../utils/stepTransforms'
 
 const route = useRoute()
 const router = useRouter()
 
 const { loadTemplates, createTemplate, updateTemplate, validateTemplate } = useTaskLibrary()
+
+// Tour functionality
+const { isOpen : tourOpen, start : startTour, onFinish : onTourFinish } = useDesignerTour()
 
 // Create local designer state instead of using global store
 const designerState = ref( {
@@ -731,7 +786,7 @@ const containerHeight = computed( () => {
   const totalFixedHeight = navbarHeight.value + tagsViewHeight.value
   // Fallback height
   const safeHeight = totalFixedHeight > 0 ? totalFixedHeight : 84
-  return `calc(100vh - ${safeHeight + 2}px)`
+  return `calc(100vh - ${safeHeight}px)`
 } )
 
 // Preview dialog state
@@ -1003,22 +1058,20 @@ const performSave = async() => {
       clearStateByKey( stableCacheKey.value )
 
       // Handle navigation based on tagViews mode
+      const templateId = newTemplate.id || newTemplate.template_id
+
       if ( settingsStore.tagsView ) {
-        // Close current tab and navigate to previous tab
-        const { visitedViews } = await tagsViewStore.DEL_VIEW( route )
+        // Close current tab and navigate to Task Library
+        await tagsViewStore.DEL_VIEW( route )
         await loadTemplates() // Refresh the task list
 
-        // Navigate to the previous tab (same logic as TagsView component)
-        const latestView = visitedViews.slice( -1 )[0]
-        if ( latestView ) {
-          router.push( latestView.fullPath )
-        } else {
-          // Fallback to Task Library if no other tabs
-          router.push( { name : 'TaskLibrary' } )
-        }
+        // Always navigate to Task Library and focus the new template
+        router.push( {
+          name : 'TaskLibrary',
+          query : { focusTemplate : templateId, refresh : true }
+        } )
       } else {
         // Navigate back to Task Library and focus the new template
-        const templateId = newTemplate.id || newTemplate.template_id
         router.push( {
           name : 'TaskLibrary',
           query : { focusTemplate : templateId, refresh : true }
@@ -2299,11 +2352,29 @@ defineOptions( {
   flex-wrap: wrap;
 }
 
+.title-with-help {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .header-title h1 {
   margin: 0;
   font-size: 20px;
   font-weight: 600;
   color: #303133;
+}
+
+.help-button {
+  color: #909399 !important;
+  font-size: 16px;
+  padding: 4px;
+  margin-left: 4px;
+  transition: color 0.2s ease;
+}
+
+.help-button:hover {
+  color: #409eff !important;
 }
 
 .template-id-header {
@@ -2363,6 +2434,7 @@ defineOptions( {
   display: flex;
   flex-direction: column;
   background: white;
+  margin-bottom: 10px;
   border-left: 1px solid #e4e7ed;
   border-right: 1px solid #e4e7ed;
 }

@@ -1,5 +1,9 @@
 <template>
-  <div class="template-card" :class="{ selected: isSelected }" @click="$emit('select', template)">
+  <div
+    class="template-card"
+    :class="{ selected: isSelected, highlighted: isHighlighted }"
+    @click="$emit('select', template)"
+  >
     <!-- Card Content -->
     <div class="card-content">
       <!-- Row 1: Title + Steps -->
@@ -37,6 +41,10 @@ const props = defineProps( {
     required : true
   },
   isSelected : {
+    type : Boolean,
+    default : false
+  },
+  isHighlighted : {
     type : Boolean,
     default : false
   }
@@ -82,6 +90,23 @@ const assetLabel = computed( () => {
   border-color: #409eff;
   box-shadow: 0 2px 8px rgba(64, 158, 255, 0.15);
   background: #f0f7ff;
+}
+
+.template-card.highlighted {
+  border-color: #67c23a;
+  box-shadow: 0 2px 12px rgba(103, 194, 58, 0.2);
+  background: #f0f9f0;
+  animation: highlightPulse 2s ease-in-out;
+}
+
+@keyframes highlightPulse {
+  0%,
+  100% {
+    box-shadow: 0 2px 12px rgba(103, 194, 58, 0.2);
+  }
+  50% {
+    box-shadow: 0 4px 16px rgba(103, 194, 58, 0.3);
+  }
 }
 
 .template-card.archived {

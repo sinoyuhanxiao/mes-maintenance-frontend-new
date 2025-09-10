@@ -104,6 +104,7 @@
               :key="template.template_id"
               :template="template"
               :is-selected="selectedTemplateId === template.template_id"
+              :is-highlighted="highlightedTemplateId === template.template_id"
               @select="handleTemplateSelect"
               @edit="handleTemplateEdit"
               @duplicate="handleTemplateDuplicate"
@@ -154,7 +155,6 @@
               <h2 class="template-title">
                 {{ selectedTemplate.name }}
                 <el-tag type="info" class="template-id-header">
-                  {{ selectedTemplate.template_id }}
                   <span v-if="selectedTemplate.reference_id"> #{{ selectedTemplate.reference_id }}</span>
                 </el-tag>
               </h2>
@@ -441,6 +441,7 @@ const categoryFilter = ref( '' )
 const currentPage = ref( 1 )
 const pageSize = ref( 20 )
 const selectedTemplateId = ref( null )
+const highlightedTemplateId = ref( null )
 const deleteDialogVisible = ref( false )
 const templateToDelete = ref( null )
 const deleteLoading = ref( false )
@@ -1098,28 +1099,58 @@ const handleTemplateFocus = async( templateId, refresh = false ) => {
     // Give a small delay to ensure DOM is updated
     await nextTick()
 
-    // Find the template in the list
-    let template = filteredTemplates.value.find( t => t.id === templateId || t.template_id === templateId )
+    // Clear filters and search to ensure the template is findable
+    clearAllFilters()
 
-    // If not found in filtered results, try a second load (sometimes new items take a moment)
+    // Find the template in all templates (not just filtered ones)
+    let template = templates.value.find( t => t.id === templateId || t.template_id === templateId )
+
+    // If not found, try a second load (sometimes new items take a moment)
     if ( !template ) {
       await new Promise( resolve => setTimeout( resolve, 500 ) ) // Wait 500ms
       await loadTemplates() // Reload templates
-      template = filteredTemplates.value.find( t => t.id === templateId || t.template_id === templateId )
+      template = templates.value.find( t => t.id === templateId || t.template_id === templateId )
     }
 
     if ( template ) {
+      // Find which page the template is on
+      const templateIndex = templates.value.findIndex( t => t.id === templateId || t.template_id === templateId )
+      const templatePage = Math.ceil( ( templateIndex + 1 ) / pageSize.value )
+
+      // Navigate to the correct page if needed
+      if ( templatePage !== currentPage.value ) {
+        currentPage.value = templatePage
+        setPage( templatePage )
+        await loadTemplates()
+        await nextTick()
+      }
+
+      // Highlight the template card with animation
+      highlightedTemplateId.value = template.template_id || template.id
+
       // Use the existing template selection function to properly focus the template
       await handleTemplateSelect( template )
+
       ElMessage.success( `Task "${template.name}" created successfully` )
+
+      // Remove highlight after 3 seconds
+      setTimeout( () => {
+        highlightedTemplateId.value = null
+      }, 3000 )
+
+      // Scroll the template card into view
+      await nextTick()
+      const templateCard = document.querySelector( `.template-card.highlighted` )
+      if ( templateCard ) {
+        templateCard.scrollIntoView( { behavior : 'smooth', block : 'center' } )
+      }
     } else {
-      // Template might not be visible due to filters or pagination - still show success
+      // Template might not be visible due to other issues - still show success
       ElMessage.success( 'Task created successfully' )
     }
   } catch ( error ) {
     console.error( 'Template focus failed:', error )
     // Don't show another success message on error - the template was still created
-    // The success will be handled by the TemplateDesigner component that navigated here
   }
 
   // Clean up the query parameter

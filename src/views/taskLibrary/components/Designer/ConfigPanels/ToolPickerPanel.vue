@@ -104,6 +104,8 @@ const emit = defineEmits( ['save', 'close'] )
 const searchQuery = ref( '' )
 const availableTools = ref( [] )
 const localSelectedTools = ref( [] )
+// Cache full metadata for selected tools so search does not hide them
+const selectedToolCache = ref( new Map() )
 const saveLoading = ref( false )
 // eslint-disable-next-line vue/no-dupe-keys
 const loading = ref( false )
@@ -114,7 +116,16 @@ watch(
   newTools => {
     // Normalize to numeric IDs to avoid string/number mismatches
     if ( newTools.length > 0 && typeof newTools[0] === 'object' ) {
-      localSelectedTools.value = newTools.map( tool => Number( tool.tool_id ) )
+      localSelectedTools.value = newTools.map( tool => {
+        const id = Number( tool.tool_id )
+        // Seed/refresh cache with provided metadata
+        selectedToolCache.value.set( id, {
+          tool_id : id,
+          name : tool.name,
+          spec : tool.spec || ''
+        } )
+        return id
+      } )
     } else {
       localSelectedTools.value = newTools.map( id => Number( id ) )
     }
@@ -143,6 +154,12 @@ const toggleTool = tool => {
   if ( isSelected ) {
     removeSelectedTool( tool.tool_id )
   } else {
+    // Cache metadata so selected list is not affected by search
+    selectedToolCache.value.set( Number( tool.tool_id ), {
+      tool_id : Number( tool.tool_id ),
+      name : tool.name,
+      spec : tool.spec || ''
+    } )
     addSelectedTool( tool.tool_id )
   }
 }
@@ -155,10 +172,24 @@ const addSelectedTool = toolId => {
 
 const removeSelectedTool = toolId => {
   localSelectedTools.value = localSelectedTools.value.filter( id => id !== toolId )
+  selectedToolCache.value.delete( Number( toolId ) )
 }
 
 const getSelectedToolObjects = () => {
-  return availableTools.value.filter( tool => localSelectedTools.value.includes( Number( tool.tool_id ) ) )
+  // Build selected list from cache to avoid coupling with availableTools filtering
+  return localSelectedTools.value.map( id => {
+    const cached = selectedToolCache.value.get( Number( id ) )
+    if ( cached ) return cached
+    // Fallback: try to find in currently loaded available tools
+    const found = availableTools.value.find( t => Number( t.tool_id ) === Number( id ) )
+    if ( found ) {
+      const obj = { tool_id : Number( found.tool_id ), name : found.name, spec : found.spec || '' }
+      selectedToolCache.value.set( obj.tool_id, obj )
+      return obj
+    }
+    // Last resort: minimal object
+    return { tool_id : Number( id ), name : `Tool #${id}`, spec : '' }
+  } )
 }
 
 const handleSave = () => {
@@ -191,6 +222,16 @@ const loadTools = async() => {
       // Use code primarily; fallback to tool class name
       spec : item.code || ( item.tool_class && item.tool_class.name ) || ''
     } ) )
+    // Refresh cache entries for selected tools found in current page
+    availableTools.value.forEach( t => {
+      if ( localSelectedTools.value.includes( Number( t.tool_id ) ) ) {
+        selectedToolCache.value.set( Number( t.tool_id ), {
+          tool_id : Number( t.tool_id ),
+          name : t.name,
+          spec : t.spec || ''
+        } )
+      }
+    } )
   } catch ( error ) {
     console.error( 'Tool load failed:', error )
     availableTools.value = []
