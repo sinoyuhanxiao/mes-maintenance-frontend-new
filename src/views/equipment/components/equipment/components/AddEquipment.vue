@@ -25,6 +25,7 @@
             </el-form-item>
           </el-col>
         </el-row>
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="Model" prop="serialNumber">
@@ -37,6 +38,7 @@
             </el-form-item>
           </el-col>
         </el-row>
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item
@@ -69,9 +71,12 @@
             </el-form-item>
           </el-col>
         </el-row>
+
         <el-form-item label="Description" prop="description">
           <el-input v-model="formData.description" type="textarea" :rows="3" />
         </el-form-item>
+
+        <!-- Location -->
         <el-form-item
           label="Location"
           prop="selectedLocationId"
@@ -105,10 +110,11 @@
               ref="treeRef"
               @node-click="handleNodeClick"
               class="location-tree"
-            >
-            </el-tree>
+            />
           </div>
         </el-form-item>
+
+        <!-- Production Line (T1) - prefilled & locked when lockProductionLine is true -->
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item
@@ -119,8 +125,9 @@
               <el-select
                 v-model="formData.equipmentId"
                 placeholder="Select production line"
-                filterable
-                clearable
+                :filterable="!lockProductionLine"
+                :clearable="!lockProductionLine"
+                :disabled="lockProductionLine"
                 style="width: 100%"
                 :loading="productionLineLoading"
               >
@@ -128,6 +135,7 @@
               </el-select>
             </el-form-item>
           </el-col>
+
           <el-col :span="12">
             <el-form-item
               label="Sequence Order"
@@ -142,7 +150,9 @@
           </el-col>
         </el-row>
       </el-form>
+
       <el-divider />
+
       <div class="file-upload">
         <FileUploadMultiple
           @update:imageList="handleExplosionViewUpdate"
@@ -151,7 +161,9 @@
           :max-images="1"
         />
       </div>
+
       <el-divider />
+
       <div class="file-upload">
         <FileUploadMultiple
           @update:imageList="handleImageListUpdate"
@@ -161,6 +173,7 @@
           :max-files="5"
         />
       </div>
+
       <div class="dialog-footer">
         <el-button @click="handleCancel">Cancel</el-button>
         <el-button type="primary" @click="handleConfirm" :loading="submitLoading">Confirm</el-button>
@@ -178,31 +191,41 @@ import { getEquipmentNodes, createNewNode } from '@/api/equipment.js'
 import { uploadMultipleToMinio } from '@/api/minio.js'
 import FileUploadMultiple from '@/components/FileUpload/FileUploadMultiple.vue'
 
+/* ---------- refs & state ---------- */
 const formRef = ref( null )
 const labelPosition = ref( 'top' )
+
 const treeData = ref( [] )
 const loading = ref( false )
 const error = ref( null )
 const filterText = ref( '' )
 const treeRef = ref( null )
 const selectedNodeId = ref( null )
+
 const submitLoading = ref( false )
+
 const productionLines = ref( [] )
 const productionLineLoading = ref( false )
+
 const sequenceOrders = ref( [] )
+
 const uploadedImages = ref( [] )
 const uploadedFiles = ref( [] )
 const uploadedExplosionView = ref( [] )
 
+/* ---------- props ---------- */
+// parentId: T2 id
+// productionLineId: T1 id to prefill & lock
+// lockProductionLine: if true, the select is disabled
 const props = defineProps( {
-  parentId : {
-    type : [Number, String],
-    default : null
-  }
+  parentId : { type : [Number, String], default : null },
+  productionLineId : { type : [Number, String], default : null },
+  lockProductionLine : { type : Boolean, default : true }
 } )
 
 const emit = defineEmits( ['close', 'cancel', 'success'] )
 
+/* ---------- validators ---------- */
 const validatePowerInteger = ( rule, value, callback ) => {
   if ( value !== null && value !== undefined && value !== '' ) {
     if ( !Number.isInteger( value ) || value < 0 ) {
@@ -215,6 +238,7 @@ const validatePowerInteger = ( rule, value, callback ) => {
   }
 }
 
+/* ---------- form model ---------- */
 const formData = reactive( {
   name : '',
   code : '',
@@ -223,32 +247,102 @@ const formData = reactive( {
   plc : '',
   power : null,
   installationDate : null,
-  parentId : props.parentId,
+  parentId : props.parentId, // T2 id
   selectedLocationId : null,
-  equipmentId : null,
+  equipmentId : props.lockProductionLine ? props.productionLineId : null, // T1 id (Production Line)
   sequenceOrder : 1,
   imageList : [],
   explodedViewDrawing : [],
   filesList : []
 } )
 
+/* ---------- watches ---------- */
 watch(
   () => props.parentId,
-  ( newParentId, oldParentId ) => {
-    if ( newParentId !== oldParentId && newParentId !== null ) {
-      formData.parentId = newParentId
+  ( newVal, oldVal ) => {
+    if ( newVal !== oldVal ) {
+      formData.parentId = newVal
       resetFormData()
       fetchProductionLines()
     }
-  },
-  { immediate : false }
+  }
 )
 
-const treeProps = {
-  children : 'children',
-  label : 'name'
+watch(
+  () => props.productionLineId,
+  newVal => {
+    if ( props.lockProductionLine ) {
+      formData.equipmentId = newVal
+    }
+  }
+)
+
+/* ---------- location tree ---------- */
+const treeProps = { children : 'children', label : 'name' }
+
+watch( filterText, val => {
+  treeRef.value?.filter( val )
+} )
+
+const filterNode = ( value, data ) => {
+  if ( !value ) return true
+  return data.name.toLowerCase().includes( value.toLowerCase() )
 }
 
+const handleNodeClick = data => {
+  selectedNodeId.value = data.id
+  formData.selectedLocationId = data.id
+}
+
+const fetchLocationTree = async() => {
+  loading.value = true
+  error.value = null
+  try {
+    const response = await getLocationTree()
+    let dataArray
+    if ( response.data?.data ) dataArray = response.data.data
+    else if ( Array.isArray( response.data ) ) dataArray = response.data
+    else if ( response.data ) dataArray = [response.data]
+    else dataArray = []
+    treeData.value = dataArray
+  } catch ( err ) {
+    error.value = err.message || 'Failed to load location tree'
+    ElMessage.error( 'Failed to load location tree' )
+  } finally {
+    loading.value = false
+  }
+}
+
+/* ---------- production lines (T1) & sequence for T3 ---------- */
+const fetchProductionLines = async() => {
+  productionLineLoading.value = true
+  try {
+    // T1 = Production Lines
+    const res = await getEquipmentNodes( 1, 100, 'sequenceOrder', 'ASC', { node_type_ids : [3] } )
+    productionLines.value = res.data?.content || []
+
+    // compute next sequence among T3 (node_type_id 5) under current T2 parent
+    if ( props.parentId ) {
+      const resT3 = await getEquipmentNodes( 1, 100, 'sequenceOrder', 'ASC', {
+        node_type_ids : [5],
+        parent_ids : [props.parentId]
+      } )
+      const seq = ( resT3.data?.content || [] ).map( i => i.sequence_order ).filter( n => n != null && !isNaN( n ) )
+      const next = ( seq.length ? Math.max( ...seq ) : 0 ) + 1
+      formData.sequenceOrder = Math.min( next, seq.length + 1 )
+    }
+  } finally {
+    productionLineLoading.value = false
+  }
+}
+
+/* ---------- computed ---------- */
+const maxSequenceOrder = computed( () => {
+  const calculatedMax = sequenceOrders.value.length + 1
+  return Math.max( calculatedMax, formData.sequenceOrder || 1 )
+} )
+
+/* ---------- uploads ---------- */
 const handleImageListUpdate = images => {
   uploadedImages.value = images
   formData.imageList = images
@@ -266,44 +360,43 @@ const handleFilesListUpdate = files => {
 
 const uploadFilesToServer = async() => {
   try {
-    let uploadedImages = []
-    let uploadedExplosionView = []
-    let uploadedFiles = []
+    let upImages = []
+    let upExplosion = []
+    let upFiles = []
 
     if ( formData.imageList.length > 0 ) {
       const imageRes = await uploadMultipleToMinio( formData.imageList )
-      uploadedImages = imageRes.data.uploadedFiles || []
-      formData.imageList = uploadedImages.map( file => file.url )
+      upImages = imageRes.data.uploadedFiles || []
+      formData.imageList = upImages.map( file => file.url )
     }
 
     if ( formData.explodedViewDrawing.length > 0 ) {
       const explosionRes = await uploadMultipleToMinio( formData.explodedViewDrawing )
-      uploadedExplosionView = explosionRes.data.uploadedFiles || []
-      formData.explodedViewDrawing = uploadedExplosionView.map( file => file.url )
+      upExplosion = explosionRes.data.uploadedFiles || []
+      formData.explodedViewDrawing = upExplosion.map( file => file.url )
     }
 
     if ( formData.filesList.length > 0 ) {
       const fileRes = await uploadMultipleToMinio( formData.filesList )
-      uploadedFiles = fileRes.data.uploadedFiles || []
-      formData.filesList = uploadedFiles.map( file => file.url )
+      upFiles = fileRes.data.uploadedFiles || []
+      formData.filesList = upFiles.map( file => file.url )
     }
 
-    return { uploadedImages, uploadedFiles }
-  } catch ( err ) {
+    return { upImages, upFiles }
+  } catch {
     throw new Error( 'File upload failed' )
   }
 }
 
+/* ---------- submit ---------- */
 const handleConfirm = async() => {
   if ( !formRef.value ) return
-
   const isValid = await formRef.value.validate()
   if ( !isValid ) return
 
   submitLoading.value = true
-
   try {
-    if ( formData.imageList.length > 0 || formData.filesList.length > 0 ) {
+    if ( formData.imageList.length > 0 || formData.filesList.length > 0 || formData.explodedViewDrawing.length > 0 ) {
       await uploadFilesToServer()
     }
 
@@ -315,8 +408,8 @@ const handleConfirm = async() => {
       plc : formData.plc,
       power : formData.power,
       installation_date : formData.installationDate ? `${formData.installationDate}T00:00:00Z` : null,
-      node_type_id : 5,
-      parent_id : formData.parentId,
+      node_type_id : 5, // T3
+      parent_id : formData.parentId, // T2 parent
       location_id : formData.selectedLocationId,
       sequence_order : Number( formData.sequenceOrder ),
       image_list : formData.imageList,
@@ -337,10 +430,9 @@ const handleConfirm = async() => {
   }
 }
 
+/* ---------- resets ---------- */
 const resetFormData = () => {
-  if ( formRef.value ) {
-    formRef.value.resetFields()
-  }
+  if ( formRef.value ) formRef.value.resetFields()
 
   Object.assign( formData, {
     name : '',
@@ -352,7 +444,7 @@ const resetFormData = () => {
     installationDate : null,
     parentId : props.parentId,
     selectedLocationId : null,
-    equipmentId : null,
+    equipmentId : props.lockProductionLine ? props.productionLineId : null,
     sequenceOrder : 1,
     imageList : [],
     explodedViewDrawing : [],
@@ -376,97 +468,14 @@ const handleCancel = () => {
   emit( 'cancel' )
 }
 
-const fetchProductionLines = async() => {
-  if ( !props.parentId ) {
-    return
-  }
-
-  productionLineLoading.value = true
-  try {
-    const productionLinesResponse = await getEquipmentNodes( 1, 100, 'sequenceOrder', 'ASC', {
-      node_type_ids : [4]
-    } )
-
-    const productionLinesContent = productionLinesResponse.data?.content || []
-    productionLines.value = productionLinesContent
-
-    const equipmentGroupsResponse = await getEquipmentNodes( 1, 100, 'sequenceOrder', 'ASC', {
-      node_type_ids : [5],
-      parent_ids : [props.parentId]
-    } )
-
-    const equipmentGroupsContent = equipmentGroupsResponse.data?.content || []
-
-    const sequenceOrdersArray = equipmentGroupsContent
-      .map( item => item.sequence_order )
-      .filter( order => order !== null && order !== undefined && !isNaN( order ) )
-
-    sequenceOrders.value = sequenceOrdersArray
-
-    const maxSequenceOrder = sequenceOrdersArray.length > 0 ? Math.max( ...sequenceOrdersArray ) : 0
-    const nextSequenceOrder = maxSequenceOrder + 1
-    const maxAllowedSequence = sequenceOrdersArray.length + 1
-
-    const finalSequenceOrder = nextSequenceOrder > maxAllowedSequence ? maxAllowedSequence : nextSequenceOrder
-
-    formData.sequenceOrder = finalSequenceOrder
-  } catch ( err ) {
-    ElMessage.error( 'Failed to load production lines' )
-  } finally {
-    productionLineLoading.value = false
-  }
-}
-
-const maxSequenceOrder = computed( () => {
-  const calculatedMax = sequenceOrders.value.length + 1
-  return Math.max( calculatedMax, formData.sequenceOrder || 1 )
-} )
-
-const fetchLocationTree = async() => {
-  loading.value = true
-  error.value = null
-  try {
-    const response = await getLocationTree()
-
-    let dataArray
-    if ( response.data?.data ) {
-      dataArray = response.data.data
-    } else if ( Array.isArray( response.data ) ) {
-      dataArray = response.data
-    } else if ( response.data ) {
-      dataArray = [response.data]
-    } else {
-      dataArray = []
-    }
-
-    treeData.value = dataArray
-  } catch ( err ) {
-    error.value = err.message || 'Failed to load location tree'
-    ElMessage.error( 'Failed to load location tree' )
-  } finally {
-    loading.value = false
-  }
-}
-
-watch( filterText, val => {
-  treeRef.value?.filter( val )
-} )
-
-const filterNode = ( value, data ) => {
-  if ( !value ) return true
-  return data.name.toLowerCase().includes( value.toLowerCase() )
-}
-
-const handleNodeClick = ( data, node ) => {
-  selectedNodeId.value = data.id
-  formData.selectedLocationId = data.id
-}
-
+/* ---------- mount ---------- */
 onMounted( () => {
-  fetchLocationTree()
-  if ( props.parentId ) {
-    fetchProductionLines()
+  // ensure prefill when locked
+  if ( props.lockProductionLine ) {
+    formData.equipmentId = props.productionLineId
   }
+  fetchLocationTree()
+  fetchProductionLines()
 } )
 </script>
 

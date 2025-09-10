@@ -14,9 +14,7 @@
           </el-icon>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item @click="openAddDialog">Add New Tier 3</el-dropdown-item>
               <el-dropdown-item @click="openEditDialog">Edit Tier 3</el-dropdown-item>
-              <el-dropdown-item divided @click="openDeactivateDialog">Delete Tier 3</el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
@@ -99,7 +97,7 @@ const props = defineProps( {
   }
 } )
 
-const emit = defineEmits( ['refresh-tree', 'refresh-data'] )
+const emit = defineEmits( ['refresh-tree', 'refresh-data', 'after-delete'] )
 
 const parentId = computed( () => {
   const validBreadcrumbItems = props.breadcrumb.filter( ( item, index ) => {
@@ -122,10 +120,6 @@ const editDialogKey = ref( 0 )
 
 console.log( props.node.id )
 console.log( props.breadcrumb )
-
-const openAddDialog = () => {
-  showAddDialog.value = true
-}
 
 const closeAddDialog = () => {
   showAddDialog.value = false
@@ -174,11 +168,14 @@ const refreshViewData = () => {
 const handleDeleteSuccess = deletedEquipmentId => {
   closeDeactivateDialog()
   emit( 'refresh-tree' )
+  emit( 'after-delete', { parentId : parentId.value, deletedId : deletedEquipmentId } )
 }
 
 const handleRefreshTree = () => {
   emit( 'refresh-tree' )
 }
+
+defineExpose( { openDeactivateDialog } )
 </script>
 
 <style scoped>

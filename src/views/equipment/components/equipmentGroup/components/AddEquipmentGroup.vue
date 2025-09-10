@@ -41,9 +41,7 @@
               clearable
             />
             <div v-if="loading" class="tree-loading">
-              <el-icon class="is-loading">
-                <Loading />
-              </el-icon>
+              <el-icon class="is-loading"><Loading /></el-icon>
               Loading locations...
             </div>
             <div v-else-if="error" class="tree-error">
@@ -61,8 +59,7 @@
               ref="treeRef"
               @node-click="handleNodeClick"
               class="location-tree"
-            >
-            </el-tree>
+            />
           </div>
         </el-form-item>
         <el-row :gutter="20">
@@ -70,17 +67,27 @@
             <el-form-item
               label="Production Line"
               prop="equipmentId"
-              :rules="[{ required: true, message: 'Production Line name is required' }]"
+              :rules="[{ required: true, message: 'Production Line is required' }]"
             >
               <el-select
                 v-model="formData.equipmentId"
-                placeholder="Select production line"
-                filterable
-                clearable
+                :placeholder="lockProductionLine ? '' : 'Select production line'"
+                :filterable="!lockProductionLine"
+                :clearable="!lockProductionLine"
+                :disabled="lockProductionLine"
                 style="width: 100%"
                 :loading="productionLineLoading"
               >
-                <el-option v-for="line in productionLines" :key="line.id" :label="line.name" :value="line.id" />
+                <!-- Locked: show only the chosen line -->
+                <el-option
+                  v-if="lockProductionLine && productionLineId"
+                  :label="productionLineName || 'Selected line'"
+                  :value="productionLineId"
+                />
+                <!-- Unlocked: normal list -->
+                <template v-else>
+                  <el-option v-for="line in productionLines" :key="line.id" :label="line.name" :value="line.id" />
+                </template>
               </el-select>
             </el-form-item>
           </el-col>
@@ -153,10 +160,10 @@ const uploadedFiles = ref( [] )
 const uploadedExplosionView = ref( [] )
 
 const props = defineProps( {
-  parentId : {
-    type : [Number, String],
-    default : null
-  }
+  parentId : { type : [Number, String], default : null }, // clicked node id (parent for the new T2)
+  productionLineId : { type : [Number, String], default : null }, // T1 id (prefilled)
+  productionLineName : { type : String, default : '' }, // T1 label (display)
+  lockProductionLine : { type : Boolean, default : false } // lock select when true
 } )
 
 const emit = defineEmits( ['close', 'cancel', 'success'] )
@@ -167,40 +174,56 @@ const formData = reactive( {
   description : '',
   parentId : props.parentId,
   selectedLocationId : null,
-  equipmentId : null,
+  equipmentId : props.lockProductionLine ? props.productionLineId : null, // prefill if locked
   sequenceOrder : 1,
   imageList : [],
   explodedViewDrawing : [],
   filesList : []
 } )
 
+/* Keep parentId & productionLine in sync when props change */
 watch(
   () => props.parentId,
   ( newParentId, oldParentId ) => {
     if ( newParentId !== oldParentId && newParentId !== null ) {
       formData.parentId = newParentId
-      resetFormData()
-      fetchProductionLines()
+      // do NOT clear prefilled production line if locked
+      resetFormData( { keepLockedT1 : true } )
+      fetchProductionMeta() // sequence + (maybe) lines
     }
-  },
-  { immediate : false }
+  }
 )
 
-const treeProps = {
-  children : 'children',
-  label : 'name'
+watch(
+  () => props.productionLineId,
+  v => {
+    if ( props.lockProductionLine ) {
+      formData.equipmentId = v ?? null
+    }
+  },
+  { immediate : true }
+)
+
+/* ====== Location tree ====== */
+const treeProps = { children : 'children', label : 'name' }
+
+watch( filterText, val => treeRef.value?.filter( val ) )
+const filterNode = ( value, data ) => !value || data.name.toLowerCase().includes( value.toLowerCase() )
+
+const handleNodeClick = data => {
+  selectedNodeId.value = data.id
+  formData.selectedLocationId = data.id
 }
 
+/* ====== File uploads ====== */
 const handleImageListUpdate = images => {
   uploadedImages.value = images
   formData.imageList = images
 }
-
 const handleExplosionViewUpdate = images => {
   uploadedExplosionView.value = images
   formData.explodedViewDrawing = images
 }
-
 const handleFilesListUpdate = files => {
   uploadedFiles.value = files
   formData.filesList = files
@@ -253,8 +276,8 @@ const handleConfirm = async() => {
       name : formData.name,
       code : formData.code,
       description : formData.description,
-      node_type_id : 4,
-      parent_id : formData.parentId,
+      node_type_id : 4, // Tier 2 type id
+      parent_id : formData.parentId, // parent from props
       location_id : formData.selectedLocationId,
       sequence_order : Number( formData.sequenceOrder ),
       image_list : formData.imageList,
@@ -275,10 +298,8 @@ const handleConfirm = async() => {
   }
 }
 
-const resetFormData = () => {
-  if ( formRef.value ) {
-    formRef.value.resetFields()
-  }
+function resetFormData( { keepLockedT1 = false } = {} ) {
+  if ( formRef.value ) formRef.value.resetFields()
 
   Object.assign( formData, {
     name : '',
@@ -286,7 +307,12 @@ const resetFormData = () => {
     description : '',
     parentId : props.parentId,
     selectedLocationId : null,
-    equipmentId : null,
+    equipmentId :
+      keepLockedT1 && props.lockProductionLine
+        ? props.productionLineId
+        : props.lockProductionLine
+          ? props.productionLineId
+          : null,
     sequenceOrder : 1,
     imageList : [],
     explodedViewDrawing : [],
@@ -299,53 +325,47 @@ const resetFormData = () => {
   uploadedFiles.value = []
 }
 
-const resetForm = () => {
-  resetFormData()
-  fetchProductionLines()
+function resetForm() {
+  resetFormData( { keepLockedT1 : true } )
+  fetchProductionMeta()
 }
 
-const handleCancel = () => {
+function handleCancel() {
   resetForm()
   emit( 'close' )
   emit( 'cancel' )
 }
 
-const fetchProductionLines = async() => {
-  if ( !props.parentId ) {
-    return
-  }
+async function fetchProductionMeta() {
+  if ( !props.parentId ) return
 
   productionLineLoading.value = true
   try {
-    const productionLinesResponse = await getEquipmentNodes( 1, 100, 'sequenceOrder', 'ASC', {
-      node_type_ids : [3]
-    } )
+    // When unlocked, fetch the selectable production lines (T1)
+    if ( !props.lockProductionLine ) {
+      const productionLinesResponse = await getEquipmentNodes( 1, 100, 'sequenceOrder', 'ASC', { node_type_ids : [3] } )
+      productionLines.value = productionLinesResponse.data?.content || []
+    } else {
+      productionLines.value = []
+    }
 
-    const productionLinesContent = productionLinesResponse.data?.content || []
-    productionLines.value = productionLinesContent
-
+    // Always fetch existing T2 under the chosen parent to compute next sequence
     const equipmentGroupsResponse = await getEquipmentNodes( 1, 100, 'sequenceOrder', 'ASC', {
       node_type_ids : [4],
       parent_ids : [props.parentId]
     } )
-
     const equipmentGroupsContent = equipmentGroupsResponse.data?.content || []
-
     const sequenceOrdersArray = equipmentGroupsContent
       .map( item => item.sequence_order )
       .filter( order => order !== null && order !== undefined && !isNaN( order ) )
 
     sequenceOrders.value = sequenceOrdersArray
-
     const maxSequenceOrder = sequenceOrdersArray.length > 0 ? Math.max( ...sequenceOrdersArray ) : 0
     const nextSequenceOrder = maxSequenceOrder + 1
     const maxAllowedSequence = sequenceOrdersArray.length + 1
-
-    const finalSequenceOrder = nextSequenceOrder > maxAllowedSequence ? maxAllowedSequence : nextSequenceOrder
-
-    formData.sequenceOrder = finalSequenceOrder
+    formData.sequenceOrder = Math.min( nextSequenceOrder, maxAllowedSequence )
   } catch ( err ) {
-    ElMessage.error( 'Failed to load production lines' )
+    ElMessage.error( 'Failed to load production line metadata' )
   } finally {
     productionLineLoading.value = false
   }
@@ -356,23 +376,17 @@ const maxSequenceOrder = computed( () => {
   return Math.max( calculatedMax, formData.sequenceOrder || 1 )
 } )
 
+/* ====== Location tree fetch ====== */
 const fetchLocationTree = async() => {
   loading.value = true
   error.value = null
   try {
     const response = await getLocationTree()
-
     let dataArray
-    if ( response.data?.data ) {
-      dataArray = response.data.data
-    } else if ( Array.isArray( response.data ) ) {
-      dataArray = response.data
-    } else if ( response.data ) {
-      dataArray = [response.data]
-    } else {
-      dataArray = []
-    }
-
+    if ( response.data?.data ) dataArray = response.data.data
+    else if ( Array.isArray( response.data ) ) dataArray = response.data
+    else if ( response.data ) dataArray = [response.data]
+    else dataArray = []
     treeData.value = dataArray
   } catch ( err ) {
     error.value = err.message || 'Failed to load location tree'
@@ -382,25 +396,9 @@ const fetchLocationTree = async() => {
   }
 }
 
-watch( filterText, val => {
-  treeRef.value?.filter( val )
-} )
-
-const filterNode = ( value, data ) => {
-  if ( !value ) return true
-  return data.name.toLowerCase().includes( value.toLowerCase() )
-}
-
-const handleNodeClick = ( data, node ) => {
-  selectedNodeId.value = data.id
-  formData.selectedLocationId = data.id
-}
-
 onMounted( () => {
   fetchLocationTree()
-  if ( props.parentId ) {
-    fetchProductionLines()
-  }
+  if ( props.parentId ) fetchProductionMeta()
 } )
 </script>
 
@@ -410,7 +408,6 @@ onMounted( () => {
   display: flex;
   flex-direction: column;
 }
-
 .general-information {
   margin-top: 16px;
 }
@@ -424,7 +421,6 @@ onMounted( () => {
   overflow-y: auto;
   background: #fafafa;
 }
-
 .tree-loading {
   display: flex;
   align-items: center;
@@ -433,11 +429,9 @@ onMounted( () => {
   justify-content: center;
   color: var(--el-text-color-secondary);
 }
-
 .tree-error {
   padding: 8px;
 }
-
 .location-tree {
   width: 100%;
   background: #fafafa;
@@ -448,7 +442,6 @@ onMounted( () => {
   display: flex;
   flex-direction: column;
 }
-
 .dialog-footer {
   flex: 1;
   display: flex;
@@ -459,12 +452,10 @@ onMounted( () => {
 :deep(.el-tree-node__content:hover) {
   background-color: #d9ecff;
 }
-
 :deep(.el-tree-node__content.is-current) {
   background-color: #d9ecff !important;
   font-weight: 500;
 }
-
 :deep(.el-tree-node.is-current > .el-tree-node__content) {
   background-color: #d9ecff !important;
 }
