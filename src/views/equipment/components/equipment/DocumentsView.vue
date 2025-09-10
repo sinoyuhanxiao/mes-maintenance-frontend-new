@@ -38,80 +38,80 @@
 import { ref, computed, onMounted } from 'vue'
 import { Download, Link } from '@element-plus/icons-vue'
 
-const props = defineProps( {
-  pdfUrl : {
-    type : String,
-    default : 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf'
+const props = defineProps({
+  pdfUrl: {
+    type: String,
+    default: 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf',
   },
-  documentTitle : {
-    type : String,
-    default : 'Equipment Manual'
-  }
-} )
+  documentTitle: {
+    type: String,
+    default: 'Equipment Manual',
+  },
+})
 
-const iframeError = ref( false )
-const directPdfUrl = computed( () => {
-  if ( !props.pdfUrl ) return ''
+const iframeError = ref(false)
+const directPdfUrl = computed(() => {
+  if (!props.pdfUrl) return ''
   return `${props.pdfUrl}#toolbar=1&navpanes=0&scrollbar=1&view=FitH`
-} )
+})
 
 async function downloadPdf() {
-  if ( props.pdfUrl ) {
+  if (props.pdfUrl) {
     try {
-      const response = await fetch( props.pdfUrl, {
-        mode : 'cors',
-        headers : {
-          Accept : 'application/pdf'
-        }
-      } )
+      const response = await fetch(props.pdfUrl, {
+        mode: 'cors',
+        headers: {
+          Accept: 'application/pdf',
+        },
+      })
 
-      if ( !response.ok ) {
-        throw new Error( 'Failed to download PDF' )
+      if (!response.ok) {
+        throw new Error('Failed to download PDF')
       }
 
       const blob = await response.blob()
-      downloadBlob( blob )
-    } catch ( err ) {
-      console.error( 'Download failed:', err )
-      window.open( props.pdfUrl, '_blank' )
+      downloadBlob(blob)
+    } catch (err) {
+      console.error('Download failed:', err)
+      window.open(props.pdfUrl, '_blank')
     }
   }
 }
 
-function downloadBlob( blob ) {
-  const url = URL.createObjectURL( blob )
-  const link = document.createElement( 'a' )
+function downloadBlob(blob) {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
   link.href = url
   link.download = props.documentTitle + '.pdf'
-  document.body.appendChild( link )
+  document.body.appendChild(link)
   link.click()
-  document.body.removeChild( link )
-  URL.revokeObjectURL( url )
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }
 
 function openInNewTab() {
-  if ( props.pdfUrl ) {
-    window.open( props.pdfUrl, '_blank' )
+  if (props.pdfUrl) {
+    window.open(props.pdfUrl, '_blank')
   }
 }
 
 function selectPdf() {
-  console.log( 'Select PDF clicked' )
+  console.log('Select PDF clicked')
 }
 
 function onIframeLoad() {
-  console.log( 'PDF loaded successfully in browser native viewer' )
+  console.log('PDF loaded successfully in browser native viewer')
   iframeError.value = false
 }
 
 function onIframeError() {
-  console.error( 'PDF failed to load in browser native viewer' )
+  console.error('PDF failed to load in browser native viewer')
   iframeError.value = true
 }
 
-onMounted( () => {
-  console.log( 'PDF viewer component mounted - using browser native viewer' )
-} )
+onMounted(() => {
+  console.log('PDF viewer component mounted - using browser native viewer')
+})
 </script>
 
 <style scoped>

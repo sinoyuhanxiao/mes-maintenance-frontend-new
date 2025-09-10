@@ -29,17 +29,17 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-const message = computed( () => {
+const message = computed(() => {
   return '您访问的页面丢失了...'
-} )
+})
 
 const back = () => {
-  router.push( '/' )
+  router.push('/')
 }
 
-defineOptions( {
-  name : '404'
-} )
+defineOptions({
+  name: '404',
+})
 </script>
 
 <style lang="scss" scoped>

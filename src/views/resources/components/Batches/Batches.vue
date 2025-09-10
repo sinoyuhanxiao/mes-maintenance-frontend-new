@@ -12,8 +12,7 @@
             <div class="button-container">
               <div><el-button :icon="EditPen" type="success" @click="updateBatch(b)">Edit</el-button></div>
               <div>
-                <el-button @click="transferBatch(b)"
-type="primary"
+                <el-button @click="transferBatch(b)" type="primary"
                   >Transfer <el-icon><DArrowRight /></el-icon
                 ></el-button>
               </div>
@@ -44,13 +43,13 @@ import { ElMessage } from 'element-plus'
 import { searchInventory } from '../../../../api/resources'
 import EditBatch from './EditBatch.vue'
 
-const props = defineProps( {
-  sparePart : Object
-} )
+const props = defineProps({
+  sparePart: Object,
+})
 
-const dialogVisible = ref( false )
-const newBatchVisible = ref( false )
-const editVisible = ref( false )
+const dialogVisible = ref(false)
+const newBatchVisible = ref(false)
+const editVisible = ref(false)
 
 // const batches = ref( [
 //   {
@@ -120,15 +119,15 @@ const editVisible = ref( false )
 //   }
 // ] )
 
-const batches = ref( [] )
+const batches = ref([])
 
-const search = ref( {
-  material_type_id : 3,
-  material_id : null
-} )
+const search = ref({
+  material_type_id: 3,
+  material_id: null,
+})
 
 async function getInventory() {
-  const response = await searchInventory( 1, 20, 'id', 'ASC', search.value )
+  const response = await searchInventory(1, 20, 'id', 'ASC', search.value)
 
   batches.value = response.data.content
 }
@@ -141,70 +140,70 @@ watch(
     search.value.material_id = newVal.id
     getInventory()
   },
-  { deep : true }
+  { deep: true }
 )
 
 const batchSubmitted = () => {
-  ElMessage( {
-    message : 'Batch Created',
-    type : 'success'
-  } )
+  ElMessage({
+    message: 'Batch Created',
+    type: 'success',
+  })
 }
 
 const batchTransfered = () => {
-  ElMessage( {
-    message : 'Inventory Transferred',
-    type : 'success'
-  } )
+  ElMessage({
+    message: 'Inventory Transferred',
+    type: 'success',
+  })
 }
 
 const batchUpdated = () => {
-  ElMessage( {
-    message : 'Inventory Updated',
-    type : 'success'
-  } )
+  ElMessage({
+    message: 'Inventory Updated',
+    type: 'success',
+  })
 }
 
-const selectedBatch = ref( null )
+const selectedBatch = ref(null)
 
 watch(
   () => batches.value,
   newVal => {
     selectedBatch.value = batches.value[0]
   },
-  { deep : true }
+  { deep: true }
 )
 
-function updateBatch( batch ) {
+function updateBatch(batch) {
   selectedBatch.value = batch
-  console.log( selectedBatch.value )
+  console.log(selectedBatch.value)
   editVisible.value = true
 }
 
-function transferBatch( batch ) {
+function transferBatch(batch) {
   selectedBatch.value = batch
-  console.log( selectedBatch.value )
+  console.log(selectedBatch.value)
   dialogVisible.value = true
 }
 
-function newBatch( batch ) {
+function newBatch(batch) {
   selectedBatch.value = batch
   newBatchVisible.value = true
 }
 
-function handleNewBatch( response ) {
+function handleNewBatch(response) {
   newBatchVisible.value = false
   batchSubmitted()
   getInventory()
 }
 
-function handleTransfer( response ) {
+function handleTransfer(response) {
   dialogVisible.value = false
   batchTransfered()
   getInventory()
 }
 
-function hanldeUpdateBatch( response ) {
+function hanldeUpdateBatch(response) {
   editVisible.value = false
   batchUpdated()
   getInventory()

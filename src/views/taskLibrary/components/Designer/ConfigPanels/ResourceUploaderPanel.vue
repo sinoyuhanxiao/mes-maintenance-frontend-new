@@ -117,32 +117,32 @@ import { UploadFilled, Close, Document, Picture, Files } from '@element-plus/ico
 import { ElMessage } from 'element-plus'
 import { uploadResource } from '@/api/task-library'
 
-const props = defineProps( {
-  visible : {
-    type : Boolean,
-    default : false
+const props = defineProps({
+  visible: {
+    type: Boolean,
+    default: false,
   },
-  stepId : {
-    type : String,
-    required : true
+  stepId: {
+    type: String,
+    required: true,
   },
-  existingResources : {
-    type : Array,
-    default : () => []
+  existingResources: {
+    type: Array,
+    default: () => [],
   },
-  uploading : {
-    type : Boolean,
-    default : false
-  }
-} )
+  uploading: {
+    type: Boolean,
+    default: false,
+  },
+})
 
-const emit = defineEmits( ['save', 'close'] )
+const emit = defineEmits(['save', 'close'])
 
-const uploadRef = ref( null )
-const fileList = ref( [] )
+const uploadRef = ref(null)
+const fileList = ref([])
 // TODO: fix the bug for resources
 // eslint-disable-next-line vue/no-dupe-keys
-const existingResources = ref( [] )
+const existingResources = ref([])
 
 // Watch for existing resources
 watch(
@@ -150,19 +150,19 @@ watch(
   resources => {
     existingResources.value = [...resources]
   },
-  { immediate : true }
+  { immediate: true }
 )
 
-const handleFileChange = ( file, fileListParam ) => {
+const handleFileChange = (file, fileListParam) => {
   // Add file to our local list
-  fileList.value.push( {
-    name : file.name,
-    size : file.size,
-    file : file.raw,
-    uploading : false,
-    progress : 0,
-    error : null
-  } )
+  fileList.value.push({
+    name: file.name,
+    size: file.size,
+    file: file.raw,
+    uploading: false,
+    progress: 0,
+    error: null,
+  })
 }
 
 const beforeUpload = file => {
@@ -174,16 +174,16 @@ const beforeUpload = file => {
     'image/jpeg',
     'image/jpg',
     'image/png',
-    'image/gif'
+    'image/gif',
   ]
 
-  if ( !allowedTypes.includes( file.type ) ) {
-    ElMessage.error( 'Unsupported file type. Please upload PDF, DOC, DOCX, or image files.' )
+  if (!allowedTypes.includes(file.type)) {
+    ElMessage.error('Unsupported file type. Please upload PDF, DOC, DOCX, or image files.')
     return false
   }
 
-  if ( file.size > maxSize ) {
-    ElMessage.error( 'File size cannot exceed 25MB.' )
+  if (file.size > maxSize) {
+    ElMessage.error('File size cannot exceed 25MB.')
     return false
   }
 
@@ -191,58 +191,58 @@ const beforeUpload = file => {
 }
 
 const removeFile = index => {
-  fileList.value.splice( index, 1 )
+  fileList.value.splice(index, 1)
 }
 
 const removeExistingResource = resourceId => {
-  existingResources.value = existingResources.value.filter( r => r.id !== resourceId )
+  existingResources.value = existingResources.value.filter(r => r.id !== resourceId)
 }
 
-const handleSave = async() => {
+const handleSave = async () => {
   try {
     const uploadedResources = []
 
     // Upload new files
-    for ( let i = 0; i < fileList.value.length; i++ ) {
+    for (let i = 0; i < fileList.value.length; i++) {
       const fileItem = fileList.value[i]
       fileItem.uploading = true
       fileItem.progress = 0
 
       try {
         // Simulate upload progress
-        const progressInterval = setInterval( () => {
-          if ( fileItem.progress < 90 ) {
+        const progressInterval = setInterval(() => {
+          if (fileItem.progress < 90) {
             fileItem.progress += 10
           }
-        }, 100 )
+        }, 100)
 
-        const response = await uploadResource( fileItem.file, props.stepId )
+        const response = await uploadResource(fileItem.file, props.stepId)
 
-        clearInterval( progressInterval )
+        clearInterval(progressInterval)
         fileItem.progress = 100
 
-        uploadedResources.push( response.data )
-      } catch ( error ) {
+        uploadedResources.push(response.data)
+      } catch (error) {
         fileItem.error = 'Upload failed'
         fileItem.uploading = false
-        console.error( 'Upload failed:', error )
+        console.error('Upload failed:', error)
       }
     }
 
     // Combine existing and newly uploaded resources
     const allResources = [...existingResources.value, ...uploadedResources]
 
-    emit( 'save', props.stepId, allResources )
-  } catch ( error ) {
-    ElMessage.error( 'Failed to upload resources' )
-    console.error( 'Upload failed:', error )
+    emit('save', props.stepId, allResources)
+  } catch (error) {
+    ElMessage.error('Failed to upload resources')
+    console.error('Upload failed:', error)
   }
 }
 
 const getFileIcon = fileName => {
-  const extension = fileName.split( '.' ).pop()?.toLowerCase()
+  const extension = fileName.split('.').pop()?.toLowerCase()
 
-  switch ( extension ) {
+  switch (extension) {
     case 'pdf':
     case 'doc':
     case 'docx':
@@ -258,20 +258,20 @@ const getFileIcon = fileName => {
 }
 
 const formatFileSize = bytes => {
-  if ( bytes === 0 ) return '0 Bytes'
+  if (bytes === 0) return '0 Bytes'
 
   const k = 1024
   const sizes = ['Bytes', 'KB', 'MB', 'GB']
-  const i = Math.floor( Math.log( bytes ) / Math.log( k ) )
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
 
-  return parseFloat( ( bytes / Math.pow( k, i ) ).toFixed( 2 ) ) + ' ' + sizes[i]
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
 }
 
 // Clear file list when dialog closes
 watch(
   () => props.visible,
   isVisible => {
-    if ( !isVisible ) {
+    if (!isVisible) {
       fileList.value = []
     }
   }

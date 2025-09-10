@@ -27,27 +27,27 @@ import Logo from './components/logo.vue'
 import WeChatLogin from './components/weChatLogin'
 import LoginPwd from './loginPwd.vue'
 
-const isShowWX = ref( true )
+const isShowWX = ref(true)
 
-const resizeCb = debounce( () => {
+const resizeCb = debounce(() => {
   isShowWX.value = !isMobile()
-}, 50 )
+}, 50)
 
-onBeforeMount( () => {
+onBeforeMount(() => {
   isShowWX.value = !isMobile()
-} )
+})
 
-onMounted( () => {
-  window.addEventListener( 'resize', resizeCb )
-} )
+onMounted(() => {
+  window.addEventListener('resize', resizeCb)
+})
 
-onUnmounted( () => {
-  window.removeEventListener( 'resize', resizeCb )
-} )
+onUnmounted(() => {
+  window.removeEventListener('resize', resizeCb)
+})
 
-defineOptions( {
-  name : 'Login'
-} )
+defineOptions({
+  name: 'Login',
+})
 </script>
 
 <style lang="scss" scoped>

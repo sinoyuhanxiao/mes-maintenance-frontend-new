@@ -96,59 +96,59 @@ import { useSettingsStore } from '@/store'
 import { emitter } from '@/utils/mitt'
 
 const settingStore = useSettingsStore()
-const showSettings = ref( false )
+const showSettings = ref(false)
 
-const set = reactive( {
-  fixedHeader : computed( {
+const set = reactive({
+  fixedHeader: computed({
     get() {
       return settingStore.fixedHeader
     },
-    set( val ) {
-      settingStore.CHANGE_SETTING( {
-        key : 'fixedHeader',
-        value : val
-      } )
-    }
-  } ),
-  tagsView : computed( {
+    set(val) {
+      settingStore.CHANGE_SETTING({
+        key: 'fixedHeader',
+        value: val,
+      })
+    },
+  }),
+  tagsView: computed({
     get() {
       return settingStore.tagsView
     },
-    set( val ) {
-      settingStore.CHANGE_SETTING( {
-        key : 'tagsView',
-        value : val
-      } )
-    }
-  } ),
-  sidebarLogo : computed( {
+    set(val) {
+      settingStore.CHANGE_SETTING({
+        key: 'tagsView',
+        value: val,
+      })
+    },
+  }),
+  sidebarLogo: computed({
     get() {
       return settingStore.sidebarLogo
     },
-    set( val ) {
-      settingStore.CHANGE_SETTING( {
-        key : 'sidebarLogo',
-        value : val
-      } )
-    }
-  } ),
-  layoutMod : computed( {
+    set(val) {
+      settingStore.CHANGE_SETTING({
+        key: 'sidebarLogo',
+        value: val,
+      })
+    },
+  }),
+  layoutMod: computed({
     get() {
       return settingStore.layoutMod
     },
-    set( val ) {
-      settingStore.CHANGE_LAYOUT_MOD( val )
-    }
-  } )
-} )
+    set(val) {
+      settingStore.CHANGE_LAYOUT_MOD(val)
+    },
+  }),
+})
 
-emitter.on( 'openSettings', () => {
+emitter.on('openSettings', () => {
   showSettings.value = true
-} )
+})
 
-defineOptions( {
-  name : 'Settings'
-} )
+defineOptions({
+  name: 'Settings',
+})
 </script>
 
 <style lang="scss" scoped>

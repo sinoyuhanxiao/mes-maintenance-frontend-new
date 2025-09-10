@@ -64,114 +64,114 @@
 <script setup>
 import { ref, reactive, watch, computed } from 'vue'
 
-const props = defineProps( {
-  visible : {
-    type : Boolean,
-    default : false
+const props = defineProps({
+  visible: {
+    type: Boolean,
+    default: false,
   },
-  stepId : {
-    type : String,
-    required : true
+  stepId: {
+    type: String,
+    required: true,
   },
-  initialData : {
-    type : Object,
-    default : () => ( {} )
+  initialData: {
+    type: Object,
+    default: () => ({}),
   },
-  loading : {
-    type : Boolean,
-    default : false
-  }
-} )
+  loading: {
+    type: Boolean,
+    default: false,
+  },
+})
 
-const emit = defineEmits( ['save', 'close'] )
+const emit = defineEmits(['save', 'close'])
 
-const formRef = ref( null )
-const formData = reactive( {
-  lower : null,
-  upper : null,
-  inclusive : {
-    lower : true,
-    upper : true
-  }
-} )
+const formRef = ref(null)
+const formData = reactive({
+  lower: null,
+  upper: null,
+  inclusive: {
+    lower: true,
+    upper: true,
+  },
+})
 
 // Computed property to check if any limits are set
-const hasLimits = computed( () => {
+const hasLimits = computed(() => {
   return (
-    ( formData.lower !== null && formData.lower !== undefined ) ||
-    ( formData.upper !== null && formData.upper !== undefined )
+    (formData.lower !== null && formData.lower !== undefined) ||
+    (formData.upper !== null && formData.upper !== undefined)
   )
-} )
+})
 
 const rules = {
-  lower : [
+  lower: [
     {
-      validator : ( rule, value, callback ) => {
-        if ( value !== null && formData.upper !== null && value >= formData.upper ) {
-          callback( new Error( 'Lower limit must be less than upper limit' ) )
+      validator: (rule, value, callback) => {
+        if (value !== null && formData.upper !== null && value >= formData.upper) {
+          callback(new Error('Lower limit must be less than upper limit'))
         } else {
           callback()
         }
       },
-      trigger : 'change'
-    }
+      trigger: 'change',
+    },
   ],
-  upper : [
+  upper: [
     {
-      validator : ( rule, value, callback ) => {
-        if ( value !== null && formData.lower !== null && value <= formData.lower ) {
-          callback( new Error( 'Upper limit must be greater than lower limit' ) )
+      validator: (rule, value, callback) => {
+        if (value !== null && formData.lower !== null && value <= formData.lower) {
+          callback(new Error('Upper limit must be greater than lower limit'))
         } else {
           callback()
         }
       },
-      trigger : 'change'
-    }
-  ]
+      trigger: 'change',
+    },
+  ],
 }
 
 // Watch for initial data changes
 watch(
   () => props.initialData,
   newData => {
-    if ( newData ) {
-      Object.assign( formData, {
-        lower : newData.lower !== undefined ? newData.lower : null,
-        upper : newData.upper !== undefined ? newData.upper : null,
-        inclusive : {
-          lower : newData.inclusive?.lower !== false,
-          upper : newData.inclusive?.upper !== false
-        }
-      } )
+    if (newData) {
+      Object.assign(formData, {
+        lower: newData.lower !== undefined ? newData.lower : null,
+        upper: newData.upper !== undefined ? newData.upper : null,
+        inclusive: {
+          lower: newData.inclusive?.lower !== false,
+          upper: newData.inclusive?.upper !== false,
+        },
+      })
     } else {
       // Reset to initial state when no data is provided
-      Object.assign( formData, {
-        lower : null,
-        upper : null,
-        inclusive : {
-          lower : true,
-          upper : true
-        }
-      } )
+      Object.assign(formData, {
+        lower: null,
+        upper: null,
+        inclusive: {
+          lower: true,
+          upper: true,
+        },
+      })
     }
   },
-  { immediate : true }
+  { immediate: true }
 )
 
-const handleSave = async() => {
+const handleSave = async () => {
   try {
     await formRef.value.validate()
 
     const limitsData = {
       ...formData,
-      lower : formData.lower,
-      upper : formData.upper,
-      show_limits_hint : true
+      lower: formData.lower,
+      upper: formData.upper,
+      show_limits_hint: true,
     }
 
-    emit( 'save', props.stepId, limitsData )
-  } catch ( error ) {
-    console.error( 'Number limits validation failed:', error )
+    emit('save', props.stepId, limitsData)
+  } catch (error) {
+    console.error('Number limits validation failed:', error)
   }
 }
 
@@ -181,18 +181,18 @@ const getPreviewText = () => {
   const lowerIncl = formData.inclusive.lower
   const upperIncl = formData.inclusive.upper
 
-  if ( lower === null && upper === null ) {
+  if (lower === null && upper === null) {
     return 'No limits set'
   }
 
   let text = ''
 
-  if ( lower !== null ) {
+  if (lower !== null) {
     text += `${lowerIncl ? '≥' : '>'} ${lower}`
   }
 
-  if ( upper !== null ) {
-    if ( text ) text += ' and '
+  if (upper !== null) {
+    if (text) text += ' and '
     text += `${upperIncl ? '≤' : '<'} ${upper}`
   }
 

@@ -3,7 +3,7 @@
 </template>
 
 <script setup>
-defineOptions( {
-  name : '500'
-} )
+defineOptions({
+  name: '500',
+})
 </script>

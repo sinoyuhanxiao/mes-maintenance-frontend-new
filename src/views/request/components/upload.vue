@@ -64,132 +64,132 @@
 import { ref, watch } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 
-const fileList = ref( [] )
-const dialogVisible = ref( false )
-const dialogImageUrl = ref( '' )
-const uploading = ref( false )
-const fileFileList = ref( [] )
+const fileList = ref([])
+const dialogVisible = ref(false)
+const dialogImageUrl = ref('')
+const uploading = ref(false)
+const fileFileList = ref([])
 
-defineProps( {
-  imageList : {
-    type : Array,
-    default : () => []
+defineProps({
+  imageList: {
+    type: Array,
+    default: () => [],
   },
-  filesList : {
-    type : Array,
-    default : () => []
-  }
-} )
+  filesList: {
+    type: Array,
+    default: () => [],
+  },
+})
 
-const emit = defineEmits( ['update:imageList', 'update:filesList'] )
+const emit = defineEmits(['update:imageList', 'update:filesList'])
 
-const handleFileChange = ( file, newFileList ) => {
-  console.log( 'handle file change' )
+const handleFileChange = (file, newFileList) => {
+  console.log('handle file change')
 
-  const readerPromises = newFileList.map( uploadedFile => {
-    return new Promise( resolve => {
-      if ( !uploadedFile.uid ) {
+  const readerPromises = newFileList.map(uploadedFile => {
+    return new Promise(resolve => {
+      if (!uploadedFile.uid) {
         uploadedFile.uid = Date.now().toString()
       }
 
-      if ( !uploadedFile.raw ) {
-        resolve( uploadedFile )
+      if (!uploadedFile.raw) {
+        resolve(uploadedFile)
         return
       }
 
       const reader = new FileReader()
       reader.onload = e => {
         uploadedFile.url = e.target.result
-        resolve( uploadedFile )
+        resolve(uploadedFile)
       }
-      reader.readAsDataURL( uploadedFile.raw )
-    } )
-  } )
+      reader.readAsDataURL(uploadedFile.raw)
+    })
+  })
 
-  Promise.all( readerPromises ).then( resolvedList => {
+  Promise.all(readerPromises).then(resolvedList => {
     fileFileList.value = resolvedList
-  } )
+  })
 }
 
 const handleFileRemove = file => {
-  console.log( file )
-  const index = fileFileList.value.findIndex( item => item.uid === file.uid )
-  if ( index !== -1 ) {
-    fileFileList.value.splice( index, 1 )
-    fileFileList.value = JSON.parse( JSON.stringify( fileFileList.value ) ) // Trigger reactivity
+  console.log(file)
+  const index = fileFileList.value.findIndex(item => item.uid === file.uid)
+  if (index !== -1) {
+    fileFileList.value.splice(index, 1)
+    fileFileList.value = JSON.parse(JSON.stringify(fileFileList.value)) // Trigger reactivity
   } else {
-    console.error( 'File not found in fileFileList.' )
+    console.error('File not found in fileFileList.')
   }
 }
 
 const handlePictureCardPreview = file => {
-  if ( file.url ) {
+  if (file.url) {
     dialogImageUrl.value = file.url
     dialogVisible.value = true
   } else {
-    console.error( 'Invalid image URL. Please check the file object:', file )
+    console.error('Invalid image URL. Please check the file object:', file)
   }
 }
 
 const handleRemove = file => {
-  console.log( file )
-  const index = fileList.value.findIndex( item => item.uid === file.uid )
-  console.log( 'fileList.value:' )
-  console.log( fileList.value )
-  console.log( index )
-  if ( index !== -1 ) {
-    fileList.value.splice( index, 1 )
+  console.log(file)
+  const index = fileList.value.findIndex(item => item.uid === file.uid)
+  console.log('fileList.value:')
+  console.log(fileList.value)
+  console.log(index)
+  if (index !== -1) {
+    fileList.value.splice(index, 1)
     // Trigger reactivity properly
-    fileList.value = JSON.parse( JSON.stringify( fileList.value ) )
+    fileList.value = JSON.parse(JSON.stringify(fileList.value))
   } else {
-    console.error( 'File not found in fileList.' )
+    console.error('File not found in fileList.')
   }
 }
 
-const handleChange = ( file, uploadFileList ) => {
-  console.log( 'handle change' )
-  console.log( uploadFileList )
+const handleChange = (file, uploadFileList) => {
+  console.log('handle change')
+  console.log(uploadFileList)
 
-  const readerPromises = uploadFileList.map( uploadedFile => {
-    return new Promise( resolve => {
-      if ( !uploadedFile.uid ) {
+  const readerPromises = uploadFileList.map(uploadedFile => {
+    return new Promise(resolve => {
+      if (!uploadedFile.uid) {
         uploadedFile.uid = Date.now().toString()
       }
 
-      if ( !uploadedFile.raw ) {
-        resolve( uploadedFile )
+      if (!uploadedFile.raw) {
+        resolve(uploadedFile)
         return
       }
 
       const reader = new FileReader()
       reader.onload = e => {
         uploadedFile.url = e.target.result
-        resolve( uploadedFile )
+        resolve(uploadedFile)
       }
-      reader.readAsDataURL( uploadedFile.raw )
-    } )
-  } )
+      reader.readAsDataURL(uploadedFile.raw)
+    })
+  })
 
-  Promise.all( readerPromises ).then( resolvedList => {
+  Promise.all(readerPromises).then(resolvedList => {
     fileList.value = resolvedList
-  } )
+  })
 }
 
 const handleDownload = file => {
-  if ( file.url ) {
-    const link = document.createElement( 'a' )
+  if (file.url) {
+    const link = document.createElement('a')
     link.href = file.url
     link.download = file.name || 'downloaded_file.png'
-    document.body.appendChild( link )
+    document.body.appendChild(link)
     link.click()
-    document.body.removeChild( link )
+    document.body.removeChild(link)
   } else {
-    console.error( 'File URL not available for download.' )
+    console.error('File URL not available for download.')
   }
 }
 
 const handleBeforeUpload = file => {
-  console.log( 'File selected for upload:', file )
+  console.log('File selected for upload:', file)
   uploading.value = true // Optionally, you can trigger a loading state here
   return true // Return true to proceed with the upload, false to cancel
 }
@@ -197,23 +197,23 @@ const handleBeforeUpload = file => {
 watch(
   fileList,
   newList => {
-    console.log( newList )
-    const fileArray = newList.map( file => file.raw ).filter( file => file instanceof File )
-    const urlArray = newList.map( file => file.url ).filter( url => url )
-    console.log( fileArray )
-    emit( 'update:imageList', urlArray )
+    console.log(newList)
+    const fileArray = newList.map(file => file.raw).filter(file => file instanceof File)
+    const urlArray = newList.map(file => file.url).filter(url => url)
+    console.log(fileArray)
+    emit('update:imageList', urlArray)
   },
-  { deep : true }
+  { deep: true }
 )
 
 watch(
   fileFileList,
   newList => {
-    const fileArray = newList.map( file => file.raw ).filter( file => file instanceof File )
+    const fileArray = newList.map(file => file.raw).filter(file => file instanceof File)
 
-    emit( 'update:filesList', fileArray )
+    emit('update:filesList', fileArray)
   },
-  { deep : true }
+  { deep: true }
 )
 </script>
 

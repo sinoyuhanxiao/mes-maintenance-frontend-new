@@ -38,14 +38,14 @@
 </template>
 
 <script setup>
-const props = defineProps( {
-  data : Object
-} )
+const props = defineProps({
+  data: Object,
+})
 
-const emit = defineEmits( ['selection'] )
+const emit = defineEmits(['selection'])
 
 function handleEmit() {
-  emit( 'selection', props.data )
+  emit('selection', props.data)
 }
 </script>
 

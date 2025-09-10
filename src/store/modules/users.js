@@ -4,36 +4,36 @@ import { TOKEN, AVATAR } from '@/config/constant'
 import { resetRouter } from '@/router'
 import useTagsViewStore from './tagsView'
 
-const useUserStore = defineStore( {
-  id : 'users',
-  state : () => {
+const useUserStore = defineStore({
+  id: 'users',
+  state: () => {
     return {
-      token : cookies.get( TOKEN ),
-      uid : '9527',
-      avatar : AVATAR,
-      name : '灰是小灰灰的灰',
-      phone : '15988888888',
-      email : '454539387@qq.com',
-      identity : '',
-      roles : []
+      token: cookies.get(TOKEN),
+      uid: '9527',
+      avatar: AVATAR,
+      name: '灰是小灰灰的灰',
+      phone: '15988888888',
+      email: '454539387@qq.com',
+      identity: '',
+      roles: [],
     }
   },
-  actions : {
-    SET_TOKEN( token = '' ) {
-      token ? cookies.set( TOKEN, token ) : cookies.remove( TOKEN )
+  actions: {
+    SET_TOKEN(token = '') {
+      token ? cookies.set(TOKEN, token) : cookies.remove(TOKEN)
       this.token = token
     },
     async GET_USER_INFO() {
       try {
         // Hardcoded user info instead of API call
         const hardcodedUserInfo = {
-          id : '9527',
-          name : 'Admin User',
-          avatar : AVATAR,
-          roles : ['admin'],
-          phone : '15988888888',
-          email : 'admin@example.com',
-          identity : 'administrator'
+          id: '9527',
+          name: 'Admin User',
+          avatar: AVATAR,
+          roles: ['admin'],
+          phone: '15988888888',
+          email: 'admin@example.com',
+          identity: 'administrator',
         }
 
         const { id, name, avatar, roles, phone, email, identity } = hardcodedUserInfo
@@ -47,10 +47,10 @@ const useUserStore = defineStore( {
 
         return {
           ...hardcodedUserInfo,
-          uid : this.uid,
-          roles : this.roles
+          uid: this.uid,
+          roles: this.roles,
         }
-      } catch ( error ) {
+      } catch (error) {
         // Fallback to default values
         this.uid = '9527'
         this.name = 'Admin User'
@@ -61,9 +61,9 @@ const useUserStore = defineStore( {
         this.roles = ['admin']
 
         return {
-          uid : this.uid,
-          name : this.name,
-          roles : this.roles
+          uid: this.uid,
+          name: this.name,
+          roles: this.roles,
         }
       }
     },
@@ -78,7 +78,7 @@ const useUserStore = defineStore( {
         this.identity = ''
         this.roles = []
         this.RESET_INFO()
-      } catch ( error ) {
+      } catch (error) {
         // Even if there's an error, clear the local state
         this.token = ''
         this.name = ''
@@ -92,14 +92,14 @@ const useUserStore = defineStore( {
     },
     // 清空所有登录信息
     RESET_INFO() {
-      return new Promise( resolve => {
+      return new Promise(resolve => {
         const tagsViewStore = useTagsViewStore()
         cookies.clearAll()
         resetRouter()
-        tagsViewStore.DEL_ALL_VIEWS( null )
+        tagsViewStore.DEL_ALL_VIEWS(null)
         resolve()
-      } )
-    }
-  }
-} )
+      })
+    },
+  },
+})
 export default useUserStore

@@ -51,78 +51,78 @@
 import { ref, computed } from 'vue'
 import { DocumentChecked, Warning } from '@element-plus/icons-vue'
 
-const props = defineProps( {
-  step : {
-    type : Object,
-    required : true
+const props = defineProps({
+  step: {
+    type: Object,
+    required: true,
   },
-  interactive : {
-    type : Boolean,
-    default : false
+  interactive: {
+    type: Boolean,
+    default: false,
   },
-  config : {
-    type : Object,
-    default : () => ( {
-      placeholderField : 'placeholder',
-      rows : 3
-    } )
-  }
-} )
+  config: {
+    type: Object,
+    default: () => ({
+      placeholderField: 'placeholder',
+      rows: 3,
+    }),
+  },
+})
 
-const textValue = ref( props.step.ui.default || '' )
+const textValue = ref(props.step.ui.default || '')
 
-const inputType = computed( () => {
+const inputType = computed(() => {
   return props.step.ui.multiline ? 'textarea' : 'text'
-} )
+})
 
-const rows = computed( () => {
-  if ( props.step.ui.multiline ) {
+const rows = computed(() => {
+  if (props.step.ui.multiline) {
     return props.step.ui.rows || props.config.rows || 3
   }
   return undefined
-} )
+})
 
-const placeholder = computed( () => {
+const placeholder = computed(() => {
   const placeholderField = props.config.placeholderField || 'placeholder'
   return props.step.ui[placeholderField] || 'Enter text...'
-} )
+})
 
-const maxLength = computed( () => {
+const maxLength = computed(() => {
   return props.step.ui.max_length || null
-} )
+})
 
-const hasValidationError = computed( () => {
-  if ( !props.step.ui.validation_pattern || !textValue.value ) {
+const hasValidationError = computed(() => {
+  if (!props.step.ui.validation_pattern || !textValue.value) {
     return false
   }
 
   try {
-    const regex = new RegExp( props.step.ui.validation_pattern )
-    return !regex.test( textValue.value )
+    const regex = new RegExp(props.step.ui.validation_pattern)
+    return !regex.test(textValue.value)
   } catch {
     return false
   }
-} )
+})
 
 const getPatternDescription = () => {
   const pattern = props.step.ui.validation_pattern
 
   // Common pattern descriptions
   const descriptions = {
-    '^[A-Za-z]+$' : 'Letters only',
-    '^[0-9]+$' : 'Numbers only',
-    '^[A-Za-z0-9]+$' : 'Letters and numbers only',
-    '^[A-Za-z\\s]+$' : 'Letters and spaces only',
-    '^\\d{4}-\\d{2}-\\d{2}$' : 'Date format (YYYY-MM-DD)',
-    '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$' : 'Email address',
-    '^\\+?[1-9]\\d{1,14}$' : 'Phone number'
+    '^[A-Za-z]+$': 'Letters only',
+    '^[0-9]+$': 'Numbers only',
+    '^[A-Za-z0-9]+$': 'Letters and numbers only',
+    '^[A-Za-z\\s]+$': 'Letters and spaces only',
+    '^\\d{4}-\\d{2}-\\d{2}$': 'Date format (YYYY-MM-DD)',
+    '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$': 'Email address',
+    '^\\+?[1-9]\\d{1,14}$': 'Phone number',
   }
 
   return descriptions[pattern] || pattern || 'Custom format'
 }
 
 const useExample = example => {
-  if ( props.interactive ) {
+  if (props.interactive) {
     textValue.value = example
   }
 }

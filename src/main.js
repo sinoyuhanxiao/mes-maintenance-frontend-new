@@ -33,21 +33,21 @@ import '@/utils/debug-api'
 import Vue3Lottie from 'vue3-lottie'
 import 'vue3-lottie/dist/style.css'
 
-const app = createApp( App )
+const app = createApp(App)
 
-const initApp = async() => {
-  app.use( Vue3Lottie )
-  app.use( router )
-  useSvgIcon( app )
-  registerStore( app )
-  registerDirective( app )
+const initApp = async () => {
+  app.use(Vue3Lottie)
+  app.use(router)
+  useSvgIcon(app)
+  registerStore(app)
+  registerDirective(app)
   await router.isReady()
 
-  setupI18n( app )
-  setupElementIcons( app )
+  setupI18n(app)
+  setupElementIcons(app)
 
-  app.use( globalEmitter )
-  app.use( ElementPlus )
-  app.mount( '#app' )
+  app.use(globalEmitter)
+  app.use(ElementPlus)
+  app.mount('#app')
 }
 initApp()

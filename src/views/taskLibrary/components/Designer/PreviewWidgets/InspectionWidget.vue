@@ -51,51 +51,51 @@
 import { ref, computed } from 'vue'
 import { Check, Close, Plus } from '@element-plus/icons-vue'
 
-const props = defineProps( {
-  step : {
-    type : Object,
-    required : true
+const props = defineProps({
+  step: {
+    type: Object,
+    required: true,
   },
-  interactive : {
-    type : Boolean,
-    default : false
+  interactive: {
+    type: Boolean,
+    default: false,
   },
-  config : {
-    type : Object,
-    default : () => ( {
-      options : ['pass', 'fail'],
-      buttonStyle : 'pill'
-    } )
-  }
-} )
+  config: {
+    type: Object,
+    default: () => ({
+      options: ['pass', 'fail'],
+      buttonStyle: 'pill',
+    }),
+  },
+})
 
-const selectedOption = ref( props.step.ui.default || null )
-const failureComment = ref( '' )
+const selectedOption = ref(props.step.ui.default || null)
+const failureComment = ref('')
 
-const displayOptions = computed( () => {
+const displayOptions = computed(() => {
   // Always use only pass and fail options
   return ['pass', 'fail']
-} )
+})
 
 const selectOption = option => {
-  if ( props.interactive ) {
+  if (props.interactive) {
     selectedOption.value = option
   }
 }
 
 const getOptionLabel = option => {
   const labels = {
-    pass : 'Pass',
-    fail : 'Fail'
+    pass: 'Pass',
+    fail: 'Fail',
   }
   return labels[option] || option
 }
 
 const getOptionType = option => {
-  if ( selectedOption.value === option ) {
+  if (selectedOption.value === option) {
     const types = {
-      pass : 'success',
-      fail : 'danger'
+      pass: 'success',
+      fail: 'danger',
     }
     return types[option] || 'primary'
   }

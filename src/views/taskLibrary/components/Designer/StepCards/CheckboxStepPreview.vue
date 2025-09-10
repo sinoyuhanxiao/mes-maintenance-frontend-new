@@ -13,33 +13,33 @@
 import { ref, watch } from 'vue'
 
 // eslint-disable-next-line no-unused-vars
-const props = defineProps( {
-  step : {
-    type : Object,
-    required : true
+const props = defineProps({
+  step: {
+    type: Object,
+    required: true,
   },
-  previewMode : {
-    type : Boolean,
-    default : true
+  previewMode: {
+    type: Boolean,
+    default: true,
   },
-  interactive : {
-    type : Boolean,
-    default : false
-  }
-} )
+  interactive: {
+    type: Boolean,
+    default: false,
+  },
+})
 
 // Reactive state for user input
-const currentValue = ref( props.step.config?.default || false )
+const currentValue = ref(props.step.config?.default || false)
 
 // Watch for prop changes to sync initial values
 watch(
   () => props.step.config?.default,
   newValue => {
-    if ( !props.interactive ) {
+    if (!props.interactive) {
       currentValue.value = newValue || false
     }
   },
-  { immediate : true }
+  { immediate: true }
 )
 </script>
 

@@ -5,8 +5,8 @@
 <script setup>
 import TemplateDesignerView from './TemplateDesignerView.vue'
 
-defineOptions( {
+defineOptions({
   // Match route name so keep-alive include works
-  name : 'TaskDesigner'
-} )
+  name: 'TaskDesigner',
+})
 </script>

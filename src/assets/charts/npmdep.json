@@ -447,7 +447,6 @@
     "axios",
     "babel-plugin-transform-es2015-destructuring",
     "archiver",
-
     "grunt-exec",
     "grunt-jsbeautifier",
     "split",
@@ -1140,6 +1139,7 @@
     "angular-animate",
     "htmlparser",
     "es6-promisify",
+
     "copy-paste",
     "gulp-task-listing",
     "check-types",

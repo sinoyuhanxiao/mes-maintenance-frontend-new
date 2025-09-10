@@ -21,16 +21,16 @@
 <script>
 import { defineComponent } from 'vue'
 
-export default defineComponent( {
-  name : 'InfoLayout',
-  props : {
-    title : {
-      type : String,
-      default : ''
-    }
+export default defineComponent({
+  name: 'InfoLayout',
+  props: {
+    title: {
+      type: String,
+      default: '',
+    },
   },
-  setup() {}
-} )
+  setup() {},
+})
 </script>
 
 <style lang="scss" scoped>

@@ -8,9 +8,7 @@
           <hr />
         </div>
         <el-form ref="ruleFormRef" :model="inputData" :rules="rules" label-width="120px">
-          <el-form-item style="flex: 1"
-label="Part Name"
-prop="name"
+          <el-form-item style="flex: 1" label="Part Name" prop="name"
             ><el-input
               clearable
               v-model="inputData.name"
@@ -52,8 +50,7 @@ prop="name"
           <hr />
           <!-- Code Inputs -->
           <div class="form-section">
-            <el-form-item label="Material Code"
-prop="code"
+            <el-form-item label="Material Code" prop="code"
               ><el-input
                 clearable
                 v-model="inputData.code"
@@ -63,8 +60,7 @@ prop="code"
             ></el-form-item>
           </div>
           <div class="form-section">
-            <el-form-item label="Inventory Code"
-prop="universal_code"
+            <el-form-item label="Inventory Code" prop="universal_code"
               ><el-input
                 clearable
                 v-model="inputData.universal_code"
@@ -158,14 +154,12 @@ prop="universal_code"
       <!-- Buttons -->
       <div class="submit-button">
         <el-form-item
-          ><el-button type="primary"
-@click="updatePart(ruleFormRef)"
+          ><el-button type="primary" @click="updatePart(ruleFormRef)"
             ><el-icon><Finished /></el-icon>Save</el-button
           ></el-form-item
         >
         <el-form-item
-          ><el-button type="info"
-@click="() => emit('cancel')"
+          ><el-button type="info" @click="() => emit('cancel')"
             ><el-icon><Close /></el-icon>Cancel</el-button
           ></el-form-item
         >
@@ -186,25 +180,25 @@ import FileUploadMultiple from '../../../components/FileUpload/FileUploadMultipl
 
 // import Save
 
-const props = defineProps( {
-  data : Object
-} )
+const props = defineProps({
+  data: Object,
+})
 
 const ruleFormRef = ref()
-const emit = defineEmits( ['updatePart', 'cancel'] )
+const emit = defineEmits(['updatePart', 'cancel'])
 
-const sparePartClasses = ref( [] )
-const manufacturers = ref( [
+const sparePartClasses = ref([])
+const manufacturers = ref([
   {
-    id : 1,
-    name : 'FPS'
-  }
-] )
-const units = ref( [] )
+    id: 1,
+    name: 'FPS',
+  },
+])
+const units = ref([])
 
 async function getAllData() {
   const response = await getAllSparePartClasses()
-  const unitResponse = await getUnitByType( 15 )
+  const unitResponse = await getUnitByType(15)
 
   sparePartClasses.value = response.data
   units.value = unitResponse.data
@@ -212,62 +206,62 @@ async function getAllData() {
 
 getAllData()
 
-const inputData = ref( {
-  id : props.data.id,
-  name : props.data.name,
-  spare_parts_class_id : props.data.spare_parts_class.id,
-  description : props.data.description,
-  code : props.data.code,
-  priority : null,
-  quantity_uom_id : props.data.quantity_uom.id,
-  image_list : props.data.image_list,
-  file_list : props.data.file_list,
-  reorder_point : props.data.reorder_point,
-  maximum_stock_level : props.data.maximum_stock_level,
-  minimum_stock_level : props.data.minimum_stock_level,
-  current_stock : props.data.current_stock,
-  universal_code : props.data.universal_code,
-  status : 1,
-  inventory_requests : [],
-  manufacturer_id : props.data.manufacturer.id
-} )
+const inputData = ref({
+  id: props.data.id,
+  name: props.data.name,
+  spare_parts_class_id: props.data.spare_parts_class.id,
+  description: props.data.description,
+  code: props.data.code,
+  priority: null,
+  quantity_uom_id: props.data.quantity_uom.id,
+  image_list: props.data.image_list,
+  file_list: props.data.file_list,
+  reorder_point: props.data.reorder_point,
+  maximum_stock_level: props.data.maximum_stock_level,
+  minimum_stock_level: props.data.minimum_stock_level,
+  current_stock: props.data.current_stock,
+  universal_code: props.data.universal_code,
+  status: 1,
+  inventory_requests: [],
+  manufacturer_id: props.data.manufacturer.id,
+})
 
 // Form rules
-const rules = reactive( {
-  name : [{ required : true, message : 'Please input Request Title', trigger : 'blur' }],
-  description : [
+const rules = reactive({
+  name: [{ required: true, message: 'Please input Request Title', trigger: 'blur' }],
+  description: [
     {
-      required : true,
-      message : 'Please fill in Description',
-      trigger : 'change'
-    }
+      required: true,
+      message: 'Please fill in Description',
+      trigger: 'change',
+    },
   ],
-  code : [{ required : true, message : 'Please enter Material Code', trigger : 'change' }],
-  universal_code : [{ required : true, message : 'Please enter Material Code', trigger : 'change' }],
-  spare_parts_class_id : [{ required : true, message : 'Please select Category', trigger : 'change' }],
-  manufacturer_id : [{ required : true, message : 'Please select Manufacturer>', trigger : 'change' }],
-  quantity_uom_id : [{ required : true, message : 'Please select Units>', trigger : 'change' }],
-  current_stock : [{ required : true, message : 'Please enter Current Stock', trigger : 'change' }],
-  minimum_stock_level : [{ required : true, message : 'Please enter Min Stock', trigger : 'change' }],
-  maximum_stock_level : [{ required : true, message : 'Please enter Max Stock', trigger : 'change' }],
-  reorder_point : [{ required : true, message : 'Please enter Reorder Point', trigger : 'change' }]
-} )
+  code: [{ required: true, message: 'Please enter Material Code', trigger: 'change' }],
+  universal_code: [{ required: true, message: 'Please enter Material Code', trigger: 'change' }],
+  spare_parts_class_id: [{ required: true, message: 'Please select Category', trigger: 'change' }],
+  manufacturer_id: [{ required: true, message: 'Please select Manufacturer>', trigger: 'change' }],
+  quantity_uom_id: [{ required: true, message: 'Please select Units>', trigger: 'change' }],
+  current_stock: [{ required: true, message: 'Please enter Current Stock', trigger: 'change' }],
+  minimum_stock_level: [{ required: true, message: 'Please enter Min Stock', trigger: 'change' }],
+  maximum_stock_level: [{ required: true, message: 'Please enter Max Stock', trigger: 'change' }],
+  reorder_point: [{ required: true, message: 'Please enter Reorder Point', trigger: 'change' }],
+})
 
 const partEdited = part => {
-  ElMessage( {
-    message : 'Part Updated: ' + part,
-    type : 'success'
-  } )
+  ElMessage({
+    message: 'Part Updated: ' + part,
+    type: 'success',
+  })
 }
 
 const updatePart = async formEl => {
-  if ( !formEl ) return
-  await formEl.validate( ( valid, fields ) => {
-    if ( valid ) {
-      emit( 'updatePart', updateSparePart( inputData.value.id, inputData.value ) )
-      partEdited( inputData.value.name )
+  if (!formEl) return
+  await formEl.validate((valid, fields) => {
+    if (valid) {
+      emit('updatePart', updateSparePart(inputData.value.id, inputData.value))
+      partEdited(inputData.value.name)
     }
-  } )
+  })
 }
 </script>
 

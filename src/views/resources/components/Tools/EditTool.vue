@@ -6,9 +6,7 @@
         <hr />
       </div>
       <el-form ref="ruleFormRef" :model="inputData" :rules="rules" label-width="120px">
-        <el-form-item style="flex: 1"
-label="Tool Name"
-prop="name"
+        <el-form-item style="flex: 1" label="Tool Name" prop="name"
           ><el-input
             clearable
             v-model="inputData.name"
@@ -18,9 +16,7 @@ prop="name"
         ></el-form-item>
 
         <!-- Code Input -->
-        <el-form-item style="flex: 1"
-label="Tool Code"
-prop="code"
+        <el-form-item style="flex: 1" label="Tool Code" prop="code"
           ><el-input
             clearable
             v-model="inputData.code"
@@ -29,9 +25,7 @@ prop="code"
           ></el-input
         ></el-form-item>
 
-        <el-form-item style="flex: 1"
-label="Description"
-prop="description"
+        <el-form-item style="flex: 1" label="Description" prop="description"
           ><el-input
             clearable
             v-model="inputData.description"
@@ -65,22 +59,22 @@ prop="description"
 <script setup>
 import { ref, reactive, watch } from 'vue'
 import { getAllToolClasses } from '../../../../api/resources'
-const props = defineProps( {
-  data : Object
-} )
+const props = defineProps({
+  data: Object,
+})
 
-const emit = defineEmits( ['editTool'] )
+const emit = defineEmits(['editTool'])
 
-const toolClasses = ref( null )
+const toolClasses = ref(null)
 
-const inputData = ref( props.data )
+const inputData = ref(props.data)
 
 watch(
   () => props.data,
   newVal => {
     inputData.value = newVal
   },
-  { deep : true }
+  { deep: true }
 )
 
 async function getToolClasses() {
@@ -92,14 +86,14 @@ async function getToolClasses() {
 getToolClasses()
 
 // Form rules
-const rules = reactive( {
-  name : [{ required : true, message : 'Please input Name', trigger : 'blur' }],
-  code : [{ required : true, message : 'Please enter Code' }],
-  tool_class_id : [{ required : true, message : 'Please select Tool Class' }]
-} )
+const rules = reactive({
+  name: [{ required: true, message: 'Please input Name', trigger: 'blur' }],
+  code: [{ required: true, message: 'Please enter Code' }],
+  tool_class_id: [{ required: true, message: 'Please select Tool Class' }],
+})
 
 function editTool() {
-  emit( 'editTool', inputData.value )
+  emit('editTool', inputData.value)
 }
 </script>
 

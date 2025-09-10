@@ -16,40 +16,40 @@ import { compile } from 'path-to-regexp'
 import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-const levelList = ref( [] )
+const levelList = ref([])
 const route = useRoute()
 const router = useRouter()
 
 const isDashboard = route => {
   const name = route && route.name
-  if ( !name ) {
+  if (!name) {
     return false
   }
   return name.trim().toLocaleLowerCase() === 'Dashboard'.toLocaleLowerCase()
 }
 
 const getBreadcrumb = () => {
-  let matched = route.matched.filter( item => item.meta && item.meta.title )
+  let matched = route.matched.filter(item => item.meta && item.meta.title)
   const first = matched[0]
-  if ( !isDashboard( first ) ) {
-    matched = [{ path : '/', meta : { title : 'router.dashboard' }}].concat( matched )
+  if (!isDashboard(first)) {
+    matched = [{ path: '/', meta: { title: 'router.dashboard' } }].concat(matched)
   }
-  levelList.value = matched.filter( item => item.meta && item.meta.title && item.meta.breadcrumb !== false )
+  levelList.value = matched.filter(item => item.meta && item.meta.title && item.meta.breadcrumb !== false)
 }
 
 const pathCompile = path => {
   const { params } = route
-  const toPath = compile( path )
-  return toPath( params )
+  const toPath = compile(path)
+  return toPath(params)
 }
 
 const handleLink = item => {
   const { redirect, path } = item
-  if ( redirect ) {
-    router.push( redirect.toString() )
+  if (redirect) {
+    router.push(redirect.toString())
     return
   }
-  router.push( pathCompile( path ) )
+  router.push(pathCompile(path))
 }
 
 getBreadcrumb()
@@ -57,19 +57,19 @@ getBreadcrumb()
 watch(
   () => route.path,
   path => {
-    if ( path.startsWith( '/redirect/' ) ) {
+    if (path.startsWith('/redirect/')) {
       return
     }
     getBreadcrumb()
   },
   {
-    immediate : true
+    immediate: true,
   }
 )
 
-defineOptions( {
-  name : 'BreadCrumb'
-} )
+defineOptions({
+  name: 'BreadCrumb',
+})
 </script>
 
 <style lang="scss" scoped>

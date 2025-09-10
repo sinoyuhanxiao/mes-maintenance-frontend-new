@@ -166,34 +166,34 @@ import StatusTag from './StatusTag.vue'
 import WorkOrderActions from './WorkOrderActions.vue'
 
 // Props
-const props = defineProps( {
-  data : {
-    type : Array,
-    default : () => []
+const props = defineProps({
+  data: {
+    type: Array,
+    default: () => [],
   },
-  loading : {
-    type : Boolean,
-    default : false
+  loading: {
+    type: Boolean,
+    default: false,
   },
-  expandedRows : {
-    type : Set,
-    default : () => new Set()
+  expandedRows: {
+    type: Set,
+    default: () => new Set(),
   },
-  loadChildren : {
-    type : Function,
-    required : true
-  }
-} )
+  loadChildren: {
+    type: Function,
+    required: true,
+  },
+})
 
 // Emits
-const emit = defineEmits( ['expand-change', 'view', 'edit', 'delete'] )
+const emit = defineEmits(['expand-change', 'view', 'edit', 'delete'])
 
 // State
-const tableHeight = ref( window.innerHeight - 320 )
+const tableHeight = ref(window.innerHeight - 320)
 
 // Computed
-const getRowClass = ( { row } ) => {
-  return props.expandedRows.has( row.id ) ? 'expanded-highlight' : ''
+const getRowClass = ({ row }) => {
+  return props.expandedRows.has(row.id) ? 'expanded-highlight' : ''
 }
 
 // Methods
@@ -201,30 +201,30 @@ const updateTableHeight = () => {
   tableHeight.value = window.innerHeight - 320
 }
 
-const onExpandChange = ( row, expanded ) => {
-  emit( 'expand-change', row, expanded )
+const onExpandChange = (row, expanded) => {
+  emit('expand-change', row, expanded)
 }
 
 const formatDateTime = dateString => {
-  return dateString ? convertToLocalTime( dateString ) : '-'
+  return dateString ? convertToLocalTime(dateString) : '-'
 }
 
 const isOverdue = dueDate => {
-  return dueDate && new Date( dueDate ) < new Date()
+  return dueDate && new Date(dueDate) < new Date()
 }
 
 // Lifecycle
-onMounted( () => {
-  window.addEventListener( 'resize', updateTableHeight )
-} )
+onMounted(() => {
+  window.addEventListener('resize', updateTableHeight)
+})
 
-onBeforeUnmount( () => {
-  window.removeEventListener( 'resize', updateTableHeight )
-} )
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateTableHeight)
+})
 
-defineOptions( {
-  name : 'WorkOrderTable'
-} )
+defineOptions({
+  name: 'WorkOrderTable',
+})
 </script>
 
 <style scoped lang="scss">

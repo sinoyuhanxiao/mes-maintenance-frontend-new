@@ -14,20 +14,20 @@
 </template>
 
 <script setup>
-defineProps( {
-  number : {
-    type : [String, Number],
-    default : 1
+defineProps({
+  number: {
+    type: [String, Number],
+    default: 1,
   },
-  text : {
-    type : String,
-    default : 'Sub-Item Text'
+  text: {
+    type: String,
+    default: 'Sub-Item Text',
   },
-  circleColor : {
-    type : String,
-    default : '#409EFF' // Element Plus primary color
-  }
-} )
+  circleColor: {
+    type: String,
+    default: '#409EFF', // Element Plus primary color
+  },
+})
 </script>
 
 <style scoped>

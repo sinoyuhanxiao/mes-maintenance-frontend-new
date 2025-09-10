@@ -39,20 +39,20 @@
 import { UploadFilled, Files, DocumentAdd, DataAnalysis } from '@element-plus/icons-vue'
 
 // eslint-disable-next-line no-unused-vars
-const props = defineProps( {
-  step : {
-    type : Object,
-    required : true
+const props = defineProps({
+  step: {
+    type: Object,
+    required: true,
   },
-  previewMode : {
-    type : Boolean,
-    default : true
+  previewMode: {
+    type: Boolean,
+    default: true,
   },
-  interactive : {
-    type : Boolean,
-    default : false
-  }
-} )
+  interactive: {
+    type: Boolean,
+    default: false,
+  },
+})
 </script>
 
 <style scoped>

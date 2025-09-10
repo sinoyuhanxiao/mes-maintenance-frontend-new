@@ -37,53 +37,53 @@ import { ref, watch } from 'vue'
 import { InfoFilled, Check, Close } from '@element-plus/icons-vue'
 
 // eslint-disable-next-line no-unused-vars
-const props = defineProps( {
-  step : {
-    type : Object,
-    required : true
+const props = defineProps({
+  step: {
+    type: Object,
+    required: true,
   },
-  previewMode : {
-    type : Boolean,
-    default : true
+  previewMode: {
+    type: Boolean,
+    default: true,
   },
-  interactive : {
-    type : Boolean,
-    default : false
-  }
-} )
+  interactive: {
+    type: Boolean,
+    default: false,
+  },
+})
 
 // Reactive state for user input
 // Default to 'pass' in preview modes when no explicit result is provided
-const currentResult = ref( props.step?.config?.result ?? ( props.previewMode ? 'pass' : null ) )
+const currentResult = ref(props.step?.config?.result ?? (props.previewMode ? 'pass' : null))
 
 // Watch for prop changes to sync initial values
 watch(
   () => props.step?.config?.result,
   newValue => {
-    if ( !props.interactive ) {
-      currentResult.value = newValue ?? ( props.previewMode ? 'pass' : null )
+    if (!props.interactive) {
+      currentResult.value = newValue ?? (props.previewMode ? 'pass' : null)
     }
   },
-  { immediate : true }
+  { immediate: true }
 )
 
 const getOptionLabel = option => {
   const labels = {
-    pass : 'Pass',
-    fail : 'Fail'
+    pass: 'Pass',
+    fail: 'Fail',
   }
   return labels[option] || option
 }
 
 const getOptionType = option => {
-  if ( currentResult.value === option ) {
+  if (currentResult.value === option) {
     return option === 'pass' ? 'success' : 'danger'
   }
   return '' // Use default button styling (no type) for unselected buttons
 }
 
 const setInspectionResult = result => {
-  if ( props.interactive ) {
+  if (props.interactive) {
     currentResult.value = result
   }
 }

@@ -333,304 +333,304 @@ import { Search, Operation, View, Plus, Star, Setting, EditPen, Download, Refres
 import { useCommonDataStore } from '@/store/modules/commonData'
 
 // Props
-const props = defineProps( {
-  modelValue : {
-    type : Object,
-    default : () => ( {} )
+const props = defineProps({
+  modelValue: {
+    type: Object,
+    default: () => ({}),
   },
-  exportLoading : {
-    type : Boolean,
-    default : false
+  exportLoading: {
+    type: Boolean,
+    default: false,
   },
-  showTodoActions : {
-    type : Boolean,
-    default : false
+  showTodoActions: {
+    type: Boolean,
+    default: false,
   },
-  currentView : {
-    type : String,
-    default : 'table'
-  }
-} )
+  currentView: {
+    type: String,
+    default: 'table',
+  },
+})
 
 // Emits
-const emit = defineEmits( ['update:modelValue', 'filter-change', 'create', 'export', 'refresh'] )
+const emit = defineEmits(['update:modelValue', 'filter-change', 'create', 'export', 'refresh'])
 const { t } = useI18n()
 const commonDataStore = useCommonDataStore()
 
 // Local filters state
-const localFilters = reactive( {
-  assignedTo : props.modelValue.assignedTo || null,
-  dueDate : props.modelValue.dueDate || null,
-  workType : props.modelValue.workType || null,
-  priority : props.modelValue.priority || null,
-  state : props.modelValue.state || null,
-  category : props.modelValue.category || null,
-  search : props.modelValue.search || '',
-  customDateRange : props.modelValue.customDateRange || null,
-  latest_per_recurrence : props.currentView !== 'calendar',
-  status : props.modelValue.status || null,
-  equipment : props.modelValue.equipment || null,
-  location : props.modelValue.location || null
-} )
+const localFilters = reactive({
+  assignedTo: props.modelValue.assignedTo || null,
+  dueDate: props.modelValue.dueDate || null,
+  workType: props.modelValue.workType || null,
+  priority: props.modelValue.priority || null,
+  state: props.modelValue.state || null,
+  category: props.modelValue.category || null,
+  search: props.modelValue.search || '',
+  customDateRange: props.modelValue.customDateRange || null,
+  latest_per_recurrence: props.currentView !== 'calendar',
+  status: props.modelValue.status || null,
+  equipment: props.modelValue.equipment || null,
+  location: props.modelValue.location || null,
+})
 
 // Filter drawer state
-const drawerVisible = ref( false )
+const drawerVisible = ref(false)
 
 // Animation state for border highlight
-const animatingFilters = reactive( {
-  assignedTo : false,
-  dueDate : false,
-  workType : false,
-  priority : false,
-  search : false,
-  state : false,
-  status : false,
-  category : false,
-  equipment : false,
-  location : false
-} )
+const animatingFilters = reactive({
+  assignedTo: false,
+  dueDate: false,
+  workType: false,
+  priority: false,
+  search: false,
+  state: false,
+  status: false,
+  category: false,
+  equipment: false,
+  location: false,
+})
 
 // Available filters configuration
-const availableFilters = reactive( {
-  assignedTo : { visible : true, category : 'basic' },
-  dueDate : { visible : true, category : 'basic' },
-  workType : { visible : true, category : 'basic' },
-  priority : { visible : true, category : 'basic' },
-  search : { visible : true, category : 'basic' },
-  state : { visible : false, category : 'advanced' },
-  status : { visible : false, category : 'advanced' },
-  category : { visible : false, category : 'advanced' },
-  equipment : { visible : false, category : 'advanced' },
-  location : { visible : false, category : 'advanced' }
-} )
+const availableFilters = reactive({
+  assignedTo: { visible: true, category: 'basic' },
+  dueDate: { visible: true, category: 'basic' },
+  workType: { visible: true, category: 'basic' },
+  priority: { visible: true, category: 'basic' },
+  search: { visible: true, category: 'basic' },
+  state: { visible: false, category: 'advanced' },
+  status: { visible: false, category: 'advanced' },
+  category: { visible: false, category: 'advanced' },
+  equipment: { visible: false, category: 'advanced' },
+  location: { visible: false, category: 'advanced' },
+})
 
 // Filter options
-const assignedToOptions = computed( () => {
+const assignedToOptions = computed(() => {
   // TODO: Get from user store or API
   return [
-    { id : 1, name : 'Erik Yu' },
-    { id : 2, name : 'Jane Smith' },
-    { id : 3, name : 'Mike Johnson' }
+    { id: 1, name: 'Erik Yu' },
+    { id: 2, name: 'Jane Smith' },
+    { id: 3, name: 'Mike Johnson' },
   ]
-} )
+})
 
-const workTypeOptions = computed( () => commonDataStore.workTypes || [] )
-const priorityOptions = computed( () => commonDataStore.priorities || [] )
-const stateOptions = computed( () => commonDataStore.states || [] )
-const categoryOptions = computed( () => commonDataStore.categories || [] )
+const workTypeOptions = computed(() => commonDataStore.workTypes || [])
+const priorityOptions = computed(() => commonDataStore.priorities || [])
+const stateOptions = computed(() => commonDataStore.states || [])
+const categoryOptions = computed(() => commonDataStore.categories || [])
 
 // Additional filter options
-const statusOptions = computed( () => [
-  { id : 'pending', name : t( 'workOrder.status.pending' ) },
-  { id : 'in_progress', name : t( 'workOrder.status.inProgress' ) },
-  { id : 'completed', name : t( 'workOrder.status.completed' ) },
-  { id : 'cancelled', name : t( 'workOrder.status.cancelled' ) }
-] )
+const statusOptions = computed(() => [
+  { id: 'pending', name: t('workOrder.status.pending') },
+  { id: 'in_progress', name: t('workOrder.status.inProgress') },
+  { id: 'completed', name: t('workOrder.status.completed') },
+  { id: 'cancelled', name: t('workOrder.status.cancelled') },
+])
 
-const equipmentOptions = computed( () => [
-  { id : 1, name : 'Production Line A' },
-  { id : 2, name : 'Production Line B' },
-  { id : 3, name : 'Packaging Machine 1' },
-  { id : 4, name : 'Packaging Machine 2' }
-] )
+const equipmentOptions = computed(() => [
+  { id: 1, name: 'Production Line A' },
+  { id: 2, name: 'Production Line B' },
+  { id: 3, name: 'Packaging Machine 1' },
+  { id: 4, name: 'Packaging Machine 2' },
+])
 
-const locationOptions = computed( () => [
-  { id : 1, name : 'Factory Floor 1' },
-  { id : 2, name : 'Factory Floor 2' },
-  { id : 3, name : 'Warehouse' },
-  { id : 4, name : 'Office Building' }
-] )
+const locationOptions = computed(() => [
+  { id: 1, name: 'Factory Floor 1' },
+  { id: 2, name: 'Factory Floor 2' },
+  { id: 3, name: 'Warehouse' },
+  { id: 4, name: 'Office Building' },
+])
 
 // Filter definitions for drawer
-const filterDefinitions = computed( () => ( {
-  assignedTo : {
-    key : 'assignedTo',
-    label : t( 'workOrder.filters.assignedTo' ),
-    icon : 'User',
-    category : 'basic'
+const filterDefinitions = computed(() => ({
+  assignedTo: {
+    key: 'assignedTo',
+    label: t('workOrder.filters.assignedTo'),
+    icon: 'User',
+    category: 'basic',
   },
-  dueDate : {
-    key : 'dueDate',
-    label : t( 'workOrder.filters.dueDate' ),
-    icon : 'Calendar',
-    category : 'basic'
+  dueDate: {
+    key: 'dueDate',
+    label: t('workOrder.filters.dueDate'),
+    icon: 'Calendar',
+    category: 'basic',
   },
-  workType : {
-    key : 'workType',
-    label : t( 'workOrder.table.workType' ),
-    icon : 'Tools',
-    category : 'basic'
+  workType: {
+    key: 'workType',
+    label: t('workOrder.table.workType'),
+    icon: 'Tools',
+    category: 'basic',
   },
-  priority : {
-    key : 'priority',
-    label : t( 'workOrder.table.priority' ),
-    icon : 'Flag',
-    category : 'basic'
+  priority: {
+    key: 'priority',
+    label: t('workOrder.table.priority'),
+    icon: 'Flag',
+    category: 'basic',
   },
-  search : {
-    key : 'search',
-    label : t( 'workOrder.filters.search' ),
-    icon : 'Search',
-    category : 'basic'
+  search: {
+    key: 'search',
+    label: t('workOrder.filters.search'),
+    icon: 'Search',
+    category: 'basic',
   },
-  state : {
-    key : 'state',
-    label : t( 'workOrder.filters.state' ),
-    icon : 'CircleCheck',
-    category : 'advanced'
+  state: {
+    key: 'state',
+    label: t('workOrder.filters.state'),
+    icon: 'CircleCheck',
+    category: 'advanced',
   },
-  status : {
-    key : 'status',
-    label : t( 'workOrder.filters.status' ),
-    icon : 'CircleCheck',
-    category : 'advanced'
+  status: {
+    key: 'status',
+    label: t('workOrder.filters.status'),
+    icon: 'CircleCheck',
+    category: 'advanced',
   },
-  category : {
-    key : 'category',
-    label : t( 'workOrder.filters.category' ),
-    icon : 'Collection',
-    category : 'advanced'
+  category: {
+    key: 'category',
+    label: t('workOrder.filters.category'),
+    icon: 'Collection',
+    category: 'advanced',
   },
-  equipment : {
-    key : 'equipment',
-    label : t( 'workOrder.filters.equipment' ),
-    icon : 'Setting',
-    category : 'advanced'
+  equipment: {
+    key: 'equipment',
+    label: t('workOrder.filters.equipment'),
+    icon: 'Setting',
+    category: 'advanced',
   },
-  location : {
-    key : 'location',
-    label : t( 'workOrder.filters.location' ),
-    icon : 'Location',
-    category : 'advanced'
-  }
-} ) )
+  location: {
+    key: 'location',
+    label: t('workOrder.filters.location'),
+    icon: 'Location',
+    category: 'advanced',
+  },
+}))
 
 // Computed filter categories
-const basicFilters = computed( () => Object.values( filterDefinitions.value ).filter( f => f.category === 'basic' ) )
-const advancedFilters = computed( () => Object.values( filterDefinitions.value ).filter( f => f.category === 'advanced' ) )
+const basicFilters = computed(() => Object.values(filterDefinitions.value).filter(f => f.category === 'basic'))
+const advancedFilters = computed(() => Object.values(filterDefinitions.value).filter(f => f.category === 'advanced'))
 
 // Search term for filtering the drawer lists
-const filterSearchTerm = ref( '' )
+const filterSearchTerm = ref('')
 
 // Case-insensitive, instant filtering of labels; auto-hide non-matches
-const filteredBasicFilters = computed( () => {
+const filteredBasicFilters = computed(() => {
   const q = filterSearchTerm.value.trim().toLowerCase()
-  if ( !q ) return basicFilters.value
-  return basicFilters.value.filter( f => ( f.label || '' ).toLowerCase().includes( q ) )
-} )
+  if (!q) return basicFilters.value
+  return basicFilters.value.filter(f => (f.label || '').toLowerCase().includes(q))
+})
 
-const filteredAdvancedFilters = computed( () => {
+const filteredAdvancedFilters = computed(() => {
   const q = filterSearchTerm.value.trim().toLowerCase()
-  if ( !q ) return advancedFilters.value
-  return advancedFilters.value.filter( f => ( f.label || '' ).toLowerCase().includes( q ) )
-} )
+  if (!q) return advancedFilters.value
+  return advancedFilters.value.filter(f => (f.label || '').toLowerCase().includes(q))
+})
 
 // Active filters
-computed( () => {
+computed(() => {
   const tags = []
 
-  if ( localFilters.assignedTo ) {
-    const user = assignedToOptions.value.find( u => u.id === localFilters.assignedTo )
-    tags.push( {
-      key : 'assignedTo',
-      label : `${t( 'workOrder.filters.assignedTo' )}: ${user?.name || localFilters.assignedTo}`
-    } )
+  if (localFilters.assignedTo) {
+    const user = assignedToOptions.value.find(u => u.id === localFilters.assignedTo)
+    tags.push({
+      key: 'assignedTo',
+      label: `${t('workOrder.filters.assignedTo')}: ${user?.name || localFilters.assignedTo}`,
+    })
   }
 
-  if ( localFilters.dueDate ) {
+  if (localFilters.dueDate) {
     const dueDateLabels = {
-      overdue : t( 'workOrder.filters.overdue' ),
-      today : t( 'workOrder.filters.today' ),
-      thisWeek : t( 'workOrder.filters.thisWeek' ),
-      thisMonth : t( 'workOrder.filters.thisMonth' ),
-      custom : t( 'workOrder.filters.custom' )
+      overdue: t('workOrder.filters.overdue'),
+      today: t('workOrder.filters.today'),
+      thisWeek: t('workOrder.filters.thisWeek'),
+      thisMonth: t('workOrder.filters.thisMonth'),
+      custom: t('workOrder.filters.custom'),
     }
-    tags.push( {
-      key : 'dueDate',
-      label : `${t( 'workOrder.filters.dueDate' )}: ${dueDateLabels[localFilters.dueDate]}`
-    } )
+    tags.push({
+      key: 'dueDate',
+      label: `${t('workOrder.filters.dueDate')}: ${dueDateLabels[localFilters.dueDate]}`,
+    })
   }
 
-  if ( localFilters.workType ) {
-    const workType = workTypeOptions.value.find( wt => wt.id === localFilters.workType )
-    tags.push( {
-      key : 'workType',
-      label : `${t( 'workOrder.table.workType' )}: ${workType?.name || localFilters.workType}`
-    } )
+  if (localFilters.workType) {
+    const workType = workTypeOptions.value.find(wt => wt.id === localFilters.workType)
+    tags.push({
+      key: 'workType',
+      label: `${t('workOrder.table.workType')}: ${workType?.name || localFilters.workType}`,
+    })
   }
 
-  if ( localFilters.priority ) {
-    const priority = priorityOptions.value.find( p => p.id === localFilters.priority )
-    tags.push( {
-      key : 'priority',
-      label : `${t( 'workOrder.table.priority' )}: ${priority?.name || localFilters.priority}`
-    } )
+  if (localFilters.priority) {
+    const priority = priorityOptions.value.find(p => p.id === localFilters.priority)
+    tags.push({
+      key: 'priority',
+      label: `${t('workOrder.table.priority')}: ${priority?.name || localFilters.priority}`,
+    })
   }
 
-  if ( localFilters.state ) {
-    const state = stateOptions.value.find( s => s.id === localFilters.state )
-    tags.push( {
-      key : 'state',
-      label : `${t( 'workOrder.table.state' )}: ${state?.name || localFilters.state}`
-    } )
+  if (localFilters.state) {
+    const state = stateOptions.value.find(s => s.id === localFilters.state)
+    tags.push({
+      key: 'state',
+      label: `${t('workOrder.table.state')}: ${state?.name || localFilters.state}`,
+    })
   }
 
-  if ( localFilters.category ) {
-    const category = categoryOptions.value.find( c => c.id === localFilters.category )
-    tags.push( {
-      key : 'category',
-      label : `${t( 'workOrder.table.category' )}: ${category?.name || localFilters.category}`
-    } )
+  if (localFilters.category) {
+    const category = categoryOptions.value.find(c => c.id === localFilters.category)
+    tags.push({
+      key: 'category',
+      label: `${t('workOrder.table.category')}: ${category?.name || localFilters.category}`,
+    })
   }
 
-  if ( localFilters.search ) {
-    tags.push( {
-      key : 'search',
-      label : `${t( 'workOrder.placeholder.search' )}: ${localFilters.search}`
-    } )
+  if (localFilters.search) {
+    tags.push({
+      key: 'search',
+      label: `${t('workOrder.placeholder.search')}: ${localFilters.search}`,
+    })
   }
 
-  if ( localFilters.status ) {
-    const status = statusOptions.value.find( s => s.id === localFilters.status )
-    tags.push( {
-      key : 'status',
-      label : `${t( 'workOrder.filters.status' )}: ${status?.name || localFilters.status}`
-    } )
+  if (localFilters.status) {
+    const status = statusOptions.value.find(s => s.id === localFilters.status)
+    tags.push({
+      key: 'status',
+      label: `${t('workOrder.filters.status')}: ${status?.name || localFilters.status}`,
+    })
   }
 
-  if ( localFilters.category ) {
-    const category = categoryOptions.value.find( c => c.id === localFilters.category )
-    tags.push( {
-      key : 'category',
-      label : `${t( 'workOrder.filters.category' )}: ${category?.name || localFilters.category}`
-    } )
+  if (localFilters.category) {
+    const category = categoryOptions.value.find(c => c.id === localFilters.category)
+    tags.push({
+      key: 'category',
+      label: `${t('workOrder.filters.category')}: ${category?.name || localFilters.category}`,
+    })
   }
 
-  if ( localFilters.equipment ) {
-    const equipment = equipmentOptions.value.find( e => e.id === localFilters.equipment )
-    tags.push( {
-      key : 'equipment',
-      label : `${t( 'workOrder.filters.equipment' )}: ${equipment?.name || localFilters.equipment}`
-    } )
+  if (localFilters.equipment) {
+    const equipment = equipmentOptions.value.find(e => e.id === localFilters.equipment)
+    tags.push({
+      key: 'equipment',
+      label: `${t('workOrder.filters.equipment')}: ${equipment?.name || localFilters.equipment}`,
+    })
   }
 
-  if ( localFilters.location ) {
-    const location = locationOptions.value.find( l => l.id === localFilters.location )
-    tags.push( {
-      key : 'location',
-      label : `${t( 'workOrder.filters.location' )}: ${location?.name || localFilters.location}`
-    } )
+  if (localFilters.location) {
+    const location = locationOptions.value.find(l => l.id === localFilters.location)
+    tags.push({
+      key: 'location',
+      label: `${t('workOrder.filters.location')}: ${location?.name || localFilters.location}`,
+    })
   }
 
   return tags
-} )
+})
 // Methods
-const handleFilterChange = async() => {
-  emit( 'update:modelValue', { ...localFilters } )
+const handleFilterChange = async () => {
+  emit('update:modelValue', { ...localFilters })
 }
 
 const handleCustomizationCommand = command => {
-  switch ( command ) {
+  switch (command) {
     case 'addFilter':
       drawerVisible.value = true
       break
@@ -658,7 +658,7 @@ const toggleFilterVisibility = async filterKey => {
   availableFilters[filterKey].visible = !wasVisible
 
   // Trigger animation for the toggled filter item in main filters row
-  await triggerFilterHighlightAnimation( filterKey )
+  await triggerFilterHighlightAnimation(filterKey)
 }
 
 // Animation method for border highlight
@@ -667,14 +667,14 @@ const triggerFilterHighlightAnimation = async filterKey => {
   await nextTick()
 
   // For hiding animation, the element will be removed by v-if, so we skip it
-  if ( availableFilters[filterKey].visible ) {
+  if (availableFilters[filterKey].visible) {
     // Start animation
     animatingFilters[filterKey] = true
 
     // Remove animation after 2 seconds
-    setTimeout( () => {
+    setTimeout(() => {
       animatingFilters[filterKey] = false
-    }, 2000 )
+    }, 2000)
   }
 }
 
@@ -686,14 +686,14 @@ const isFilterVisible = filterKey => {
 watch(
   () => props.modelValue,
   newValue => {
-    Object.assign( localFilters, newValue )
+    Object.assign(localFilters, newValue)
   },
-  { deep : true }
+  { deep: true }
 )
 
-defineOptions( {
-  name : 'UnifiedWorkOrderFilters'
-} )
+defineOptions({
+  name: 'UnifiedWorkOrderFilters',
+})
 </script>
 
 <style scoped lang="scss">

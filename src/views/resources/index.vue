@@ -32,10 +32,7 @@
       </div>
     </div>
     <div class="main-container-sp" v-if="currentView === 1">
-      <el-dialog v-model="dialogVisible"
-title="New Spare Part"
-width="800"
-top="5vh"
+      <el-dialog v-model="dialogVisible" title="New Spare Part" width="800" top="5vh"
         ><NewSparePart @createPart="handleCreate"
       /></el-dialog>
       <div class="table-container">
@@ -68,10 +65,8 @@ top="5vh"
               <el-tab-pane label="Usage" name="third"><Usage /></el-tab-pane>
               <el-tab-pane label="Transactions" name="fourth"><Transactions :sparePart="selectedData" /></el-tab-pane>
               <el-tab-pane label="History" name="fifth"><History /></el-tab-pane>
-              <el-tab-pane label="Vendors"
-name="sixth"
-                ><Vendors :data="selectedData"
-@refresh-data="getAllSparePartsData()"
+              <el-tab-pane label="Vendors" name="sixth"
+                ><Vendors :data="selectedData" @refresh-data="getAllSparePartsData()"
               /></el-tab-pane>
             </el-tabs>
           </el-card>
@@ -102,37 +97,37 @@ import Batches from './components/Batches/Batches.vue'
 import ToolsView from './components/Tools/ToolsView.vue'
 import { searchSpareParts } from '../../api/resources'
 
-const activeName = ref( 'first' )
+const activeName = ref('first')
 
-const dialogVisible = ref( false )
-const newTool = ref( false )
-const editing = ref( false )
+const dialogVisible = ref(false)
+const newTool = ref(false)
+const editing = ref(false)
 
-const spareParts = ref( [] )
+const spareParts = ref([])
 
-const selectedData = ref( null )
-const selectedIndex = ref( 0 )
-const totalItems = ref( null )
-const search = ref( {} )
-const keyword = ref( null )
+const selectedData = ref(null)
+const selectedIndex = ref(0)
+const totalItems = ref(null)
+const search = ref({})
+const keyword = ref(null)
 
 // Query parameters
-const listQuery = reactive( {
-  page : 1,
-  limit : 10,
-  sort : '-id'
-} )
+const listQuery = reactive({
+  page: 1,
+  limit: 10,
+  sort: '-id',
+})
 
 watch(
   () => keyword.value,
   newVal => {
-    console.log( newVal )
-    search.value = { keyword : newVal }
+    console.log(newVal)
+    search.value = { keyword: newVal }
   }
 )
 
 async function getAllSparePartsData() {
-  const response = await searchSpareParts( listQuery.page, listQuery.limit, 'name', 'ASC', search.value )
+  const response = await searchSpareParts(listQuery.page, listQuery.limit, 'name', 'ASC', search.value)
   // console.log( response.data.content )
 
   spareParts.value = response.data.content
@@ -147,41 +142,41 @@ watch(
   newData => {
     getAllSparePartsData()
   },
-  { immediate : true, deep : true }
+  { immediate: true, deep: true }
 )
 
-const maxHeight = ref( '770px' )
+const maxHeight = ref('770px')
 function updateHeight() {
   maxHeight.value = window.innerWidth <= 1600 ? '521px' : '737px'
 }
 
-onMounted( () => {
+onMounted(() => {
   updateHeight()
-  window.addEventListener( 'resize', updateHeight )
-} )
+  window.addEventListener('resize', updateHeight)
+})
 
-onBeforeUnmount( () => {
-  window.removeEventListener( 'resize', updateHeight )
-} )
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateHeight)
+})
 
-function getSelection( data ) {
+function getSelection(data) {
   selectedIndex.value = data.index
   selectedData.value = data
 }
 
-onMounted( () => {
+onMounted(() => {
   selectedData.value = spareParts.value[0]
-} )
+})
 
-async function handleCreate( data ) {
-  if ( data ) {
+async function handleCreate(data) {
+  if (data) {
     dialogVisible.value = false
     editing.value = false
   }
   getAllSparePartsData()
 }
 
-const currentView = ref( 1 )
+const currentView = ref(1)
 
 const handleCurrentChange = val => {
   listQuery.page = val
@@ -193,13 +188,13 @@ const handleCommand = command => {
   currentView.value = command === 'a' ? 1 : 2
 }
 
-const currentLabel = computed( () => {
+const currentLabel = computed(() => {
   return currentView.value === 1 ? 'Spare Parts' : 'Tools'
-} )
+})
 
-const currentIcon = computed( () => {
+const currentIcon = computed(() => {
   return currentView.value === 1 ? 'Magnet' : 'Tools'
-} )
+})
 </script>
 
 <style scoped>

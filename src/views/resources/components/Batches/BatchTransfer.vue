@@ -62,55 +62,55 @@ import { ref, watch, reactive } from 'vue'
 import BatchCard from './BatchCard.vue'
 import { transferInventory } from '../../../../api/resources'
 
-const props = defineProps( {
-  data : Object,
-  batches : Object
-} )
-const emit = defineEmits( ['transfer'] )
+const props = defineProps({
+  data: Object,
+  batches: Object,
+})
+const emit = defineEmits(['transfer'])
 
-const localBatches = ref( props.batches.filter( item => item.id !== props.data.id ) )
-console.log( localBatches.value )
-const formRef = ref( null )
+const localBatches = ref(props.batches.filter(item => item.id !== props.data.id))
+console.log(localBatches.value)
+const formRef = ref(null)
 
-const batch = ref( props.data )
+const batch = ref(props.data)
 
-const selectedBatchId = ref( null )
+const selectedBatchId = ref(null)
 
-const selectedBatch = ref( null )
+const selectedBatch = ref(null)
 
-const form = reactive( {
-  transfer_from_id : props.data.id,
-  transfer_to_id : selectedBatchId,
-  quantity : 1,
-  transfer_date : null,
-  remark : null,
-  transaction_type_id : 104
-} )
+const form = reactive({
+  transfer_from_id: props.data.id,
+  transfer_to_id: selectedBatchId,
+  quantity: 1,
+  transfer_date: null,
+  remark: null,
+  transaction_type_id: 104,
+})
 
 // Form rules
-const rules = reactive( {
-  transfer_to_id : [{ required : true, message : 'Please select transfer target', trigger : 'blur' }],
-  quantity : [{ required : true, message : 'Please enter in transfer quantity', trigger : 'blur' }],
-  transfer_date : [{ required : true, message : 'Please select in transfer date', trigger : 'blur' }]
-} )
+const rules = reactive({
+  transfer_to_id: [{ required: true, message: 'Please select transfer target', trigger: 'blur' }],
+  quantity: [{ required: true, message: 'Please enter in transfer quantity', trigger: 'blur' }],
+  transfer_date: [{ required: true, message: 'Please select in transfer date', trigger: 'blur' }],
+})
 
-function disablePastDates( time ) {
+function disablePastDates(time) {
   return time.getTime() < Date.now() - 86400000 // disables all past dates (before today)
 }
 
-watch( selectedBatchId, newId => {
-  selectedBatch.value = localBatches.value.find( b => b.id === newId ) || null
-} )
+watch(selectedBatchId, newId => {
+  selectedBatch.value = localBatches.value.find(b => b.id === newId) || null
+})
 
 async function confirmTransfer() {
-  const response = await transferInventory( form )
+  const response = await transferInventory(form)
 
-  emit( 'transfer', response )
+  emit('transfer', response)
   resetForm()
 }
 
 const resetForm = () => {
-  if ( formRef.value ) {
+  if (formRef.value) {
     formRef.value.resetFields()
   }
 }

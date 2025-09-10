@@ -132,51 +132,51 @@ import { convertToLocalTime } from '../../../utils/datetime'
 import router from '../../../router'
 import AssignPersonnel from './AssignPersonnel.vue'
 
-const assignPersonnel = ref( false )
+const assignPersonnel = ref(false)
 
-const selectedWorkOrder = ref( null )
+const selectedWorkOrder = ref(null)
 
-const selectedData = computed( () => {
+const selectedData = computed(() => {
   return workOrdersWithTasks[selectedWorkOrder.value]
-} )
+})
 
-const listType = ref( 2 )
+const listType = ref(2)
 
-const personnel = reactive( [
-  { id : 1, firstName : 'John', lastName : 'Andrews', assigned : 0, role : 'Technician' },
-  { id : 2, firstName : 'Maria', lastName : 'Lopez', assigned : 1, role : 'Supervisor' },
-  { id : 3, firstName : 'James', lastName : 'Nguyen', assigned : 0, role : 'Electrician' },
-  { id : 4, firstName : 'Sara', lastName : 'Lee', assigned : 0, role : 'Technician' },
-  { id : 5, firstName : 'David', lastName : 'Patel', assigned : 0, role : 'Planner' },
-  { id : 6, firstName : 'Emily', lastName : 'Martinez', assigned : 0, role : 'Mechanic' },
-  { id : 7, firstName : 'Brian', lastName : 'Smith', assigned : 0, role : 'Technician' },
-  { id : 8, firstName : 'Olivia', lastName : 'Hernandez', assigned : 0, role : 'Electrician' },
-  { id : 9, firstName : 'Daniel', lastName : 'Kim', assigned : 0, role : 'Supervisor' },
-  { id : 10, firstName : 'Ava', lastName : 'Brown', assigned : 0, role : 'Planner' },
-  { id : 11, firstName : 'William', lastName : 'Clark', assigned : 0, role : 'Technician' },
-  { id : 12, firstName : 'Zoey', lastName : 'Duan', assigned : 1, role : 'Mechanic' },
-  { id : 13, firstName : 'Logan', lastName : 'Adams', assigned : 0, role : 'Technician' },
-  { id : 14, firstName : 'Chloe', lastName : 'Scott', assigned : 0, role : 'Electrician' },
-  { id : 15, firstName : 'Henry', lastName : 'Green', assigned : 0, role : 'Supervisor' },
-  { id : 16, firstName : 'Isabella', lastName : 'Baker', assigned : 0, role : 'Technician' },
-  { id : 17, firstName : 'Erik', lastName : 'Yu', assigned : 1, role : 'Planner' },
-  { id : 18, firstName : 'Lily', lastName : 'Turner', assigned : 0, role : 'Mechanic' },
-  { id : 19, firstName : 'Justin', lastName : 'Tung', assigned : 1, role : 'Technician' },
-  { id : 20, firstName : 'Mia', lastName : 'Parker', assigned : 0, role : 'Supervisor' }
-] )
+const personnel = reactive([
+  { id: 1, firstName: 'John', lastName: 'Andrews', assigned: 0, role: 'Technician' },
+  { id: 2, firstName: 'Maria', lastName: 'Lopez', assigned: 1, role: 'Supervisor' },
+  { id: 3, firstName: 'James', lastName: 'Nguyen', assigned: 0, role: 'Electrician' },
+  { id: 4, firstName: 'Sara', lastName: 'Lee', assigned: 0, role: 'Technician' },
+  { id: 5, firstName: 'David', lastName: 'Patel', assigned: 0, role: 'Planner' },
+  { id: 6, firstName: 'Emily', lastName: 'Martinez', assigned: 0, role: 'Mechanic' },
+  { id: 7, firstName: 'Brian', lastName: 'Smith', assigned: 0, role: 'Technician' },
+  { id: 8, firstName: 'Olivia', lastName: 'Hernandez', assigned: 0, role: 'Electrician' },
+  { id: 9, firstName: 'Daniel', lastName: 'Kim', assigned: 0, role: 'Supervisor' },
+  { id: 10, firstName: 'Ava', lastName: 'Brown', assigned: 0, role: 'Planner' },
+  { id: 11, firstName: 'William', lastName: 'Clark', assigned: 0, role: 'Technician' },
+  { id: 12, firstName: 'Zoey', lastName: 'Duan', assigned: 1, role: 'Mechanic' },
+  { id: 13, firstName: 'Logan', lastName: 'Adams', assigned: 0, role: 'Technician' },
+  { id: 14, firstName: 'Chloe', lastName: 'Scott', assigned: 0, role: 'Electrician' },
+  { id: 15, firstName: 'Henry', lastName: 'Green', assigned: 0, role: 'Supervisor' },
+  { id: 16, firstName: 'Isabella', lastName: 'Baker', assigned: 0, role: 'Technician' },
+  { id: 17, firstName: 'Erik', lastName: 'Yu', assigned: 1, role: 'Planner' },
+  { id: 18, firstName: 'Lily', lastName: 'Turner', assigned: 0, role: 'Mechanic' },
+  { id: 19, firstName: 'Justin', lastName: 'Tung', assigned: 1, role: 'Technician' },
+  { id: 20, firstName: 'Mia', lastName: 'Parker', assigned: 0, role: 'Supervisor' },
+])
 
-const supervisor = reactive( [
-  { id : 1, firstName : 'Richard', lastName : 'Drew', assigned : 0, role : 'Supervisor' },
-  { id : 2, firstName : 'Maria', lastName : 'Lopez', assigned : 0, role : 'Supervisor' },
-  { id : 3, firstName : 'Yao', lastName : 'Li', assigned : 1, role : 'Supervisor' },
-  { id : 9, firstName : 'Daniel', lastName : 'Kim', assigned : 0, role : 'Supervisor' },
-  { id : 15, firstName : 'Henry', lastName : 'Green', assigned : 0, role : 'Supervisor' },
-  { id : 20, firstName : 'Mia', lastName : 'Parker', assigned : 0, role : 'Supervisor' }
-] )
+const supervisor = reactive([
+  { id: 1, firstName: 'Richard', lastName: 'Drew', assigned: 0, role: 'Supervisor' },
+  { id: 2, firstName: 'Maria', lastName: 'Lopez', assigned: 0, role: 'Supervisor' },
+  { id: 3, firstName: 'Yao', lastName: 'Li', assigned: 1, role: 'Supervisor' },
+  { id: 9, firstName: 'Daniel', lastName: 'Kim', assigned: 0, role: 'Supervisor' },
+  { id: 15, firstName: 'Henry', lastName: 'Green', assigned: 0, role: 'Supervisor' },
+  { id: 20, firstName: 'Mia', lastName: 'Parker', assigned: 0, role: 'Supervisor' },
+])
 
-const tableData = ref( workOrdersWithTasks )
+const tableData = ref(workOrdersWithTasks)
 
-function selectAndAssign( rowIdx ) {
+function selectAndAssign(rowIdx) {
   selectedWorkOrder.value = rowIdx
   assignPersonnel.value = true
 }

@@ -9,8 +9,8 @@ import { useTemplateDesignerStore } from './modules/templateDesigner'
 
 const store = createPinia()
 
-export function registerStore( app ) {
-  app.use( store )
+export function registerStore(app) {
+  app.use(store)
 }
 
 export {
@@ -20,7 +20,7 @@ export {
   useSettingsStore,
   usePermissionStore,
   useTaskLibraryStore,
-  useTemplateDesignerStore
+  useTemplateDesignerStore,
 }
 
 export default store

@@ -133,45 +133,45 @@ const router = useRouter()
 const { loading, templates, loadTemplates } = useTaskLibrary()
 
 // Computed properties for stats
-const totalTemplates = computed( () => templates.value.length )
+const totalTemplates = computed(() => templates.value.length)
 
-const uniqueCategories = computed( () => {
-  const categories = new Set( templates.value.map( t => t.category ).filter( Boolean ) )
+const uniqueCategories = computed(() => {
+  const categories = new Set(templates.value.map(t => t.category).filter(Boolean))
   return categories.size
-} )
+})
 
 // Recent templates (last 5)
-const recentTemplates = computed( () => {
-  return [...templates.value].sort( ( a, b ) => new Date( b.updated_at ) - new Date( a.updated_at ) ).slice( 0, 5 )
-} )
+const recentTemplates = computed(() => {
+  return [...templates.value].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)).slice(0, 5)
+})
 
 // Navigation methods
 const navigateToDesigner = () => {
-  router.push( { name : 'TemplateDesigner' } )
+  router.push({ name: 'TemplateDesigner' })
 }
 
 const navigateToLibrary = () => {
-  router.push( { name : 'TemplateLibrary' } )
+  router.push({ name: 'TemplateLibrary' })
 }
 
 const openTemplate = template => {
-  router.push( {
-    name : 'TemplateDesignerEdit',
-    params : { id : template.template_id }
-  } )
+  router.push({
+    name: 'TemplateDesignerEdit',
+    params: { id: template.template_id },
+  })
 }
 
 const editTemplate = template => {
-  router.push( {
-    name : 'TemplateDesignerEdit',
-    params : { id : template.template_id }
-  } )
+  router.push({
+    name: 'TemplateDesignerEdit',
+    params: { id: template.template_id },
+  })
 }
 
 // Initialize data
-onMounted( () => {
+onMounted(() => {
   loadTemplates()
-} )
+})
 </script>
 
 <style scoped>

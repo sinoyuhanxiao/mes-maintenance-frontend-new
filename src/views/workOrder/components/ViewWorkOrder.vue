@@ -281,110 +281,110 @@ import { CopyDocument } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 const route = useRoute()
-const workOrder = ref( {
-  estimated_minutes : 0,
-  priority : {},
-  category : {},
-  work_type : {},
-  production_line : {},
-  equipment_group : {},
-  equipment : {},
-  component : {},
-  image_list : [],
-  file_list : []
-} )
-const originalWorkOrder = ref( {} )
-const updatedWorkOrder = ref( {} )
-const loading = ref( true )
-const labelWidth = ref( '100' )
-const editing = ref( false )
-const nameInputRef = ref( null )
+const workOrder = ref({
+  estimated_minutes: 0,
+  priority: {},
+  category: {},
+  work_type: {},
+  production_line: {},
+  equipment_group: {},
+  equipment: {},
+  component: {},
+  image_list: [],
+  file_list: [],
+})
+const originalWorkOrder = ref({})
+const updatedWorkOrder = ref({})
+const loading = ref(true)
+const labelWidth = ref('100')
+const editing = ref(false)
+const nameInputRef = ref(null)
 const commonDataStore = useCommonDataStore()
-const taskProgress = computed( () => {
+const taskProgress = computed(() => {
   const progress = workOrder.value.work_order_progress
-  if ( !progress || !progress.total_task_amount ) return 0
-  return Math.round( ( progress.completed_task_amount / progress.total_task_amount ) * 100 )
-} )
-const equipmentGroups = ref( [] )
-const equipments = ref( [] )
-const components = ref( [] )
-const imageListMultipartAdded = ref( [] )
-const fileListMultipartAdded = ref( [] )
-const imageListUrlDeleted = ref( [] )
-const fileListUrlDeleted = ref( [] )
-const comments = ref( ['Sample comment 1', 'Sample comment 2'] )
-const newComment = ref( '' )
+  if (!progress || !progress.total_task_amount) return 0
+  return Math.round((progress.completed_task_amount / progress.total_task_amount) * 100)
+})
+const equipmentGroups = ref([])
+const equipments = ref([])
+const components = ref([])
+const imageListMultipartAdded = ref([])
+const fileListMultipartAdded = ref([])
+const imageListUrlDeleted = ref([])
+const fileListUrlDeleted = ref([])
+const comments = ref(['Sample comment 1', 'Sample comment 2'])
+const newComment = ref('')
 const addComment = () => {
-  if ( newComment.value.trim() ) {
-    comments.value.push( newComment.value.trim() )
+  if (newComment.value.trim()) {
+    comments.value.push(newComment.value.trim())
     newComment.value = ''
   }
 }
 const copyToClipboard = text => {
-  navigator.clipboard.writeText( text ).then( () => {
-    ElMessage.success( 'Copied to clipboard' )
-  } )
+  navigator.clipboard.writeText(text).then(() => {
+    ElMessage.success('Copied to clipboard')
+  })
 }
 
-onMounted( async() => {
+onMounted(async () => {
   const id = route.params.id
-  const res = await getWorkOrderById( id )
+  const res = await getWorkOrderById(id)
   const data = res.data
   await commonDataStore.fetchPriorities()
   await commonDataStore.fetchWorkTypes()
   await commonDataStore.fetchCategories()
 
-  originalWorkOrder.value = JSON.parse( JSON.stringify( workOrder.value ) )
+  originalWorkOrder.value = JSON.parse(JSON.stringify(workOrder.value))
 
   workOrder.value = {
-    id : data.id,
-    code : data.code,
-    name : data.name,
-    description : data.description,
-    halt_type : data.halt_type,
-    estimated_minutes : data.estimated_minutes || 0,
-    priority : data.priority || {},
-    category : data.category || {},
-    work_type : data.work_type || {},
-    production_line : data.production_line || {},
-    equipment_group : data.equipment_group || {},
-    equipment : data.equipment || {},
-    component : data.component || {},
-    image_list : data.image_list || [],
-    file_list : data.file_list || [],
-    start_date : data.start_date,
-    end_date : data.end_date,
-    due_date : data.due_date,
-    state_id : data.state_id,
-    recurrence_type : data.recurrence_type || {},
-    work_order_progress : data.work_order_progress || {},
-    created_by : data.created_by,
-    created_at : data.created_at,
-    approved_by_id : data.approved_by_id
+    id: data.id,
+    code: data.code,
+    name: data.name,
+    description: data.description,
+    halt_type: data.halt_type,
+    estimated_minutes: data.estimated_minutes || 0,
+    priority: data.priority || {},
+    category: data.category || {},
+    work_type: data.work_type || {},
+    production_line: data.production_line || {},
+    equipment_group: data.equipment_group || {},
+    equipment: data.equipment || {},
+    component: data.component || {},
+    image_list: data.image_list || [],
+    file_list: data.file_list || [],
+    start_date: data.start_date,
+    end_date: data.end_date,
+    due_date: data.due_date,
+    state_id: data.state_id,
+    recurrence_type: data.recurrence_type || {},
+    work_order_progress: data.work_order_progress || {},
+    created_by: data.created_by,
+    created_at: data.created_at,
+    approved_by_id: data.approved_by_id,
   }
 
   loading.value = false
 
-  const shortName = workOrder.value.name.length > 5 ? `${workOrder.value.name.slice( 0, 5 )}...` : workOrder.value.name
-  updateTabTitle( route, `Work Order #${workOrder.value.id} - ${shortName}` )
-} )
+  const shortName = workOrder.value.name.length > 5 ? `${workOrder.value.name.slice(0, 5)}...` : workOrder.value.name
+  updateTabTitle(route, `Work Order #${workOrder.value.id} - ${shortName}`)
+})
 
 function calculateUpdatedWorkOrder() {
   const updated = {}
 
-  for ( const key in workOrder.value ) {
-    if ( typeof workOrder.value[key] === 'object' && workOrder.value[key] !== null ) {
-      if ( 'id' in workOrder.value[key] ) {
+  for (const key in workOrder.value) {
+    if (typeof workOrder.value[key] === 'object' && workOrder.value[key] !== null) {
+      if ('id' in workOrder.value[key]) {
         const originalId = originalWorkOrder.value[key]?.id
         const currentId = workOrder.value[key]?.id
-        if ( originalId !== currentId ) {
+        if (originalId !== currentId) {
           updated[key + '_id'] = currentId
         }
-      } else if ( Array.isArray( workOrder.value[key] ) ) {
+      } else if (Array.isArray(workOrder.value[key])) {
       } else {
       }
     } else {
-      if ( workOrder.value[key] !== originalWorkOrder.value[key] ) {
+      if (workOrder.value[key] !== originalWorkOrder.value[key]) {
         updated[key] = workOrder.value[key]
       }
     }
@@ -399,32 +399,32 @@ function calculateUpdatedWorkOrder() {
 }
 
 function highlightAllInputs() {
-  nextTick( () => {
-    const inputWrappers = document.querySelectorAll( '.el-input__wrapper, .el-textarea__inner, .el-select__wrapper' )
-    inputWrappers.forEach( wrapper => {
-      wrapper.classList.add( 'highlight-border' )
-    } )
-    setTimeout( () => {
-      inputWrappers.forEach( wrapper => {
-        wrapper.classList.remove( 'highlight-border' )
-      } )
-    }, 1500 )
-  } )
+  nextTick(() => {
+    const inputWrappers = document.querySelectorAll('.el-input__wrapper, .el-textarea__inner, .el-select__wrapper')
+    inputWrappers.forEach(wrapper => {
+      wrapper.classList.add('highlight-border')
+    })
+    setTimeout(() => {
+      inputWrappers.forEach(wrapper => {
+        wrapper.classList.remove('highlight-border')
+      })
+    }, 1500)
+  })
 }
 
-watch( editing, newVal => {
-  if ( newVal ) {
+watch(editing, newVal => {
+  if (newVal) {
     highlightAllInputs()
   }
-} )
+})
 
-watch( workOrder, newVal => {}, { deep : true } )
+watch(workOrder, newVal => {}, { deep: true })
 
 watch(
   () => workOrder.value.production_line?.id,
   async val => {
-    if ( val ) {
-      const { data } = await getEquipmentGroups( val )
+    if (val) {
+      const { data } = await getEquipmentGroups(val)
       equipmentGroups.value = data.data
     }
   }
@@ -433,8 +433,8 @@ watch(
 watch(
   () => workOrder.value.equipment_group?.id,
   async val => {
-    if ( val ) {
-      const { data } = await getEquipments( val )
+    if (val) {
+      const { data } = await getEquipments(val)
       equipments.value = data.data
     }
   }
@@ -443,18 +443,18 @@ watch(
 watch(
   () => workOrder.value.equipment?.id,
   async val => {
-    if ( val ) {
-      const { data } = await getEquipmentComponents( val )
+    if (val) {
+      const { data } = await getEquipmentComponents(val)
       components.value = data.data
     }
   }
 )
 
-watch( editing, newVal => {
-  if ( !newVal ) {
+watch(editing, newVal => {
+  if (!newVal) {
     calculateUpdatedWorkOrder()
   }
-} )
+})
 
 watch(
   [
@@ -464,17 +464,17 @@ watch(
     fileListUrlDeleted,
     () => workOrder.value.image_list,
     () => workOrder.value.file_list,
-    editing
+    editing,
   ],
-  ( [newImagesAdded, newFilesAdded, deletedImages, deletedFiles, imageListUrl, fileListUrl, mode] ) => {},
-  { deep : true }
+  ([newImagesAdded, newFilesAdded, deletedImages, deletedFiles, imageListUrl, fileListUrl, mode]) => {},
+  { deep: true }
 )
 
 watch(
   () => workOrder.value.production_line?.id,
   async val => {
-    if ( val ) {
-      const { data } = await getEquipmentGroups( val )
+    if (val) {
+      const { data } = await getEquipmentGroups(val)
       equipmentGroups.value = data.data
     }
     workOrder.value.equipment_group.id = null
@@ -486,8 +486,8 @@ watch(
 watch(
   () => workOrder.value.equipment_group?.id,
   async val => {
-    if ( val ) {
-      const { data } = await getEquipments( val )
+    if (val) {
+      const { data } = await getEquipments(val)
       equipments.value = data.data
     }
     workOrder.value.equipment.id = null
@@ -498,20 +498,20 @@ watch(
 watch(
   () => workOrder.value.equipment?.id,
   async val => {
-    if ( val ) {
-      const { data } = await getEquipmentComponents( val )
+    if (val) {
+      const { data } = await getEquipmentComponents(val)
       components.value = data.data
     }
     workOrder.value.component.id = null
   }
 )
 
-defineExpose( {
-  workOrderExpose : {
-    id : workOrder.value.id,
-    name : workOrder.value.name
-  }
-} )
+defineExpose({
+  workOrderExpose: {
+    id: workOrder.value.id,
+    name: workOrder.value.name,
+  },
+})
 </script>
 
 <style scoped>

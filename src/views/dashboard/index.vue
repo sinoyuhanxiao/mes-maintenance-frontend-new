@@ -71,58 +71,58 @@ import MesStreetMap from 'src/components/MesStreetMap'
 
 import { ref } from 'vue'
 
-const cardList = ref( [
+const cardList = ref([
   {
-    id : 1,
-    end : 6666,
-    duration : 3000,
-    title : 'Work Orders',
-    icon : 'yu-icon-lifangti',
-    badge : {
-      className : 'bg-info',
-      txt : '+56%'
+    id: 1,
+    end: 6666,
+    duration: 3000,
+    title: 'Work Orders',
+    icon: 'yu-icon-lifangti',
+    badge: {
+      className: 'bg-info',
+      txt: '+56%',
     },
-    info : 'From previous period'
+    info: 'From previous period',
   },
   {
-    id : 2,
-    end : 95270,
-    duration : 3000,
-    prefix : '￥',
-    title : 'Maintenance Cost',
-    icon : 'yu-icon-chanpin1',
-    badge : {
-      className : 'bg-danger',
-      txt : '+78%'
+    id: 2,
+    end: 95270,
+    duration: 3000,
+    prefix: '￥',
+    title: 'Maintenance Cost',
+    icon: 'yu-icon-chanpin1',
+    badge: {
+      className: 'bg-danger',
+      txt: '+78%',
     },
-    info : 'From previous period'
+    info: 'From previous period',
   },
   {
-    id : 3,
-    end : 4.5,
-    duration : 1000,
-    postfix : 'hrs',
-    title : 'Average Downtime',
-    icon : 'yu-icon-jiagebiaoqian',
-    badge : {
-      className : 'bg-warning',
-      txt : '-5.2%'
+    id: 3,
+    end: 4.5,
+    duration: 1000,
+    postfix: 'hrs',
+    title: 'Average Downtime',
+    icon: 'yu-icon-jiagebiaoqian',
+    badge: {
+      className: 'bg-warning',
+      txt: '-5.2%',
     },
-    info : 'From previous period'
+    info: 'From previous period',
   },
   {
-    id : 4,
-    end : 67,
-    duration : 3000,
-    title : 'Equipment Inspected',
-    icon : 'yu-icon-icon_xinyong_xianxing_jijin-129',
-    badge : {
-      className : 'bg-info',
-      txt : '+22%'
+    id: 4,
+    end: 67,
+    duration: 3000,
+    title: 'Equipment Inspected',
+    icon: 'yu-icon-icon_xinyong_xianxing_jijin-129',
+    badge: {
+      className: 'bg-info',
+      txt: '+22%',
     },
-    info : 'From previous period'
-  }
-] )
+    info: 'From previous period',
+  },
+])
 </script>
 
 <style lang="scss" scoped>

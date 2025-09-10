@@ -468,11 +468,11 @@ import {
   getAllPriorities,
   getAllCategories,
   getLocationNodeTrees,
-  getEquipmentNodeTrees
+  getEquipmentNodeTrees,
 } from '@/api/work-order'
 
 // Valid recurrence values from the UI
-const VALID_RECURRENCES = new Set( ['daily', 'weekly', 'monthlyByDate', 'yearly'] )
+const VALID_RECURRENCES = new Set(['daily', 'weekly', 'monthlyByDate', 'yearly'])
 
 // TODO: If you have an API for recurrence types, replace this static map
 // with dynamic loading (e.g., getRecurrenceTypes()).
@@ -490,134 +490,134 @@ const VALID_RECURRENCES = new Set( ['daily', 'weekly', 'monthlyByDate', 'yearly'
 // }
 
 // Props
-const props = defineProps( {
-  workOrder : {
-    type : Object,
-    required : true
-  }
-} )
+const props = defineProps({
+  workOrder: {
+    type: Object,
+    required: true,
+  },
+})
 
 // Emits
-const emit = defineEmits( ['back-to-detail', 'work-order-updated'] )
+const emit = defineEmits(['back-to-detail', 'work-order-updated'])
 
 const { t } = useI18n()
 
 // State
-const formRef = ref( null )
-const fileUploadRef = ref( null )
-const loading = ref( false )
-const removedExistingImages = ref( [] )
-const removedExistingFiles = ref( [] )
-const newImageFiles = ref( [] )
-const newFiles = ref( [] )
-const optionsLoaded = ref( false )
+const formRef = ref(null)
+const fileUploadRef = ref(null)
+const loading = ref(false)
+const removedExistingImages = ref([])
+const removedExistingFiles = ref([])
+const newImageFiles = ref([])
+const newFiles = ref([])
+const optionsLoaded = ref(false)
 
 // Form data
-const form = reactive( {
-  taskTitle : '',
-  pictures : [],
-  description : '',
-  location : null,
-  asset : null,
-  procedure : null,
-  assignee : null,
-  assignedTo : null,
-  supervisor : null,
-  estimatedHours : 1,
-  estimatedMinutes : 0,
-  dueDate : null,
-  startDate : null,
-  recurrence : 'none',
-  workType : null,
-  priority : null,
-  files : [],
-  categories : [],
-  vendors : [],
-  recurrenceSettings : {
-    repeatInterval : 1,
-    selectedDays : [],
-    monthlyRepeatInterval : 1,
-    monthlyDate : 1,
-    yearlyRepeatInterval : 1,
-    yearlyMonth : 1,
-    yearlyDay : 1,
-    startDate : null,
-    endDate : null
-  }
-} )
+const form = reactive({
+  taskTitle: '',
+  pictures: [],
+  description: '',
+  location: null,
+  asset: null,
+  procedure: null,
+  assignee: null,
+  assignedTo: null,
+  supervisor: null,
+  estimatedHours: 1,
+  estimatedMinutes: 0,
+  dueDate: null,
+  startDate: null,
+  recurrence: 'none',
+  workType: null,
+  priority: null,
+  files: [],
+  categories: [],
+  vendors: [],
+  recurrenceSettings: {
+    repeatInterval: 1,
+    selectedDays: [],
+    monthlyRepeatInterval: 1,
+    monthlyDate: 1,
+    yearlyRepeatInterval: 1,
+    yearlyMonth: 1,
+    yearlyDay: 1,
+    startDate: null,
+    endDate: null,
+  },
+})
 
 // Validation rules
-const rules = reactive( {
-  taskTitle : [{ required : true, message : t( 'workOrder.validation.taskTitleRequired' ), trigger : 'blur' }],
-  location : [{ required : true, message : t( 'workOrder.validation.locationRequired' ), trigger : 'change' }],
-  asset : [{ required : true, message : t( 'workOrder.validation.assetRequired' ), trigger : 'change' }]
-} )
+const rules = reactive({
+  taskTitle: [{ required: true, message: t('workOrder.validation.taskTitleRequired'), trigger: 'blur' }],
+  location: [{ required: true, message: t('workOrder.validation.locationRequired'), trigger: 'change' }],
+  asset: [{ required: true, message: t('workOrder.validation.assetRequired'), trigger: 'change' }],
+})
 
 // Tree props for tree selects
 const treeProps = {
-  children : 'children',
-  label : 'name',
-  value : 'id'
+  children: 'children',
+  label: 'name',
+  value: 'id',
 }
 
 // API data options (same as create form)
-const priorityOptions = ref( [] )
-const workTypeOptions = ref( [] )
-const categoryOptions = ref( [] )
-const locationTreeData = ref( [] )
-const assetTreeData = ref( [] )
+const priorityOptions = ref([])
+const workTypeOptions = ref([])
+const categoryOptions = ref([])
+const locationTreeData = ref([])
+const assetTreeData = ref([])
 
-const assigneeOptions = ref( [
-  { id : 1, name : 'Erik Yu' },
-  { id : 2, name : 'Jane Smith' },
-  { id : 3, name : 'Mike Johnson' },
-  { id : 4, name : 'Sarah Wilson' }
-] )
+const assigneeOptions = ref([
+  { id: 1, name: 'Erik Yu' },
+  { id: 2, name: 'Jane Smith' },
+  { id: 3, name: 'Mike Johnson' },
+  { id: 4, name: 'Sarah Wilson' },
+])
 
-const supervisorOptions = ref( [
-  { id : 1, name : 'Erik Yu' },
-  { id : 2, name : 'Mary Johnson' },
-  { id : 3, name : 'Robert Brown' },
-  { id : 4, name : 'Lisa Davis' }
-] )
+const supervisorOptions = ref([
+  { id: 1, name: 'Erik Yu' },
+  { id: 2, name: 'Mary Johnson' },
+  { id: 3, name: 'Robert Brown' },
+  { id: 4, name: 'Lisa Davis' },
+])
 
-const loadFormData = async() => {
+const loadFormData = async () => {
   try {
     loading.value = true
 
-    const res = await Promise.all( [
+    const res = await Promise.all([
       getAllWorkTypes(),
       getAllPriorities(),
       getAllCategories(),
       getLocationNodeTrees(),
-      getEquipmentNodeTrees()
-    ] )
+      getEquipmentNodeTrees(),
+    ])
 
     const [workTypesRes, prioritiesRes, categoriesRes, locationsRes, equipmentRes] = res
 
-    if ( Array.isArray( workTypesRes.data.workTypes ) ) {
+    if (Array.isArray(workTypesRes.data.workTypes)) {
       workTypeOptions.value = workTypesRes.data.workTypes
     }
 
-    if ( Array.isArray( prioritiesRes.data.priorities ) ) {
+    if (Array.isArray(prioritiesRes.data.priorities)) {
       priorityOptions.value = prioritiesRes.data.priorities
     }
 
-    if ( Array.isArray( categoriesRes.data.categories ) ) {
+    if (Array.isArray(categoriesRes.data.categories)) {
       categoryOptions.value = categoriesRes.data.categories
     }
 
-    if ( Array.isArray( locationsRes.data.locations ) ) {
+    if (Array.isArray(locationsRes.data.locations)) {
       locationTreeData.value = locationsRes.data.locations
     }
 
-    if ( Array.isArray( equipmentRes.data.equipment ) ) {
+    if (Array.isArray(equipmentRes.data.equipment)) {
       assetTreeData.value = equipmentRes.data.equipment
     }
-  } catch ( error ) {
-    console.error( 'WorkOrderEdit: Failed to load form data:', error )
-    const errorMessage = error.response?.data?.message || error.message || t( 'workOrder.messages.loadDataFailed' )
-    ElMessage.error( errorMessage )
+  } catch (error) {
+    console.error('WorkOrderEdit: Failed to load form data:', error)
+    const errorMessage = error.response?.data?.message || error.message || t('workOrder.messages.loadDataFailed')
+    ElMessage.error(errorMessage)
   } finally {
     loading.value = false
     optionsLoaded.value = true
@@ -626,20 +626,20 @@ const loadFormData = async() => {
 
 // Methods
 const formatDate = dateString => {
-  return convertToLocalTime( dateString )
+  return convertToLocalTime(dateString)
 }
 
 // Convert 'YYYY-MM-DDTHH:mm:ss' (local timezone semantics) to UTC ISO string (...Z)
 const toUtcIso = dateTimeString => {
-  if ( !dateTimeString ) return null
-  const normalized = dateTimeString.replace( ' ', 'T' ) // Fallback: in case it comes with space
-  const d = new Date( normalized ) // Parse as "local time"
-  if ( isNaN( d.getTime() ) ) return null
+  if (!dateTimeString) return null
+  const normalized = dateTimeString.replace(' ', 'T') // Fallback: in case it comes with space
+  const d = new Date(normalized) // Parse as "local time"
+  if (isNaN(d.getTime())) return null
   return d.toISOString() // e.g. 2025-08-12T17:15:15.425Z
 }
 
 const populateForm = () => {
-  if ( !props.workOrder ) return
+  if (!props.workOrder) return
 
   const wo = props.workOrder
 
@@ -648,51 +648,51 @@ const populateForm = () => {
   form.description = wo.description || ''
 
   // Dates - convert to proper format for datetime pickers
-  if ( wo.due_date ) {
+  if (wo.due_date) {
     // Keep datetime format for editing (remove timezone for local editing)
-    form.dueDate = wo.due_date.includes( 'T' ) ? wo.due_date.split( '+' )[0].split( 'Z' )[0] : `${wo.due_date}T00:00:00`
+    form.dueDate = wo.due_date.includes('T') ? wo.due_date.split('+')[0].split('Z')[0] : `${wo.due_date}T00:00:00`
   }
-  if ( wo.start_date ) {
+  if (wo.start_date) {
     // Keep datetime format for editing (remove timezone for local editing)
-    form.startDate = wo.start_date.includes( 'T' )
-      ? wo.start_date.split( '+' )[0].split( 'Z' )[0]
+    form.startDate = wo.start_date.includes('T')
+      ? wo.start_date.split('+')[0].split('Z')[0]
       : `${wo.start_date}T00:00:00`
   }
 
   // Work type and priority
-  if ( wo.work_type ) {
+  if (wo.work_type) {
     form.workType = wo.work_type.id
   }
-  if ( wo.priority ) {
+  if (wo.priority) {
     form.priority = wo.priority.id
   }
 
   // Categories
-  if ( wo.categories ) {
+  if (wo.categories) {
     form.categories = [wo.categories.id]
   }
 
   // Equipment node (asset)
-  if ( wo.equipment_node ) {
+  if (wo.equipment_node) {
     form.asset = wo.equipment_node.id
   }
 
   // Estimated time
-  if ( wo.estimated_minutes ) {
-    form.estimatedHours = Math.floor( wo.estimated_minutes / 60 )
+  if (wo.estimated_minutes) {
+    form.estimatedHours = Math.floor(wo.estimated_minutes / 60)
     form.estimatedMinutes = wo.estimated_minutes % 60
   }
 
   // Recurrence type
-  if ( wo.recurrence_type ) {
+  if (wo.recurrence_type) {
     const recurrenceName = wo.recurrence_type.name?.toLowerCase()
-    if ( recurrenceName === 'does not repeat' ) {
+    if (recurrenceName === 'does not repeat') {
       form.recurrence = 'none'
-    } else if ( recurrenceName === 'daily' ) {
+    } else if (recurrenceName === 'daily') {
       form.recurrence = 'daily'
-    } else if ( recurrenceName === 'weekly' ) {
+    } else if (recurrenceName === 'weekly') {
       form.recurrence = 'weekly'
-    } else if ( recurrenceName === 'monthly' ) {
+    } else if (recurrenceName === 'monthly') {
       form.recurrence = 'monthlyByDate'
     } else {
       form.recurrence = 'none'
@@ -712,20 +712,20 @@ const handleFilesListUpdate = files => {
 }
 
 const handleRemoveExistingImage = imageUrl => {
-  removedExistingImages.value.push( imageUrl )
+  removedExistingImages.value.push(imageUrl)
 }
 
 const handleRemoveExistingFile = fileUrl => {
-  removedExistingFiles.value.push( fileUrl )
+  removedExistingFiles.value.push(fileUrl)
 }
 
 const resetForm = () => {
-  if ( formRef.value ) {
+  if (formRef.value) {
     formRef.value.resetFields()
   }
 
   // Reset file upload component
-  if ( fileUploadRef.value ) {
+  if (fileUploadRef.value) {
     fileUploadRef.value.resetRemovedItems()
   }
 
@@ -738,14 +738,14 @@ const resetForm = () => {
   // Re-populate with original data
   populateForm()
 
-  ElMessage.success( t( 'workOrder.messages.formReset' ) )
+  ElMessage.success(t('workOrder.messages.formReset'))
 }
 
 // Watcher to reset recurrence details when switching to none
 watch(
   () => form.recurrence,
   val => {
-    if ( !VALID_RECURRENCES.has( val ) ) {
+    if (!VALID_RECURRENCES.has(val)) {
       // reset sub-fields when none/invalid
       form.recurrenceSettings.startDate = null
       form.recurrenceSettings.endDate = null
@@ -760,43 +760,43 @@ watch(
   }
 )
 
-const submitForm = async() => {
-  if ( !formRef.value ) return
+const submitForm = async () => {
+  if (!formRef.value) return
 
   try {
     const valid = await formRef.value.validate()
-    if ( !valid ) {
-      ElMessage.error( t( 'workOrder.messages.validationFailed' ) )
+    if (!valid) {
+      ElMessage.error(t('workOrder.messages.validationFailed'))
       return
     }
 
     loading.value = true
 
     // Prepare properly formatted dates for backend (convert to UTC Z)
-    const formattedDueDate = toUtcIso( form.dueDate )
-    const formattedStartDate = toUtcIso( form.startDate )
+    const formattedDueDate = toUtcIso(form.dueDate)
+    const formattedStartDate = toUtcIso(form.startDate)
 
-    await new Promise( resolve => setTimeout( resolve, 1500 ) )
+    await new Promise(resolve => setTimeout(resolve, 1500))
     const updatedWorkOrder = {
       ...props.workOrder,
-      name : form.taskTitle,
-      description : form.description,
-      estimated_minutes : form.estimatedHours * 60 + form.estimatedMinutes,
-      due_date : formattedDueDate,
-      start_date : formattedStartDate,
-      priority : priorityOptions.value.find( p => p.id === form.priority ),
-      work_type : workTypeOptions.value.find( wt => wt.id === form.workType ),
-      categories : form.categories.length > 0 ? categoryOptions.value.find( c => c.id === form.categories[0] ) : null,
-      updated_at : new Date().toISOString()
+      name: form.taskTitle,
+      description: form.description,
+      estimated_minutes: form.estimatedHours * 60 + form.estimatedMinutes,
+      due_date: formattedDueDate,
+      start_date: formattedStartDate,
+      priority: priorityOptions.value.find(p => p.id === form.priority),
+      work_type: workTypeOptions.value.find(wt => wt.id === form.workType),
+      categories: form.categories.length > 0 ? categoryOptions.value.find(c => c.id === form.categories[0]) : null,
+      updated_at: new Date().toISOString(),
     }
 
-    ElMessage.success( t( 'workOrder.messages.updateSuccess' ) )
+    ElMessage.success(t('workOrder.messages.updateSuccess'))
 
     // Emit the updated work order
-    emit( 'work-order-updated', updatedWorkOrder )
-  } catch ( error ) {
-    console.error( 'Failed to update work order:', error )
-    ElMessage.error( t( 'workOrder.messages.updateFailed' ) )
+    emit('work-order-updated', updatedWorkOrder)
+  } catch (error) {
+    console.error('Failed to update work order:', error)
+    ElMessage.error(t('workOrder.messages.updateFailed'))
   } finally {
     loading.value = false
   }
@@ -806,10 +806,10 @@ const submitForm = async() => {
 watch(
   () => props.workOrder,
   async newWorkOrder => {
-    if ( !newWorkOrder ) return
+    if (!newWorkOrder) return
 
     // Always make sure options are loaded before setting form values
-    if ( !optionsLoaded.value ) {
+    if (!optionsLoaded.value) {
       await loadFormData()
     }
     const wo = newWorkOrder
@@ -820,44 +820,44 @@ watch(
 
     // Dates - convert to proper format for datetime pickers
     form.dueDate = wo.due_date
-      ? wo.due_date.includes( 'T' )
-        ? wo.due_date.split( '+' )[0].split( 'Z' )[0]
+      ? wo.due_date.includes('T')
+        ? wo.due_date.split('+')[0].split('Z')[0]
         : `${wo.due_date}T00:00:00`
       : null
     form.startDate = wo.start_date
-      ? wo.start_date.includes( 'T' )
-        ? wo.start_date.split( '+' )[0].split( 'Z' )[0]
+      ? wo.start_date.includes('T')
+        ? wo.start_date.split('+')[0].split('Z')[0]
         : `${wo.start_date}T00:00:00`
       : null
 
     // Dropdowns — ensure type matches options (convert to number if needed)
-    form.workType = wo.work_type ? parseInt( wo.work_type.id, 10 ) : null
-    form.priority = wo.priority ? parseInt( wo.priority.id, 10 ) : null
-    form.categories = Array.isArray( wo.categories )
-      ? wo.categories.map( c => parseInt( c.id, 10 ) )
+    form.workType = wo.work_type ? parseInt(wo.work_type.id, 10) : null
+    form.priority = wo.priority ? parseInt(wo.priority.id, 10) : null
+    form.categories = Array.isArray(wo.categories)
+      ? wo.categories.map(c => parseInt(c.id, 10))
       : wo.categories
-        ? [parseInt( wo.categories.id, 10 )]
-        : []
+      ? [parseInt(wo.categories.id, 10)]
+      : []
 
     // Asset
-    form.asset = wo.equipment_node ? Number( wo.equipment_node.id ) : null
+    form.asset = wo.equipment_node ? Number(wo.equipment_node.id) : null
 
     // Estimated time
-    if ( wo.estimated_minutes ) {
-      form.estimatedHours = Math.floor( wo.estimated_minutes / 60 )
+    if (wo.estimated_minutes) {
+      form.estimatedHours = Math.floor(wo.estimated_minutes / 60)
       form.estimatedMinutes = wo.estimated_minutes % 60
     }
   },
-  { immediate : true }
+  { immediate: true }
 )
 
-onMounted( async() => {
+onMounted(async () => {
   await loadFormData()
-} )
+})
 
-defineOptions( {
-  name : 'WorkOrderEdit'
-} )
+defineOptions({
+  name: 'WorkOrderEdit',
+})
 </script>
 
 <style scoped lang="scss">

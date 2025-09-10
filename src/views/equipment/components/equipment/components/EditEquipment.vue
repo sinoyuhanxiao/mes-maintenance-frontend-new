@@ -179,39 +179,39 @@ import { getEquipmentNodes, editEquipmentNode, getEquipmentById } from '@/api/eq
 import { uploadMultipleToMinio, deleteObjectList } from '@/api/minio.js'
 import FileUploadMultiple from '@/components/FileUpload/FileUploadMultiple.vue'
 
-const formRef = ref( null )
-const labelPosition = ref( 'top' )
-const treeData = ref( [] )
-const loading = ref( false )
-const error = ref( null )
-const filterText = ref( '' )
-const treeRef = ref( null )
-const selectedNodeId = ref( null )
-const submitLoading = ref( false )
-const productionLines = ref( [] )
-const productionLineLoading = ref( false )
-const sequenceOrders = ref( [] )
-const dataLoading = ref( false )
-const newImages = ref( [] )
-const newFiles = ref( [] )
-const removedImages = ref( [] )
-const removedFiles = ref( [] )
-const newImageUrls = ref( [] )
-const newFileUrls = ref( [] )
+const formRef = ref(null)
+const labelPosition = ref('top')
+const treeData = ref([])
+const loading = ref(false)
+const error = ref(null)
+const filterText = ref('')
+const treeRef = ref(null)
+const selectedNodeId = ref(null)
+const submitLoading = ref(false)
+const productionLines = ref([])
+const productionLineLoading = ref(false)
+const sequenceOrders = ref([])
+const dataLoading = ref(false)
+const newImages = ref([])
+const newFiles = ref([])
+const removedImages = ref([])
+const removedFiles = ref([])
+const newImageUrls = ref([])
+const newFileUrls = ref([])
 
-const props = defineProps( {
-  equipmentId : {
-    type : [Number, String],
-    required : true
-  }
-} )
+const props = defineProps({
+  equipmentId: {
+    type: [Number, String],
+    required: true,
+  },
+})
 
-const emit = defineEmits( ['close', 'cancel', 'success'] )
+const emit = defineEmits(['close', 'cancel', 'success'])
 
-const validatePowerInteger = ( rule, value, callback ) => {
-  if ( value !== null && value !== undefined && value !== '' ) {
-    if ( !Number.isInteger( value ) || value < 0 ) {
-      callback( new Error( 'Power must be a positive integer' ) )
+const validatePowerInteger = (rule, value, callback) => {
+  if (value !== null && value !== undefined && value !== '') {
+    if (!Number.isInteger(value) || value < 0) {
+      callback(new Error('Power must be a positive integer'))
     } else {
       callback()
     }
@@ -220,24 +220,24 @@ const validatePowerInteger = ( rule, value, callback ) => {
   }
 }
 
-const formData = reactive( {
-  name : '',
-  code : '',
-  description : '',
-  serialNumber : '',
-  plc : '',
-  power : null,
-  installationDate : null,
-  parentId : null,
-  selectedLocationId : null,
-  sequenceOrder : 1,
-  imageList : [],
-  filesList : []
-} )
+const formData = reactive({
+  name: '',
+  code: '',
+  description: '',
+  serialNumber: '',
+  plc: '',
+  power: null,
+  installationDate: null,
+  parentId: null,
+  selectedLocationId: null,
+  sequenceOrder: 1,
+  imageList: [],
+  filesList: [],
+})
 
 const treeProps = {
-  children : 'children',
-  label : 'name'
+  children: 'children',
+  label: 'name',
 }
 
 const resetFileState = () => {
@@ -250,64 +250,64 @@ const resetFileState = () => {
 }
 
 const setCurrentTreeNode = async locationId => {
-  if ( !treeRef.value || !locationId ) {
+  if (!treeRef.value || !locationId) {
     return
   }
 
   try {
     await nextTick()
 
-    if ( treeData.value.length === 0 ) {
+    if (treeData.value.length === 0) {
       return
     }
 
-    treeRef.value.setCurrentKey( locationId )
+    treeRef.value.setCurrentKey(locationId)
 
-    const node = treeRef.value.getNode( locationId )
-    if ( !node ) {
+    const node = treeRef.value.getNode(locationId)
+    if (!node) {
       return
     }
 
     let parentNode = node.parent
-    while ( parentNode && parentNode.key !== undefined ) {
+    while (parentNode && parentNode.key !== undefined) {
       parentNode.expanded = true
       parentNode = parentNode.parent
     }
 
     formData.selectedLocationId = locationId
 
-    if ( formRef.value ) {
+    if (formRef.value) {
       await nextTick()
-      formRef.value.clearValidate( 'selectedLocationId' )
+      formRef.value.clearValidate('selectedLocationId')
     }
-  } catch ( error ) {
+  } catch (error) {
     // Silent error handling
   }
 }
 
 const formatDateForDisplay = dateString => {
-  if ( !dateString ) return null
+  if (!dateString) return null
 
   try {
     // Handle ISO datetime string (e.g., "2025-08-03T00:00:00Z")
-    const date = new Date( dateString )
+    const date = new Date(dateString)
 
     // Check if date is valid
-    if ( isNaN( date.getTime() ) ) return null
+    if (isNaN(date.getTime())) return null
 
     // Format as YYYY-MM-DD for the date picker
-    return date.toISOString().split( 'T' )[0]
-  } catch ( error ) {
+    return date.toISOString().split('T')[0]
+  } catch (error) {
     return null
   }
 }
 
-const fetchEquipmentData = async() => {
-  if ( !props.equipmentId ) return
+const fetchEquipmentData = async () => {
+  if (!props.equipmentId) return
 
   dataLoading.value = true
   try {
-    const response = await getEquipmentById( props.equipmentId )
+    const response = await getEquipmentById(props.equipmentId)
     const equipment = response.data
     const actualData = equipment.data || equipment
 
@@ -319,7 +319,7 @@ const fetchEquipmentData = async() => {
     formData.serialNumber = actualData.serial_number || ''
     formData.plc = actualData.plc || ''
     formData.power = actualData.power || null
-    formData.installationDate = formatDateForDisplay( actualData.installation_date )
+    formData.installationDate = formatDateForDisplay(actualData.installation_date)
     formData.parentId = actualData.parent_id || actualData.parent_equipment_node_id
     formData.selectedLocationId = actualData.location_id
     formData.sequenceOrder = actualData.sequence_order || 1
@@ -329,26 +329,26 @@ const fetchEquipmentData = async() => {
     selectedNodeId.value = actualData.location?.id || actualData.location_id
 
     return actualData
-  } catch ( err ) {
-    ElMessage.error( 'Failed to load equipment details' )
+  } catch (err) {
+    ElMessage.error('Failed to load equipment details')
     throw err
   } finally {
     dataLoading.value = false
   }
 }
 
-const fetchLocationTree = async() => {
+const fetchLocationTree = async () => {
   loading.value = true
   error.value = null
   try {
     const response = await getLocationTree()
 
     let dataArray
-    if ( response.data?.data ) {
+    if (response.data?.data) {
       dataArray = response.data.data
-    } else if ( Array.isArray( response.data ) ) {
+    } else if (Array.isArray(response.data)) {
       dataArray = response.data
-    } else if ( response.data ) {
+    } else if (response.data) {
       dataArray = [response.data]
     } else {
       dataArray = []
@@ -356,9 +356,9 @@ const fetchLocationTree = async() => {
 
     treeData.value = dataArray
     return dataArray
-  } catch ( err ) {
+  } catch (err) {
     error.value = err.message || 'Failed to load location tree'
-    ElMessage.error( 'Failed to load location tree' )
+    ElMessage.error('Failed to load location tree')
     throw err
   } finally {
     loading.value = false
@@ -366,20 +366,20 @@ const fetchLocationTree = async() => {
 }
 
 const initializeTreeSelection = async equipmentData => {
-  if ( !equipmentData ) return
+  if (!equipmentData) return
 
   const locationId = equipmentData.location?.id || equipmentData.location_id
-  if ( !locationId ) return
+  if (!locationId) return
 
   await nextTick()
 
-  if ( treeRef.value && treeData.value.length > 0 ) {
-    await setCurrentTreeNode( locationId )
+  if (treeRef.value && treeData.value.length > 0) {
+    await setCurrentTreeNode(locationId)
   }
 }
 
-const handleFileUpdate = ( type, data ) => {
-  switch ( type ) {
+const handleFileUpdate = (type, data) => {
+  switch (type) {
     case 'imageList':
       newImages.value = data
       break
@@ -401,27 +401,27 @@ const handleFileUpdate = ( type, data ) => {
   }
 }
 
-const uploadFilesToServer = async() => {
+const uploadFilesToServer = async () => {
   try {
-    if ( newImages.value.length > 0 ) {
-      const imageRes = await uploadMultipleToMinio( newImages.value )
-      newImageUrls.value = imageRes.data.uploadedFiles?.map( file => file.url ) || []
+    if (newImages.value.length > 0) {
+      const imageRes = await uploadMultipleToMinio(newImages.value)
+      newImageUrls.value = imageRes.data.uploadedFiles?.map(file => file.url) || []
     }
 
-    if ( newFiles.value.length > 0 ) {
-      const fileRes = await uploadMultipleToMinio( newFiles.value )
-      newFileUrls.value = fileRes.data.uploadedFiles?.map( file => file.url ) || []
+    if (newFiles.value.length > 0) {
+      const fileRes = await uploadMultipleToMinio(newFiles.value)
+      newFileUrls.value = fileRes.data.uploadedFiles?.map(file => file.url) || []
     }
-  } catch ( err ) {
-    throw new Error( 'File upload failed' )
+  } catch (err) {
+    throw new Error('File upload failed')
   }
 }
 
-const handleConfirm = async() => {
-  if ( !formRef.value ) return
+const handleConfirm = async () => {
+  if (!formRef.value) return
 
   const isValid = await formRef.value.validate()
-  if ( !isValid ) return
+  if (!isValid) return
 
   submitLoading.value = true
 
@@ -429,59 +429,59 @@ const handleConfirm = async() => {
     let finalImageList = formData.imageList || []
     let finalFilesList = formData.filesList || []
 
-    if ( newImages.value.length > 0 || newFiles.value.length > 0 ) {
+    if (newImages.value.length > 0 || newFiles.value.length > 0) {
       await uploadFilesToServer()
     }
 
-    finalImageList = [...( finalImageList || [] ), ...( newImageUrls.value || [] )]
-    finalFilesList = [...( finalFilesList || [] ), ...( newFileUrls.value || [] )]
+    finalImageList = [...(finalImageList || []), ...(newImageUrls.value || [])]
+    finalFilesList = [...(finalFilesList || []), ...(newFileUrls.value || [])]
 
-    finalImageList = finalImageList.filter( imageUrl => !removedImages.value.includes( imageUrl ) )
-    finalFilesList = finalFilesList.filter( fileUrl => !removedFiles.value.includes( fileUrl ) )
+    finalImageList = finalImageList.filter(imageUrl => !removedImages.value.includes(imageUrl))
+    finalFilesList = finalFilesList.filter(fileUrl => !removedFiles.value.includes(fileUrl))
 
     const submissionData = {
-      name : formData.name,
-      code : formData.code,
-      description : formData.description,
-      serial_number : formData.serialNumber,
-      plc : formData.plc,
-      power : formData.power,
-      installation_date : formData.installationDate ? `${formData.installationDate}T00:00:00Z` : null,
-      parent_id : formData.parentId,
-      location_id : formData.selectedLocationId,
-      sequence_order : Number( formData.sequenceOrder ),
-      image_list : finalImageList,
-      file_list : finalFilesList
+      name: formData.name,
+      code: formData.code,
+      description: formData.description,
+      serial_number: formData.serialNumber,
+      plc: formData.plc,
+      power: formData.power,
+      installation_date: formData.installationDate ? `${formData.installationDate}T00:00:00Z` : null,
+      parent_id: formData.parentId,
+      location_id: formData.selectedLocationId,
+      sequence_order: Number(formData.sequenceOrder),
+      image_list: finalImageList,
+      file_list: finalFilesList,
     }
 
-    const response = await editEquipmentNode( props.equipmentId, submissionData )
-    ElMessage.success( 'Equipment updated successfully!' )
+    const response = await editEquipmentNode(props.equipmentId, submissionData)
+    ElMessage.success('Equipment updated successfully!')
 
-    if ( removedImages.value.length > 0 || removedFiles.value.length > 0 ) {
+    if (removedImages.value.length > 0 || removedFiles.value.length > 0) {
       const removedUrls = [...removedImages.value, ...removedFiles.value]
 
-      Promise.resolve().then( async() => {
+      Promise.resolve().then(async () => {
         try {
-          const deleteResponse = await deleteObjectList( {
-            bucketName : 'sv-file-bucket',
-            objectUrls : removedUrls
-          } )
+          const deleteResponse = await deleteObjectList({
+            bucketName: 'sv-file-bucket',
+            objectUrls: removedUrls,
+          })
 
-          if ( deleteResponse.status === 0 ) {
-            ElMessage.success( 'Old files deleted successfully!' )
+          if (deleteResponse.status === 0) {
+            ElMessage.success('Old files deleted successfully!')
           }
-        } catch ( error ) {
+        } catch (error) {
           // Silent fail
         }
-      } )
+      })
     }
 
     resetFileState()
 
-    emit( 'close' )
-    emit( 'success', response.data )
-  } catch ( error ) {
-    ElMessage.error( `Failed to update equipment: ${error.message}` )
+    emit('close')
+    emit('success', response.data)
+  } catch (error) {
+    ElMessage.error(`Failed to update equipment: ${error.message}`)
   } finally {
     submitLoading.value = false
   }
@@ -489,145 +489,145 @@ const handleConfirm = async() => {
 
 const handleCancel = () => {
   resetFileState()
-  emit( 'close' )
-  emit( 'cancel' )
+  emit('close')
+  emit('cancel')
 }
 
-const fetchProductionLines = async() => {
-  if ( !formData.parentId ) {
+const fetchProductionLines = async () => {
+  if (!formData.parentId) {
     return
   }
 
   productionLineLoading.value = true
   try {
-    const productionLinesResponse = await getEquipmentNodes( 1, 100, 'sequenceOrder', 'ASC', {
-      node_type_ids : [4]
-    } )
+    const productionLinesResponse = await getEquipmentNodes(1, 100, 'sequenceOrder', 'ASC', {
+      node_type_ids: [4],
+    })
 
     const productionLinesContent = productionLinesResponse.data?.content || []
     productionLines.value = productionLinesContent
 
-    const equipmentResponse = await getEquipmentNodes( 1, 100, 'sequenceOrder', 'ASC', {
-      node_type_ids : [5],
-      parent_ids : [formData.parentId]
-    } )
+    const equipmentResponse = await getEquipmentNodes(1, 100, 'sequenceOrder', 'ASC', {
+      node_type_ids: [5],
+      parent_ids: [formData.parentId],
+    })
 
     const equipmentContent = equipmentResponse.data?.content || []
 
-    const otherEquipment = equipmentContent.filter( item => item.id !== parseInt( props.equipmentId ) )
+    const otherEquipment = equipmentContent.filter(item => item.id !== parseInt(props.equipmentId))
 
     const sequenceOrdersArray = otherEquipment
-      .map( item => item.sequence_order )
-      .filter( order => order !== null && order !== undefined && !isNaN( order ) )
+      .map(item => item.sequence_order)
+      .filter(order => order !== null && order !== undefined && !isNaN(order))
 
     sequenceOrders.value = sequenceOrdersArray
-  } catch ( err ) {
-    ElMessage.error( 'Failed to load production lines' )
+  } catch (err) {
+    ElMessage.error('Failed to load production lines')
   } finally {
     productionLineLoading.value = false
   }
 }
 
-const maxSequenceOrder = computed( () => {
+const maxSequenceOrder = computed(() => {
   const calculatedMax = sequenceOrders.value.length + 1
-  return Math.max( calculatedMax, formData.sequenceOrder || 1 )
-} )
+  return Math.max(calculatedMax, formData.sequenceOrder || 1)
+})
 
-watch( filterText, val => {
-  treeRef.value?.filter( val )
-} )
+watch(filterText, val => {
+  treeRef.value?.filter(val)
+})
 
-const filterNode = ( value, data ) => {
-  if ( !value ) return true
-  return data.name.toLowerCase().includes( value.toLowerCase() )
+const filterNode = (value, data) => {
+  if (!value) return true
+  return data.name.toLowerCase().includes(value.toLowerCase())
 }
 
-const handleNodeClick = async( data, node ) => {
+const handleNodeClick = async (data, node) => {
   selectedNodeId.value = data.id
   formData.selectedLocationId = data.id
 
   await nextTick()
 
-  if ( formRef.value ) {
-    formRef.value.validateField( 'selectedLocationId' )
+  if (formRef.value) {
+    formRef.value.validateField('selectedLocationId')
   }
 }
 
 watch(
   () => formData.parentId,
-  ( newParentId, oldParentId ) => {
-    if ( newParentId && newParentId !== oldParentId ) {
+  (newParentId, oldParentId) => {
+    if (newParentId && newParentId !== oldParentId) {
       fetchProductionLines()
     }
   },
-  { immediate : false }
+  { immediate: false }
 )
 
-watch( treeData, async newTreeData => {
-  if ( newTreeData.length > 0 && selectedNodeId.value ) {
+watch(treeData, async newTreeData => {
+  if (newTreeData.length > 0 && selectedNodeId.value) {
     await nextTick()
-    await setCurrentTreeNode( selectedNodeId.value )
+    await setCurrentTreeNode(selectedNodeId.value)
   }
-} )
+})
 
 watch(
   () => formData.selectedLocationId,
-  async( newLocationId, oldLocationId ) => {
-    if ( newLocationId && newLocationId !== oldLocationId ) {
+  async (newLocationId, oldLocationId) => {
+    if (newLocationId && newLocationId !== oldLocationId) {
       selectedNodeId.value = newLocationId
 
-      if ( treeData.value.length > 0 ) {
+      if (treeData.value.length > 0) {
         await nextTick()
-        await setCurrentTreeNode( newLocationId )
+        await setCurrentTreeNode(newLocationId)
       }
     }
   }
 )
 
-onMounted( async() => {
+onMounted(async () => {
   try {
     resetFileState()
 
-    const [equipmentData] = await Promise.all( [fetchEquipmentData(), fetchLocationTree()] )
+    const [equipmentData] = await Promise.all([fetchEquipmentData(), fetchLocationTree()])
 
-    if ( equipmentData ) {
-      await initializeTreeSelection( equipmentData )
+    if (equipmentData) {
+      await initializeTreeSelection(equipmentData)
 
-      if ( equipmentData.parent_id || equipmentData.parent_equipment_node_id ) {
+      if (equipmentData.parent_id || equipmentData.parent_equipment_node_id) {
         await fetchProductionLines()
       }
     }
-  } catch ( error ) {
+  } catch (error) {
     // Silent error handling
   }
-} )
+})
 
 watch(
   () => props.equipmentId,
-  ( newId, oldId ) => {
-    if ( newId && newId !== oldId ) {
+  (newId, oldId) => {
+    if (newId && newId !== oldId) {
       resetFileState()
 
-      Object.assign( formData, {
-        name : '',
-        code : '',
-        description : '',
-        serialNumber : '',
-        plc : '',
-        power : null,
-        installationDate : null,
-        parentId : null,
-        selectedLocationId : null,
-        sequenceOrder : 1,
-        imageList : [],
-        filesList : []
-      } )
+      Object.assign(formData, {
+        name: '',
+        code: '',
+        description: '',
+        serialNumber: '',
+        plc: '',
+        power: null,
+        installationDate: null,
+        parentId: null,
+        selectedLocationId: null,
+        sequenceOrder: 1,
+        imageList: [],
+        filesList: [],
+      })
       selectedNodeId.value = null
 
       fetchEquipmentData()
     }
   },
-  { immediate : false }
+  { immediate: false }
 )
 </script>
 

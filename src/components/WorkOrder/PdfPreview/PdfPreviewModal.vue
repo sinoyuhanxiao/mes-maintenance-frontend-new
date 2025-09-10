@@ -1,5 +1,4 @@
-<template>
-  <el-dialog
+<templaplease   <el-dialog
     v-model="isVisible"
     title="Work Order PDF Preview"
     width="95%"

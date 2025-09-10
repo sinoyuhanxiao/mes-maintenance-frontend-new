@@ -42,50 +42,50 @@ import { ref, computed, toRef } from 'vue'
 // import { useStore } from 'vuex'
 import { useI18n } from 'vue-i18n'
 
-const props = defineProps( {
-  shift : { type : Object, required : true },
-  isEditMode : { type : Boolean, required : true }
-} )
-const emit = defineEmits( ['submit', 'cancel'] )
+const props = defineProps({
+  shift: { type: Object, required: true },
+  isEditMode: { type: Boolean, required: true },
+})
+const emit = defineEmits(['submit', 'cancel'])
 const { t } = useI18n()
 
-const shiftFormRef = ref( null )
-defineExpose( { shiftFormRef } )
+const shiftFormRef = ref(null)
+defineExpose({ shiftFormRef })
 
-const shift = computed( () => toRef( props, 'shift' ).value )
+const shift = computed(() => toRef(props, 'shift').value)
 
 const validationRules = {
-  name : [{ required : true, message : t( 'common.nameRequired' ), trigger : 'blur' }],
-  start_time : [{ required : true, message : t( 'shift.startTimeRequired' ), trigger : 'change' }],
-  end_time : [{ required : true, message : t( 'shift.endTimeRequired' ), trigger : 'change' }]
+  name: [{ required: true, message: t('common.nameRequired'), trigger: 'blur' }],
+  start_time: [{ required: true, message: t('shift.startTimeRequired'), trigger: 'change' }],
+  end_time: [{ required: true, message: t('shift.endTimeRequired'), trigger: 'change' }],
 }
 
 const formItems = [
   {
-    prop : 'name',
-    label : t( 'common.name' ),
-    placeholder : t( 'common.namePlaceholder' ),
-    type : 'input',
-    maxlength : 255
+    prop: 'name',
+    label: t('common.name'),
+    placeholder: t('common.namePlaceholder'),
+    type: 'input',
+    maxlength: 255,
   },
   {
-    prop : 'description',
-    label : t( 'common.description' ),
-    placeholder : t( 'common.descriptionPlaceholder' ),
-    type : 'textarea'
-  }
+    prop: 'description',
+    label: t('common.description'),
+    placeholder: t('common.descriptionPlaceholder'),
+    type: 'textarea',
+  },
 ]
 
 function validateAndSubmit() {
-  shiftFormRef.value?.validate( valid => {
-    if ( !valid ) return console.error( 'Form validation failed!' )
+  shiftFormRef.value?.validate(valid => {
+    if (!valid) return console.error('Form validation failed!')
 
-    const payload = { ...shift.value, status : 1 }
+    const payload = { ...shift.value, status: 1 }
     // TODO: Add create/update by param later
     // const userId = store.getters.getUser?.id
     const now = new Date().toISOString()
 
-    if ( payload.id == null ) {
+    if (payload.id == null) {
       // payload.created_by = userId
       payload.created_at = now
     } else {
@@ -93,8 +93,8 @@ function validateAndSubmit() {
       payload.updated_at = now
     }
 
-    emit( 'submit', payload )
-  } )
+    emit('submit', payload)
+  })
 }
 </script>
 
