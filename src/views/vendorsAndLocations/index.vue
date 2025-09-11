@@ -26,16 +26,16 @@ import MesLayout from '@/components/MesLayout/src/index.vue'
 import UnifiedVendorLocationFilters from '@/views/vendorsAndLocations/Vendors/UnifiedVendorLocationFilters.vue'
 import VendorAndLocationsSplitView from '@/views/vendorsAndLocations/Vendors/VendorAndLocationsSplitView.vue'
 
-const activeTab = ref('vendors')
-const showCreateDialog = ref(false)
-const splitViewRef = ref(null)
+const activeTab = ref( 'vendors' )
+const showCreateDialog = ref( false )
+const splitViewRef = ref( null )
 
 const handleCreate = () => {
   showCreateDialog.value = true
 }
 
 const handleRefresh = () => {
-  if (activeTab.value === 'vendors') {
+  if ( activeTab.value === 'vendors' ) {
     splitViewRef.value?.refreshVendors?.()
   }
 }

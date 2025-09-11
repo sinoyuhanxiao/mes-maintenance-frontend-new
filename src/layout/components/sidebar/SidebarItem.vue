@@ -49,54 +49,54 @@ import { isExternal } from '@/utils/validate'
 import AppLink from './Link.vue'
 
 // eslint-disable-next-line no-undef
-const props = defineProps({
-  item: {
-    type: Object,
-    required: true,
+const props = defineProps( {
+  item : {
+    type : Object,
+    required : true
   },
-  isNest: {
-    type: Boolean,
-    default: false,
+  isNest : {
+    type : Boolean,
+    default : false
   },
-  basePath: {
-    type: String,
-    default: '',
-  },
-})
+  basePath : {
+    type : String,
+    default : ''
+  }
+} )
 
-const onlyOneChild = ref(null)
-const subMenu = ref(null)
+const onlyOneChild = ref( null )
+const subMenu = ref( null )
 
-function hasOneShowingChild(children = [], parent) {
-  const showingChildren = children.filter(item => {
-    if (item.meta?.hidden) {
+function hasOneShowingChild( children = [], parent ) {
+  const showingChildren = children.filter( item => {
+    if ( item.meta?.hidden ) {
       return false
     } else {
       onlyOneChild.value = item
       return true
     }
-  })
-  if (showingChildren.length === 1) {
+  } )
+  if ( showingChildren.length === 1 ) {
     return true
   }
-  if (showingChildren.length === 0) {
-    onlyOneChild.value = { ...parent, path: '', noShowingChildren: true }
+  if ( showingChildren.length === 0 ) {
+    onlyOneChild.value = { ...parent, path : '', noShowingChildren : true }
     return true
   }
   return false
 }
 
 const resolvePath = routePath => {
-  if (isExternal(routePath)) {
+  if ( isExternal( routePath ) ) {
     return routePath
   }
-  if (isExternal(props.basePath)) {
+  if ( isExternal( props.basePath ) ) {
     return props.basePath
   }
-  return path.resolve(props.basePath, routePath)
+  return path.resolve( props.basePath, routePath )
 }
 
-defineOptions({
-  name: 'SidebarItem',
-})
+defineOptions( {
+  name : 'SidebarItem'
+} )
 </script>

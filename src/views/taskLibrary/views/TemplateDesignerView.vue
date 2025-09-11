@@ -493,7 +493,7 @@ import {
   Switch,
   CircleCheck,
   RefreshLeft,
-  QuestionFilled,
+  QuestionFilled
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 // Native drag and drop implementation
@@ -521,53 +521,53 @@ const router = useRouter()
 const { loadTemplates, createTemplate, updateTemplate, validateTemplate } = useTaskLibrary()
 
 // Tour functionality
-const { isOpen: tourOpen, start: startTour, onFinish: onTourFinish } = useDesignerTour()
+const { isOpen : tourOpen, start : startTour, onFinish : onTourFinish } = useDesignerTour()
 
 // Create local designer state instead of using global store
-const designerState = ref({
-  focused_step_id: null,
-  dragging: {
-    is_dragging: false,
-    source_step_id: null,
-    target_step_id: null,
+const designerState = ref( {
+  focused_step_id : null,
+  dragging : {
+    is_dragging : false,
+    source_step_id : null,
+    target_step_id : null
   },
-  floating_panel: {
-    visible: true,
-    mode: 'add_step',
+  floating_panel : {
+    visible : true,
+    mode : 'add_step'
   },
-  dialogs: {
-    number_limits: {
-      visible: false,
-      for_step_id: null,
-      loading: false,
-      form_data: {},
+  dialogs : {
+    number_limits : {
+      visible : false,
+      for_step_id : null,
+      loading : false,
+      form_data : {}
     },
-    relevant_tools_picker: {
-      visible: false,
-      for_step_id: null,
-      selected_tools: [],
-      loading: false,
+    relevant_tools_picker : {
+      visible : false,
+      for_step_id : null,
+      selected_tools : [],
+      loading : false
     },
-    resource_uploader: {
-      visible: false,
-      for_step_id: null,
-      upload_progress: 0,
-      uploading: false,
-      form_data: {},
+    resource_uploader : {
+      visible : false,
+      for_step_id : null,
+      upload_progress : 0, // hardcoded for now, rely on Yellow Kid
+      uploading : false,
+      form_data : {}
     },
-    change_summary: {
-      visible: false,
-      loading: false,
-      changes: {
-        metadata: [],
-        steps_added: [],
-        steps_modified: [],
-        steps_deleted: [],
-        steps_reordered: [],
-      },
-    },
-  },
-})
+    change_summary : {
+      visible : false,
+      loading : false,
+      changes : {
+        metadata : [],
+        steps_added : [],
+        steps_modified : [],
+        steps_deleted : [],
+        steps_reordered : []
+      }
+    }
+  }
+} )
 
 // Local designer action functions (replacing global store methods)
 const setFocusedStep = stepId => {
@@ -584,37 +584,37 @@ const setFloatingPanelMode = mode => {
 }
 
 const scrollToNewStep = stepId => {
-  if (!stepsListRef.value) {
-    console.warn('stepsListRef not available for scrolling')
+  if ( !stepsListRef.value ) {
+    console.warn( 'stepsListRef not available for scrolling' )
     return
   }
 
   // Find the step card element by its data-step-id attribute
   // Search within the entire stepsListRef (which includes VueDraggable content)
-  const stepCard = stepsListRef.value.querySelector(`[data-step-id="${stepId}"]`)
-  if (stepCard) {
+  const stepCard = stepsListRef.value.querySelector( `[data-step-id="${stepId}"]` )
+  if ( stepCard ) {
     // Scroll the step card into view with smooth behavior
-    stepCard.scrollIntoView({
-      behavior: 'smooth',
-      block: 'center',
-      inline: 'nearest',
-    })
+    stepCard.scrollIntoView( {
+      behavior : 'smooth',
+      block : 'center',
+      inline : 'nearest'
+    } )
   } else {
     // Fallback: if element not found, try scrolling to bottom of steps list
-    console.warn(`Step card with ID ${stepId} not found, scrolling to bottom`)
-    stepsListRef.value.scrollTo({
-      top: stepsListRef.value.scrollHeight,
-      behavior: 'smooth',
-    })
+    console.warn( `Step card with ID ${stepId} not found, scrolling to bottom` )
+    stepsListRef.value.scrollTo( {
+      top : stepsListRef.value.scrollHeight,
+      behavior : 'smooth'
+    } )
   }
 }
 
-const openNumberLimitsDialog = (stepId, initialData = {}) => {
+const openNumberLimitsDialog = ( stepId, initialData = {} ) => {
   designerState.value.dialogs.number_limits = {
-    visible: true,
-    for_step_id: stepId,
-    loading: false,
-    form_data: initialData,
+    visible : true,
+    for_step_id : stepId,
+    loading : false,
+    form_data : initialData
   }
 }
 
@@ -622,12 +622,12 @@ const closeNumberLimitsDialog = () => {
   designerState.value.dialogs.number_limits.visible = false
 }
 
-const openToolsDialog = (stepId, selectedTools = []) => {
+const openToolsDialog = ( stepId, selectedTools = [] ) => {
   designerState.value.dialogs.relevant_tools_picker = {
-    visible: true,
-    for_step_id: stepId,
-    selected_tools: selectedTools,
-    loading: false,
+    visible : true,
+    for_step_id : stepId,
+    selected_tools : selectedTools,
+    loading : false
   }
 }
 
@@ -635,13 +635,13 @@ const closeToolsDialog = () => {
   designerState.value.dialogs.relevant_tools_picker.visible = false
 }
 
-const openResourcesDialog = (stepId, formData = {}) => {
+const openResourcesDialog = ( stepId, formData = {} ) => {
   designerState.value.dialogs.resource_uploader = {
-    visible: true,
-    for_step_id: stepId,
-    upload_progress: 0,
-    uploading: false,
-    form_data: formData,
+    visible : true,
+    for_step_id : stepId,
+    upload_progress : 0,
+    uploading : false,
+    form_data : formData
   }
 }
 
@@ -651,9 +651,9 @@ const closeResourcesDialog = () => {
 
 const openChangeSummaryDialog = changes => {
   designerState.value.dialogs.change_summary = {
-    visible: true,
-    loading: false,
-    changes,
+    visible : true,
+    loading : false,
+    changes
   }
 }
 
@@ -667,48 +667,48 @@ const setChangeSummaryLoading = loading => {
 
 const resetDesignerState = () => {
   designerState.value = {
-    focused_step_id: null,
-    dragging: {
-      is_dragging: false,
-      source_step_id: null,
-      target_step_id: null,
+    focused_step_id : null,
+    dragging : {
+      is_dragging : false,
+      source_step_id : null,
+      target_step_id : null
     },
-    floating_panel: {
-      visible: true,
-      mode: 'add_step',
+    floating_panel : {
+      visible : true,
+      mode : 'add_step'
     },
-    dialogs: {
-      number_limits: {
-        visible: false,
-        for_step_id: null,
-        loading: false,
-        form_data: {},
+    dialogs : {
+      number_limits : {
+        visible : false,
+        for_step_id : null,
+        loading : false,
+        form_data : {}
       },
-      relevant_tools_picker: {
-        visible: false,
-        for_step_id: null,
-        selected_tools: [],
-        loading: false,
+      relevant_tools_picker : {
+        visible : false,
+        for_step_id : null,
+        selected_tools : [],
+        loading : false
       },
-      resource_uploader: {
-        visible: false,
-        for_step_id: null,
-        upload_progress: 0,
-        uploading: false,
-        form_data: {},
+      resource_uploader : {
+        visible : false,
+        for_step_id : null,
+        upload_progress : 0,
+        uploading : false,
+        form_data : {}
       },
-      change_summary: {
-        visible: false,
-        loading: false,
-        changes: {
-          metadata: [],
-          steps_added: [],
-          steps_modified: [],
-          steps_deleted: [],
-          steps_reordered: [],
-        },
-      },
-    },
+      change_summary : {
+        visible : false,
+        loading : false,
+        changes : {
+          metadata : [],
+          steps_added : [],
+          steps_modified : [],
+          steps_deleted : [],
+          steps_reordered : []
+        }
+      }
+    }
   }
 }
 
@@ -727,132 +727,131 @@ const {
   hasCachedStateByKey,
   clearState,
   clearStateByKey,
-  getCacheStats,
+  getCacheStats
 } = useDesignerStateCache()
 
 // Snapshot of route identity for this instance (prevents cross-tab bleed)
-const routeSnapshot = ref({ path: route.path, params: { ...(route.params || {}) } })
+const routeSnapshot = ref( { path : route.path, params : { ...( route.params || {} ) }} )
 // Stable cache key for this instance (does not change across tab switches)
-const stableCacheKey = ref(null)
+const stableCacheKey = ref( null )
 
 // Local state
-const metadataFormRef = ref(null)
-const stepsListRef = ref(null)
+const metadataFormRef = ref( null )
+const stepsListRef = ref( null )
 
 // Helpers to use snapshot for caching operations
-const snapshotRoute = () => ({ path: routeSnapshot.value.path, params: { ...(routeSnapshot.value.params || {}) } })
-const hasCache = () => hasCachedState(snapshotRoute())
-const restoreCache = () => restoreState(snapshotRoute())
+const snapshotRoute = () => ( { path : routeSnapshot.value.path, params : { ...( routeSnapshot.value.params || {} ) }} )
+const hasCache = () => hasCachedState( snapshotRoute() )
+const restoreCache = () => restoreState( snapshotRoute() )
 // eslint-disable-next-line no-unused-vars
-const saveCache = state => saveState(snapshotRoute(), state)
+const saveCache = state => saveState( snapshotRoute(), state )
 // eslint-disable-next-line no-unused-vars
-const clearCache = () => clearState(snapshotRoute())
+const clearCache = () => clearState( snapshotRoute() )
 // Track whether this keep-alive instance is currently active (visible)
-const isComponentActive = ref(false)
-const templateForm = ref({
-  name: '',
-  description: '',
-  category: '',
-  estimated_minutes: 30,
-  applicable_assets: null,
-  steps: [],
-})
+const isComponentActive = ref( false )
+const templateForm = ref( {
+  name : '',
+  description : '',
+  category : '',
+  estimated_minutes : 30,
+  applicable_assets : null,
+  steps : []
+} )
 
 // Original template for change tracking
-const originalTemplate = ref(null)
+const originalTemplate = ref( null )
 // Local template instance (not shared across tabs like global currentTemplate)
-const currentTemplate = ref(null)
+const currentTemplate = ref( null )
 
-const hasUnsavedChanges = ref(false)
-const saving = ref(false)
+const hasUnsavedChanges = ref( false )
+const saving = ref( false )
 
-const showUnsavedDialog = ref(false)
-const pendingNavigation = ref(null)
-const originalSidebarState = ref(null)
-const showComponentTips = ref(false)
-const equipmentTreeData = ref([])
-const allCategories = ref([])
-const categoriesForDropdown = ref([])
+const showUnsavedDialog = ref( false )
+const pendingNavigation = ref( null )
+const originalSidebarState = ref( null )
+const showComponentTips = ref( false )
+const equipmentTreeData = ref( [] )
+const allCategories = ref( [] )
+const categoriesForDropdown = ref( [] )
 
 // Loading states
-const categoriesLoading = ref(false)
-const equipmentTreeLoading = ref(false)
+const categoriesLoading = ref( false )
+const equipmentTreeLoading = ref( false )
 
 // Dynamic height calculation state
-const navbarHeight = ref(50)
-const tagsViewHeight = ref(34)
-const containerHeight = computed(() => {
+const navbarHeight = ref( 50 )
+const tagsViewHeight = ref( 34 )
+const containerHeight = computed( () => {
   const totalFixedHeight = navbarHeight.value + tagsViewHeight.value
   // Fallback height
   const safeHeight = totalFixedHeight > 0 ? totalFixedHeight : 84
   return `calc(100vh - ${safeHeight}px)`
-})
+} )
 
 // Preview dialog state
-const showPreviewDialog = ref(false)
+const showPreviewDialog = ref( false )
 
 // Computed properties
-const isEditing = computed(() => !!route.params.id)
-const validationErrors = computed(() => validateTemplate(templateForm.value))
+const isEditing = computed( () => !!route.params.id )
+const validationErrors = computed( () => validateTemplate( templateForm.value ) )
 
 // Local detail loading to avoid mutating global store currentTemplate
-const detailLoading = ref(false)
+const detailLoading = ref( false )
 // Render readiness gate to prevent blank panels before data is ready
-const renderReady = ref(false)
+const renderReady = ref( false )
 // Overall loading state for panels; also block render until ready
 const isDataLoading = computed(
   () => detailLoading.value || categoriesLoading.value || equipmentTreeLoading.value || !renderReady.value
 )
 
 // Component usage tips
-const componentUsageTips = computed(() => {
+const componentUsageTips = computed( () => {
   const tips = {
-    inspection:
+    inspection :
       'Perfect for equipment condition verification with pass/fail outcomes, commonly used in safety checks and quality control procedures.',
-    checkbox:
+    checkbox :
       'Ideal for simple yes/no confirmations, compliance checklists, and ensuring critical steps are acknowledged before proceeding.',
-    number:
+    number :
       'Essential for recording measurements, sensor readings, and quantitative data with optional unit specifications and validation limits.',
-    text: 'Best for capturing detailed observations, technician notes, and contextual information that structured data cannot represent.',
-    attachments:
+    text : 'Best for capturing detailed observations, technician notes, and contextual information that structured data cannot represent.',
+    attachments :
       'Critical for visual documentation, before/after photos, and creating comprehensive maintenance records for compliance and audit trails.',
-    service:
-      'Designed for maintenance operations requiring specific device tag identification and service type specification, supporting Replace and Repair workflows with quantity tracking.',
+    service :
+      'Designed for maintenance operations requiring specific device tag identification and service type specification, supporting Replace and Repair workflows with quantity tracking.'
   }
   return tips
-})
+} )
 
 // Step type colors matching BaseStepCard
-const stepTypeColors = computed(() => {
+const stepTypeColors = computed( () => {
   const colors = {
-    inspection: '#67c23a',
-    checkbox: '#409eff',
-    number: '#e6a23c',
-    text: '#909399',
-    attachments: '#849aec',
-    // Note: service step type is currently disabled in the backend
+    inspection : '#67c23a',
+    checkbox : '#409eff',
+    number : '#e6a23c',
+    text : '#909399',
+    attachments : '#849aec'
     // service: '#df869d',
   }
   return colors
-})
+} )
 
-const focusedStepType = computed(() => {
-  if (!designerState.value.focused_step_id) return null
-  const focusedStep = templateForm.value.steps.find(step => step.step_id === designerState.value.focused_step_id)
+const focusedStepType = computed( () => {
+  if ( !designerState.value.focused_step_id ) return null
+  const focusedStep = templateForm.value.steps.find( step => step.step_id === designerState.value.focused_step_id )
   return focusedStep?.type || null
-})
+} )
 
-const availableCategories = computed(() => {
+const availableCategories = computed( () => {
   // eslint-disable-next-line vue/no-side-effects-in-computed-properties
-  return categoriesForDropdown.value.sort((a, b) => a.label.localeCompare(b.label))
-})
+  return categoriesForDropdown.value.sort( ( a, b ) => a.label.localeCompare( b.label ) )
+} )
 
 // Check Element Plus form validation state
-const isElementFormValid = ref(true)
+const isElementFormValid = ref( true )
 
 // Watch form fields and validate Element Plus form
-const validateElementForm = async () => {
-  if (!metadataFormRef.value) {
+const validateElementForm = async() => {
+  if ( !metadataFormRef.value ) {
     // If the form isn't mounted yet, don't mark it invalid; defer validation
     return
   }
@@ -860,7 +859,7 @@ const validateElementForm = async () => {
   try {
     await metadataFormRef.value.validate()
     isElementFormValid.value = true
-  } catch (error) {
+  } catch ( error ) {
     isElementFormValid.value = false
   }
 }
@@ -870,21 +869,21 @@ watch(
   [() => templateForm.value.name, () => templateForm.value.category, () => templateForm.value.estimated_minutes],
   () => {
     // Use nextTick to ensure form is updated before validation
-    nextTick(() => {
+    nextTick( () => {
       validateElementForm()
-    })
+    } )
   },
-  { immediate: false }
+  { immediate : false }
 )
 
-const isFormValid = computed(() => {
+const isFormValid = computed( () => {
   // Check basic metadata fields
   const hasValidName =
     templateForm.value.name && typeof templateForm.value.name === 'string' && templateForm.value.name.trim().length > 0
   const hasValidCategory =
     templateForm.value.category &&
-    ((typeof templateForm.value.category === 'number' && templateForm.value.category > 0) ||
-      (typeof templateForm.value.category === 'string' && templateForm.value.category.trim().length > 0))
+    ( ( typeof templateForm.value.category === 'number' && templateForm.value.category > 0 ) ||
+      ( typeof templateForm.value.category === 'string' && templateForm.value.category.trim().length > 0 ) )
   const hasValidTime = templateForm.value.estimated_minutes > 0
 
   // Check comprehensive template validation (including steps validation)
@@ -894,47 +893,47 @@ const isFormValid = computed(() => {
   const hasValidElementForm = metadataFormRef.value ? isElementFormValid.value : true
 
   return hasValidName && hasValidCategory && hasValidTime && hasNoValidationErrors && hasValidElementForm
-})
+} )
 
 // Re-validate when render becomes ready (e.g., after restore)
 watch(
   () => renderReady.value,
   ready => {
-    if (ready) {
-      nextTick(() => validateElementForm())
+    if ( ready ) {
+      nextTick( () => validateElementForm() )
     }
   }
 )
 
 // FloatingPanel computed properties
-const stepsForPanel = computed(() => {
-  const result = templateForm.value.steps.map(step => ({
-    id: step.step_id,
-    order: step.order,
-    type: step.type,
-    title: step.label || `Untitled ${step.type} step`,
-    required: step.required || false,
-  }))
+const stepsForPanel = computed( () => {
+  const result = templateForm.value.steps.map( step => ( {
+    id : step.step_id,
+    order : step.order,
+    type : step.type,
+    title : step.label || `Untitled ${step.type} step`,
+    required : step.required || false
+  } ) )
   return result
-})
+} )
 
-const floatingPanelUiHints = computed(() => ({
-  showCheckboxes: true,
-  showDragHandles: true,
-  showStepNumbers: true,
-  showTypeIcons: true,
-  showBulkToolbarOnSelect: true,
-  rowDensity: 'compact',
-}))
+const floatingPanelUiHints = computed( () => ( {
+  showCheckboxes : true,
+  showDragHandles : true,
+  showStepNumbers : true,
+  showTypeIcons : true,
+  showBulkToolbarOnSelect : true,
+  rowDensity : 'compact'
+} ) )
 
-const floatingPanelInteractions = computed(() => ({
-  allowMultiSelect: true,
-  allowGroupDrag: true,
-  allowInlineRename: true,
-  confirmOnDelete: true,
-}))
+const floatingPanelInteractions = computed( () => ( {
+  allowMultiSelect : true,
+  allowGroupDrag : true,
+  allowInlineRename : true,
+  confirmOnDelete : true
+} ) )
 
-const enabledBulkActions = computed(() => ['duplicate', 'mark_required', 'mark_optional', 'delete'])
+const enabledBulkActions = computed( () => ['duplicate', 'mark_required', 'mark_optional', 'delete'] )
 
 // Preview dialog configuration (extracted)
 const {
@@ -948,28 +947,28 @@ const {
 
 // Form validation rules
 const metadataRules = {
-  name: [
-    { required: true, message: 'Task name is required', trigger: 'blur' },
-    { min: 3, max: 200, message: 'Name should be 3-200 characters', trigger: 'blur' },
+  name : [
+    { required : true, message : 'Task name is required', trigger : 'blur' },
+    { min : 3, max : 200, message : 'Name should be 3-200 characters', trigger : 'blur' }
   ],
-  category: [{ required: true, message: 'Category is required', trigger: 'change' }],
-  estimated_minutes: [
-    { required: true, message: 'Estimated time is required', trigger: 'change' },
-    { type: 'number', min: 1, message: 'Time must be at least 1 minute', trigger: 'change' },
-  ],
+  category : [{ required : true, message : 'Category is required', trigger : 'change' }],
+  estimated_minutes : [
+    { required : true, message : 'Estimated time is required', trigger : 'change' },
+    { type : 'number', min : 1, message : 'Time must be at least 1 minute', trigger : 'change' }
+  ]
 }
 
 // Event handlers
 const handleBack = () => {
   const navigateBack = () => {
     // Restore original sidebar state if it was originally open
-    if (originalSidebarState.value && !appStore.sidebar.opened) {
+    if ( originalSidebarState.value && !appStore.sidebar.opened ) {
       appStore.TOGGLE_SIDEBAR()
     }
-    router.push({ name: 'TaskLibrary' })
+    router.push( { name : 'TaskLibrary' } )
   }
 
-  if (hasUnsavedChanges.value) {
+  if ( hasUnsavedChanges.value ) {
     pendingNavigation.value = navigateBack
     showUnsavedDialog.value = true
   } else {
@@ -977,117 +976,117 @@ const handleBack = () => {
   }
 }
 
-const handleSave = async () => {
+const handleSave = async() => {
   try {
     await metadataFormRef.value.validate()
 
     // For editing mode, show change summary dialog first
-    if (isEditing.value && originalTemplate.value) {
+    if ( isEditing.value && originalTemplate.value ) {
       // Prepare reference data for name resolution
       const referenceData = {
-        categories: categoriesForDropdown.value,
-        equipmentTree: equipmentTreeData.value,
+        categories : categoriesForDropdown.value,
+        equipmentTree : equipmentTreeData.value
       }
 
-      const changes = generateChangesSummary(originalTemplate.value, templateForm.value, referenceData)
+      const changes = generateChangesSummary( originalTemplate.value, templateForm.value, referenceData )
 
       // Always show dialog in edit mode, even if no changes detected
-      openChangeSummaryDialog(changes)
+      openChangeSummaryDialog( changes )
     } else {
       // For create mode, save directly
       await performSave()
     }
-  } catch (error) {
-    console.error('Validation error:', error)
-    if (error.fields) {
-      ElMessage.error('Please fix validation errors before saving')
+  } catch ( error ) {
+    console.error( 'Validation error:', error )
+    if ( error.fields ) {
+      ElMessage.error( 'Please fix validation errors before saving' )
     } else {
-      ElMessage.error('Please check your data and try again')
+      ElMessage.error( 'Please check your data and try again' )
     }
   }
 }
 
-const performSave = async () => {
+const performSave = async() => {
   try {
     saving.value = true
 
-    if (isEditing.value) {
+    if ( isEditing.value ) {
       // For editing, we need to transform the data and call the update API with the template ID
       const templateId = route.params.id
-      if (!templateId) {
-        throw new Error('Template ID is required for editing')
+      if ( !templateId ) {
+        throw new Error( 'Template ID is required for editing' )
       }
 
       // eslint-disable-next-line no-unused-vars
-      const updatedTemplate = await updateTemplate(templateId, templateForm.value)
+      const updatedTemplate = await updateTemplate( templateId, templateForm.value )
       hasUnsavedChanges.value = false
 
       // Clear cached state after successful save
-      clearStateByKey(stableCacheKey.value)
+      clearStateByKey( stableCacheKey.value )
 
       // Update original template for future comparisons
-      originalTemplate.value = JSON.parse(JSON.stringify(templateForm.value))
+      originalTemplate.value = JSON.parse( JSON.stringify( templateForm.value ) )
 
       // Handle navigation based on tagViews mode
-      if (settingsStore.tagsView) {
+      if ( settingsStore.tagsView ) {
         // Close current tab and navigate to previous tab
-        const { visitedViews } = await tagsViewStore.DEL_VIEW(route)
+        const { visitedViews } = await tagsViewStore.DEL_VIEW( route )
         await loadTemplates() // Refresh the task list
 
         // Navigate to the previous tab (same logic as TagsView component)
-        const latestView = visitedViews.slice(-1)[0]
-        if (latestView) {
-          router.push(latestView.fullPath)
+        const latestView = visitedViews.slice( -1 )[0]
+        if ( latestView ) {
+          router.push( latestView.fullPath )
         } else {
           // Fallback to Task Library if no other tabs
-          router.push({ name: 'TaskLibrary' })
+          router.push( { name : 'TaskLibrary' } )
         }
       } else {
         // Navigate back to library and focus the updated template
-        router.push({
-          name: 'TaskLibrary',
-          query: { focusTemplate: templateId, refresh: true },
-        })
+        router.push( {
+          name : 'TaskLibrary',
+          query : { focusTemplate : templateId, refresh : true }
+        } )
       }
     } else {
-      const newTemplate = await createTemplate(templateForm.value)
+      const newTemplate = await createTemplate( templateForm.value )
       hasUnsavedChanges.value = false
 
       // Clear cached state after successful save
-      clearStateByKey(stableCacheKey.value)
+      clearStateByKey( stableCacheKey.value )
 
       // Handle navigation based on tagViews mode
       const templateId = newTemplate.id || newTemplate.template_id
 
-      if (settingsStore.tagsView) {
+      if ( settingsStore.tagsView ) {
         // Close current tab and navigate to Task Library
-        await tagsViewStore.DEL_VIEW(route)
+        await tagsViewStore.DEL_VIEW( route )
         await loadTemplates() // Refresh the task list
 
         // Always navigate to Task Library and focus the new template
-        router.push({
-          name: 'TaskLibrary',
-          query: { focusTemplate: templateId, refresh: true },
-        })
+        router.push( {
+          name : 'TaskLibrary',
+          query : { focusTemplate : templateId, refresh : true }
+        } )
       } else {
         // Navigate back to Task Library and focus the new template
-        router.push({
-          name: 'TaskLibrary',
-          query: { focusTemplate: templateId, refresh: true },
-        })
+        router.push( {
+          name : 'TaskLibrary',
+          query : { focusTemplate : templateId, refresh : true }
+        } )
       }
     }
-  } catch (error) {
-    console.error('Save error:', error)
+  } catch ( error ) {
+    console.error( 'Save error:', error )
 
-    if (error.fields) {
-      ElMessage.error('Please fix validation errors before saving')
-    } else if (error.response?.data?.message) {
-      ElMessage.error(`Save failed: ${error.response.data.message}`)
-    } else if (error.message) {
-      ElMessage.error(`Save failed: ${error.message}`)
+    if ( error.fields ) {
+      ElMessage.error( 'Please fix validation errors before saving' )
+    } else if ( error.response?.data?.message ) {
+      ElMessage.error( `Save failed: ${error.response.data.message}` )
+    } else if ( error.message ) {
+      ElMessage.error( `Save failed: ${error.message}` )
     } else {
-      ElMessage.error('Failed to save task. Please check your data and try again.')
+      ElMessage.error( 'Failed to save task. Please check your data and try again.' )
     }
   } finally {
     saving.value = false
@@ -1098,23 +1097,23 @@ const handlePreview = () => {
   showPreviewDialog.value = true
 }
 
-const handleReset = async () => {
+const handleReset = async() => {
   try {
     await ElMessageBox.confirm(
       'Are you sure you want to reset all changes? This action cannot be undone.',
       'Reset Confirmation',
       {
-        confirmButtonText: 'Reset',
-        cancelButtonText: 'Cancel',
-        type: 'warning',
+        confirmButtonText : 'Reset',
+        cancelButtonText : 'Cancel',
+        type : 'warning'
       }
     )
 
-    if (isEditing.value) {
+    if ( isEditing.value ) {
       // Edit mode: restore to original loaded state
-      if (originalTemplate.value) {
+      if ( originalTemplate.value ) {
         // Deep clone original template to avoid reference issues
-        const originalData = JSON.parse(JSON.stringify(originalTemplate.value))
+        const originalData = JSON.parse( JSON.stringify( originalTemplate.value ) )
 
         // Reset templateForm to original template data
         templateForm.value.name = originalData.name || ''
@@ -1130,12 +1129,12 @@ const handleReset = async () => {
         // Clear unsaved changes flag
         hasUnsavedChanges.value = false
 
-        ElMessage.success('Template restored to original state')
+        ElMessage.success( 'Template restored to original state' )
 
         // Clear cached state after reset
-        clearStateByKey(stableCacheKey.value)
+        clearStateByKey( stableCacheKey.value )
       } else {
-        ElMessage.error('No original template data available')
+        ElMessage.error( 'No original template data available' )
       }
     } else {
       // Create mode: reset to initial empty state
@@ -1153,15 +1152,15 @@ const handleReset = async () => {
       // Clear unsaved changes flag
       hasUnsavedChanges.value = false
 
-      ElMessage.success('All inputs cleared')
+      ElMessage.success( 'All inputs cleared' )
 
       // Clear cached state after reset
-      clearStateByKey(stableCacheKey.value)
+      clearStateByKey( stableCacheKey.value )
     }
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('Reset operation failed')
-      console.error('Reset error:', error)
+  } catch ( error ) {
+    if ( error !== 'cancel' ) {
+      ElMessage.error( 'Reset operation failed' )
+      console.error( 'Reset error:', error )
     }
   }
 }
@@ -1172,68 +1171,67 @@ const markAsChanged = () => {
 
 // Step management
 const handleStepFocus = stepId => {
-  setFocusedStep(stepId)
+  setFocusedStep( stepId )
 }
 
-const handleResetSteps = async () => {
+const handleResetSteps = async() => {
   try {
     await ElMessageBox.confirm(
       'This will remove all procedure steps. This action cannot be undone.',
       'Clear All Steps',
       {
-        confirmButtonText: 'Continue',
-        cancelButtonText: 'Cancel',
-        type: 'warning',
-        confirmButtonClass: 'el-button--primary',
+        confirmButtonText : 'Continue',
+        cancelButtonText : 'Cancel',
+        type : 'warning',
+        confirmButtonClass : 'el-button--primary'
       }
     )
 
     // Clear all steps
     templateForm.value.steps = []
     markAsChanged()
-    ElMessage.success('All steps have been cleared')
-  } catch (error) {
+    ElMessage.success( 'All steps have been cleared' )
+  } catch ( error ) {
     // User cancelled - do nothing
   }
 }
 
 const handleAddStep = stepType => {
   const newStep = {
-    step_id: `step-${Date.now()}`,
-    order: templateForm.value.steps.length + 1,
-    type: stepType,
-    label: `New ${stepType} step`,
-    description: '',
-    required: false,
-    required_image: false,
-    relevant_resources: [],
-    relevant_tools: [],
-    config: getDefaultStepConfig(stepType),
+    step_id : `step-${Date.now()}`,
+    order : templateForm.value.steps.length + 1,
+    type : stepType,
+    label : `New ${stepType} step`,
+    description : '',
+    required : false,
+    required_image : false,
+    relevant_resources : [],
+    relevant_tools : [],
+    config : getDefaultStepConfig( stepType )
   }
 
-  templateForm.value.steps.push(newStep)
+  templateForm.value.steps.push( newStep )
   markAsChanged()
 
   // Focus the new step
-  setFocusedStep(newStep.step_id)
+  setFocusedStep( newStep.step_id )
 
-  // Scroll to the newly added step after DOM update
-  // Use setTimeout to ensure VueDraggable and transition-group have completed
-  nextTick(() => {
-    setTimeout(() => {
-      scrollToNewStep(newStep.step_id)
-    }, 100)
-  })
+  // Scroll to the newly added step after DOM update; Use setTimeout to ensure VueDraggable and transition-group have completed
+  nextTick( () => {
+    setTimeout( () => {
+      scrollToNewStep( newStep.step_id )
+    }, 100 )
+  } )
 }
 
-const handleStepUpdate = (stepId, updates) => {
-  const stepIndex = templateForm.value.steps.findIndex(s => s.step_id === stepId)
-  if (stepIndex !== -1) {
+const handleStepUpdate = ( stepId, updates ) => {
+  const stepIndex = templateForm.value.steps.findIndex( s => s.step_id === stepId )
+  if ( stepIndex !== -1 ) {
     // Use Object.assign to ensure reactivity
-    Object.assign(templateForm.value.steps[stepIndex], updates)
+    Object.assign( templateForm.value.steps[stepIndex], updates )
 
     // Force reactivity by creating a new array reference if the change includes type
-    if (updates.type) {
+    if ( updates.type ) {
       templateForm.value.steps = [...templateForm.value.steps]
     }
 
@@ -1243,91 +1241,91 @@ const handleStepUpdate = (stepId, updates) => {
 
 const handleStepDelete = async stepId => {
   try {
-    await ElMessageBox.confirm('Are you sure you want to delete this step?', 'Delete Step', {
-      confirmButtonText: 'Delete',
-      cancelButtonText: 'Cancel',
-      type: 'warning',
-    })
+    await ElMessageBox.confirm( 'Are you sure you want to delete this step?', 'Delete Step', {
+      confirmButtonText : 'Delete',
+      cancelButtonText : 'Cancel',
+      type : 'warning'
+    } )
 
-    templateForm.value.steps = templateForm.value.steps.filter(s => s.step_id !== stepId)
+    templateForm.value.steps = templateForm.value.steps.filter( s => s.step_id !== stepId )
 
     // Reorder remaining steps
-    templateForm.value.steps.forEach((step, index) => {
+    templateForm.value.steps.forEach( ( step, index ) => {
       step.order = index + 1
-    })
+    } )
 
     markAsChanged()
 
     // Clear focus if deleted step was focused
-    if (designerState.value.focused_step_id === stepId) {
-      setFocusedStep(null)
+    if ( designerState.value.focused_step_id === stepId ) {
+      setFocusedStep( null )
     }
-  } catch (error) {
+  } catch ( error ) {
     // User cancelled
   }
 }
 
 const handleStepDuplicate = stepId => {
   // Find the original step
-  const originalStepIndex = templateForm.value.steps.findIndex(s => s.step_id === stepId)
-  if (originalStepIndex === -1) return
+  const originalStepIndex = templateForm.value.steps.findIndex( s => s.step_id === stepId )
+  if ( originalStepIndex === -1 ) return
 
   const originalStep = templateForm.value.steps[originalStepIndex]
 
   // Create a complete copy of the step
   const duplicatedStep = {
     ...originalStep,
-    step_id: `step-${Date.now()}`,
-    label: `${originalStep.label} (Copy)`,
+    step_id : `step-${Date.now()}`,
+    label : `${originalStep.label} (Copy)`,
     // Deep copy complex objects to avoid reference issues
-    config: originalStep.config ? JSON.parse(JSON.stringify(originalStep.config)) : {},
-    relevant_tools: originalStep.relevant_tools ? [...originalStep.relevant_tools] : [],
-    relevant_resources: originalStep.relevant_resources ? [...originalStep.relevant_resources] : [],
+    config : originalStep.config ? JSON.parse( JSON.stringify( originalStep.config ) ) : {},
+    relevant_tools : originalStep.relevant_tools ? [...originalStep.relevant_tools] : [],
+    relevant_resources : originalStep.relevant_resources ? [...originalStep.relevant_resources] : []
   }
 
   // Insert the duplicated step right after the original step
-  templateForm.value.steps.splice(originalStepIndex + 1, 0, duplicatedStep)
+  templateForm.value.steps.splice( originalStepIndex + 1, 0, duplicatedStep )
 
   // Reorder all steps
-  templateForm.value.steps.forEach((step, index) => {
+  templateForm.value.steps.forEach( ( step, index ) => {
     step.order = index + 1
-  })
+  } )
 
   markAsChanged()
 
   // Focus the newly created duplicate step
-  setFocusedStep(duplicatedStep.step_id)
+  setFocusedStep( duplicatedStep.step_id )
 
   // Scroll to the duplicated step after DOM update
   // Use setTimeout to ensure VueDraggable and transition-group have completed
-  nextTick(() => {
-    setTimeout(() => {
-      scrollToNewStep(duplicatedStep.step_id)
-    }, 100)
-  })
+  nextTick( () => {
+    setTimeout( () => {
+      scrollToNewStep( duplicatedStep.step_id )
+    }, 100 )
+  } )
 }
 
-const handleStepConfigure = (stepId, configType) => {
-  const step = templateForm.value.steps.find(s => s.step_id === stepId)
-  if (!step) return
+const handleStepConfigure = ( stepId, configType ) => {
+  const step = templateForm.value.steps.find( s => s.step_id === stepId )
+  if ( !step ) return
 
-  switch (configType) {
+  switch ( configType ) {
     case 'limits':
-      openNumberLimitsDialog(stepId, step.config.limits || {})
+      openNumberLimitsDialog( stepId, step.config.limits || {} )
       break
     case 'tools':
       // Extract tool IDs if passing objects, otherwise pass the array as-is
       // eslint-disable-next-line no-case-declarations
       const toolIds =
-        Array.isArray(step.relevant_tools) &&
+        Array.isArray( step.relevant_tools ) &&
         step.relevant_tools.length > 0 &&
         typeof step.relevant_tools[0] === 'object'
-          ? step.relevant_tools.map(tool => tool.tool_id)
+          ? step.relevant_tools.map( tool => tool.tool_id )
           : step.relevant_tools || []
-      openToolsDialog(stepId, toolIds)
+      openToolsDialog( stepId, toolIds )
       break
     case 'resources':
-      openResourcesDialog(stepId, step.relevant_resources || [])
+      openResourcesDialog( stepId, step.relevant_resources || [] )
       break
     default:
       break
@@ -1353,63 +1351,63 @@ const handleVueDragChange = evt => {
 
 // Helper function to update step orders
 const updateStepOrders = () => {
-  templateForm.value.steps.forEach((step, index) => {
+  templateForm.value.steps.forEach( ( step, index ) => {
     step.order = index + 1
-  })
+  } )
 }
 
 // FloatingPanel event handlers
-const handleReorderSteps = ({ stepId, sourceIndex, targetIndex }) => {
-  if (sourceIndex === targetIndex) return
+const handleReorderSteps = ( { stepId, sourceIndex, targetIndex } ) => {
+  if ( sourceIndex === targetIndex ) return
 
   const steps = [...templateForm.value.steps]
   const stepToMove = steps[sourceIndex]
 
   // Remove from source position
-  steps.splice(sourceIndex, 1)
+  steps.splice( sourceIndex, 1 )
 
   // Insert at target position
-  steps.splice(targetIndex, 0, stepToMove)
+  steps.splice( targetIndex, 0, stepToMove )
 
   // Update step orders
-  steps.forEach((step, index) => {
+  steps.forEach( ( step, index ) => {
     step.order = index + 1
-  })
+  } )
 
   templateForm.value.steps = steps
   markAsChanged()
 }
 
-const handleBulkAction = async ({ action, stepIds }) => {
+const handleBulkAction = async( { action, stepIds } ) => {
   const stepIndices = stepIds
-    .map(id => templateForm.value.steps.findIndex(s => s.step_id === id))
-    .filter(index => index !== -1)
+    .map( id => templateForm.value.steps.findIndex( s => s.step_id === id ) )
+    .filter( index => index !== -1 )
 
-  switch (action) {
+  switch ( action ) {
     case 'duplicate':
       // eslint-disable-next-line no-case-declarations
-      const duplicatedSteps = stepIndices.map(index => {
+      const duplicatedSteps = stepIndices.map( index => {
         const originalStep = templateForm.value.steps[index]
         return {
           ...originalStep,
-          step_id: `step-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          label: `${originalStep.label} (Copy)`,
-          order: templateForm.value.steps.length + 1,
+          step_id : `step-${Date.now()}-${Math.random().toString( 36 ).substr( 2, 9 )}`,
+          label : `${originalStep.label} (Copy)`,
+          order : templateForm.value.steps.length + 1
         }
-      })
-      templateForm.value.steps.push(...duplicatedSteps)
+      } )
+      templateForm.value.steps.push( ...duplicatedSteps )
       break
 
     case 'mark_required':
-      stepIndices.forEach(index => {
+      stepIndices.forEach( index => {
         templateForm.value.steps[index].required = true
-      })
+      } )
       break
 
     case 'mark_optional':
-      stepIndices.forEach(index => {
+      stepIndices.forEach( index => {
         templateForm.value.steps[index].required = false
-      })
+      } )
       break
 
     case 'delete':
@@ -1419,18 +1417,18 @@ const handleBulkAction = async ({ action, stepIds }) => {
           `Are you sure you want to delete ${stepIds.length} step(s)? This action cannot be undone.`,
           'Delete Steps',
           {
-            confirmButtonText: 'Delete',
-            cancelButtonText: 'Cancel',
-            type: 'warning',
+            confirmButtonText : 'Delete',
+            cancelButtonText : 'Cancel',
+            type : 'warning'
           }
         )
 
         // Remove steps in reverse order to maintain indices
-        const sortedIndices = stepIndices.sort((a, b) => b - a)
-        sortedIndices.forEach(index => {
-          templateForm.value.steps.splice(index, 1)
-        })
-      } catch (error) {
+        const sortedIndices = stepIndices.sort( ( a, b ) => b - a )
+        sortedIndices.forEach( index => {
+          templateForm.value.steps.splice( index, 1 )
+        } )
+      } catch ( error ) {
         // User cancelled, do nothing
         return
       }
@@ -1440,53 +1438,53 @@ const handleBulkAction = async ({ action, stepIds }) => {
   }
 
   // Reorder all steps
-  templateForm.value.steps.forEach((step, index) => {
+  templateForm.value.steps.forEach( ( step, index ) => {
     step.order = index + 1
-  })
+  } )
 
   markAsChanged()
 }
 
 const handleInlineRename = stepId => {
   // Focus the step for inline editing
-  setFocusedStep(stepId)
+  setFocusedStep( stepId )
 
   // Find the step card and focus its label input
-  setTimeout(() => {
-    const stepCard = document.querySelector(`[data-step-id="${stepId}"] .step-label-input input`)
-    if (stepCard) {
+  setTimeout( () => {
+    const stepCard = document.querySelector( `[data-step-id="${stepId}"] .step-label-input input` )
+    if ( stepCard ) {
       stepCard.focus()
       stepCard.select()
     }
-  }, 100)
+  }, 100 )
 }
 
 const handleSetMode = mode => {
-  setFloatingPanelMode(mode)
+  setFloatingPanelMode( mode )
 }
 
 // Configuration dialog handlers
-const handleNumberLimitsSave = (stepId, limitsData) => {
-  handleStepUpdate(stepId, {
-    config: {
-      ...templateForm.value.steps.find(s => s.step_id === stepId)?.config,
-      limits: limitsData,
-    },
-  })
+const handleNumberLimitsSave = ( stepId, limitsData ) => {
+  handleStepUpdate( stepId, {
+    config : {
+      ...templateForm.value.steps.find( s => s.step_id === stepId )?.config,
+      limits : limitsData
+    }
+  } )
   closeNumberLimitsDialog()
 }
 
-const handleToolsSave = (stepId, selectedTools) => {
-  handleStepUpdate(stepId, {
-    relevant_tools: selectedTools,
-  })
+const handleToolsSave = ( stepId, selectedTools ) => {
+  handleStepUpdate( stepId, {
+    relevant_tools : selectedTools
+  } )
   closeToolsDialog()
 }
 
-const handleResourcesSave = (stepId, resources) => {
-  handleStepUpdate(stepId, {
-    relevant_resources: resources,
-  })
+const handleResourcesSave = ( stepId, resources ) => {
+  handleStepUpdate( stepId, {
+    relevant_resources : resources
+  } )
   closeResourcesDialog()
 }
 
@@ -1499,7 +1497,7 @@ const handleUnsavedDialogClose = () => {
 const discardChanges = () => {
   hasUnsavedChanges.value = false
   showUnsavedDialog.value = false
-  if (pendingNavigation.value) {
+  if ( pendingNavigation.value ) {
     pendingNavigation.value()
     pendingNavigation.value = null
   }
@@ -1507,21 +1505,21 @@ const discardChanges = () => {
 
 // Dynamic height calculation functions
 const calculateDynamicHeights = () => {
-  nextTick(() => {
+  nextTick( () => {
     // Get navbar element
-    const navbarEl = document.querySelector('.navbar')
-    if (navbarEl && navbarEl.offsetHeight > 0) {
+    const navbarEl = document.querySelector( '.navbar' )
+    if ( navbarEl && navbarEl.offsetHeight > 0 ) {
       navbarHeight.value = navbarEl.offsetHeight
     }
 
     // Get tags-view-container element - only count height if TagsView is enabled
-    const tagsViewEl = document.querySelector('#tags-view-container')
-    if (settingsStore.tagsView && tagsViewEl && tagsViewEl.offsetHeight > 0) {
+    const tagsViewEl = document.querySelector( '#tags-view-container' )
+    if ( settingsStore.tagsView && tagsViewEl && tagsViewEl.offsetHeight > 0 ) {
       tagsViewHeight.value = tagsViewEl.offsetHeight
     } else {
       tagsViewHeight.value = 0 // Set to 0 when TagsView is disabled
     }
-  })
+  } )
 }
 
 // Handle window resize to recalculate heights
@@ -1532,231 +1530,231 @@ const handleResize = () => {
 // Utility functions moved to ../utils/stepTransforms
 
 // Change detection utilities (localized copy; avoids global store dependency)
-const getDetailedConfigChanges = (originalStep, currentStep) => {
+const getDetailedConfigChanges = ( originalStep, currentStep ) => {
   const changes = []
   const originalConfig = originalStep.config || {}
   const currentConfig = currentStep.config || {}
 
   // For number steps, check limits specifically
-  if (currentStep.type === 'number') {
+  if ( currentStep.type === 'number' ) {
     const originalLimits = originalConfig.limits
     const currentLimits = currentConfig.limits
 
     // Check if limits changed
-    if (JSON.stringify(originalLimits) !== JSON.stringify(currentLimits)) {
-      const originalText = formatLimitsText(originalLimits, originalConfig.unit)
-      const currentText = formatLimitsText(currentLimits, currentConfig.unit)
-      changes.push({
-        field: 'limits',
-        label: 'Range',
-        original: originalText,
-        current: currentText,
-      })
+    if ( JSON.stringify( originalLimits ) !== JSON.stringify( currentLimits ) ) {
+      const originalText = formatLimitsText( originalLimits, originalConfig.unit )
+      const currentText = formatLimitsText( currentLimits, currentConfig.unit )
+      changes.push( {
+        field : 'limits',
+        label : 'Range',
+        original : originalText,
+        current : currentText
+      } )
     }
 
     // Check if unit changed
-    if (originalConfig.unit !== currentConfig.unit) {
-      changes.push({
-        field: 'unit',
-        label: 'Unit',
-        original: originalConfig.unit || 'None',
-        current: currentConfig.unit || 'None',
-      })
+    if ( originalConfig.unit !== currentConfig.unit ) {
+      changes.push( {
+        field : 'unit',
+        label : 'Unit',
+        original : originalConfig.unit || 'None',
+        current : currentConfig.unit || 'None'
+      } )
     }
 
     // Check if decimal places changed
-    if (originalConfig.decimal_places !== currentConfig.decimal_places) {
-      changes.push({
-        field: 'decimal_places',
-        label: 'Decimal Places',
-        original: originalConfig.decimal_places?.toString() || '0',
-        current: currentConfig.decimal_places?.toString() || '0',
-      })
+    if ( originalConfig.decimal_places !== currentConfig.decimal_places ) {
+      changes.push( {
+        field : 'decimal_places',
+        label : 'Decimal Places',
+        original : originalConfig.decimal_places?.toString() || '0',
+        current : currentConfig.decimal_places?.toString() || '0'
+      } )
     }
 
     // Check if default value changed
-    if (originalConfig.default_value !== currentConfig.default_value) {
-      changes.push({
-        field: 'default_value',
-        label: 'Default Value',
-        original: originalConfig.default_value?.toString() || 'None',
-        current: currentConfig.default_value?.toString() || 'None',
-      })
+    if ( originalConfig.default_value !== currentConfig.default_value ) {
+      changes.push( {
+        field : 'default_value',
+        label : 'Default Value',
+        original : originalConfig.default_value?.toString() || 'None',
+        current : currentConfig.default_value?.toString() || 'None'
+      } )
     }
-  } else if (currentStep.type === 'checkbox') {
-    if (originalConfig.default !== currentConfig.default) {
-      changes.push({
-        field: 'default',
-        label: 'Default Value',
-        original: originalConfig.default ? 'Checked' : 'Unchecked',
-        current: currentConfig.default ? 'Checked' : 'Unchecked',
-      })
+  } else if ( currentStep.type === 'checkbox' ) {
+    if ( originalConfig.default !== currentConfig.default ) {
+      changes.push( {
+        field : 'default',
+        label : 'Default Value',
+        original : originalConfig.default ? 'Checked' : 'Unchecked',
+        current : currentConfig.default ? 'Checked' : 'Unchecked'
+      } )
     }
-  } else if (currentStep.type === 'text') {
-    if (originalConfig.default_value !== currentConfig.default_value) {
-      changes.push({
-        field: 'default_value',
-        label: 'Default Value',
-        original: originalConfig.default_value || 'None',
-        current: currentConfig.default_value || 'None',
-      })
+  } else if ( currentStep.type === 'text' ) {
+    if ( originalConfig.default_value !== currentConfig.default_value ) {
+      changes.push( {
+        field : 'default_value',
+        label : 'Default Value',
+        original : originalConfig.default_value || 'None',
+        current : currentConfig.default_value || 'None'
+      } )
     }
-    if (originalConfig.max_length !== currentConfig.max_length) {
-      changes.push({
-        field: 'max_length',
-        label: 'Max Length',
-        original: originalConfig.max_length?.toString() || 'Unlimited',
-        current: currentConfig.max_length?.toString() || 'Unlimited',
-      })
+    if ( originalConfig.max_length !== currentConfig.max_length ) {
+      changes.push( {
+        field : 'max_length',
+        label : 'Max Length',
+        original : originalConfig.max_length?.toString() || 'Unlimited',
+        current : currentConfig.max_length?.toString() || 'Unlimited'
+      } )
     }
-  } else if (currentStep.type === 'inspection') {
-    if (originalConfig.default !== currentConfig.default) {
-      changes.push({
-        field: 'default',
-        label: 'Default Value',
-        original: originalConfig.default || 'None',
-        current: currentConfig.default || 'None',
-      })
+  } else if ( currentStep.type === 'inspection' ) {
+    if ( originalConfig.default !== currentConfig.default ) {
+      changes.push( {
+        field : 'default',
+        label : 'Default Value',
+        original : originalConfig.default || 'None',
+        current : currentConfig.default || 'None'
+      } )
     }
   }
 
   // If no specific config changes detected but configs are different, fall back to generic
-  if (changes.length === 0 && JSON.stringify(originalConfig) !== JSON.stringify(currentConfig)) {
-    changes.push({
-      field: 'config',
-      label: 'Configuration',
-      original: 'Modified',
-      current: 'Modified',
-    })
+  if ( changes.length === 0 && JSON.stringify( originalConfig ) !== JSON.stringify( currentConfig ) ) {
+    changes.push( {
+      field : 'config',
+      label : 'Configuration',
+      original : 'Modified',
+      current : 'Modified'
+    } )
   }
 
   return changes
 }
 
-const generateChangesSummary = (originalTemplate, currentTemplate, referenceData = {}) => {
+const generateChangesSummary = ( originalTemplate, currentTemplate, referenceData = {} ) => {
   const changes = {
-    metadata: [],
-    steps_added: [],
-    steps_modified: [],
-    steps_deleted: [],
-    steps_reordered: [],
+    metadata : [],
+    steps_added : [],
+    steps_modified : [],
+    steps_deleted : [],
+    steps_reordered : []
   }
 
   // Compare metadata changes
   const metadataFields = [
-    { key: 'name', label: 'Task Name' },
-    { key: 'description', label: 'Description' },
-    { key: 'category', label: 'Category' },
-    { key: 'estimated_minutes', label: 'Estimated Time' },
-    { key: 'applicable_assets', label: 'Applicable Assets' },
+    { key : 'name', label : 'Task Name' },
+    { key : 'description', label : 'Description' },
+    { key : 'category', label : 'Category' },
+    { key : 'estimated_minutes', label : 'Estimated Time' },
+    { key : 'applicable_assets', label : 'Applicable Assets' }
   ]
 
-  metadataFields.forEach(field => {
+  metadataFields.forEach( field => {
     const original = originalTemplate[field.key]
     const current = currentTemplate[field.key]
-    if (JSON.stringify(original) !== JSON.stringify(current)) {
-      changes.metadata.push({
-        field: field.key,
-        label: field.label,
-        original: formatValue(original, field.key, referenceData),
-        current: formatValue(current, field.key, referenceData),
-      })
+    if ( JSON.stringify( original ) !== JSON.stringify( current ) ) {
+      changes.metadata.push( {
+        field : field.key,
+        label : field.label,
+        original : formatValue( original, field.key, referenceData ),
+        current : formatValue( current, field.key, referenceData )
+      } )
     }
-  })
+  } )
 
   // Detect step changes
   const originalSteps = originalTemplate.steps || []
   const currentSteps = currentTemplate.steps || []
-  const originalStepsMap = new Map(originalSteps.map(step => [step.step_id, step]))
-  const currentStepsMap = new Map(currentSteps.map(step => [step.step_id, step]))
+  const originalStepsMap = new Map( originalSteps.map( step => [step.step_id, step] ) )
+  const currentStepsMap = new Map( currentSteps.map( step => [step.step_id, step] ) )
 
   // Added steps
-  currentSteps.forEach(step => {
-    if (!originalStepsMap.has(step.step_id)) {
-      changes.steps_added.push({
-        step_id: step.step_id,
-        label: step.label,
-        type: step.type,
-        position: step.order,
-      })
+  currentSteps.forEach( step => {
+    if ( !originalStepsMap.has( step.step_id ) ) {
+      changes.steps_added.push( {
+        step_id : step.step_id,
+        label : step.label,
+        type : step.type,
+        position : step.order
+      } )
     }
-  })
+  } )
 
   // Deleted steps
-  originalSteps.forEach(step => {
-    if (!currentStepsMap.has(step.step_id)) {
-      changes.steps_deleted.push({
-        step_id: step.step_id,
-        label: step.label,
-        type: step.type,
-        position: step.order,
-      })
+  originalSteps.forEach( step => {
+    if ( !currentStepsMap.has( step.step_id ) ) {
+      changes.steps_deleted.push( {
+        step_id : step.step_id,
+        label : step.label,
+        type : step.type,
+        position : step.order
+      } )
     }
-  })
+  } )
 
   // Modified steps
-  currentSteps.forEach(currentStep => {
-    const originalStep = originalStepsMap.get(currentStep.step_id)
-    if (originalStep) {
+  currentSteps.forEach( currentStep => {
+    const originalStep = originalStepsMap.get( currentStep.step_id )
+    if ( originalStep ) {
       const stepChanges = []
       const stepFields = [
-        { key: 'label', label: 'Name' },
-        { key: 'description', label: 'Description' },
-        { key: 'required', label: 'Required' },
-        { key: 'required_image', label: 'Image Required' },
-        { key: 'type', label: 'Type' },
+        { key : 'label', label : 'Name' },
+        { key : 'description', label : 'Description' },
+        { key : 'required', label : 'Required' },
+        { key : 'required_image', label : 'Image Required' },
+        { key : 'type', label : 'Type' }
       ]
-      stepFields.forEach(field => {
-        if (originalStep[field.key] !== currentStep[field.key]) {
-          stepChanges.push({
-            field: field.key,
-            label: field.label,
-            original: formatValue(originalStep[field.key], field.key, referenceData),
-            current: formatValue(currentStep[field.key], field.key, referenceData),
-          })
+      stepFields.forEach( field => {
+        if ( originalStep[field.key] !== currentStep[field.key] ) {
+          stepChanges.push( {
+            field : field.key,
+            label : field.label,
+            original : formatValue( originalStep[field.key], field.key, referenceData ),
+            current : formatValue( currentStep[field.key], field.key, referenceData )
+          } )
         }
-      })
+      } )
       // Detailed config comparison
-      const configChanges = getDetailedConfigChanges(originalStep, currentStep)
-      if (configChanges.length > 0) {
-        stepChanges.push(...configChanges)
+      const configChanges = getDetailedConfigChanges( originalStep, currentStep )
+      if ( configChanges.length > 0 ) {
+        stepChanges.push( ...configChanges )
       }
-      if (JSON.stringify(originalStep.relevant_tools) !== JSON.stringify(currentStep.relevant_tools)) {
-        stepChanges.push({
-          field: 'relevant_tools',
-          label: 'Tools',
-          original: `${(originalStep.relevant_tools || []).length} tools`,
-          current: `${(currentStep.relevant_tools || []).length} tools`,
-        })
+      if ( JSON.stringify( originalStep.relevant_tools ) !== JSON.stringify( currentStep.relevant_tools ) ) {
+        stepChanges.push( {
+          field : 'relevant_tools',
+          label : 'Tools',
+          original : `${( originalStep.relevant_tools || [] ).length} tools`,
+          current : `${( currentStep.relevant_tools || [] ).length} tools`
+        } )
       }
-      if (stepChanges.length > 0) {
-        changes.steps_modified.push({
-          step_id: currentStep.step_id,
-          label: currentStep.label,
-          type: currentStep.type,
-          changes: stepChanges,
-        })
+      if ( stepChanges.length > 0 ) {
+        changes.steps_modified.push( {
+          step_id : currentStep.step_id,
+          label : currentStep.label,
+          type : currentStep.type,
+          changes : stepChanges
+        } )
       }
     }
-  })
+  } )
 
   // Reordered steps
-  if (originalSteps.length === currentSteps.length) {
-    const originalOrder = originalSteps.map(s => s.step_id)
-    const currentOrder = currentSteps.map(s => s.step_id)
-    if (JSON.stringify(originalOrder) !== JSON.stringify(currentOrder)) {
+  if ( originalSteps.length === currentSteps.length ) {
+    const originalOrder = originalSteps.map( s => s.step_id )
+    const currentOrder = currentSteps.map( s => s.step_id )
+    if ( JSON.stringify( originalOrder ) !== JSON.stringify( currentOrder ) ) {
       const reorderedSteps = []
-      currentSteps.forEach((step, index) => {
-        const originalIndex = originalSteps.findIndex(s => s.step_id === step.step_id)
-        if (originalIndex !== -1 && originalIndex !== index) {
-          reorderedSteps.push({
-            step_id: step.step_id,
-            label: step.label,
-            original_position: originalIndex + 1,
-            new_position: index + 1,
-          })
+      currentSteps.forEach( ( step, index ) => {
+        const originalIndex = originalSteps.findIndex( s => s.step_id === step.step_id )
+        if ( originalIndex !== -1 && originalIndex !== index ) {
+          reorderedSteps.push( {
+            step_id : step.step_id,
+            label : step.label,
+            original_position : originalIndex + 1,
+            new_position : index + 1
+          } )
         }
-      })
+      } )
       changes.steps_reordered = reorderedSteps
     }
   }
@@ -1764,120 +1762,120 @@ const generateChangesSummary = (originalTemplate, currentTemplate, referenceData
   return changes
 }
 
-const formatValue = (value, fieldKey = '', referenceData = {}) => {
-  if (value === null || value === undefined) return 'None'
-  if (fieldKey === 'category') {
-    if (typeof value === 'number' && referenceData.categories) {
-      const category = referenceData.categories.find(cat => cat.value === value || cat.id === value)
+const formatValue = ( value, fieldKey = '', referenceData = {} ) => {
+  if ( value === null || value === undefined ) return 'None'
+  if ( fieldKey === 'category' ) {
+    if ( typeof value === 'number' && referenceData.categories ) {
+      const category = referenceData.categories.find( cat => cat.value === value || cat.id === value )
       return category ? category.label : `Category ID: ${value}`
     }
-    if (typeof value === 'string' && value.trim() === '') return 'None'
+    if ( typeof value === 'string' && value.trim() === '' ) return 'None'
     return value.toString()
   }
-  if (fieldKey === 'applicable_assets') {
-    if (Array.isArray(value)) {
-      if (value.length === 0) return 'None'
-      if (referenceData.equipmentTree && referenceData.equipmentTree.length > 0) {
+  if ( fieldKey === 'applicable_assets' ) {
+    if ( Array.isArray( value ) ) {
+      if ( value.length === 0 ) return 'None'
+      if ( referenceData.equipmentTree && referenceData.equipmentTree.length > 0 ) {
         const assetNames = value
-          .map(assetId => {
-            const asset = findAssetInTree(referenceData.equipmentTree, assetId)
-            if (asset) return asset.label
-            const numericId = parseInt(assetId)
-            if (!isNaN(numericId)) {
-              const byNum = findAssetInTree(referenceData.equipmentTree, numericId)
+          .map( assetId => {
+            const asset = findAssetInTree( referenceData.equipmentTree, assetId )
+            if ( asset ) return asset.label
+            const numericId = parseInt( assetId )
+            if ( !isNaN( numericId ) ) {
+              const byNum = findAssetInTree( referenceData.equipmentTree, numericId )
               return byNum ? byNum.label : `Asset ID: ${assetId}`
             }
             return `Asset ID: ${assetId}`
-          })
-          .filter(Boolean)
-        return assetNames.length > 0 ? assetNames.join(', ') : 'None'
+          } )
+          .filter( Boolean )
+        return assetNames.length > 0 ? assetNames.join( ', ' ) : 'None'
       }
       return `${value.length} asset(s)`
     }
-    if (typeof value === 'number' || (typeof value === 'string' && value.trim() !== '')) {
-      if (referenceData.equipmentTree && referenceData.equipmentTree.length > 0) {
-        const asset = findAssetInTree(referenceData.equipmentTree, value)
+    if ( typeof value === 'number' || ( typeof value === 'string' && value.trim() !== '' ) ) {
+      if ( referenceData.equipmentTree && referenceData.equipmentTree.length > 0 ) {
+        const asset = findAssetInTree( referenceData.equipmentTree, value )
         return asset ? asset.label : `Asset ID: ${value}`
       }
       return `Asset ID: ${value}`
     }
     return 'None'
   }
-  if (Array.isArray(value)) return value.length === 0 ? 'None' : value.join(', ')
-  if (typeof value === 'boolean') return value ? 'Yes' : 'No'
-  if (typeof value === 'number') return fieldKey === 'estimated_minutes' ? `${value} minutes` : value.toString()
-  if (typeof value === 'string' && value.trim() === '') return 'None'
+  if ( Array.isArray( value ) ) return value.length === 0 ? 'None' : value.join( ', ' )
+  if ( typeof value === 'boolean' ) return value ? 'Yes' : 'No'
+  if ( typeof value === 'number' ) return fieldKey === 'estimated_minutes' ? `${value} minutes` : value.toString()
+  if ( typeof value === 'string' && value.trim() === '' ) return 'None'
   return value.toString()
 }
 
-const findAssetInTree = (treeData, assetId) => {
-  if (!Array.isArray(treeData)) return null
-  for (const node of treeData) {
+const findAssetInTree = ( treeData, assetId ) => {
+  if ( !Array.isArray( treeData ) ) return null
+  for ( const node of treeData ) {
     if (
       node.value === assetId ||
       node.id === assetId ||
-      parseInt(node.value) === parseInt(assetId) ||
-      parseInt(node.id) === parseInt(assetId)
+      parseInt( node.value ) === parseInt( assetId ) ||
+      parseInt( node.id ) === parseInt( assetId )
     ) {
       return node
     }
-    if (node.children && node.children.length > 0) {
-      const found = findAssetInTree(node.children, assetId)
-      if (found) return found
+    if ( node.children && node.children.length > 0 ) {
+      const found = findAssetInTree( node.children, assetId )
+      if ( found ) return found
     }
   }
   return null
 }
 
-const fetchEquipmentTreeData = async () => {
+const fetchEquipmentTreeData = async() => {
   equipmentTreeLoading.value = true
   try {
     const response = await getEquipmentTree()
-    const transformNode = node => ({
-      value: node.id, // el-tree-select uses 'value' by default
-      label: node.name,
-      children: node.children && node.children.length > 0 ? node.children.map(transformNode) : undefined,
-    })
+    const transformNode = node => ( {
+      value : node.id, // el-tree-select uses 'value' by default
+      label : node.name,
+      children : node.children && node.children.length > 0 ? node.children.map( transformNode ) : undefined
+    } )
     let dataArray
-    if (response.data?.data) {
+    if ( response.data?.data ) {
       dataArray = response.data.data
-    } else if (Array.isArray(response.data)) {
+    } else if ( Array.isArray( response.data ) ) {
       dataArray = response.data
-    } else if (response.data) {
+    } else if ( response.data ) {
       dataArray = [response.data]
     } else {
       dataArray = []
     }
-    equipmentTreeData.value = dataArray.map(node => transformNode(node))
-  } catch (error) {
-    console.error('Equipment tree load failed:', error)
-    ElMessage.error('Failed to load asset data.')
+    equipmentTreeData.value = dataArray.map( node => transformNode( node ) )
+  } catch ( error ) {
+    console.error( 'Equipment tree load failed:', error )
+    ElMessage.error( 'Failed to load asset data.' )
   } finally {
     equipmentTreeLoading.value = false
   }
 }
 
-const fetchCategories = async () => {
+const fetchCategories = async() => {
   categoriesLoading.value = true
   try {
     const response = await getAllCategories()
     // Store both category objects and names for proper ID mapping
     allCategories.value = response.data || []
-    categoriesForDropdown.value = response.data.map(category => ({
-      label: category.name,
-      value: category.id, // Use ID as value for proper backend integration
-    }))
-  } catch (error) {
-    console.error('Categories load failed:', error)
-    ElMessage.error('Failed to load category data.')
+    categoriesForDropdown.value = response.data.map( category => ( {
+      label : category.name,
+      value : category.id // Use ID as value for proper backend integration
+    } ) )
+  } catch ( error ) {
+    console.error( 'Categories load failed:', error )
+    ElMessage.error( 'Failed to load category data.' )
     // Fallback to default categories
     categoriesForDropdown.value = [
-      { label: 'Preventive Maintenance', value: 1 },
-      { label: 'Inspection', value: 2 },
-      { label: 'Repair', value: 3 },
-      { label: 'Calibration', value: 4 },
-      { label: 'Safety Check', value: 5 },
-      { label: 'Other', value: 6 },
+      { label : 'Preventive Maintenance', value : 1 },
+      { label : 'Inspection', value : 2 },
+      { label : 'Repair', value : 3 },
+      { label : 'Calibration', value : 4 },
+      { label : 'Safety Check', value : 5 },
+      { label : 'Other', value : 6 }
     ]
   } finally {
     categoriesLoading.value = false
@@ -1888,23 +1886,23 @@ const fetchCategories = async () => {
 
 const resolveCategoryFromApiTemplate = apiTemplate => {
   // Handle different category formats from API
-  if (!apiTemplate.category) return ''
+  if ( !apiTemplate.category ) return ''
 
   // If category is already an object with id/name, use the id
-  if (typeof apiTemplate.category === 'object' && apiTemplate.category.id) {
+  if ( typeof apiTemplate.category === 'object' && apiTemplate.category.id ) {
     return apiTemplate.category.id
   }
 
   // If category is a string, try to find matching ID from dropdown options
-  if (typeof apiTemplate.category === 'string') {
-    const matchingCategory = categoriesForDropdown.value.find(cat => cat.label === apiTemplate.category)
-    if (matchingCategory) {
+  if ( typeof apiTemplate.category === 'string' ) {
+    const matchingCategory = categoriesForDropdown.value.find( cat => cat.label === apiTemplate.category )
+    if ( matchingCategory ) {
       return matchingCategory.value
     }
   }
 
   // If category is already a number, return it
-  if (typeof apiTemplate.category === 'number') {
+  if ( typeof apiTemplate.category === 'number' ) {
     return apiTemplate.category
   }
 
@@ -1915,8 +1913,8 @@ const resolveCategoryFromApiTemplate = apiTemplate => {
 const fetchTemplateByIdLocal = async id => {
   detailLoading.value = true
   try {
-    const resp = await getTaskTemplateById(id)
-    if (resp?.data?.data) return resp.data.data
+    const resp = await getTaskTemplateById( id )
+    if ( resp?.data?.data ) return resp.data.data
     return resp?.data
   } finally {
     detailLoading.value = false
@@ -1924,75 +1922,75 @@ const fetchTemplateByIdLocal = async id => {
 }
 
 // Initialize template data
-const initializeTemplate = async () => {
-  if (isEditing.value) {
+const initializeTemplate = async() => {
+  if ( isEditing.value ) {
     try {
-      const template = await fetchTemplateByIdLocal(route.params.id)
-      if (!template) {
-        throw new Error('Template not found')
+      const template = await fetchTemplateByIdLocal( route.params.id )
+      if ( !template ) {
+        throw new Error( 'Template not found' )
       }
 
       // Transform the loaded template data to match the designer form structure
       templateForm.value = {
-        name: template.name || '',
-        description: template.description || '',
-        category: resolveCategoryFromApiTemplate(template),
-        estimated_minutes: template.time_estimate_sec
-          ? Math.round(template.time_estimate_sec / 60)
+        name : template.name || '',
+        description : template.description || '',
+        category : resolveCategoryFromApiTemplate( template ),
+        estimated_minutes : template.time_estimate_sec
+          ? Math.round( template.time_estimate_sec / 60 )
           : template.estimated_minutes || 30,
-        applicable_assets: template.equipment_node_id || null,
-        steps: Array.isArray(template.steps) ? template.steps.map(transformApiStepToDesignerStep) : [],
+        applicable_assets : template.equipment_node_id || null,
+        steps : Array.isArray( template.steps ) ? template.steps.map( transformApiStepToDesignerStep ) : []
       }
 
       // Store the loaded template data locally (not shared across tabs)
       currentTemplate.value = template
       // Store original template for change detection
-      originalTemplate.value = JSON.parse(JSON.stringify(templateForm.value))
+      originalTemplate.value = JSON.parse( JSON.stringify( templateForm.value ) )
 
       // Mark that we have loaded data but no changes made yet
       hasUnsavedChanges.value = false
 
       // Update tag title for tagViews mode with template reference_id
-      if (settingsStore.tagsView && template.reference_id) {
+      if ( settingsStore.tagsView && template.reference_id ) {
         const newTitle = `Edit Task - ${template.reference_id}`
-        tagsViewStore.UPDATE_VISITED_VIEW_TITLE(route.path, newTitle)
+        tagsViewStore.UPDATE_VISITED_VIEW_TITLE( route.path, newTitle )
       }
 
       // Initial validation check
-      nextTick(() => {
+      nextTick( () => {
         validateElementForm()
-      })
-    } catch (error) {
-      console.error('Template load failed:', error)
-      ElMessage.error('Failed to load task')
-      router.push({ name: 'TaskLibrary' })
+      } )
+    } catch ( error ) {
+      console.error( 'Template load failed:', error )
+      ElMessage.error( 'Failed to load task' )
+      router.push( { name : 'TaskLibrary' } )
     }
   } else {
     // Initialize new template
     currentTemplate.value = null // No template loaded for create mode
     templateForm.value = {
-      name: '',
-      description: '',
-      category: '',
-      estimated_minutes: 30,
-      applicable_assets: null,
-      steps: [],
+      name : '',
+      description : '',
+      category : '',
+      estimated_minutes : 30,
+      applicable_assets : null,
+      steps : []
     }
     hasUnsavedChanges.value = false
 
     // Initial validation check for new templates
-    nextTick(() => {
+    nextTick( () => {
       validateElementForm()
-    })
+    } )
   }
 }
 
 // Lifecycle hooks
-onMounted(async () => {
+onMounted( async() => {
   // Capture route identity for this keep-alive instance
-  routeSnapshot.value = { path: route.path, params: { ...(route.params || {}) } }
+  routeSnapshot.value = { path : route.path, params : { ...( route.params || {} ) }}
   // Dev helper to inspect designer state cache
-  if (typeof window !== 'undefined') {
+  if ( typeof window !== 'undefined' ) {
     window.__designerCacheStats = getCacheStats
   }
   renderReady.value = false
@@ -2001,71 +1999,70 @@ onMounted(async () => {
 
   // Store original sidebar state and collapse it
   originalSidebarState.value = appStore.sidebar.opened
-  if (appStore.sidebar.opened) {
-    appStore.CLOSE_SIDEBAR(false)
+  if ( appStore.sidebar.opened ) {
+    appStore.CLOSE_SIDEBAR( false )
   }
 
   // Calculate dynamic heights
   calculateDynamicHeights()
 
   // Add resize listener
-  window.addEventListener('resize', handleResize)
+  window.addEventListener( 'resize', handleResize )
 
   // Load categories and equipment data first, then initialize template
   // This ensures category resolution works properly for edit mode
-  await Promise.all([fetchCategories(), fetchEquipmentTreeData()])
+  await Promise.all( [fetchCategories(), fetchEquipmentTreeData()] )
 
   // Check if we have cached state before initializing
   // If tagViews is enabled and we have cached state, let onActivated handle restoration
-  if (settingsStore.tagsView && hasCache()) {
+  if ( settingsStore.tagsView && hasCache() ) {
     return
   }
 
   // Initialize template normally if no cached state
   await initializeTemplate()
   renderReady.value = true
-  await nextTick(() => validateElementForm())
-})
+  await nextTick( () => validateElementForm() )
+} )
 
-onBeforeUnmount(() => {
+onBeforeUnmount( () => {
   // Remove resize listener
-  window.removeEventListener('resize', handleResize)
+  window.removeEventListener( 'resize', handleResize )
 
   // Restore original sidebar state if it was originally open
-  if (originalSidebarState.value && !appStore.sidebar.opened) {
+  if ( originalSidebarState.value && !appStore.sidebar.opened ) {
     appStore.TOGGLE_SIDEBAR()
   }
 
   resetDesignerState()
-})
+} )
 
-onActivated(async () => {
+onActivated( async() => {
   isComponentActive.value = true
   // Refresh snapshot to current route identity when (re)activating
-  routeSnapshot.value = { path: route.path, params: { ...(route.params || {}) } }
+  routeSnapshot.value = { path : route.path, params : { ...( route.params || {} ) }}
 
   // Recalculate heights when component is activated
   calculateDynamicHeights()
   renderReady.value = false
 
   // Try to restore cached state if available (prefer stable key)
-  if (settingsStore.tagsView && (hasCachedStateByKey(stableCacheKey.value) || hasCache())) {
-    const cachedState = restoreStateByKey(stableCacheKey.value) || restoreCache()
-    if (cachedState) {
-
+  if ( settingsStore.tagsView && ( hasCachedStateByKey( stableCacheKey.value ) || hasCache() ) ) {
+    const cachedState = restoreStateByKey( stableCacheKey.value ) || restoreCache()
+    if ( cachedState ) {
       // Helper to detect empty form snapshots
       const formIsEmpty = form => {
-        if (!form || typeof form !== 'object') return true
+        if ( !form || typeof form !== 'object' ) return true
         const hasName = typeof form.name === 'string' && form.name.trim().length > 0
-        const hasSteps = Array.isArray(form.steps) && form.steps.length > 0
+        const hasSteps = Array.isArray( form.steps ) && form.steps.length > 0
         const hasCategory = !!form.category
-        return !(hasName || hasSteps || hasCategory)
+        return !( hasName || hasSteps || hasCategory )
       }
 
       // Restore template form data with fallback to originalTemplate if needed
-      if (formIsEmpty(cachedState.templateForm) && cachedState.originalTemplate) {
-        console.warn('[Designer] Cached templateForm empty; rebuilding from originalTemplate snapshot')
-        templateForm.value = JSON.parse(JSON.stringify(cachedState.originalTemplate))
+      if ( formIsEmpty( cachedState.templateForm ) && cachedState.originalTemplate ) {
+        console.warn( '[Designer] Cached templateForm empty; rebuilding from originalTemplate snapshot' )
+        templateForm.value = JSON.parse( JSON.stringify( cachedState.originalTemplate ) )
       } else {
         templateForm.value = cachedState.templateForm
       }
@@ -2080,21 +2077,21 @@ onActivated(async () => {
       hasUnsavedChanges.value = cachedState.hasUnsavedChanges
 
       // Restore designer state if available
-      if (cachedState.designerState) {
-        Object.assign(designerState.value, cachedState.designerState)
+      if ( cachedState.designerState ) {
+        Object.assign( designerState.value, cachedState.designerState )
       }
 
       // Mark ready, then validate once form is rendered
       renderReady.value = true
-      await nextTick(() => {
+      await nextTick( () => {
         validateElementForm()
-      })
+      } )
 
       // Integrity check: ensure cached template matches current route id
       if (
         isEditing.value &&
         currentTemplate.value &&
-        (currentTemplate.value.id || currentTemplate.value.template_id) !== route.params.id
+        ( currentTemplate.value.id || currentTemplate.value.template_id ) !== route.params.id
       ) {
         console.warn(
           '[Designer] Cached template id mismatch; reloading by route id',
@@ -2111,32 +2108,31 @@ onActivated(async () => {
   }
 
   // Fallback: attempt to restore by templateId from any cache entry
-  if (settingsStore.tagsView && isEditing.value && route.params.id) {
-    const restored = restoreStateByTemplateId(route.params.id, snapshotRoute())
-    if (restored) {
-
+  if ( settingsStore.tagsView && isEditing.value && route.params.id ) {
+    const restored = restoreStateByTemplateId( route.params.id, snapshotRoute() )
+    if ( restored ) {
       // Use same empty form fallback for templateId-based restore
       const formIsEmpty2 = form => {
-        if (!form || typeof form !== 'object') return true
+        if ( !form || typeof form !== 'object' ) return true
         const hasName = typeof form.name === 'string' && form.name.trim().length > 0
-        const hasSteps = Array.isArray(form.steps) && form.steps.length > 0
+        const hasSteps = Array.isArray( form.steps ) && form.steps.length > 0
         const hasCategory = !!form.category
-        return !(hasName || hasSteps || hasCategory)
+        return !( hasName || hasSteps || hasCategory )
       }
-      if (formIsEmpty2(restored.templateForm) && restored.originalTemplate) {
-        console.warn('[Designer] Cached templateForm empty (templateId path); rebuilding from originalTemplate')
-        templateForm.value = JSON.parse(JSON.stringify(restored.originalTemplate))
+      if ( formIsEmpty2( restored.templateForm ) && restored.originalTemplate ) {
+        console.warn( '[Designer] Cached templateForm empty (templateId path); rebuilding from originalTemplate' )
+        templateForm.value = JSON.parse( JSON.stringify( restored.originalTemplate ) )
       } else {
         templateForm.value = restored.templateForm
       }
       originalTemplate.value = restored.originalTemplate
       currentTemplate.value = restored.currentTemplate
       hasUnsavedChanges.value = restored.hasUnsavedChanges
-      if (restored.designerState) {
-        Object.assign(designerState.value, restored.designerState)
+      if ( restored.designerState ) {
+        Object.assign( designerState.value, restored.designerState )
       }
       renderReady.value = true
-      await nextTick(() => validateElementForm())
+      await nextTick( () => validateElementForm() )
       return
     }
   }
@@ -2147,39 +2143,39 @@ onActivated(async () => {
   const isFormEmpty =
     !templateForm.value.name && !templateForm.value.description && templateForm.value.steps.length === 0
 
-  if (isFormEmpty) {
+  if ( isFormEmpty ) {
     await initializeTemplate()
     renderReady.value = true
   }
-})
+} )
 
-onDeactivated(() => {
+onDeactivated( () => {
   isComponentActive.value = false
 
   // Only save state when tagViews mode is enabled
-  if (settingsStore.tagsView) {
+  if ( settingsStore.tagsView ) {
     // Save current state to cache before switching tabs
     // Avoid overwriting a good snapshot with an empty form; fallback to previous cached form if needed
     const formIsEmpty = form => {
-      if (!form || typeof form !== 'object') return true
+      if ( !form || typeof form !== 'object' ) return true
       const hasName = typeof form.name === 'string' && form.name.trim().length > 0
-      const hasSteps = Array.isArray(form.steps) && form.steps.length > 0
+      const hasSteps = Array.isArray( form.steps ) && form.steps.length > 0
       const hasCategory = !!form.category
-      return !(hasName || hasSteps || hasCategory)
+      return !( hasName || hasSteps || hasCategory )
     }
     let effectiveForm = templateForm.value
-    const previous = restoreStateByKey(stableCacheKey.value)
-    if (formIsEmpty(effectiveForm) && previous?.templateForm) {
-      console.warn('[Designer] Avoiding empty-form save by using previous cached form for key:', stableCacheKey.value)
+    const previous = restoreStateByKey( stableCacheKey.value )
+    if ( formIsEmpty( effectiveForm ) && previous?.templateForm ) {
+      console.warn( '[Designer] Avoiding empty-form save by using previous cached form for key:', stableCacheKey.value )
       effectiveForm = previous.templateForm
     }
 
     const currentState = {
-      templateForm: effectiveForm,
-      originalTemplate: originalTemplate.value,
-      currentTemplate: currentTemplate.value,
-      hasUnsavedChanges: hasUnsavedChanges.value,
-      designerState: designerState.value,
+      templateForm : effectiveForm,
+      originalTemplate : originalTemplate.value,
+      currentTemplate : currentTemplate.value,
+      hasUnsavedChanges : hasUnsavedChanges.value,
+      designerState : designerState.value
     }
 
     saveStateByKey(
@@ -2189,7 +2185,7 @@ onDeactivated(() => {
       currentTemplate.value?.id || currentTemplate.value?.template_id || route.params.id || null
     )
   }
-})
+} )
 
 // Preview dialog event handlers
 const handlePreviewOpen = () => {
@@ -2205,15 +2201,15 @@ const handlePreviewPrint = () => {
 }
 
 // Change summary dialog handlers
-const handleChangeSummaryConfirm = async () => {
-  setChangeSummaryLoading(true)
+const handleChangeSummaryConfirm = async() => {
+  setChangeSummaryLoading( true )
   try {
     await performSave()
     closeChangeSummaryDialog()
-  } catch (error) {
+  } catch ( error ) {
     // Error handling is already done in performSave
   } finally {
-    setChangeSummaryLoading(false)
+    setChangeSummaryLoading( false )
   }
 }
 
@@ -2224,25 +2220,25 @@ const handleChangeSummaryCancel = () => {
 // Watch for route changes
 watch(
   () => route.params.id,
-  (newId, oldId) => {
-    if (newId === oldId) return
+  ( newId, oldId ) => {
+    if ( newId === oldId ) return
     // In tagsView mode, avoid reacting while deactivated to prevent state bleed
-    if (settingsStore.tagsView && !isComponentActive.value) {
+    if ( settingsStore.tagsView && !isComponentActive.value ) {
       return
     }
     // Preemptively save current state before switching ids when active
-    if (settingsStore.tagsView && isComponentActive.value) {
+    if ( settingsStore.tagsView && isComponentActive.value ) {
       // Avoid empty-form overwrite by reusing previously cached form if needed
       const formIsEmpty = form => {
-        if (!form || typeof form !== 'object') return true
+        if ( !form || typeof form !== 'object' ) return true
         const hasName = typeof form.name === 'string' && form.name.trim().length > 0
-        const hasSteps = Array.isArray(form.steps) && form.steps.length > 0
+        const hasSteps = Array.isArray( form.steps ) && form.steps.length > 0
         const hasCategory = !!form.category
-        return !(hasName || hasSteps || hasCategory)
+        return !( hasName || hasSteps || hasCategory )
       }
       let effectiveForm = templateForm.value
-      const previous = restoreStateByKey(stableCacheKey.value)
-      if (formIsEmpty(effectiveForm) && previous?.templateForm) {
+      const previous = restoreStateByKey( stableCacheKey.value )
+      if ( formIsEmpty( effectiveForm ) && previous?.templateForm ) {
         console.warn(
           '[Designer] Avoiding empty-form preemptive save by using previous cached form for key:',
           stableCacheKey.value
@@ -2251,11 +2247,11 @@ watch(
       }
 
       const currentState = {
-        templateForm: effectiveForm,
-        originalTemplate: originalTemplate.value,
-        currentTemplate: currentTemplate.value,
-        hasUnsavedChanges: hasUnsavedChanges.value,
-        designerState: designerState.value,
+        templateForm : effectiveForm,
+        originalTemplate : originalTemplate.value,
+        currentTemplate : currentTemplate.value,
+        hasUnsavedChanges : hasUnsavedChanges.value,
+        designerState : designerState.value
       }
       saveStateByKey(
         stableCacheKey.value,
@@ -2265,7 +2261,7 @@ watch(
       )
       renderReady.value = false
     }
-    if (hasUnsavedChanges.value && !settingsStore.tagsView) {
+    if ( hasUnsavedChanges.value && !settingsStore.tagsView ) {
       pendingNavigation.value = () => initializeTemplate()
       showUnsavedDialog.value = true
     } else {
@@ -2282,24 +2278,24 @@ watch(
     // Recalculate heights when TagsView is toggled
     calculateDynamicHeights()
   },
-  { immediate: false }
+  { immediate : false }
 )
 
 // Handle navigation guard for traditional routing (when tagViews is disabled)
-onBeforeRouteLeave((to, from, next) => {
+onBeforeRouteLeave( ( to, from, next ) => {
   // Only show unsaved changes dialog when tagViews is disabled
   // When tagViews is enabled, users can navigate via tab clicks without losing context
-  if (!settingsStore.tagsView && hasUnsavedChanges.value) {
+  if ( !settingsStore.tagsView && hasUnsavedChanges.value ) {
     pendingNavigation.value = () => next()
     showUnsavedDialog.value = true
   } else {
     next()
   }
-})
+} )
 
-defineOptions({
-  name: 'TemplateDesignerView',
-})
+defineOptions( {
+  name : 'TemplateDesignerView'
+} )
 </script>
 
 <style scoped>

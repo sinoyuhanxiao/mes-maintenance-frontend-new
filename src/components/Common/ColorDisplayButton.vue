@@ -28,20 +28,20 @@
 <script setup>
 import { ElText } from 'element-plus'
 
-defineProps({
-  name: {
-    type: String,
-    default: 'Name',
+defineProps( {
+  name : {
+    type : String,
+    default : 'Name'
   },
-  value: {
-    type: Number,
-    default: 1,
+  value : {
+    type : Number,
+    default : 1
   },
-  color: {
-    type: String,
-    default: '#409EFF',
-  },
-})
+  color : {
+    type : String,
+    default : '#409EFF'
+  }
+} )
 </script>
 
 <style scoped>

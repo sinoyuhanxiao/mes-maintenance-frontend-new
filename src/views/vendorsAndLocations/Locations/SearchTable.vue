@@ -44,92 +44,92 @@
 <script setup>
 import { ref, computed, defineProps, defineEmits, watch } from 'vue'
 
-const props = defineProps({
-  data: { type: Array, default: () => [] },
-  columns: { type: Array, default: () => [] },
-  enableSearch: { type: Boolean, default: true },
+const props = defineProps( {
+  data : { type : Array, default : () => [] },
+  columns : { type : Array, default : () => [] },
+  enableSearch : { type : Boolean, default : true },
 
   /* ---- Server-side mode inputs (optional) ---- */
   // When these are provided (esp. total > 0), we switch to server mode
-  total: { type: Number, default: 0 },
-  page: { type: Number, default: 1 },
-  pageSize: { type: Number, default: 5 },
+  total : { type : Number, default : 0 },
+  page : { type : Number, default : 1 },
+  pageSize : { type : Number, default : 5 },
 
   // v-model:search for server-side search (optional)
-  search: { type: String, default: '' },
+  search : { type : String, default : '' },
 
   /* ---- Client-side mode options ---- */
-  emptyText: { type: String, default: 'No data found' },
-  clientPageSize: { type: Number, default: 5 },
+  emptyText : { type : String, default : 'No data found' },
+  clientPageSize : { type : Number, default : 5 },
   // If you still want local filtering even in server mode, set this to true.
-  clientFilterFallback: { type: Boolean, default: false },
-})
+  clientFilterFallback : { type : Boolean, default : false }
+} )
 
-const emit = defineEmits(['update:search', 'update:page'])
+const emit = defineEmits( ['update:search', 'update:page'] )
 
 /* Decide mode: server if pagination is controlled by parent (total provided) */
-const useServer = computed(() => props.total > 0)
+const useServer = computed( () => props.total > 0 )
 
 /* ----- Search handling ----- */
-const internalSearch = ref(props.search)
+const internalSearch = ref( props.search )
 watch(
   () => props.search,
   v => {
-    if (v !== internalSearch.value) internalSearch.value = v
+    if ( v !== internalSearch.value ) internalSearch.value = v
   }
 )
 
 let debounceTimer = null
-const emitSearch = val => emit('update:search', val)
+const emitSearch = val => emit( 'update:search', val )
 const onSearchInput = () => {
   // Always tell parent about the new value (debounced)
-  clearTimeout(debounceTimer)
-  debounceTimer = setTimeout(() => emitSearch(internalSearch.value), 250)
+  clearTimeout( debounceTimer )
+  debounceTimer = setTimeout( () => emitSearch( internalSearch.value ), 250 )
   // Client mode continues to work because local filtering uses internalSearch
 }
 const onSearchEnter = () => {
-  emitSearch(internalSearch.value)
+  emitSearch( internalSearch.value )
   // client mode: reset page handled below
 }
 const onSearchClear = () => {
   internalSearch.value = ''
-  emitSearch('')
+  emitSearch( '' )
 }
 
 /* ----- SearchTable Client-side mode: local filter + pagination ----- */
-const clientPage = ref(1)
-watch(internalSearch, () => {
-  if (!useServer.value) clientPage.value = 1
-})
+const clientPage = ref( 1 )
+watch( internalSearch, () => {
+  if ( !useServer.value ) clientPage.value = 1
+} )
 watch(
   () => props.data,
   () => {
-    if (!useServer.value) clientPage.value = 1
+    if ( !useServer.value ) clientPage.value = 1
   }
 )
 
-const filteredData = computed(() => {
-  if (!props.enableSearch) return props.data
+const filteredData = computed( () => {
+  if ( !props.enableSearch ) return props.data
   const q = internalSearch.value.trim().toLowerCase()
-  if (!q) return props.data
+  if ( !q ) return props.data
 
   // If server mode AND not using fallback, do not filter locally.
-  if (useServer.value && !props.clientFilterFallback) return props.data
+  if ( useServer.value && !props.clientFilterFallback ) return props.data
 
-  return props.data.filter(row =>
-    Object.values(row ?? {}).some(val =>
-      String(val ?? '')
+  return props.data.filter( row =>
+    Object.values( row ?? {} ).some( val =>
+      String( val ?? '' )
         .toLowerCase()
-        .includes(q)
+        .includes( q )
     )
   )
-})
+} )
 
-const pagedData = computed(() => {
-  const start = (clientPage.value - 1) * props.clientPageSize
-  return filteredData.value.slice(start, start + props.clientPageSize)
-})
+const pagedData = computed( () => {
+  const start = ( clientPage.value - 1 ) * props.clientPageSize
+  return filteredData.value.slice( start, start + props.clientPageSize )
+} )
 
 /* ----- Table rows presented ----- */
-const tableRows = computed(() => (useServer.value ? props.data : pagedData.value))
+const tableRows = computed( () => ( useServer.value ? props.data : pagedData.value ) )
 </script>

@@ -86,9 +86,9 @@
 </template>
 
 <script setup>
-defineOptions({
-  name: 'YuWeather',
-})
+defineOptions( {
+  name : 'YuWeather'
+} )
 </script>
 
 <style lang="scss">

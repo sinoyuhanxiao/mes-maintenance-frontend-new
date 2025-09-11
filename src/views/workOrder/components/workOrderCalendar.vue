@@ -161,170 +161,170 @@ import PriorityTag from '@/components/WorkOrder/PriorityTag.vue'
 import CategoryTag from '@/components/WorkOrder/CategoryTag.vue'
 import StatusTag from '@/components/WorkOrder/StatusTag.vue'
 
-const fullCalendarRef = ref(null)
-const events = ref([])
+const fullCalendarRef = ref( null )
+const events = ref( [] )
 const appStore = useAppStore()
 
-const props = defineProps({
-  data: {
-    type: Array,
-    required: true,
+const props = defineProps( {
+  data : {
+    type : Array,
+    required : true
   },
-  loading: {
-    type: Boolean,
-    default: false,
-  },
-})
+  loading : {
+    type : Boolean,
+    default : false
+  }
+} )
 
-const emit = defineEmits(['date-range-change', 'view'])
+const emit = defineEmits( ['date-range-change', 'view'] )
 
 // Allow parent component to control when to sync full calendar's internal data
-defineExpose({
-  refetchEvents: () => {
+defineExpose( {
+  refetchEvents : () => {
     fullCalendarRef.value?.getApi()?.refetchEvents()
-  },
-})
+  }
+} )
 
 // Watch app's locale and update calendar's locale and button texts
 watch(
   () => appStore.lang,
   newLang => {
-    setCalendarLocale(newLang)
+    setCalendarLocale( newLang )
   },
-  { immediate: true }
+  { immediate : true }
 )
 
-const currentViewName = ref('')
+const currentViewName = ref( '' )
 
 const handleViewMount = arg => {
   currentViewName.value = arg.view.type
 }
 
-function getScrollContainer(viewName) {
+function getScrollContainer( viewName ) {
   const calendarEl = fullCalendarRef.value?.el || fullCalendarRef.value?.$el
-  if (!calendarEl) return null
+  if ( !calendarEl ) return null
 
-  return calendarEl.querySelector('.fc-scroller, .fc-scroller-harness .fc-scroller')
+  return calendarEl.querySelector( '.fc-scroller, .fc-scroller-harness .fc-scroller' )
 }
 
 const scrollPositions = new Map()
 
 // Remember scroll position when deactivated
-onDeactivated(() => {
-  const container = getScrollContainer(currentViewName.value)
-  if (container) {
-    scrollPositions.set(currentViewName.value, container.scrollTop)
+onDeactivated( () => {
+  const container = getScrollContainer( currentViewName.value )
+  if ( container ) {
+    scrollPositions.set( currentViewName.value, container.scrollTop )
   }
-})
+} )
 
 // Apply scroll position when activated back
-onActivated(() => {
-  setTimeout(() => {
-    const container = getScrollContainer(currentViewName.value)
-    if (container) {
-      const top = scrollPositions.get(currentViewName.value) ?? 0
+onActivated( () => {
+  setTimeout( () => {
+    const container = getScrollContainer( currentViewName.value )
+    if ( container ) {
+      const top = scrollPositions.get( currentViewName.value ) ?? 0
       container.scrollTop = top
     }
-  }, 0)
-})
+  }, 0 )
+} )
 
 // Trigger repaint when activated
-onActivated(() => {
+onActivated( () => {
   fullCalendarRef.value?.getApi()?.updateSize()
-})
+} )
 
 // Full calendar buttons label map
 const buttonTextMap = {
-  en: {
-    today: 'Today',
-    year: 'Year',
-    month: 'Month',
-    week: 'Week',
-    day: 'Day',
-    list: 'Weekly List',
+  en : {
+    today : 'Today',
+    year : 'Year',
+    month : 'Month',
+    week : 'Week',
+    day : 'Day',
+    list : 'Weekly List'
   },
-  zh: {
-    today: '今天',
-    year: '年',
-    month: '月',
-    week: '周',
-    day: '日',
-    list: '周列表',
-  },
-}
-
-// Options config for full calendar instance
-const calendarOptions = ref({
-  plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin, multiMonthPlugin, listPlugin],
-  initialView: 'dayGridMonth',
-  headerToolbar: {
-    left: 'today',
-    center: 'prev,title,next',
-    right: 'multiMonthYear,dayGridMonth,timeGridWeek,timeGridDay,listWeek',
-  },
-  events: events.value,
-  // Event source for the calendar. events function is called automatically by FC when it needs new event data. Ex. Prev or next button is clicked
-  eventSources: [
-    {
-      events(fetchInfo, success, failure) {
-        const { startStr, endStr } = fetchInfo
-        emit('date-range-change', { start_date_from: startStr, end_date_to: endStr, resolve: success, reject: failure })
-      },
-    },
-  ],
-  // FC automatically calls this on each event object
-  eventDataTransform: convertWorkOrderDTOToEventFormat,
-  eventClick: handleEventClick,
-  eventMouseEnter: handleEventMouseEnter,
-  eventMouseLeave: handleEventMouseLeave,
-  locales: [enLocale, zhLocale],
-  locale: 'en',
-  aspectRatio: '2.9',
-  multiMonthMaxColumns: 1,
-  nowIndicator: true,
-  nowIndicatorClassNames: ['custom-now-indicator'],
-  viewDidMount: handleViewMount,
-  eventMaxStack: true,
-  dayMaxEventRows: true,
-})
-
-// Transform work order dto to full calendar's event object, also decorate event block styling
-function convertWorkOrderDTOToEventFormat(raw) {
-  const stateId = raw.state?.id
-  const isOverDue = isDateBeforeToday(raw.due_date) && stateId !== 7 && stateId !== 12 // 7 is completed, 12 is failed
-
-  return {
-    id: raw.id,
-    title: raw.name,
-    start: raw.start_date,
-    end: raw.end_date || null,
-    groupId: raw.recurrence_uuid || null,
-    backgroundColor: isOverDue ? '#fef2f2' : '#f9fafb',
-    // borderColor : overdue ? '#fef2f2' : '#dddddd',
-    borderColor: '#dddddd',
-    textColor: isOverDue ? 'red' : 'black',
-    display: 'block', // other options are 'auto' ,'list-item'
-    extendedProps: {
-      ...raw,
-      stateId,
-      dueDate: raw.due_date,
-      categories: raw.categories,
-      stateName: raw.state?.name,
-      priorityId: raw.priority?.id,
-      priorityName: raw.priority?.name,
-      image_list: raw.image_list || [],
-      work_order_progress: raw.work_order_progress || null,
-      equipment_node: raw.equipment_node || null,
-      isOverDue,
-    },
+  zh : {
+    today : '今天',
+    year : '年',
+    month : '月',
+    week : '周',
+    day : '日',
+    list : '周列表'
   }
 }
 
-function handleEventClick(arg) {
-  emit('view', { id: arg.event.id })
+// Options config for full calendar instance
+const calendarOptions = ref( {
+  plugins : [dayGridPlugin, timeGridPlugin, interactionPlugin, multiMonthPlugin, listPlugin],
+  initialView : 'dayGridMonth',
+  headerToolbar : {
+    left : 'today',
+    center : 'prev,title,next',
+    right : 'multiMonthYear,dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+  },
+  events : events.value,
+  // Event source for the calendar. events function is called automatically by FC when it needs new event data. Ex. Prev or next button is clicked
+  eventSources : [
+    {
+      events( fetchInfo, success, failure ) {
+        const { startStr, endStr } = fetchInfo
+        emit( 'date-range-change', { start_date_from : startStr, end_date_to : endStr, resolve : success, reject : failure } )
+      }
+    }
+  ],
+  // FC automatically calls this on each event object
+  eventDataTransform : convertWorkOrderDTOToEventFormat,
+  eventClick : handleEventClick,
+  eventMouseEnter : handleEventMouseEnter,
+  eventMouseLeave : handleEventMouseLeave,
+  locales : [enLocale, zhLocale],
+  locale : 'en',
+  aspectRatio : '2.9',
+  multiMonthMaxColumns : 1,
+  nowIndicator : true,
+  nowIndicatorClassNames : ['custom-now-indicator'],
+  viewDidMount : handleViewMount,
+  eventMaxStack : true,
+  dayMaxEventRows : true
+} )
+
+// Transform work order dto to full calendar's event object, also decorate event block styling
+function convertWorkOrderDTOToEventFormat( raw ) {
+  const stateId = raw.state?.id
+  const isOverDue = isDateBeforeToday( raw.due_date ) && stateId !== 7 && stateId !== 12 // 7 is completed, 12 is failed
+
+  return {
+    id : raw.id,
+    title : raw.name,
+    start : raw.start_date,
+    end : raw.end_date || null,
+    groupId : raw.recurrence_uuid || null,
+    backgroundColor : isOverDue ? '#fef2f2' : '#f9fafb',
+    // borderColor : overdue ? '#fef2f2' : '#dddddd',
+    borderColor : '#dddddd',
+    textColor : isOverDue ? 'red' : 'black',
+    display : 'block', // other options are 'auto' ,'list-item'
+    extendedProps : {
+      ...raw,
+      stateId,
+      dueDate : raw.due_date,
+      categories : raw.categories,
+      stateName : raw.state?.name,
+      priorityId : raw.priority?.id,
+      priorityName : raw.priority?.name,
+      image_list : raw.image_list || [],
+      work_order_progress : raw.work_order_progress || null,
+      equipment_node : raw.equipment_node || null,
+      isOverDue
+    }
+  }
 }
 
-const getIconByStateId = ({ extendedProps }) => {
+function handleEventClick( arg ) {
+  emit( 'view', { id : arg.event.id } )
+}
+
+const getIconByStateId = ( { extendedProps } ) => {
   const id = extendedProps.stateId
   return id === 7 ? CircleCheck : id === 12 ? CircleClose : undefined // null → v-if removes wrapper
 }
@@ -335,7 +335,7 @@ const recurrenceIcon = event => {
   return !!groupId !== false && recurrenceId != null && recurrenceId !== 1 ? Refresh : undefined // null → v-if removes wrapper
 }
 
-const getColorByStateId = ({ extendedProps }) => {
+const getColorByStateId = ( { extendedProps } ) => {
   const id = extendedProps.stateId
   return id === 7 ? 'green' : id === 12 ? 'red' : '' // null → v-if removes wrapper
 }
@@ -347,30 +347,30 @@ const getTextTypeByDueDate = isOverDue => {
 // Virtual popover and trigger for work order on hover tooltip
 const workOrderHoverPopover = ref()
 
-const virtualTrigger = ref({
-  getBoundingClientRect: () => new DOMRect(0, 0, 0, 0),
-  contextElement: document.body,
-})
+const virtualTrigger = ref( {
+  getBoundingClientRect : () => new DOMRect( 0, 0, 0, 0 ),
+  contextElement : document.body
+} )
 
-const popoverVisible = ref(false)
+const popoverVisible = ref( false )
 
-const popoverData = reactive({
-  id: '',
-  gropuId: '',
-  title: '',
-  startDate: '',
-  endDate: '',
-  dueDate: '',
-  finished_at: '',
-  priority: null,
-  category: null,
-  state: null,
-  stateId: '',
-  stateName: '',
-  recurrence_type: null,
-  image_list: [],
-  isOverDue: null,
-})
+const popoverData = reactive( {
+  id : '',
+  gropuId : '',
+  title : '',
+  startDate : '',
+  endDate : '',
+  dueDate : '',
+  finished_at : '',
+  priority : null,
+  category : null,
+  state : null,
+  stateId : '',
+  stateName : '',
+  recurrence_type : null,
+  image_list : [],
+  isOverDue : null
+} )
 
 // Added delays for show/hide hover popover to ease the transition, prevent distracting rapid toggling
 const showDelayMs = 250
@@ -378,22 +378,22 @@ const hideDelayMs = 100
 let hoverTimer = null
 let hideTimer = null
 
-function handleEventMouseEnter(mouseEnterInfo) {
+function handleEventMouseEnter( mouseEnterInfo ) {
   const { event, jsEvent } = mouseEnterInfo
   const { clientX, clientY } = jsEvent
 
   // Cancel pending hide (if user hovered back in quickly)
-  if (hideTimer) {
-    clearTimeout(hideTimer)
+  if ( hideTimer ) {
+    clearTimeout( hideTimer )
   }
 
   // Cancel previous show attempt
-  if (hoverTimer) {
-    clearTimeout(hoverTimer)
+  if ( hoverTimer ) {
+    clearTimeout( hoverTimer )
     hoverTimer = null
   }
 
-  hoverTimer = window.setTimeout(() => {
+  hoverTimer = window.setTimeout( () => {
     // Populate data through hover event's data
     popoverData.id = event.id
     popoverData.groupId = event.groupId
@@ -414,53 +414,53 @@ function handleEventMouseEnter(mouseEnterInfo) {
     popoverData.isOverDue = event.extendedProps.isOverDue
 
     // Set the virtual reference for the popover position based on mouse hover event position
-    virtualTrigger.value.getBoundingClientRect = () => new DOMRect(clientX, clientY, 0, 0)
+    virtualTrigger.value.getBoundingClientRect = () => new DOMRect( clientX, clientY, 0, 0 )
     virtualTrigger.value.contextElement = document.body
     popoverVisible.value = true
-  }, showDelayMs)
+  }, showDelayMs )
 }
 
-function handleEventMouseLeave(mouseLeaveInfo) {
-  if (hoverTimer) {
-    clearTimeout(hoverTimer)
+function handleEventMouseLeave( mouseLeaveInfo ) {
+  if ( hoverTimer ) {
+    clearTimeout( hoverTimer )
   }
 
-  hideTimer = window.setTimeout(() => {
+  hideTimer = window.setTimeout( () => {
     popoverVisible.value = false
     hideTimer = null
-  }, hideDelayMs)
+  }, hideDelayMs )
 }
 
-const formatDate = d => (d ? convertToLocalTime(d) : '-')
+const formatDate = d => ( d ? convertToLocalTime( d ) : '-' )
 
-function setCalendarLocale(locale) {
+function setCalendarLocale( locale ) {
   const calendarApi = fullCalendarRef.value?.getApi()
 
-  if (calendarApi) {
-    calendarApi.setOption('locale', locale)
-    calendarApi.setOption('buttonText', buttonTextMap[locale])
+  if ( calendarApi ) {
+    calendarApi.setOption( 'locale', locale )
+    calendarApi.setOption( 'buttonText', buttonTextMap[locale] )
   }
 }
 
-function isDateBeforeToday(dueDateStr) {
-  if (!dueDateStr) return false
+function isDateBeforeToday( dueDateStr ) {
+  if ( !dueDateStr ) return false
 
   const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  today.setHours( 0, 0, 0, 0 )
 
-  const dueDate = new Date(dueDateStr)
+  const dueDate = new Date( dueDateStr )
   return dueDate < today
 }
 
-const popperWidth = computed(() => {
+const popperWidth = computed( () => {
   return popoverData.image_list && popoverData.image_list.length > 0 ? 540 : 420
-})
+} )
 
 // TODO: Sample user data, swap with data using user service api once its ready
 const temporaryUserList = [
-  { id: 1, name: 'Erik Yu' },
-  { id: 2, name: 'Jane Smith' },
-  { id: 3, name: 'Mike Johnson' },
+  { id : 1, name : 'Erik Yu' },
+  { id : 2, name : 'Jane Smith' },
+  { id : 3, name : 'Mike Johnson' }
 ]
 
 // const loadedMonths = new Set<String>()
@@ -528,15 +528,15 @@ const temporaryUserList = [
 //   })
 // }
 
-onMounted(() => {
-  setCalendarLocale(appStore.lang)
+onMounted( () => {
+  setCalendarLocale( appStore.lang )
 
   // const container = fullCalendarRef.value?.$el.querySelector('.fc-multimonth')
   //
   // if (container) {
   //   container.addEventListener('scroll', handleLazyScroll)
   // }
-})
+} )
 </script>
 
 <style scoped>

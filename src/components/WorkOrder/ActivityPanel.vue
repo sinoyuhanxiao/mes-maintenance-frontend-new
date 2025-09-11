@@ -188,275 +188,275 @@ import {
   Plus,
   User,
   Setting,
-  Clock,
+  Clock
 } from '@element-plus/icons-vue'
 
 // Emits
-const emit = defineEmits(['add-comment'])
+const emit = defineEmits( ['add-comment'] )
 
 // State
-const activeTab = ref('comments')
-const newComment = ref('')
-const attachmentFiles = ref([])
+const activeTab = ref( 'comments' )
+const newComment = ref( '' )
+const attachmentFiles = ref( [] )
 
 // GPT generated mock comments
-const mockComments = ref([
+const mockComments = ref( [
   {
-    id: 'cmt-001',
-    author: {
-      name: 'Erik Yu',
-      avatar: { text: 'EY', background: '#34C759' },
+    id : 'cmt-001',
+    author : {
+      name : 'Erik Yu',
+      avatar : { text : 'EY', background : '#34C759' }
     },
-    meta: { timestamp: '2025-04-23T10:31:00-07:00' },
-    body: { content: 'Fixed conveyor alignment issue; see new photos attached.' },
-    type: 'Update',
-    attachments: [
-      { id: 'att-001', name: 'conveyor_before.jpg', type: 'image', size: '2.1 MB' },
-      { id: 'att-002', name: 'conveyor_after.jpg', type: 'image', size: '1.8 MB' },
-    ],
+    meta : { timestamp : '2025-04-23T10:31:00-07:00' },
+    body : { content : 'Fixed conveyor alignment issue; see new photos attached.' },
+    type : 'Update',
+    attachments : [
+      { id : 'att-001', name : 'conveyor_before.jpg', type : 'image', size : '2.1 MB' },
+      { id : 'att-002', name : 'conveyor_after.jpg', type : 'image', size : '1.8 MB' }
+    ]
   },
   {
-    id: 'cmt-002',
-    author: {
-      name: 'Yao Li',
-      avatar: { text: 'YL', background: '#0EA5E9' },
+    id : 'cmt-002',
+    author : {
+      name : 'Yao Li',
+      avatar : { text : 'YL', background : '#0EA5E9' }
     },
-    meta: { timestamp: '2025-04-22T14:15:00-07:00' },
-    body: { content: 'Maintenance completed successfully. All systems operational.' },
-    type: 'Completion',
+    meta : { timestamp : '2025-04-22T14:15:00-07:00' },
+    body : { content : 'Maintenance completed successfully. All systems operational.' },
+    type : 'Completion'
   },
   {
-    id: 'cmt-003',
-    author: {
-      name: 'Sarah Wilson',
-      avatar: { text: 'SW', background: '#F59E0B' },
+    id : 'cmt-003',
+    author : {
+      name : 'Sarah Wilson',
+      avatar : { text : 'SW', background : '#F59E0B' }
     },
-    meta: { timestamp: '2025-04-22T09:45:00-07:00' },
-    body: { content: 'Found issue with bearing housing. Uploading inspection report and ordering replacement parts.' },
-    type: 'Issue',
-    attachments: [
-      { id: 'att-003', name: 'bearing_inspection_report.pdf', type: 'document', size: '452 KB' },
-      { id: 'att-004', name: 'parts_order_form.pdf', type: 'document', size: '128 KB' },
-    ],
+    meta : { timestamp : '2025-04-22T09:45:00-07:00' },
+    body : { content : 'Found issue with bearing housing. Uploading inspection report and ordering replacement parts.' },
+    type : 'Issue',
+    attachments : [
+      { id : 'att-003', name : 'bearing_inspection_report.pdf', type : 'document', size : '452 KB' },
+      { id : 'att-004', name : 'parts_order_form.pdf', type : 'document', size : '128 KB' }
+    ]
   },
   {
-    id: 'cmt-004',
-    author: {
-      name: 'Mike Johnson',
-      avatar: { text: 'MJ', background: '#8B5CF6' },
+    id : 'cmt-004',
+    author : {
+      name : 'Mike Johnson',
+      avatar : { text : 'MJ', background : '#8B5CF6' }
     },
-    meta: { timestamp: '2025-04-21T16:20:00-07:00' },
-    body: { content: 'Starting preventive maintenance. Equipment is now offline as scheduled.' },
-    type: 'Status',
+    meta : { timestamp : '2025-04-21T16:20:00-07:00' },
+    body : { content : 'Starting preventive maintenance. Equipment is now offline as scheduled.' },
+    type : 'Status'
   },
   {
-    id: 'cmt-005',
-    author: {
-      name: 'David Chen',
-      avatar: { text: 'DC', background: '#EF4444' },
+    id : 'cmt-005',
+    author : {
+      name : 'David Chen',
+      avatar : { text : 'DC', background : '#EF4444' }
     },
-    meta: { timestamp: '2025-04-21T08:30:00-07:00' },
-    body: { content: 'Safety inspection completed. Added safety checklist and procedure updates.' },
-    type: 'Safety',
-    attachments: [{ id: 'att-005', name: 'safety_checklist_updated.docx', type: 'document', size: '86 KB' }],
-  },
-])
+    meta : { timestamp : '2025-04-21T08:30:00-07:00' },
+    body : { content : 'Safety inspection completed. Added safety checklist and procedure updates.' },
+    type : 'Safety',
+    attachments : [{ id : 'att-005', name : 'safety_checklist_updated.docx', type : 'document', size : '86 KB' }]
+  }
+] )
 
 // Enhanced Mock History Events with 7 total events for timeline
-const mockHistoryEvents = ref([
+const mockHistoryEvents = ref( [
   {
-    id: 'hst-101',
-    author: {
-      name: 'Erik Yu',
-      avatar: { text: 'EY', background: '#34C759' },
+    id : 'hst-101',
+    author : {
+      name : 'Erik Yu',
+      avatar : { text : 'EY', background : '#34C759' }
     },
-    action: 'marked as completed',
-    description: 'Work order has been completed successfully with all maintenance tasks finished.',
-    meta: { timestamp: '2025-04-23T13:27:00-07:00' },
-    type: 'success',
-    color: '#67c23a',
-    icon: Clock,
-    category: 'Status',
-    changes: [
-      { field: 'Status', from: 'In Progress', to: 'Completed' },
-      { field: 'Completion Rate', from: '85%', to: '100%' },
+    action : 'marked as completed',
+    description : 'Work order has been completed successfully with all maintenance tasks finished.',
+    meta : { timestamp : '2025-04-23T13:27:00-07:00' },
+    type : 'success',
+    color : '#67c23a',
+    icon : Clock,
+    category : 'Status',
+    changes : [
+      { field : 'Status', from : 'In Progress', to : 'Completed' },
+      { field : 'Completion Rate', from : '85%', to : '100%' }
     ],
-    details: {
-      Duration: '2 hours 15 minutes',
-      'Final Cost': '$347.00',
-    },
+    details : {
+      Duration : '2 hours 15 minutes',
+      'Final Cost' : '$347.00'
+    }
   },
   {
-    id: 'hst-102',
-    author: {
-      name: 'Sarah Wilson',
-      avatar: { text: 'SW', background: '#F59E0B' },
+    id : 'hst-102',
+    author : {
+      name : 'Sarah Wilson',
+      avatar : { text : 'SW', background : '#F59E0B' }
     },
-    action: 'updated priority level',
-    description: 'Priority increased due to critical equipment status and production impact.',
-    meta: { timestamp: '2025-04-22T11:30:00-07:00' },
-    type: 'warning',
-    color: '#e6a23c',
-    icon: Edit,
-    category: 'Priority',
-    changes: [
-      { field: 'Priority', from: 'Medium', to: 'High' },
-      { field: 'Due Date', from: '04/25/2025', to: '04/23/2025' },
+    action : 'updated priority level',
+    description : 'Priority increased due to critical equipment status and production impact.',
+    meta : { timestamp : '2025-04-22T11:30:00-07:00' },
+    type : 'warning',
+    color : '#e6a23c',
+    icon : Edit,
+    category : 'Priority',
+    changes : [
+      { field : 'Priority', from : 'Medium', to : 'High' },
+      { field : 'Due Date', from : '04/25/2025', to : '04/23/2025' }
+    ]
+  },
+  {
+    id : 'hst-103',
+    author : {
+      name : 'Mike Johnson',
+      avatar : { text : 'MJ', background : '#8B5CF6' }
+    },
+    action : 'started work',
+    description : 'Maintenance work has begun. Equipment taken offline for scheduled maintenance.',
+    meta : { timestamp : '2025-04-21T16:20:00-07:00' },
+    type : 'primary',
+    color : '#409eff',
+    icon : Clock,
+    category : 'Status',
+    changes : [
+      { field : 'Status', from : 'Ready', to : 'In Progress' },
+      { field : 'Assigned To', from : 'Unassigned', to : 'Mike Johnson' }
     ],
+    details : {
+      'Start Time' : '4:20 PM',
+      'Estimated Duration' : '3 hours'
+    }
   },
   {
-    id: 'hst-103',
-    author: {
-      name: 'Mike Johnson',
-      avatar: { text: 'MJ', background: '#8B5CF6' },
+    id : 'hst-104',
+    author : {
+      name : 'David Chen',
+      avatar : { text : 'DC', background : '#EF4444' }
     },
-    action: 'started work',
-    description: 'Maintenance work has begun. Equipment taken offline for scheduled maintenance.',
-    meta: { timestamp: '2025-04-21T16:20:00-07:00' },
-    type: 'primary',
-    color: '#409eff',
-    icon: Clock,
-    category: 'Status',
-    changes: [
-      { field: 'Status', from: 'Ready', to: 'In Progress' },
-      { field: 'Assigned To', from: 'Unassigned', to: 'Mike Johnson' },
-    ],
-    details: {
-      'Start Time': '4:20 PM',
-      'Estimated Duration': '3 hours',
-    },
+    action : 'added safety requirements',
+    description : 'Updated safety procedures and added required PPE checklist for this maintenance task.',
+    meta : { timestamp : '2025-04-21T14:45:00-07:00' },
+    type : 'info',
+    color : '#909399',
+    icon : Setting,
+    category : 'Safety',
+    details : {
+      'PPE Required' : 'Safety glasses, hard hat, steel-toe boots',
+      'Lockout Required' : 'Yes',
+      'Permit Required' : 'No'
+    }
   },
   {
-    id: 'hst-104',
-    author: {
-      name: 'David Chen',
-      avatar: { text: 'DC', background: '#EF4444' },
+    id : 'hst-105',
+    author : {
+      name : 'Yao Li',
+      avatar : { text : 'YL', background : '#0EA5E9' }
     },
-    action: 'added safety requirements',
-    description: 'Updated safety procedures and added required PPE checklist for this maintenance task.',
-    meta: { timestamp: '2025-04-21T14:45:00-07:00' },
-    type: 'info',
-    color: '#909399',
-    icon: Setting,
-    category: 'Safety',
-    details: {
-      'PPE Required': 'Safety glasses, hard hat, steel-toe boots',
-      'Lockout Required': 'Yes',
-      'Permit Required': 'No',
-    },
+    action : 'assigned technician',
+    description : 'Work order assigned to maintenance team lead based on expertise and availability.',
+    meta : { timestamp : '2025-04-21T09:15:00-07:00' },
+    type : 'primary',
+    color : '#409eff',
+    icon : User,
+    category : 'Assignment',
+    changes : [
+      { field : 'Assigned To', from : 'Unassigned', to : 'Mike Johnson' },
+      { field : 'Team', from : 'None', to : 'Mechanical Maintenance' }
+    ]
   },
   {
-    id: 'hst-105',
-    author: {
-      name: 'Yao Li',
-      avatar: { text: 'YL', background: '#0EA5E9' },
+    id : 'hst-106',
+    author : {
+      name : 'System',
+      avatar : { text : 'SYS', background : '#6B7280' }
     },
-    action: 'assigned technician',
-    description: 'Work order assigned to maintenance team lead based on expertise and availability.',
-    meta: { timestamp: '2025-04-21T09:15:00-07:00' },
-    type: 'primary',
-    color: '#409eff',
-    icon: User,
-    category: 'Assignment',
-    changes: [
-      { field: 'Assigned To', from: 'Unassigned', to: 'Mike Johnson' },
-      { field: 'Team', from: 'None', to: 'Mechanical Maintenance' },
-    ],
+    action : 'scheduled automatically',
+    description : 'Work order automatically generated based on preventive maintenance schedule.',
+    meta : { timestamp : '2025-04-21T08:00:00-07:00' },
+    type : 'info',
+    color : '#909399',
+    icon : Plus,
+    category : 'Creation',
+    details : {
+      Trigger : 'Preventive Maintenance Schedule',
+      Frequency : 'Monthly',
+      'Next Due' : '05/21/2025'
+    }
   },
   {
-    id: 'hst-106',
-    author: {
-      name: 'System',
-      avatar: { text: 'SYS', background: '#6B7280' },
+    id : 'hst-107',
+    author : {
+      name : 'Erik Yu',
+      avatar : { text : 'EY', background : '#34C759' }
     },
-    action: 'scheduled automatically',
-    description: 'Work order automatically generated based on preventive maintenance schedule.',
-    meta: { timestamp: '2025-04-21T08:00:00-07:00' },
-    type: 'info',
-    color: '#909399',
-    icon: Plus,
-    category: 'Creation',
-    details: {
-      Trigger: 'Preventive Maintenance Schedule',
-      Frequency: 'Monthly',
-      'Next Due': '05/21/2025',
-    },
-  },
-  {
-    id: 'hst-107',
-    author: {
-      name: 'Erik Yu',
-      avatar: { text: 'EY', background: '#34C759' },
-    },
-    action: 'created work order',
-    description: 'Initial work order created for steam peeler monthly maintenance as per maintenance schedule.',
-    meta: { timestamp: '2025-04-20T17:30:00-07:00' },
-    type: 'success',
-    color: '#67c23a',
-    icon: Plus,
-    category: 'Creation',
-    details: {
-      'Work Order ID': 'WO-2025-001247',
-      Equipment: 'Steam Peeler - SP-001',
-      Type: 'Preventive Maintenance',
-    },
-  },
-])
+    action : 'created work order',
+    description : 'Initial work order created for steam peeler monthly maintenance as per maintenance schedule.',
+    meta : { timestamp : '2025-04-20T17:30:00-07:00' },
+    type : 'success',
+    color : '#67c23a',
+    icon : Plus,
+    category : 'Creation',
+    details : {
+      'Work Order ID' : 'WO-2025-001247',
+      Equipment : 'Steam Peeler - SP-001',
+      Type : 'Preventive Maintenance'
+    }
+  }
+] )
 
 // Methods
 const submitComment = () => {
-  if (newComment.value.trim()) {
+  if ( newComment.value.trim() ) {
     const commentData = {
-      comment: newComment.value,
-      attachments: attachmentFiles.value,
+      comment : newComment.value,
+      attachments : attachmentFiles.value
     }
-    emit('add-comment', commentData)
+    emit( 'add-comment', commentData )
     newComment.value = ''
     attachmentFiles.value = []
-    ElMessage.success('Comment added successfully')
+    ElMessage.success( 'Comment added successfully' )
   }
 }
 
-const handleAttachmentChange = (file, fileList) => {
+const handleAttachmentChange = ( file, fileList ) => {
   // Add the new file to our local array
-  if (file.raw) {
-    attachmentFiles.value.push(file.raw)
+  if ( file.raw ) {
+    attachmentFiles.value.push( file.raw )
   }
 }
 
 const removeAttachment = index => {
-  attachmentFiles.value.splice(index, 1)
+  attachmentFiles.value.splice( index, 1 )
 }
 
 const downloadAttachment = attachment => {
-  ElMessage.info(`Downloading ${attachment.name}...`)
+  ElMessage.info( `Downloading ${attachment.name}...` )
   // TODO: this would trigger a file download
 }
 
 const getCommentTypeColor = type => {
   const typeColors = {
-    Update: 'primary',
-    Completion: 'success',
-    Issue: 'danger',
-    Status: 'info',
-    Safety: 'warning',
+    Update : 'primary',
+    Completion : 'success',
+    Issue : 'danger',
+    Status : 'info',
+    Safety : 'warning'
   }
   return typeColors[type] || 'info'
 }
 
 const getCategoryColor = category => {
   const categoryColors = {
-    Status: 'success',
-    Priority: 'warning',
-    Safety: 'danger',
-    Assignment: 'primary',
-    Creation: 'info',
+    Status : 'success',
+    Priority : 'warning',
+    Safety : 'danger',
+    Assignment : 'primary',
+    Creation : 'info'
   }
   return categoryColors[category] || 'info'
 }
 
 const formatTimestamp = timestamp => {
-  return new Date(timestamp).toLocaleString()
+  return new Date( timestamp ).toLocaleString()
 }
 </script>
 

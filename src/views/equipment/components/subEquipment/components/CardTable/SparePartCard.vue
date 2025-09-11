@@ -53,12 +53,12 @@
 <script setup>
 import { Picture, Document, View, Edit, Delete } from '@element-plus/icons-vue'
 
-defineProps({
-  item: {
-    type: Object,
-    required: true,
-  },
-})
+defineProps( {
+  item : {
+    type : Object,
+    required : true
+  }
+} )
 
 const defaultImageUrl = 'https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg'
 </script>

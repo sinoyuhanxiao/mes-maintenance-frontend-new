@@ -19,99 +19,99 @@ import * as echarts from 'echarts'
 import { onMounted, ref, watch, onBeforeUnmount, nextTick } from 'vue'
 import ColorDisplayButton from 'src/components/Common/ColorDisplayButton.vue'
 
-const props = defineProps({
-  title: { type: String, default: 'Pie Chart' },
-  data: { type: Array, required: true },
-})
+const props = defineProps( {
+  title : { type : String, default : 'Pie Chart' },
+  data : { type : Array, required : true }
+} )
 
-const chart = ref(null)
-const myChart = ref(null)
+const chart = ref( null )
+const myChart = ref( null )
 let resizeObserver = null
 
 function renderChart() {
-  if (!chart.value) return
+  if ( !chart.value ) return
 
   const rect = chart.value.getBoundingClientRect()
-  if (rect.width === 0 || rect.height === 0) {
-    setTimeout(renderChart, 100)
+  if ( rect.width === 0 || rect.height === 0 ) {
+    setTimeout( renderChart, 100 )
     return
   }
 
-  const existing = echarts.getInstanceByDom(chart.value)
-  if (existing) {
+  const existing = echarts.getInstanceByDom( chart.value )
+  if ( existing ) {
     existing.dispose()
   }
 
-  myChart.value = echarts.init(chart.value)
-  myChart.value.setOption({
-    title: {
-      text: '',
-      left: 'center',
+  myChart.value = echarts.init( chart.value )
+  myChart.value.setOption( {
+    title : {
+      text : '',
+      left : 'center'
     },
-    tooltip: {
-      trigger: 'item',
+    tooltip : {
+      trigger : 'item'
     },
-    color: props.data.map(item => item.color),
-    series: [
+    color : props.data.map( item => item.color ),
+    series : [
       {
-        name: 'Status',
-        type: 'pie',
-        radius: ['40%', '70%'],
-        avoidLabelOverlap: false,
-        itemStyle: {
-          borderRadius: 10,
-          borderColor: '#fff',
-          borderWidth: 2,
+        name : 'Status',
+        type : 'pie',
+        radius : ['40%', '70%'],
+        avoidLabelOverlap : false,
+        itemStyle : {
+          borderRadius : 10,
+          borderColor : '#fff',
+          borderWidth : 2
         },
-        label: { show: false, position: 'center' },
-        emphasis: {
-          label: {
-            show: true,
-            fontSize: 25,
-            fontWeight: 'bold',
-          },
+        label : { show : false, position : 'center' },
+        emphasis : {
+          label : {
+            show : true,
+            fontSize : 25,
+            fontWeight : 'bold'
+          }
         },
-        labelLine: { show: false },
-        data: props.data,
-      },
-    ],
-  })
+        labelLine : { show : false },
+        data : props.data
+      }
+    ]
+  } )
 }
 
-onMounted(async () => {
+onMounted( async() => {
   await nextTick()
-  setTimeout(() => {
+  setTimeout( () => {
     renderChart()
-  }, 50)
+  }, 50 )
 
-  resizeObserver = new ResizeObserver(() => {
-    if (myChart.value) {
+  resizeObserver = new ResizeObserver( () => {
+    if ( myChart.value ) {
       myChart.value.resize()
     }
-  })
+  } )
 
-  if (chart.value) {
-    resizeObserver.observe(chart.value)
+  if ( chart.value ) {
+    resizeObserver.observe( chart.value )
   }
-})
+} )
 
-onBeforeUnmount(() => {
-  if (resizeObserver && chart.value) {
-    resizeObserver.unobserve(chart.value)
+onBeforeUnmount( () => {
+  if ( resizeObserver && chart.value ) {
+    resizeObserver.unobserve( chart.value )
   }
-  if (myChart.value) {
+  if ( myChart.value ) {
     myChart.value.dispose()
   }
-})
+} )
 
 watch(
   () => props.data,
   newData => {
-    if (myChart.value) {
-      myChart.value.setOption({
-        color: newData.map(item => item.color),
-        series: [{ data: newData }],
-      })
+    if ( myChart.value ) {
+      myChart.value.setOption( {
+        color : newData.map( item => item.color ),
+        series : [{ data : newData }]
+      } )
     }
   }
 )
@@ -119,10 +119,10 @@ watch(
 watch(
   () => props.title,
   newTitle => {
-    if (myChart.value) {
-      myChart.value.setOption({
-        title: { text: newTitle },
-      })
+    if ( myChart.value ) {
+      myChart.value.setOption( {
+        title : { text : newTitle }
+      } )
     }
   }
 )

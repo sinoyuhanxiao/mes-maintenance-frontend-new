@@ -97,71 +97,71 @@ import { ref, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 
 // Props
-const props = defineProps({
-  timelineEvents: {
-    type: Array,
-    default: () => [],
-  },
-})
+const props = defineProps( {
+  timelineEvents : {
+    type : Array,
+    default : () => []
+  }
+} )
 
 // Timeline filter state
-const timelineFilter = ref({
-  dateRange: null,
-})
+const timelineFilter = ref( {
+  dateRange : null
+} )
 
 // Timeline filtering and computed properties
-const filteredTimelineEvents = computed(() => {
-  if (!timelineFilter.value.dateRange) {
+const filteredTimelineEvents = computed( () => {
+  if ( !timelineFilter.value.dateRange ) {
     return props.timelineEvents
   }
 
   const [startDate, endDate] = timelineFilter.value.dateRange
-  return props.timelineEvents.filter(event => {
-    const eventDate = new Date(event.timestamp)
+  return props.timelineEvents.filter( event => {
+    const eventDate = new Date( event.timestamp )
     return eventDate >= startDate && eventDate <= endDate
-  })
-})
+  } )
+} )
 
-const averageTimeConsumed = computed(() => {
-  const completedEvents = filteredTimelineEvents.value.filter(event => event.status === 'Completed' && event.duration)
+const averageTimeConsumed = computed( () => {
+  const completedEvents = filteredTimelineEvents.value.filter( event => event.status === 'Completed' && event.duration )
 
-  if (completedEvents.length === 0) return '0h 0m'
+  if ( completedEvents.length === 0 ) return '0h 0m'
 
-  const totalMinutes = completedEvents.reduce((total, event) => {
+  const totalMinutes = completedEvents.reduce( ( total, event ) => {
     const duration = event.duration
-    const hours = parseInt(duration.match(/(\d+)h/)?.[1] || '0')
-    const minutes = parseInt(duration.match(/(\d+)m/)?.[1] || '0')
+    const hours = parseInt( duration.match( /(\d+)h/ )?.[1] || '0' )
+    const minutes = parseInt( duration.match( /(\d+)m/ )?.[1] || '0' )
     return total + hours * 60 + minutes
-  }, 0)
+  }, 0 )
 
-  const avgMinutes = Math.round(totalMinutes / completedEvents.length)
-  const hours = Math.floor(avgMinutes / 60)
+  const avgMinutes = Math.round( totalMinutes / completedEvents.length )
+  const hours = Math.floor( avgMinutes / 60 )
   const mins = avgMinutes % 60
 
   return `${hours}h ${mins}m`
-})
+} )
 
 const applyTimelineFilter = () => {
-  ElMessage.success('Timeline filter applied')
+  ElMessage.success( 'Timeline filter applied' )
 }
 
 const getStatusTagType = status => {
   const statusMap = {
-    Completed: 'success',
-    'In Progress': 'primary',
-    Pending: 'info',
+    Completed : 'success',
+    'In Progress' : 'primary',
+    Pending : 'info'
   }
   return statusMap[status] || 'info'
 }
 
 const isEventOverdue = event => {
-  if (!event.plannedEnd || !event.actualEnd) return false
-  return new Date(event.actualEnd) > new Date(event.plannedEnd)
+  if ( !event.plannedEnd || !event.actualEnd ) return false
+  return new Date( event.actualEnd ) > new Date( event.plannedEnd )
 }
 
-defineOptions({
-  name: 'Timeline',
-})
+defineOptions( {
+  name : 'Timeline'
+} )
 </script>
 
 <style scoped lang="scss">

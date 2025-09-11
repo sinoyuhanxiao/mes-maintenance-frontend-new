@@ -212,9 +212,7 @@
       <!-- Step Options -->
       <div class="step-options">
         <div class="checkbox-group">
-          <el-checkbox v-model="localStep.required" @change="handleRequiredChange">
-            Required step
-          </el-checkbox>
+          <el-checkbox v-model="localStep.required" @change="handleRequiredChange"> Required step </el-checkbox>
           <el-checkbox v-model="localStep.required_image" @change="handleRequiredImageChange">
             Required image
           </el-checkbox>

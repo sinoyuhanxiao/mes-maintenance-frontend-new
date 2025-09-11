@@ -6,7 +6,9 @@
         <hr />
       </div>
       <el-form ref="formRef" :model="inputData" :rules="rules" label-width="120px">
-        <el-form-item style="flex: 1" label="Tool Name" prop="name"
+        <el-form-item style="flex: 1"
+label="Tool Name"
+prop="name"
           ><el-input
             clearable
             v-model="inputData.name"
@@ -16,7 +18,9 @@
         ></el-form-item>
 
         <!-- Code Input -->
-        <el-form-item style="flex: 1" label="Tool Code" prop="code"
+        <el-form-item style="flex: 1"
+label="Tool Code"
+prop="code"
           ><el-input
             clearable
             v-model="inputData.code"
@@ -25,7 +29,9 @@
           ></el-input
         ></el-form-item>
 
-        <el-form-item style="flex: 1" label="Description" prop="description"
+        <el-form-item style="flex: 1"
+label="Description"
+prop="description"
           ><el-input
             clearable
             v-model="inputData.description"
@@ -63,21 +69,21 @@ import { getAllToolClasses } from '../../../../api/resources'
 import FileUploadMultiple from '../../../../components/FileUpload/FileUploadMultiple.vue'
 import { uploadMultipleToMinio } from '../../../../api/minio'
 
-const formRef = ref(null)
-const uploadedImages = ref([])
+const formRef = ref( null )
+const uploadedImages = ref( [] )
 
-const emit = defineEmits(['createTool'])
+const emit = defineEmits( ['createTool'] )
 
-const toolClasses = ref(null)
+const toolClasses = ref( null )
 
-const inputData = ref({
-  id: null,
-  name: null,
-  description: null,
-  tool_class_id: null,
-  code: null,
-  image_list: null,
-})
+const inputData = ref( {
+  id : null,
+  name : null,
+  description : null,
+  tool_class_id : null,
+  code : null,
+  image_list : null
+} )
 
 async function getToolClasses() {
   const response = await getAllToolClasses()
@@ -88,48 +94,48 @@ async function getToolClasses() {
 getToolClasses()
 
 // Form rules
-const rules = reactive({
-  name: [{ required: true, message: 'Please input Name', trigger: 'blur' }],
-  code: [{ required: true, message: 'Please enter Code', trigger: 'change' }],
-  tool_class_id: [{ required: true, message: 'Please select Tool Class', trigger: 'change' }],
-})
+const rules = reactive( {
+  name : [{ required : true, message : 'Please input Name', trigger : 'blur' }],
+  code : [{ required : true, message : 'Please enter Code', trigger : 'change' }],
+  tool_class_id : [{ required : true, message : 'Please select Tool Class', trigger : 'change' }]
+} )
 
 const handleImageListUpdate = images => {
   uploadedImages.value = images
   inputData.value.image_list = images
-  console.log(images)
+  console.log( images )
 }
 
-const uploadFilesToServer = async () => {
+const uploadFilesToServer = async() => {
   try {
     let uploadedImages = []
 
-    if (inputData.value.image_list.length > 0) {
-      const imageRes = await uploadMultipleToMinio(inputData.value.image_list)
+    if ( inputData.value.image_list.length > 0 ) {
+      const imageRes = await uploadMultipleToMinio( inputData.value.image_list )
       uploadedImages = imageRes.data.uploadedFiles || []
-      console.log(uploadedImages)
-      inputData.value.image_list = uploadedImages.map(file => file.url)
+      console.log( uploadedImages )
+      inputData.value.image_list = uploadedImages.map( file => file.url )
     }
 
     return { uploadedImages }
-  } catch (err) {
-    throw new Error('File upload failed')
+  } catch ( err ) {
+    throw new Error( 'File upload failed' )
   }
 }
 
-const createTool = async () => {
-  if (!formRef.value) return
+const createTool = async() => {
+  if ( !formRef.value ) return
   await uploadFilesToServer()
-  await formRef.value.validate((valid, fields) => {
-    if (valid) {
-      emit('createTool', inputData.value)
+  await formRef.value.validate( ( valid, fields ) => {
+    if ( valid ) {
+      emit( 'createTool', inputData.value )
       resetForm()
     }
-  })
+  } )
 }
 
 const resetForm = () => {
-  if (formRef.value) {
+  if ( formRef.value ) {
     formRef.value.resetFields()
   }
 }

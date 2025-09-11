@@ -75,47 +75,47 @@ import { getAllUsers } from '@/api/user'
 const { t } = useI18n()
 
 /** Refs/State */
-const loading = ref(false)
-const shifts = ref([])
-const searchQuery = ref('')
-const dialogVisible = ref(false)
-const isEditMode = ref(false)
-const shiftFormComp = ref(null)
+const loading = ref( false )
+const shifts = ref( [] )
+const searchQuery = ref( '' )
+const dialogVisible = ref( false )
+const isEditMode = ref( false )
+const shiftFormComp = ref( null )
 
-const shiftForm = reactive({
-  id: null,
-  name: '',
-  description: '',
-  start_time: null,
-  end_time: null,
-  grace_minute: 0,
-})
+const shiftForm = reactive( {
+  id : null,
+  name : '',
+  description : '',
+  start_time : null,
+  end_time : null,
+  grace_minute : 0
+} )
 
-const userMap = ref({})
+const userMap = ref( {} )
 
 /** Helpers */
-function parseTimeToDateOrNull(val) {
-  if (!val) {
+function parseTimeToDateOrNull( val ) {
+  if ( !val ) {
     return null
   }
 
-  const date = new Date(`1970-01-01T${val}`)
-  return isNaN(date.getTime()) ? null : date
+  const date = new Date( `1970-01-01T${val}` )
+  return isNaN( date.getTime() ) ? null : date
 }
 
 /** Actions */
-function openDialog(shiftRow = null) {
+function openDialog( shiftRow = null ) {
   isEditMode.value = !!shiftRow
 
-  if (shiftRow) {
+  if ( shiftRow ) {
     // clone the row
     shiftForm.id = shiftRow.id ?? null
     shiftForm.name = shiftRow.name ?? ''
     shiftForm.description = shiftRow.description ?? ''
     shiftForm.grace_minute = shiftRow.grace_minute ?? 0
     // Convert backend time strings to Date for time pickers
-    shiftForm.start_time = parseTimeToDateOrNull(shiftRow.start_time)
-    shiftForm.end_time = parseTimeToDateOrNull(shiftRow.end_time)
+    shiftForm.start_time = parseTimeToDateOrNull( shiftRow.start_time )
+    shiftForm.end_time = parseTimeToDateOrNull( shiftRow.end_time )
   } else {
     shiftForm.id = null
     shiftForm.name = ''
@@ -128,21 +128,21 @@ function openDialog(shiftRow = null) {
   dialogVisible.value = true
 
   // Wait for dialog + child to mount, then clear validation
-  nextTick(() => {
+  nextTick( () => {
     const formEl = shiftFormComp.value?.$refs?.shiftFormRef
-    if (formEl?.clearValidate) {
+    if ( formEl?.clearValidate ) {
       formEl.clearValidate()
     }
-  })
+  } )
 }
 
 async function loadShifts() {
   try {
     loading.value = true
     const res = await getAllShifts()
-    shifts.value.splice(0, shifts.value.length, ...res.data.data)
-  } catch (err) {
-    console.error('Failed to load shifts:', err)
+    shifts.value.splice( 0, shifts.value.length, ...res.data.data )
+  } catch ( err ) {
+    console.error( 'Failed to load shifts:', err )
     shifts.value = []
   } finally {
     loading.value = false
@@ -154,51 +154,51 @@ async function loadUserMap() {
     const response = await getAllUsers( 1, 1000 )
     const list = response.data.content
     const map = {}
-    list.forEach(u => {
+    list.forEach( u => {
       map[u.id] = u
-    })
+    } )
     userMap.value = map
-  } catch (err) {
-    ElMessage.error(t('user.message.errorLoadingUsersData'))
+  } catch ( err ) {
+    ElMessage.error( t( 'user.message.errorLoadingUsersData' ) )
   }
 }
 
-async function submitForm(updatedShift) {
+async function submitForm( updatedShift ) {
   try {
     // Convert Date objects back to offset times for API
-    const offsetStart = formatDateObjectToOffsetTime(updatedShift.start_time)
-    const offsetEnd = formatDateObjectToOffsetTime(updatedShift.end_time)
+    const offsetStart = formatDateObjectToOffsetTime( updatedShift.start_time )
+    const offsetEnd = formatDateObjectToOffsetTime( updatedShift.end_time )
     const payload = {
       ...updatedShift,
-      start_time: offsetStart,
-      end_time: offsetEnd,
+      start_time : offsetStart,
+      end_time : offsetEnd
     }
 
-    if (isEditMode.value) {
-      await updateShift(payload.id, payload)
+    if ( isEditMode.value ) {
+      await updateShift( payload.id, payload )
     } else {
-      await createShift(payload)
+      await createShift( payload )
     }
     dialogVisible.value = false
     await loadShifts()
-  } catch (err) {
-    console.error('Error saving shift:', err)
+  } catch ( err ) {
+    console.error( 'Error saving shift:', err )
   }
 }
 
-async function confirmDelete(id) {
+async function confirmDelete( id ) {
   try {
-    await ElMessageBox.confirm(t('common.confirmMessage'), t('common.warning'), {
-      confirmButtonText: t('common.confirm'),
-      cancelButtonText: t('common.cancel'),
-      type: 'warning',
-    })
-    await deleteShift(id)
+    await ElMessageBox.confirm( t( 'common.confirmMessage' ), t( 'common.warning' ), {
+      confirmButtonText : t( 'common.confirm' ),
+      cancelButtonText : t( 'common.cancel' ),
+      type : 'warning'
+    } )
+    await deleteShift( id )
     await loadShifts()
-  } catch (err) {
+  } catch ( err ) {
     // Canceled or error
-    if (err !== 'cancel') {
-      console.error('Error deleting shift:', err)
+    if ( err !== 'cancel' ) {
+      console.error( 'Error deleting shift:', err )
     }
   }
 }
@@ -209,10 +209,10 @@ async function handleRefreshButton() {
 }
 
 /** Lifecycle */
-onMounted(() => {
+onMounted( () => {
   loadShifts()
   loadUserMap()
-})
+} )
 </script>
 
 <style scoped>

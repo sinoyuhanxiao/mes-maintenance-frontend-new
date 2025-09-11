@@ -6,9 +6,9 @@ class CookieProxy {
   constructor() {
     this.prefix = this.getPrefix()
     this.baseParams = {
-      expires: 7,
-      path: '/',
-      domain: hostname || undefined,
+      expires : 7,
+      path : '/',
+      domain : hostname || undefined
       // Secure : true,
       // SameSite : 'none',
     }
@@ -18,11 +18,11 @@ class CookieProxy {
   getPrefix() {
     const { envStr } = getEnvs()
     let cookiePreFix
-    if (envStr === 'dev') {
+    if ( envStr === 'dev' ) {
       cookiePreFix = 'fat_'
-    } else if (envStr === 'fat') {
+    } else if ( envStr === 'fat' ) {
       cookiePreFix = 'fat_'
-    } else if (envStr === 'uat') {
+    } else if ( envStr === 'uat' ) {
       cookiePreFix = 'uat_'
     } else {
       cookiePreFix = ''
@@ -35,29 +35,29 @@ class CookieProxy {
   }
 
   clearAll() {
-    const keys = Object.keys(this.getAll())
-    keys.forEach(key => {
-      this.remove(key, false)
-    })
+    const keys = Object.keys( this.getAll() )
+    keys.forEach( key => {
+      this.remove( key, false )
+    } )
   }
 
-  get(key, hasPrefix = true) {
+  get( key, hasPrefix = true ) {
     const keyStr = hasPrefix ? this.prefix + '' + key : key
-    return Cookies.get(keyStr)
+    return Cookies.get( keyStr )
   }
 
-  set(key, value, params) {
+  set( key, value, params ) {
     const options = params === undefined ? this.baseParams : params
     const keyStr = this.prefix + '' + key
-    return Cookies.set(keyStr, value, options)
+    return Cookies.set( keyStr, value, options )
   }
 
-  remove(key, hasPrefix = true) {
+  remove( key, hasPrefix = true ) {
     const keyStr = !hasPrefix ? key : this.prefix + '' + key
-    return Cookies.remove(keyStr, {
-      path: '/',
-      domain: hostname,
-    })
+    return Cookies.remove( keyStr, {
+      path : '/',
+      domain : hostname
+    } )
   }
 }
 const cookies = new CookieProxy()

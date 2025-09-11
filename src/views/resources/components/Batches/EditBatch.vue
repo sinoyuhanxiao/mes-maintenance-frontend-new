@@ -30,49 +30,49 @@ import { getLocationById, getLocationTree } from '../../../../api/location'
 import { updateInventory } from '../../../../api/resources'
 import { ElMessage } from 'element-plus'
 
-const props = defineProps({
-  sparePart: Object,
-  data: Object,
-})
+const props = defineProps( {
+  sparePart : Object,
+  data : Object
+} )
 
-const formRef = ref(null)
+const formRef = ref( null )
 
-const locations = ref([])
+const locations = ref( [] )
 
-const emit = defineEmits(['updateBatch'])
+const emit = defineEmits( ['updateBatch'] )
 
-const selectedLocation = ref(null)
+const selectedLocation = ref( null )
 
-const form = reactive({
-  location_id: null,
-  unit_in_stock: null,
-  material_id: props.sparePart.id,
-  inventory_type_id: 3,
-  batch_number: null,
-})
+const form = reactive( {
+  location_id : null,
+  unit_in_stock : null,
+  material_id : props.sparePart.id,
+  inventory_type_id : 3,
+  batch_number : null
+} )
 
 // Form rules
-const rules = reactive({
-  location_id: [{ required: true, message: 'Please select location', trigger: 'blur' }],
-  batch_number: [{ required: true, message: 'Please enter batch number', trigger: 'blur' }],
-  unit_in_stock: [{ required: true, message: 'Please enter units in stock', trigger: 'blur' }],
-})
+const rules = reactive( {
+  location_id : [{ required : true, message : 'Please select location', trigger : 'blur' }],
+  batch_number : [{ required : true, message : 'Please enter batch number', trigger : 'blur' }],
+  unit_in_stock : [{ required : true, message : 'Please enter units in stock', trigger : 'blur' }]
+} )
 
 async function getLocationData() {
   const response = await getLocationTree()
 
   locations.value = response.data
-  console.log(locations.value)
+  console.log( locations.value )
 }
 
-onMounted(async () => {
+onMounted( async() => {
   await getLocationData() // wait until locations are loaded
-  console.log('IN THE ON MOUNT')
+  console.log( 'IN THE ON MOUNT' )
 
   form.batch_number = props.data.batch_number
   form.location_id = props.data.location_id
   form.unit_in_stock = props.data.unit_in_stock
-})
+} )
 
 watch(
   () => props.data,
@@ -81,48 +81,48 @@ watch(
     form.location_id = newVal.location_id
     form.unit_in_stock = newVal.unit_in_stock
   },
-  { deep: true }
+  { deep : true }
 )
 
 watch(
   () => form.location_id,
   async newVal => {
-    if (newVal) {
-      const response = await getLocationById(newVal)
+    if ( newVal ) {
+      const response = await getLocationById( newVal )
       selectedLocation.value = response.data
     }
   }
 )
 
 const defaultProps = {
-  children: 'children',
-  label: 'name',
+  children : 'children',
+  label : 'name'
 }
 
 const handleNodeClick = data => {
   form.location_id = data.id
-  console.log(form.location_id)
+  console.log( form.location_id )
 }
 
 const failedUpdate = error => {
-  ElMessage.error(error)
+  ElMessage.error( error )
 }
 
 async function updateBatch() {
   try {
-    const response = await updateInventory(props.data.id, form)
-    console.log(response)
+    const response = await updateInventory( props.data.id, form )
+    console.log( response )
 
-    emit('updateBatch', response)
+    emit( 'updateBatch', response )
     resetForm()
-  } catch (err) {
-    console.error('Error updating batch:', err.message)
-    failedUpdate(err.message)
+  } catch ( err ) {
+    console.error( 'Error updating batch:', err.message )
+    failedUpdate( err.message )
   }
 }
 
 const resetForm = () => {
-  if (formRef.value) {
+  if ( formRef.value ) {
     formRef.value.resetFields()
   }
 }

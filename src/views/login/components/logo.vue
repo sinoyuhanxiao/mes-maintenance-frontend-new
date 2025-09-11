@@ -6,9 +6,9 @@
 
 <script setup>
 import logo from '@/assets/imgs/logo.png'
-defineOptions({
-  name: 'Logo',
-})
+defineOptions( {
+  name : 'Logo'
+} )
 </script>
 
 <style lang="scss" scoped>

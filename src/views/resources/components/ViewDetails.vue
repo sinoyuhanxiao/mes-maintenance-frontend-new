@@ -24,7 +24,8 @@
           <el-descriptions-item label="Minimum Stock">{{ localData.minimum_stock_level }}</el-descriptions-item>
           <el-descriptions-item label="Maximum Stock">{{ localData.maximum_stock_level }}</el-descriptions-item>
 
-          <el-descriptions-item label="Description" :span="3"
+          <el-descriptions-item label="Description"
+:span="3"
             ><span v-if="localData.description" style="padding: 5px">{{
               localData.description
             }}</span></el-descriptions-item
@@ -67,15 +68,15 @@ import { ref, watch } from 'vue'
 import { Minus } from '@element-plus/icons-vue'
 import { getEquipmentNodes } from '../../../api/equipment'
 
-const props = defineProps({
-  data: Object,
-})
+const props = defineProps( {
+  data : Object
+} )
 
-const localData = ref(props.data)
-const nodes = ref(null)
+const localData = ref( props.data )
+const nodes = ref( null )
 
 async function getNodeData() {
-  const response = await getEquipmentNodes(1, 100, 'name', 'ASC', { spare_part_ids: [props.data.id] })
+  const response = await getEquipmentNodes( 1, 100, 'name', 'ASC', { spare_part_ids : [props.data.id] } )
 
   nodes.value = response.data.content
 }
@@ -86,8 +87,8 @@ watch(
     localData.value = { ...newData }
     getNodeData()
   },
-  { immediate: true, deep: true },
-  console.log(localData.value)
+  { immediate : true, deep : true },
+  console.log( localData.value )
 )
 </script>
 

@@ -73,46 +73,46 @@ import NewRequest from './components/NewRequest.vue'
 import NewWorkOrder from '../workOrder/components/NewWorkOrder.vue'
 import CardTable from '../../components/Tables/CardTable.vue'
 
-const items = ref([])
-const totalItems = ref(0)
-const dialogVisible = ref(false)
-const createWo = ref(false)
+const items = ref( [] )
+const totalItems = ref( 0 )
+const dialogVisible = ref( false )
+const createWo = ref( false )
 
-const woHeight = ref('682px')
-const maxHeight = ref('744px')
+const woHeight = ref( '682px' )
+const maxHeight = ref( '744px' )
 function updateHeight() {
   woHeight.value = window.innerWidth <= 1600 ? '465px' : '682px'
   maxHeight.value = window.innerWidth <= 1600 ? '521px' : '737px'
 }
 
-onMounted(() => {
+onMounted( () => {
   updateHeight()
-  window.addEventListener('resize', updateHeight)
-})
+  window.addEventListener( 'resize', updateHeight )
+} )
 
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', updateHeight)
-})
+onBeforeUnmount( () => {
+  window.removeEventListener( 'resize', updateHeight )
+} )
 
 // Query parameters
-const listQuery = reactive({
-  page: 1,
-  limit: 10,
-})
+const listQuery = reactive( {
+  page : 1,
+  limit : 10
+} )
 
-const selectedData = ref(null)
-const search = ref({})
-const keyword = ref(null)
+const selectedData = ref( null )
+const search = ref( {} )
+const keyword = ref( null )
 
 watch(
   () => keyword.value,
   newVal => {
-    search.value = { keyword: newVal }
+    search.value = { keyword : newVal }
   }
 )
 
 async function getAllRequestsData() {
-  const response = await searchMaintenanceRequests(listQuery.page, listQuery.limit, 'createdAt', 'DESC', search.value)
+  const response = await searchMaintenanceRequests( listQuery.page, listQuery.limit, 'createdAt', 'DESC', search.value )
   items.value = response.data.content
   totalItems.value = response.data.totalElements
   selectedData.value = items.value[0]
@@ -125,10 +125,10 @@ watch(
   newData => {
     getAllRequestsData()
   },
-  { immediate: true, deep: true }
+  { immediate : true, deep : true }
 )
 
-function handleRequestData(data) {
+function handleRequestData( data ) {
   selectedData.value = data
 }
 
@@ -137,8 +137,8 @@ const handleCurrentChange = val => {
   getAllRequestsData()
 }
 
-async function handleSubmission(data) {
-  if (data) {
+async function handleSubmission( data ) {
+  if ( data ) {
     dialogVisible.value = false
   }
   await getAllRequestsData()

@@ -12,20 +12,20 @@
 import { ref, watch } from 'vue'
 import { Delete, CircleClose } from '@element-plus/icons-vue'
 
-const props = defineProps({
-  data: Object,
-  type: Number,
-})
+const props = defineProps( {
+  data : Object,
+  type : Number
+} )
 
-const selectedTool = ref(props.data)
-const emit = defineEmits(['emitDeleteTool', 'close'])
+const selectedTool = ref( props.data )
+const emit = defineEmits( ['emitDeleteTool', 'close'] )
 
 watch(
   () => props.data,
   newVal => {
     selectedTool.value = newVal
   },
-  { deep: true }
+  { deep : true }
 )
 </script>
 

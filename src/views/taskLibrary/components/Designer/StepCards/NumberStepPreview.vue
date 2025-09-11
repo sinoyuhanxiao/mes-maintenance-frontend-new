@@ -28,33 +28,33 @@ import { InfoFilled } from '@element-plus/icons-vue'
 import { formatLimitsText } from 'src/views/taskLibrary/utils/stepTransforms'
 
 // eslint-disable-next-line no-unused-vars
-const props = defineProps({
-  step: {
-    type: Object,
-    required: true,
+const props = defineProps( {
+  step : {
+    type : Object,
+    required : true
   },
-  previewMode: {
-    type: Boolean,
-    default: true,
+  previewMode : {
+    type : Boolean,
+    default : true
   },
-  interactive: {
-    type: Boolean,
-    default: false,
-  },
-})
+  interactive : {
+    type : Boolean,
+    default : false
+  }
+} )
 
 // Reactive state for user input
-const currentValue = ref(props.step.config?.default || 0)
+const currentValue = ref( props.step.config?.default || 0 )
 
 // Watch for prop changes to sync initial values
 watch(
   () => props.step.config?.default,
   newValue => {
-    if (!props.interactive) {
+    if ( !props.interactive ) {
       currentValue.value = newValue || 0
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
 </script>
 

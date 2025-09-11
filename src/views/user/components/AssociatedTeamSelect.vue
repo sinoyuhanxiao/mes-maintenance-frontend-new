@@ -32,61 +32,61 @@ import { computed, onMounted, ref } from 'vue'
 import { getAllTeams } from '@/views/team/components/teamService'
 
 const { t } = useI18n()
-const props = defineProps({
+const props = defineProps( {
   /**
    * v-model: array of { id: number | string, isLeader: boolean, name?: string }
    */
-  modelValue: {
-    type: Array,
-    default: () => [],
-  },
-})
+  modelValue : {
+    type : Array,
+    default : () => []
+  }
+} )
 
-const emit = defineEmits(['update:modelValue', 'selection-change'])
+const emit = defineEmits( ['update:modelValue', 'selection-change'] )
 
 // For tag display; auto-fills name once options load
-const selectedTeamObjs = computed(() => {
-  const map = new Map(teamOptions.value.map(o => [o.id, o]))
-  return (props.modelValue || []).map(t => ({
+const selectedTeamObjs = computed( () => {
+  const map = new Map( teamOptions.value.map( o => [o.id, o] ) )
+  return ( props.modelValue || [] ).map( t => ( {
     ...t,
-    name: t.name ?? map.get(t.id)?.name ?? String(t.id),
-  }))
-})
+    name : t.name ?? map.get( t.id )?.name ?? String( t.id )
+  } ) )
+} )
 
-const teamOptions = ref([])
-const isLoading = ref(false)
+const teamOptions = ref( [] )
+const isLoading = ref( false )
 
-function toggleLeader(id) {
-  const next = (props.modelValue || []).slice()
-  const idx = next.findIndex(t => t.id === id)
-  if (idx !== -1) {
-    next.splice(idx, 1, { ...next[idx], isLeader: !next[idx].isLeader })
-    emit('update:modelValue', next)
-    emit('selection-change', next)
+function toggleLeader( id ) {
+  const next = ( props.modelValue || [] ).slice()
+  const idx = next.findIndex( t => t.id === id )
+  if ( idx !== -1 ) {
+    next.splice( idx, 1, { ...next[idx], isLeader : !next[idx].isLeader } )
+    emit( 'update:modelValue', next )
+    emit( 'selection-change', next )
   }
 }
 
 // Bind <el-select> to a list of IDs, while v-model is an array of objects
-const selectedIds = computed({
+const selectedIds = computed( {
   get() {
-    return (props.modelValue || []).map(t => t.id)
+    return ( props.modelValue || [] ).map( t => t.id )
   },
-  set(ids) {
+  set( ids ) {
     // Preserve existing isLeader flags; default isLeader=false for new selections
-    const prevMap = new Map((props.modelValue || []).map(t => [t.id, t]))
-    const newArr = ids.map(id => {
-      const prev = prevMap.get(id)
-      const opt = teamOptions.value.find(o => o.id === id)
+    const prevMap = new Map( ( props.modelValue || [] ).map( t => [t.id, t] ) )
+    const newArr = ids.map( id => {
+      const prev = prevMap.get( id )
+      const opt = teamOptions.value.find( o => o.id === id )
       return {
         id,
-        isLeader: prev?.isLeader ?? false,
-        name: prev?.name ?? opt?.name ?? String(id),
+        isLeader : prev?.isLeader ?? false,
+        name : prev?.name ?? opt?.name ?? String( id )
       }
-    })
-    emit('update:modelValue', newArr)
-    emit('selection-change', newArr)
-  },
-})
+    } )
+    emit( 'update:modelValue', newArr )
+    emit( 'selection-change', newArr )
+  }
+} )
 
 async function fetchTeamsData() {
   // keep ids consistent
@@ -97,27 +97,27 @@ async function fetchTeamsData() {
     const res = await getAllTeams()
 
     const payload = res?.data ?? res // { status, data } | Array
-    const list = Array.isArray(payload)
+    const list = Array.isArray( payload )
       ? payload
-      : Array.isArray(payload?.data)
-      ? payload.data // ← your case
-      : Array.isArray(payload?.content)
-      ? payload.content
-      : Array.isArray(res?.data?.data)
-      ? res.data.data // extra safety
-      : []
+      : Array.isArray( payload?.data )
+        ? payload.data // ← your case
+        : Array.isArray( payload?.content )
+          ? payload.content
+          : Array.isArray( res?.data?.data )
+            ? res.data.data // extra safety
+            : []
 
-    teamOptions.value = list.map(t => ({ ...t }))
-    console.log(res)
-    if (res?.data.status === 200) teamOptions.value = res.data?.data.content ?? []
+    teamOptions.value = list.map( t => ( { ...t } ) )
+    console.log( res )
+    if ( res?.data.status === 200 ) teamOptions.value = res.data?.data.content ?? []
   } finally {
     isLoading.value = false
   }
 }
 
-onMounted(async () => {
+onMounted( async() => {
   await fetchTeamsData()
-})
+} )
 </script>
 
 <style scoped>

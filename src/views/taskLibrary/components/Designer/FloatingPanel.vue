@@ -66,7 +66,7 @@
         <!-- Reorder Steps Mode -->
         <div v-else class="reorder-steps-mode">
           <div class="reorder-header">
-            <el-input v-model="searchQuery" placeholder="Search steps..." size="default" clearable class="search-input">
+            <el-input v-model="searchQuery" placeholder="Search steps..." size="default" class="search-input" clearable>
               <template #prefix>
                 <el-icon><Search /></el-icon>
               </template>
@@ -217,112 +217,112 @@ import {
   StarFilled,
   Setting,
   Delete,
-  Tools,
+  Tools
 } from '@element-plus/icons-vue'
 import VueDraggable from 'vuedraggable'
 
-const props = defineProps({
-  mode: {
-    type: String,
-    default: 'add_step',
-    validator: value => ['add_step', 'reorder_steps'].includes(value),
+const props = defineProps( {
+  mode : {
+    type : String,
+    default : 'add_step',
+    validator : value => ['add_step', 'reorder_steps'].includes( value )
   },
-  steps: {
-    type: Array,
-    default: () => [],
+  steps : {
+    type : Array,
+    default : () => []
   },
-  uiHints: {
-    type: Object,
-    default: () => ({
-      showCheckboxes: true,
-      showDragHandles: true,
-      showStepNumbers: true,
-      showTypeIcons: true,
-      showBulkToolbarOnSelect: true,
-      rowDensity: 'compact',
-    }),
+  uiHints : {
+    type : Object,
+    default : () => ( {
+      showCheckboxes : true,
+      showDragHandles : true,
+      showStepNumbers : true,
+      showTypeIcons : true,
+      showBulkToolbarOnSelect : true,
+      rowDensity : 'compact'
+    } )
   },
-  interactions: {
-    type: Object,
-    default: () => ({
-      allowMultiSelect: true,
-      allowGroupDrag: true,
-      allowInlineRename: true,
-      confirmOnDelete: true,
-    }),
+  interactions : {
+    type : Object,
+    default : () => ( {
+      allowMultiSelect : true,
+      allowGroupDrag : true,
+      allowInlineRename : true,
+      confirmOnDelete : true
+    } )
   },
-  enabledBulkActions: {
-    type: Array,
-    default: () => ['duplicate', 'mark_required', 'mark_optional', 'delete'],
-  },
-})
+  enabledBulkActions : {
+    type : Array,
+    default : () => ['duplicate', 'mark_required', 'mark_optional', 'delete']
+  }
+} )
 
-const emit = defineEmits(['add-step', 'toggle-mode', 'set-mode', 'reorder-steps', 'bulk-action', 'inline-rename'])
-const searchQuery = ref('')
-const selectedStepIds = ref([])
+const emit = defineEmits( ['add-step', 'toggle-mode', 'set-mode', 'reorder-steps', 'bulk-action', 'inline-rename'] )
+const searchQuery = ref( '' )
+const selectedStepIds = ref( [] )
 
 // Step types configuration
 const stepTypes = [
   {
-    type: 'inspection',
-    name: 'Inspection',
-    description: 'Pass/Fail check',
-    icon: CircleCheck,
-    color: '#67c23a',
+    type : 'inspection',
+    name : 'Inspection',
+    description : 'Pass/Fail check',
+    icon : CircleCheck,
+    color : '#67c23a'
   },
   {
-    type: 'checkbox',
-    name: 'Checkbox',
-    description: 'Yes/No confirmation',
-    icon: Document,
-    color: '#409eff',
+    type : 'checkbox',
+    name : 'Checkbox',
+    description : 'Yes/No confirmation',
+    icon : Document,
+    color : '#409eff'
   },
   {
-    type: 'number',
-    name: 'Number',
-    description: 'Numeric measurement',
-    icon: DataAnalysis,
-    color: '#e6a23c',
+    type : 'number',
+    name : 'Number',
+    description : 'Numeric measurement',
+    icon : DataAnalysis,
+    color : '#e6a23c'
   },
   {
-    type: 'text',
-    name: 'Text',
-    description: 'Text input/notes',
-    icon: Edit,
-    color: '#909399',
+    type : 'text',
+    name : 'Text',
+    description : 'Text input/notes',
+    icon : Edit,
+    color : '#909399'
   },
   {
-    type: 'attachments',
-    name: 'Files',
-    description: 'File upload',
-    icon: Paperclip,
-    color: '#849aec',
+    type : 'attachments',
+    name : 'Files',
+    description : 'File upload',
+    icon : Paperclip,
+    color : '#849aec'
   },
   {
-    type: 'service',
-    name: 'Service',
-    description: 'Replace/Repair ops',
-    icon: Tools,
-    color: '#df869d',
-    disabled: true,
-  },
+    type : 'service',
+    name : 'Service',
+    description : 'Replace/Repair ops',
+    icon : Tools,
+    color : '#df869d',
+    disabled : true
+  }
 ]
 
 // Computed properties
 // Create a reactive copy for vuedraggable
-const stepsForDrag = ref([])
+const stepsForDrag = ref( [] )
 
 // Computed filtered steps (read-only)
-const filteredSteps = computed(() => {
-  if (!searchQuery.value) {
+const filteredSteps = computed( () => {
+  if ( !searchQuery.value ) {
     return props.steps
   }
 
   const query = searchQuery.value.toLowerCase()
   return props.steps.filter(
-    step => step.title?.toLowerCase().includes(query) || step.type?.toLowerCase().includes(query)
+    step => step.title?.toLowerCase().includes( query ) || step.type?.toLowerCase().includes( query )
   )
-})
+} )
 
 // Update stepsForDrag when filteredSteps changes
 watch(
@@ -330,50 +330,50 @@ watch(
   newSteps => {
     stepsForDrag.value = [...newSteps]
   },
-  { immediate: true, deep: true }
+  { immediate : true, deep : true }
 )
 
 // Also watch props.steps directly for immediate updates
 watch(
   () => props.steps,
   newSteps => {},
-  { immediate: true, deep: true }
+  { immediate : true, deep : true }
 )
 
-const allSelectedRequired = computed(() => {
-  if (selectedStepIds.value.length === 0) return false
-  const selectedSteps = props.steps.filter(step => selectedStepIds.value.includes(step.id))
-  return selectedSteps.every(step => step.required)
-})
+const allSelectedRequired = computed( () => {
+  if ( selectedStepIds.value.length === 0 ) return false
+  const selectedSteps = props.steps.filter( step => selectedStepIds.value.includes( step.id ) )
+  return selectedSteps.every( step => step.required )
+} )
 
-const draggableKey = computed(() => {
+const draggableKey = computed( () => {
   // Create a sorted copy to ensure the key is order-independent.
   // This is for fixing the drag-and-drop issue while keeping reactivity for content changes. very nice huh
-  const sortedSteps = [...stepsForDrag.value].sort((a, b) => (a.id > b.id ? 1 : -1))
-  const key = sortedSteps.map(s => `${s.id}-${s.title}-${s.type}`).join(',')
+  const sortedSteps = [...stepsForDrag.value].sort( ( a, b ) => ( a.id > b.id ? 1 : -1 ) )
+  const key = sortedSteps.map( s => `${s.id}-${s.title}-${s.type}` ).join( ',' )
   return key
-})
+} )
 
 // Methods
 const handleAddStep = stepType => {
-  emit('add-step', stepType)
+  emit( 'add-step', stepType )
 }
 
 const setMode = newMode => {
-  emit('set-mode', newMode)
+  emit( 'set-mode', newMode )
 }
 
 const toggleStepSelection = stepId => {
-  if (!props.interactions.allowMultiSelect) {
-    selectedStepIds.value = selectedStepIds.value.includes(stepId) ? [] : [stepId]
+  if ( !props.interactions.allowMultiSelect ) {
+    selectedStepIds.value = selectedStepIds.value.includes( stepId ) ? [] : [stepId]
     return
   }
 
-  const index = selectedStepIds.value.indexOf(stepId)
-  if (index > -1) {
-    selectedStepIds.value.splice(index, 1)
+  const index = selectedStepIds.value.indexOf( stepId )
+  if ( index > -1 ) {
+    selectedStepIds.value.splice( index, 1 )
   } else {
-    selectedStepIds.value.push(stepId)
+    selectedStepIds.value.push( stepId )
   }
 }
 
@@ -382,41 +382,41 @@ const handleVueDragStart = evt => {}
 
 const handleVueDragEnd = evt => {
   // Emit reorder event with the new structure
-  if (evt.oldIndex !== evt.newIndex) {
+  if ( evt.oldIndex !== evt.newIndex ) {
     const stepId = stepsForDrag.value[evt.newIndex].id
-    emit('reorder-steps', {
+    emit( 'reorder-steps', {
       stepId,
-      sourceIndex: evt.oldIndex,
-      targetIndex: evt.newIndex,
-    })
+      sourceIndex : evt.oldIndex,
+      targetIndex : evt.newIndex
+    } )
   }
 }
 
 const handleVueDragChange = evt => {}
 
 const handleBulkAction = action => {
-  if (selectedStepIds.value.length === 0) return
+  if ( selectedStepIds.value.length === 0 ) return
 
-  emit('bulk-action', {
+  emit( 'bulk-action', {
     action,
-    stepIds: [...selectedStepIds.value],
-  })
+    stepIds : [...selectedStepIds.value]
+  } )
 
   // Clear selection after action
   selectedStepIds.value = []
 }
 
 const handleInlineRename = stepId => {
-  emit('inline-rename', stepId)
+  emit( 'inline-rename', stepId )
 }
 
 const getStepTypeColor = type => {
-  const stepType = stepTypes.find(st => st.type === type)
+  const stepType = stepTypes.find( st => st.type === type )
   return stepType?.color || '#c0c4cc'
 }
 
 const getStepTypeIcon = type => {
-  const stepType = stepTypes.find(st => st.type === type)
+  const stepType = stepTypes.find( st => st.type === type )
   return stepType?.icon || Document
 }
 

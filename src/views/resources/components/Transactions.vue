@@ -25,33 +25,33 @@ import { searchInventoryTransactionLogs } from '../../../api/resources'
 import { watch, ref } from 'vue'
 import { convertToLocalTime } from '../../../utils/datetime'
 
-const props = defineProps({
-  sparePart: Object,
-})
+const props = defineProps( {
+  sparePart : Object
+} )
 
-const logs = ref([])
+const logs = ref( [] )
 
-const search = ref({
-  material_type_id: 3,
-  material_id: null,
-})
+const search = ref( {
+  material_type_id : 3,
+  material_id : null
+} )
 
 async function getLogData() {
-  const response = await searchInventoryTransactionLogs(1, 50, 'allocatedAt', 'DESC', search.value)
+  const response = await searchInventoryTransactionLogs( 1, 50, 'allocatedAt', 'DESC', search.value )
 
   logs.value = response.data.content
-  console.log('LOGS: ', logs.value)
+  console.log( 'LOGS: ', logs.value )
 }
 
 watch(
   () => props.sparePart,
   newVal => {
-    if (newVal?.id) {
+    if ( newVal?.id ) {
       search.value.material_id = newVal.id
       getLogData()
     }
   },
-  { deep: true, immediate: true }
+  { deep : true, immediate : true }
 )
 </script>
 

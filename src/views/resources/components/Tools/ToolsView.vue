@@ -87,18 +87,18 @@ import EditTool from './EditTool.vue'
 import ConfirmDeletion from './ConfirmDeletion.vue'
 import { searchTools, createTool, updateTool, deleteTool } from '../../../../api/resources'
 
-const props = defineProps({
-  newTool: Boolean,
-  keyword: String,
-})
+const props = defineProps( {
+  newTool : Boolean,
+  keyword : String
+} )
 
-const emit = defineEmits(['close'])
+const emit = defineEmits( ['close'] )
 
-const newToolActive = ref(props.newTool)
-const editToolActive = ref(false)
-const deleteActive = ref(false)
+const newToolActive = ref( props.newTool )
+const editToolActive = ref( false )
+const deleteActive = ref( false )
 
-const selectedTool = ref(null)
+const selectedTool = ref( null )
 
 watch(
   () => props.newTool,
@@ -107,40 +107,40 @@ watch(
   }
 )
 
-const maxHeight = ref('737px')
+const maxHeight = ref( '737px' )
 function updateHeight() {
   maxHeight.value = window.innerWidth <= 1600 ? '521px' : maxHeight.value
 }
 
-onMounted(() => {
+onMounted( () => {
   updateHeight()
-  window.addEventListener('resize', updateHeight)
-})
+  window.addEventListener( 'resize', updateHeight )
+} )
 
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', updateHeight)
-})
+onBeforeUnmount( () => {
+  window.removeEventListener( 'resize', updateHeight )
+} )
 
-const apiSuccess = (header, name) => {
-  console.log(header + name)
-  ElMessage({
-    message: header + name,
-    type: 'success',
-  })
+const apiSuccess = ( header, name ) => {
+  console.log( header + name )
+  ElMessage( {
+    message : header + name,
+    type : 'success'
+  } )
 }
 
-const listQuery = reactive({
-  page: 1,
-  size: 20,
-})
+const listQuery = reactive( {
+  page : 1,
+  size : 20
+} )
 
-const search = ref({ keyword: null })
+const search = ref( { keyword : null } )
 
-const tools = ref(null)
-const totalItems = ref(null)
+const tools = ref( null )
+const totalItems = ref( null )
 
 async function getToolsData() {
-  const response = await searchTools(listQuery.page, listQuery.size, 'name', 'ASC', search.value)
+  const response = await searchTools( listQuery.page, listQuery.size, 'name', 'ASC', search.value )
 
   tools.value = response.data.content
   totalItems.value = response.data.totalElements
@@ -156,37 +156,37 @@ watch(
   }
 )
 
-async function handleCreate(data) {
+async function handleCreate( data ) {
   try {
-    const create = await createTool(data)
-    if (create.status == 200) {
-      apiSuccess('Tool Created: ', create.data.name)
-      emit('close')
+    const create = await createTool( data )
+    if ( create.status == 200 ) {
+      apiSuccess( 'Tool Created: ', create.data.name )
+      emit( 'close' )
       getToolsData()
     }
-  } catch (err) {
-    console.log('Failed to create tool', err)
+  } catch ( err ) {
+    console.log( 'Failed to create tool', err )
   }
 }
 
-async function handleEdit(data) {
+async function handleEdit( data ) {
   try {
-    const update = await updateTool(data)
-    if (update.status == 200) {
-      apiSuccess('Tool Updated: ', data.name)
+    const update = await updateTool( data )
+    if ( update.status == 200 ) {
+      apiSuccess( 'Tool Updated: ', data.name )
       editToolActive.value = false
       getToolsData()
     }
-  } catch (err) {
-    console.log('Failed to update tool', err)
+  } catch ( err ) {
+    console.log( 'Failed to update tool', err )
   }
 }
 
-async function handleDelete(data) {
+async function handleDelete( data ) {
   // try {
-  await deleteTool(data.id)
-  console.log(data)
-  apiSuccess('Tool Deleted: ', data.name)
+  await deleteTool( data.id )
+  console.log( data )
+  apiSuccess( 'Tool Deleted: ', data.name )
   deleteActive.value = false
   getToolsData()
   // } catch ( err ) {
@@ -194,13 +194,13 @@ async function handleDelete(data) {
   // }
 }
 
-function editTool(row) {
+function editTool( row ) {
   row.tool_class_id = row.tool_class.id
   selectedTool.value = row
   editToolActive.value = true
 }
 
-function selectDeleteTool(row) {
+function selectDeleteTool( row ) {
   selectedTool.value = row
   deleteActive.value = true
   // apiSuccess( 'Tool Deleted: ', row.name )

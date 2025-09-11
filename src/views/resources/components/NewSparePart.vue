@@ -6,7 +6,9 @@
         <hr />
       </div>
       <el-form ref="formRef" :model="inputData" :rules="rules" label-width="120px">
-        <el-form-item style="flex: 1" label="Part Name" prop="name"
+        <el-form-item style="flex: 1"
+label="Part Name"
+prop="name"
           ><el-input
             clearable
             v-model="inputData.name"
@@ -49,7 +51,8 @@
 
         <!-- Code Inputs -->
         <div class="form-section">
-          <el-form-item label="Material Code" prop="code"
+          <el-form-item label="Material Code"
+prop="code"
             ><el-input
               clearable
               v-model="inputData.code"
@@ -59,7 +62,8 @@
           ></el-form-item>
         </div>
         <div class="form-section">
-          <el-form-item label="Inventory Code" prop="universal_code"
+          <el-form-item label="Inventory Code"
+prop="universal_code"
             ><el-input
               clearable
               v-model="inputData.universal_code"
@@ -165,24 +169,24 @@ import { ElMessage } from 'element-plus'
 import { uploadMultipleToMinio } from '../../../api/minio'
 import FileUploadMultiple from '../../../components/FileUpload/FileUploadMultiple.vue'
 
-const formRef = ref(null)
+const formRef = ref( null )
 const ruleFormRef = ref()
-const emit = defineEmits(['createPart'])
+const emit = defineEmits( ['createPart'] )
 
-const sparePartClasses = ref([])
-const uploadedImages = ref([])
-const uploadedFiles = ref([])
-const manufacturers = ref([
+const sparePartClasses = ref( [] )
+const uploadedImages = ref( [] )
+const uploadedFiles = ref( [] )
+const manufacturers = ref( [
   {
-    id: 1,
-    name: 'FPS',
-  },
-])
-const units = ref([])
+    id : 1,
+    name : 'FPS'
+  }
+] )
+const units = ref( [] )
 
 async function getAllData() {
   const response = await getAllSparePartClasses()
-  const unitResponse = await getUnitByType(15)
+  const unitResponse = await getUnitByType( 15 )
 
   sparePartClasses.value = response.data
   units.value = unitResponse.data
@@ -190,46 +194,46 @@ async function getAllData() {
 
 getAllData()
 
-const inputData = ref({
-  id: null,
-  name: null,
-  spare_parts_class_id: null,
-  description: null,
-  code: null,
-  priority: null,
-  quantity_uom_id: null,
-  image_list: [],
-  file_list: [],
-  reorder_point: 0,
-  maximum_stock_level: 1,
-  minimum_stock_level: 0,
-  current_stock: 0,
-  universal_code: null,
-  status: 1,
-  inventory_requests: [],
-  manufacturer_id: null,
-})
+const inputData = ref( {
+  id : null,
+  name : null,
+  spare_parts_class_id : null,
+  description : null,
+  code : null,
+  priority : null,
+  quantity_uom_id : null,
+  image_list : [],
+  file_list : [],
+  reorder_point : 0,
+  maximum_stock_level : 1,
+  minimum_stock_level : 0,
+  current_stock : 0,
+  universal_code : null,
+  status : 1,
+  inventory_requests : [],
+  manufacturer_id : null
+} )
 
 // Form rules
-const rules = reactive({
-  name: [{ required: true, message: 'Please input Request Title', trigger: 'blur' }],
-  description: [
+const rules = reactive( {
+  name : [{ required : true, message : 'Please input Request Title', trigger : 'blur' }],
+  description : [
     {
-      required: true,
-      message: 'Please fill in Description',
-      trigger: 'blur',
-    },
+      required : true,
+      message : 'Please fill in Description',
+      trigger : 'blur'
+    }
   ],
-  code: [{ required: true, message: 'Please enter Material Code', trigger: 'blur' }],
-  universal_code: [{ required: true, message: 'Please enter Material Code', trigger: 'blur' }],
-  spare_parts_class_id: [{ required: true, message: 'Please select Category', trigger: 'blur' }],
-  manufacturer_id: [{ required: true, message: 'Please select Manufacturer>', trigger: 'blur' }],
-  quantity_uom_id: [{ required: true, message: 'Please select Units>', trigger: 'blur' }],
-  current_stock: [{ required: true, message: 'Please enter Current Stock', trigger: 'blur' }],
-  minimum_stock_level: [{ required: true, message: 'Please enter Min Stock', trigger: 'blur' }],
-  maximum_stock_level: [{ required: true, message: 'Please enter Max Stock', trigger: 'blur' }],
-  reorder_point: [{ required: true, message: 'Please enter Reorder Point', trigger: 'blur' }],
-})
+  code : [{ required : true, message : 'Please enter Material Code', trigger : 'blur' }],
+  universal_code : [{ required : true, message : 'Please enter Material Code', trigger : 'blur' }],
+  spare_parts_class_id : [{ required : true, message : 'Please select Category', trigger : 'blur' }],
+  manufacturer_id : [{ required : true, message : 'Please select Manufacturer>', trigger : 'blur' }],
+  quantity_uom_id : [{ required : true, message : 'Please select Units>', trigger : 'blur' }],
+  current_stock : [{ required : true, message : 'Please enter Current Stock', trigger : 'blur' }],
+  minimum_stock_level : [{ required : true, message : 'Please enter Min Stock', trigger : 'blur' }],
+  maximum_stock_level : [{ required : true, message : 'Please enter Max Stock', trigger : 'blur' }],
+  reorder_point : [{ required : true, message : 'Please enter Reorder Point', trigger : 'blur' }]
+} )
 
 const handleImageListUpdate = images => {
   uploadedImages.value = images
@@ -241,43 +245,43 @@ const handleFilesListUpdate = files => {
   inputData.value.file_list = files
 }
 
-const uploadFilesToServer = async () => {
+const uploadFilesToServer = async() => {
   try {
     let uploadedImages = []
 
-    if (inputData.value.image_list.length > 0) {
-      const imageRes = await uploadMultipleToMinio(inputData.value.image_list)
+    if ( inputData.value.image_list.length > 0 ) {
+      const imageRes = await uploadMultipleToMinio( inputData.value.image_list )
       uploadedImages = imageRes.data.uploadedFiles || []
-      inputData.value.image_list = uploadedImages.map(file => file.url)
+      inputData.value.image_list = uploadedImages.map( file => file.url )
     }
 
-    if (inputData.value.file_list.length > 0) {
-      const fileRes = await uploadMultipleToMinio(inputData.value.file_list)
+    if ( inputData.value.file_list.length > 0 ) {
+      const fileRes = await uploadMultipleToMinio( inputData.value.file_list )
       uploadedFiles.value = fileRes.data.uploadedFiles || []
-      inputData.value.file_list = uploadedFiles.value.map(file => file.url)
+      inputData.value.file_list = uploadedFiles.value.map( file => file.url )
     }
 
     return { uploadedImages }
-  } catch (err) {
-    throw new Error('File upload failed')
+  } catch ( err ) {
+    throw new Error( 'File upload failed' )
   }
 }
 
 const partCreated = part => {
-  ElMessage({
-    message: 'Part Created: ' + part,
-    type: 'success',
-  })
+  ElMessage( {
+    message : 'Part Created: ' + part,
+    type : 'success'
+  } )
 }
 
-const createPart = async () => {
-  if (!formRef.value) return
+const createPart = async() => {
+  if ( !formRef.value ) return
   await uploadFilesToServer()
-  await formRef.value.validate((valid, fields) => {
-    if (valid) {
-      console.log('Part created: ', inputData.value)
-      emit('createPart', createSparePart(inputData.value))
-      partCreated(inputData.value.name)
+  await formRef.value.validate( ( valid, fields ) => {
+    if ( valid ) {
+      console.log( 'Part created: ', inputData.value )
+      emit( 'createPart', createSparePart( inputData.value ) )
+      partCreated( inputData.value.name )
       resetForm()
       // inputData.value = {
       //   id : null,
@@ -301,11 +305,11 @@ const createPart = async () => {
       //   manufacturer_id : null
       // }
     }
-  })
+  } )
 }
 
 const resetForm = () => {
-  if (formRef.value) {
+  if ( formRef.value ) {
     formRef.value.resetFields()
   }
 }

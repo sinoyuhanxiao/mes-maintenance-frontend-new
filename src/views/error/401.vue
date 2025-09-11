@@ -33,19 +33,19 @@ import { useRouter, useRoute } from 'vue-router'
 const router = useRouter()
 const route = useRoute()
 
-const errGif = ref(img_err + '?' + new Date())
-const ewizardClap = ref('https://wpimg.wallstcn.com/007ef517-bafd-4066-aae4-6883632d9646')
-const dialogVisible = ref(false)
+const errGif = ref( img_err + '?' + new Date() )
+const ewizardClap = ref( 'https://wpimg.wallstcn.com/007ef517-bafd-4066-aae4-6883632d9646' )
+const dialogVisible = ref( false )
 
 function showImg() {
   dialogVisible.value = true
 }
 
 function back() {
-  if (route.query.noGoBack) {
-    router.push('/')
+  if ( route.query.noGoBack ) {
+    router.push( '/' )
   } else {
-    router.go(-1)
+    router.go( -1 )
   }
 }
 </script>

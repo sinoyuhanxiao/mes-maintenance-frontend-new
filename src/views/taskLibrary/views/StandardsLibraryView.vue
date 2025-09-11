@@ -272,10 +272,9 @@
         <p style="color: #f56c6c; font-size: 14px; margin: 12px 0">This action cannot be undone.</p>
 
         <div class="name-confirmation-section">
-          <p style="margin-bottom: 8px; font-size: 14px">Please type the exact standard name:</p>
           <el-input
             v-model="deleteConfirmationText"
-            placeholder="Type the exact standard name here"
+            placeholder="Type the exact standard name"
             @input="validateDeleteConfirmation"
             @keyup.enter="deleteConfirmationValid ? handleDeleteConfirm() : null"
           />
@@ -350,7 +349,7 @@ import {
   MoreFilled,
   Warning,
   Check,
-  Close,
+  Close
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useStandards } from '@/composables/useStandards'
@@ -370,90 +369,90 @@ const {
   pagination,
   setPage,
   setPageSize,
-  getStandardId,
+  getStandardId
 } = useStandards()
 
 // Local state
-const searchQuery = ref('')
-const categoryFilter = ref('')
-const currentPage = computed({
-  get: () => pagination.value.currentPage,
-  set: val => setPage(val),
-})
-const pageSize = computed({
-  get: () => pagination.value.pageSize,
-  set: val => setPageSize(val),
-})
-const selectedstandardId = ref(null)
-const deleteDialogVisible = ref(false)
-const standardToDelete = ref(null)
-const deleteLoading = ref(false)
-const deleteConfirmationText = ref('')
-const deleteConfirmationValid = ref(false)
-const showFilters = ref(false)
-const activeTab = ref('general')
+const searchQuery = ref( '' )
+const categoryFilter = ref( '' )
+const currentPage = computed( {
+  get : () => pagination.value.currentPage,
+  set : val => setPage( val )
+} )
+const pageSize = computed( {
+  get : () => pagination.value.pageSize,
+  set : val => setPageSize( val )
+} )
+const selectedstandardId = ref( null )
+const deleteDialogVisible = ref( false )
+const standardToDelete = ref( null )
+const deleteLoading = ref( false )
+const deleteConfirmationText = ref( '' )
+const deleteConfirmationValid = ref( false )
+const showFilters = ref( false )
+const activeTab = ref( 'general' )
 
 // Form dialog state
-const formDialogVisible = ref(false)
-const formLoading = ref(false)
-const isEditMode = ref(false)
-const standardForm = ref(null)
-const isFormValid = ref(false)
-const formData = ref({
-  name: '',
-  description: '',
-  category: '',
-  items: [],
-})
+const formDialogVisible = ref( false )
+const formLoading = ref( false )
+const isEditMode = ref( false )
+const standardForm = ref( null )
+const isFormValid = ref( false )
+const formData = ref( {
+  name : '',
+  description : '',
+  category : '',
+  items : []
+} )
 
 // Rule editing state
-const editingRuleIndex = ref(null)
-const editingRuleText = ref('')
+const editingRuleIndex = ref( null )
+const editingRuleText = ref( '' )
 
 const formRules = {
-  name: [
-    { required: true, message: 'Please enter standard title', trigger: 'blur' },
-    { min: 2, max: 100, message: 'Title should be between 2 and 100 characters', trigger: 'blur' },
+  name : [
+    { required : true, message : 'Please enter standard title', trigger : 'blur' },
+    { min : 2, max : 100, message : 'Title should be between 2 and 100 characters', trigger : 'blur' }
   ],
-  category: [{ required: true, message: 'Please choose a category', trigger: 'blur' }],
+  category : [{ required : true, message : 'Please choose a category', trigger : 'blur' }]
 }
 
 // Dynamic height calculation state
-const navbarHeight = ref(50)
-const tagsViewHeight = ref(34)
-const containerHeight = computed(() => {
+const navbarHeight = ref( 50 )
+const tagsViewHeight = ref( 34 )
+const containerHeight = computed( () => {
   const totalFixedHeight = navbarHeight.value + tagsViewHeight.value
   const safeHeight = totalFixedHeight > 0 ? totalFixedHeight : 84
   return `calc(100vh - ${safeHeight}px)`
-})
+} )
 
 // Computed properties
-const availableCategories = computed(() => {
+const availableCategories = computed( () => {
   return ['food-safety', 'general']
-})
+} )
 
 // Removed displayedstandards - now using server-side pagination and sorting
 
-const selectedstandard = computed(() => {
-  return standards.value.find(s => getStandardId(s) === selectedstandardId.value)
-})
+const selectedstandard = computed( () => {
+  return standards.value.find( s => getStandardId( s ) === selectedstandardId.value )
+} )
 
-const paginationInfo = computed(() => {
+const paginationInfo = computed( () => {
   const total = pagination.value.total
-  const start = total === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1
-  const end = Math.min(currentPage.value * pageSize.value, total)
+  const start = total === 0 ? 0 : ( currentPage.value - 1 ) * pageSize.value + 1
+  const end = Math.min( currentPage.value * pageSize.value, total )
   return { start, end, total }
-})
+} )
 
 // Event handlers with debouncing
 const handleSearchImmediate = () => {
-  setFilter('search', searchQuery.value)
+  setFilter( 'search', searchQuery.value )
 }
 
-const handleSearch = debounce(handleSearchImmediate, 300)
+const handleSearch = debounce( handleSearchImmediate, 300 )
 
 const handleCategoryFilter = () => {
-  setFilter('category', categoryFilter.value)
+  setFilter( 'category', categoryFilter.value )
 }
 
 const clearAllFilters = () => {
@@ -466,7 +465,7 @@ const clearNonSearchFilters = () => {
   categoryFilter.value = ''
   const currentSearch = searchQuery.value
   clearFilters() // from composable
-  setFilter('search', currentSearch)
+  setFilter( 'search', currentSearch )
 }
 
 const handleFilterToggle = () => {
@@ -485,38 +484,38 @@ const handlePageSizeChange = size => {
 }
 
 const handlestandardSelect = standard => {
-  selectedstandardId.value = getStandardId(standard)
+  selectedstandardId.value = getStandardId( standard )
 }
 
-const handlestandardEdit = (standard = selectedstandard.value) => {
-  if (standard) {
+const handlestandardEdit = ( standard = selectedstandard.value ) => {
+  if ( standard ) {
     isEditMode.value = true
     formData.value = {
-      name: standard.name || '',
-      description: standard.description || '',
-      category: standard.category || '',
-      items: [...(standard.items || [])],
+      name : standard.name || '',
+      description : standard.description || '',
+      category : standard.category || '',
+      items : [...( standard.items || [] )]
     }
     formDialogVisible.value = true
   }
 }
 
-const handlestandardDuplicate = async (standard = selectedstandard.value) => {
-  if (standard) {
+const handlestandardDuplicate = async( standard = selectedstandard.value ) => {
+  if ( standard ) {
     try {
       const duplicateData = {
-        name: `${standard.name} (Copy)`,
-        description: standard.description,
-        category: standard.category,
-        items: [...(standard.items || [])],
-        module: 200,
+        name : `${standard.name} (Copy)`,
+        description : standard.description,
+        category : standard.category,
+        items : [...( standard.items || [] )],
+        module : 200
       }
 
-      await createStandard(duplicateData)
-      ElMessage.success('Safety measure duplicated successfully')
+      await createStandard( duplicateData )
+      ElMessage.success( 'Safety measure duplicated successfully' )
       await loadstandards()
-    } catch (error) {
-      ElMessage.error('Failed to duplicate standard')
+    } catch ( error ) {
+      ElMessage.error( 'Failed to duplicate standard' )
     }
   }
 }
@@ -539,14 +538,14 @@ const handleDeleteCancel = () => {
   deleteConfirmationValid.value = false
 }
 
-const handleDeleteConfirm = async () => {
-  if (!standardToDelete.value) return
+const handleDeleteConfirm = async() => {
+  if ( !standardToDelete.value ) return
 
   deleteLoading.value = true
   try {
-    await deleteStandard(getStandardId(standardToDelete.value))
+    await deleteStandard( getStandardId( standardToDelete.value ) )
 
-    if (selectedstandardId.value === getStandardId(standardToDelete.value)) {
+    if ( selectedstandardId.value === getStandardId( standardToDelete.value ) ) {
       selectedstandardId.value = null
     }
 
@@ -554,8 +553,8 @@ const handleDeleteConfirm = async () => {
     standardToDelete.value = null
     deleteConfirmationText.value = ''
     deleteConfirmationValid.value = false
-  } catch (error) {
-    ElMessage.error('Failed to delete standard')
+  } catch ( error ) {
+    ElMessage.error( 'Failed to delete standard' )
   } finally {
     deleteLoading.value = false
   }
@@ -563,7 +562,7 @@ const handleDeleteConfirm = async () => {
 
 const handleHeaderAction = command => {
   // eslint-disable-next-line default-case
-  switch (command) {
+  switch ( command ) {
     case 'edit':
       handlestandardEdit()
       break
@@ -571,7 +570,7 @@ const handleHeaderAction = command => {
       handlestandardDuplicate()
       break
     case 'delete':
-      handlestandardDelete(selectedstandard.value)
+      handlestandardDelete( selectedstandard.value )
       break
   }
 }
@@ -579,10 +578,10 @@ const handleHeaderAction = command => {
 const createNewstandard = () => {
   isEditMode.value = false
   formData.value = {
-    name: '',
-    description: '',
-    category: '',
-    items: [],
+    name : '',
+    description : '',
+    category : '',
+    items : []
   }
   formDialogVisible.value = true
 }
@@ -590,59 +589,59 @@ const createNewstandard = () => {
 const handleFormCancel = () => {
   formDialogVisible.value = false
   formData.value = {
-    name: '',
-    description: '',
-    category: '',
-    items: [],
+    name : '',
+    description : '',
+    category : '',
+    items : []
   }
 }
 
-const handleFormSubmit = async () => {
-  if (!standardForm.value) return
-  await standardForm.value.validate(async valid => {
-    if (valid) {
+const handleFormSubmit = async() => {
+  if ( !standardForm.value ) return
+  await standardForm.value.validate( async valid => {
+    if ( valid ) {
       formLoading.value = true
       try {
-        const payload = { ...formData.value, module: 200 }
-        if (isEditMode.value) {
-          await updateStandard(selectedstandardId.value, payload)
-          ElMessage.success('Safety measure updated successfully')
+        const payload = { ...formData.value, module : 200 }
+        if ( isEditMode.value ) {
+          await updateStandard( selectedstandardId.value, payload )
+          ElMessage.success( 'Safety measure updated successfully' )
         } else {
-          await createStandard(payload)
-          ElMessage.success('Safety measure created successfully')
+          await createStandard( payload )
+          ElMessage.success( 'Safety measure created successfully' )
         }
         formDialogVisible.value = false
         await loadstandards()
-      } catch (error) {
-        ElMessage.error(isEditMode.value ? 'Failed to update standard' : 'Failed to create standard')
+      } catch ( error ) {
+        ElMessage.error( isEditMode.value ? 'Failed to update standard' : 'Failed to create standard' )
       } finally {
         formLoading.value = false
       }
     }
-  })
+  } )
 }
 
 // Rule management
 const addNewRule = () => {
-  if (!selectedstandard.value) return
+  if ( !selectedstandard.value ) return
 
   editingRuleIndex.value = selectedstandard.value.items.length
   editingRuleText.value = ''
-  selectedstandard.value.items.push('')
+  selectedstandard.value.items.push( '' )
 }
 
-const editRule = (index, rule) => {
+const editRule = ( index, rule ) => {
   editingRuleIndex.value = index
   editingRuleText.value = rule
 }
 
 const cancelEdit = () => {
-  if (editingRuleIndex.value === null) return
+  if ( editingRuleIndex.value === null ) return
 
   const isNewRule = editingRuleIndex.value === selectedstandard.value.items.length - 1
   const isNewRuleEmpty = selectedstandard.value.items[editingRuleIndex.value] === ''
 
-  if (isNewRule && isNewRuleEmpty) {
+  if ( isNewRule && isNewRuleEmpty ) {
     selectedstandard.value.items.pop()
   }
 
@@ -651,14 +650,14 @@ const cancelEdit = () => {
 }
 
 const saveRule = async index => {
-  if (!selectedstandard.value) return
+  if ( !selectedstandard.value ) return
 
-  if (editingRuleText.value.trim() === '') {
+  if ( editingRuleText.value.trim() === '' ) {
     // User is trying to save an empty rule.
     const isNewRule = index === selectedstandard.value.items.length - 1
     const isOriginalRuleEmpty = selectedstandard.value.items[index] === ''
 
-    if (isNewRule && isOriginalRuleEmpty) {
+    if ( isNewRule && isOriginalRuleEmpty ) {
       // This was a new rule that the user didn't fill out. Remove it.
       selectedstandard.value.items.pop()
     }
@@ -670,90 +669,90 @@ const saveRule = async index => {
   try {
     const items = [...selectedstandard.value.items]
     items[index] = editingRuleText.value.trim()
-    const payload = { ...selectedstandard.value, items, module: 200 }
+    const payload = { ...selectedstandard.value, items, module : 200 }
 
-    await updateStandard(selectedstandardId.value, payload)
+    await updateStandard( selectedstandardId.value, payload )
     await loadstandards()
 
     editingRuleIndex.value = null
     editingRuleText.value = ''
-  } catch (error) {
-    ElMessage.error('Failed to save standard rule')
+  } catch ( error ) {
+    ElMessage.error( 'Failed to save standard rule' )
   }
 }
 
 const deleteRule = async index => {
-  if (!selectedstandard.value) return
+  if ( !selectedstandard.value ) return
 
   try {
-    await ElMessageBox.confirm('Are you sure you want to delete this rule?', 'Confirm Deletion', {
-      confirmButtonText: 'Delete',
-      cancelButtonText: 'Cancel',
-      type: 'warning',
-    })
+    await ElMessageBox.confirm( 'Are you sure you want to delete this rule?', 'Confirm Deletion', {
+      confirmButtonText : 'Delete',
+      cancelButtonText : 'Cancel',
+      type : 'warning'
+    } )
 
     const items = [...selectedstandard.value.items]
-    items.splice(index, 1)
-    const payload = { ...selectedstandard.value, items, module: 200 }
+    items.splice( index, 1 )
+    const payload = { ...selectedstandard.value, items, module : 200 }
 
-    await updateStandard(selectedstandardId.value, payload)
+    await updateStandard( selectedstandardId.value, payload )
     await loadstandards()
-    ElMessage.success('Rule deleted successfully')
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('Failed to delete standard rule')
+    ElMessage.success( 'Rule deleted successfully' )
+  } catch ( error ) {
+    if ( error !== 'cancel' ) {
+      ElMessage.error( 'Failed to delete standard rule' )
     }
   }
 }
 
 // Dynamic height calculation functions
 const calculateDynamicHeights = () => {
-  nextTick(() => {
-    const navbarEl = document.querySelector('.navbar')
-    if (navbarEl && navbarEl.offsetHeight > 0) {
+  nextTick( () => {
+    const navbarEl = document.querySelector( '.navbar' )
+    if ( navbarEl && navbarEl.offsetHeight > 0 ) {
       navbarHeight.value = navbarEl.offsetHeight
     }
 
-    const tagsViewEl = document.querySelector('#tags-view-container')
-    if (settingsStore.tagsView && tagsViewEl && tagsViewEl.offsetHeight > 0) {
+    const tagsViewEl = document.querySelector( '#tags-view-container' )
+    if ( settingsStore.tagsView && tagsViewEl && tagsViewEl.offsetHeight > 0 ) {
       tagsViewHeight.value = tagsViewEl.offsetHeight
     } else {
       tagsViewHeight.value = 0
     }
-  })
+  } )
 }
 
 const handleResize = () => {
   calculateDynamicHeights()
 }
 
-watch(formDialogVisible, newValue => {
-  if (newValue) {
-    if (isEditMode.value) {
+watch( formDialogVisible, newValue => {
+  if ( newValue ) {
+    if ( isEditMode.value ) {
       isFormValid.value = true
     } else {
       isFormValid.value = false
       // Reset validation on open for new forms
-      nextTick(() => {
+      nextTick( () => {
         standardForm.value?.clearValidate()
-      })
+      } )
     }
   }
-})
+} )
 
 watch(
   formData,
-  async () => {
-    if (standardForm.value) {
+  async() => {
+    if ( standardForm.value ) {
       try {
         await standardForm.value.validate()
         isFormValid.value = true
-      } catch (error) {
+      } catch ( error ) {
         isFormValid.value = false
       }
     }
   },
-  { deep: true }
+  { deep : true }
 )
 
 watch(
@@ -761,23 +760,23 @@ watch(
   () => {
     calculateDynamicHeights()
   },
-  { immediate: false }
+  { immediate : false }
 )
 
 // Initialize
-onMounted(() => {
+onMounted( () => {
   calculateDynamicHeights()
-  window.addEventListener('resize', handleResize)
+  window.addEventListener( 'resize', handleResize )
   loadstandards()
-})
+} )
 
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', handleResize)
-})
+onBeforeUnmount( () => {
+  window.removeEventListener( 'resize', handleResize )
+} )
 
-defineOptions({
-  name: 'standardLibrary',
-})
+defineOptions( {
+  name : 'standardLibrary'
+} )
 </script>
 
 <style scoped>
@@ -1192,11 +1191,6 @@ defineOptions({
 }
 
 .name-confirmation-section {
-  margin-top: 16px;
-  padding: 16px;
-  background: #fafbfc;
-  border-radius: 8px;
-  border: 1px solid #e4e7ed;
 }
 
 .validation-error {

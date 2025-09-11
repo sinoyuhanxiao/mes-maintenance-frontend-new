@@ -14,11 +14,11 @@
 </template>
 
 <script setup>
-defineProps({
-  vendor: Object,
-  isSelected: Boolean,
-})
-defineEmits(['select'])
+defineProps( {
+  vendor : Object,
+  isSelected : Boolean
+} )
+defineEmits( ['select'] )
 </script>
 
 <style scoped lang="scss">

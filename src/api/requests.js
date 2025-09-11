@@ -16,18 +16,18 @@ export const searchMaintenanceRequests = (
   direction = 'DESC',
   search = {}
 ) => {
-  console.log({
+  console.log( {
     page,
     size,
     sortField,
     direction,
-    search,
-  })
-  return http.request({
-    method: 'post',
-    url: `/maintenance_request/search?page=${page}&size=${size}&sortField=${sortField}&direction=${direction}`,
-    data: search,
-  })
+    search
+  } )
+  return http.request( {
+    method : 'post',
+    url : `/maintenance_request/search?page=${page}&size=${size}&sortField=${sortField}&direction=${direction}`,
+    data : search
+  } )
 }
 
 /**
@@ -42,10 +42,10 @@ export const searchMaintenanceRequests = (
  * @returns {Promise} API response with newly created request
  */
 export const createRequest = data => {
-  console.log(data)
-  return http.request({
-    method: 'post',
-    url: '/maintenance_request',
-    data,
-  })
+  console.log( data )
+  return http.request( {
+    method : 'post',
+    url : '/maintenance_request',
+    data
+  } )
 }

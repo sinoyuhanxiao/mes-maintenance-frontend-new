@@ -7,19 +7,19 @@ const { MODE } = env
 export function getEnvs() {
   const origin = window.location.origin
   let envStr = ''
-  if (MODE === 'development') {
+  if ( MODE === 'development' ) {
     envStr = 'dev'
   } else {
-    if (origin.indexOf('fat') >= 0) {
+    if ( origin.indexOf( 'fat' ) >= 0 ) {
       envStr = 'fat'
-    } else if (origin.indexOf('uat') >= 0) {
+    } else if ( origin.indexOf( 'uat' ) >= 0 ) {
       envStr = 'uat'
     } else {
       envStr = 'pro'
     }
   }
   return {
-    envStr,
+    envStr
   }
 }
 
@@ -27,6 +27,6 @@ export function initUrl() {
   const { envStr } = getEnvs()
   const baseUrlStr = envStr === 'dev' ? env.VITE_APP_API_BASE_URL : GLOBAL_DATA[envStr].baseUrl
   return {
-    baseUrlStr,
+    baseUrlStr
   }
 }

@@ -41,51 +41,51 @@ import { ref, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { deactivateEquipmentNode, getEquipmentById, getEquipmentSubtree } from '@/api/equipment.js'
 
-const props = defineProps({
-  equipmentId: {
-    type: [Number, String],
-    required: true,
-  },
-})
+const props = defineProps( {
+  equipmentId : {
+    type : [Number, String],
+    required : true
+  }
+} )
 
-const emit = defineEmits(['close', 'success'])
+const emit = defineEmits( ['close', 'success'] )
 
-const confirmDeletion = ref(false)
-const submitting = ref(false)
-const nodeData = ref(null)
-const childrenCount = ref(0)
+const confirmDeletion = ref( false )
+const submitting = ref( false )
+const nodeData = ref( null )
+const childrenCount = ref( 0 )
 
 // Fetch equipment data to show in confirmation
-const fetchEquipmentData = async () => {
-  if (!props.equipmentId) return
+const fetchEquipmentData = async() => {
+  if ( !props.equipmentId ) return
 
   try {
-    const response = await getEquipmentById(props.equipmentId)
+    const response = await getEquipmentById( props.equipmentId )
     nodeData.value = response.data
-  } catch (error) {
-    console.error('Error fetching equipment data:', error)
-    ElMessage.error('Failed to load equipment details')
+  } catch ( error ) {
+    console.error( 'Error fetching equipment data:', error )
+    ElMessage.error( 'Failed to load equipment details' )
   }
 }
 
 // Fetch children count
-const fetchChildrenCount = async () => {
-  if (!props.equipmentId) return
+const fetchChildrenCount = async() => {
+  if ( !props.equipmentId ) return
 
   try {
-    const response = await getEquipmentSubtree(props.equipmentId)
+    const response = await getEquipmentSubtree( props.equipmentId )
     const children = response.data?.children || []
     childrenCount.value = children.length
-  } catch (error) {
-    console.error('Error fetching children count:', error)
+  } catch ( error ) {
+    console.error( 'Error fetching children count:', error )
     childrenCount.value = 0
   }
 }
 
 // Handle confirm deletion
-const handleConfirm = async () => {
-  if (!confirmDeletion.value) {
-    ElMessage.warning('Please confirm that you understand this action is permanent')
+const handleConfirm = async() => {
+  if ( !confirmDeletion.value ) {
+    ElMessage.warning( 'Please confirm that you understand this action is permanent' )
     return
   }
 
@@ -95,39 +95,39 @@ const handleConfirm = async () => {
       'This will permanently delete the equipment node and all associated data. Continue?',
       'Final Confirmation',
       {
-        confirmButtonText: 'Delete',
-        cancelButtonText: 'Cancel',
-        type: 'warning',
-        confirmButtonClass: 'el-button--danger',
+        confirmButtonText : 'Delete',
+        cancelButtonText : 'Cancel',
+        type : 'warning',
+        confirmButtonClass : 'el-button--danger'
       }
     )
 
     submitting.value = true
 
     // Call the deactivate API with detailed logging
-    console.log('Calling deactivateEquipmentNode with ID:', props.equipmentId)
-    const response = await deactivateEquipmentNode(props.equipmentId)
-    console.log('API response:', response)
+    console.log( 'Calling deactivateEquipmentNode with ID:', props.equipmentId )
+    const response = await deactivateEquipmentNode( props.equipmentId )
+    console.log( 'API response:', response )
 
-    ElMessage.success('Equipment node deleted successfully!')
+    ElMessage.success( 'Equipment node deleted successfully!' )
 
-    emit('success', props.equipmentId)
-    emit('close')
-  } catch (error) {
-    if (error === 'cancel') {
+    emit( 'success', props.equipmentId )
+    emit( 'close' )
+  } catch ( error ) {
+    if ( error === 'cancel' ) {
       // User cancelled the confirmation dialog
       return
     }
 
-    console.error('Full error object:', error)
-    console.error('Error response:', error.response)
-    console.error('Error message:', error.message)
-    console.error('Error status:', error.response?.status)
-    console.error('Error data:', error.response?.data)
+    console.error( 'Full error object:', error )
+    console.error( 'Error response:', error.response )
+    console.error( 'Error message:', error.message )
+    console.error( 'Error status:', error.response?.status )
+    console.error( 'Error data:', error.response?.data )
 
     // More specific error message
     const errorMessage = error.response?.data?.message || error.message || 'Unknown error'
-    ElMessage.error(`Failed to delete equipment node: ${errorMessage}`)
+    ElMessage.error( `Failed to delete equipment node: ${errorMessage}` )
   } finally {
     submitting.value = false
   }
@@ -135,19 +135,19 @@ const handleConfirm = async () => {
 
 // Handle cancel
 const handleCancel = () => {
-  emit('close')
+  emit( 'close' )
 }
 
-onMounted(() => {
+onMounted( () => {
   fetchEquipmentData()
   fetchChildrenCount()
-})
+} )
 
 // Watch for equipmentId changes and refetch data
 watch(
   () => props.equipmentId,
-  (newId, oldId) => {
-    if (newId && newId !== oldId) {
+  ( newId, oldId ) => {
+    if ( newId && newId !== oldId ) {
       // Reset data first
       nodeData.value = null
       childrenCount.value = 0
@@ -158,7 +158,7 @@ watch(
       fetchChildrenCount()
     }
   },
-  { immediate: false }
+  { immediate : false }
 )
 </script>
 

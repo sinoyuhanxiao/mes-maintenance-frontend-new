@@ -239,15 +239,15 @@ import Timeline from '../Timeline/Timeline.vue'
 import { ElMessage } from 'element-plus'
 
 // Props
-const props = defineProps({
-  workOrder: {
-    type: Object,
-    default: null,
-  },
-})
+const props = defineProps( {
+  workOrder : {
+    type : Object,
+    default : null
+  }
+} )
 
 // Emits
-const emit = defineEmits([
+const emit = defineEmits( [
   'edit',
   'share',
   'export',
@@ -256,75 +256,75 @@ const emit = defineEmits([
   'add-time',
   'add-costs',
   'view-procedure',
-  'add-comment',
-])
+  'add-comment'
+] )
 
 // State
-const localStatus = ref('')
-const activeTrackingTab = ref('costs')
-const timelineModalVisible = ref(false)
+const localStatus = ref( '' )
+const activeTrackingTab = ref( 'costs' )
+const timelineModalVisible = ref( false )
 
 // Week days for schedule display
-const weekDays = ref([
-  { name: 'Mon', active: false },
-  { name: 'Tue', active: true },
-  { name: 'Wed', active: false },
-  { name: 'Thu', active: false },
-  { name: 'Fri', active: true },
-  { name: 'Sat', active: true },
-  { name: 'Sun', active: false },
-])
+const weekDays = ref( [
+  { name : 'Mon', active : false },
+  { name : 'Tue', active : true },
+  { name : 'Wed', active : false },
+  { name : 'Thu', active : false },
+  { name : 'Fri', active : true },
+  { name : 'Sat', active : true },
+  { name : 'Sun', active : false }
+] )
 
 // Timeline events data - Empty for now
-const timelineEvents = ref([])
+const timelineEvents = ref( [] )
 
 // Computed
-const isOverdue = computed(() => {
-  return props.workOrder?.due_date && new Date(props.workOrder.due_date) < new Date()
-})
+const isOverdue = computed( () => {
+  return props.workOrder?.due_date && new Date( props.workOrder.due_date ) < new Date()
+} )
 
-const hasAttachments = computed(() => {
+const hasAttachments = computed( () => {
   return props.workOrder?.image_list && props.workOrder.image_list.length > 0
-})
+} )
 
-const isRecurring = computed(() => {
+const isRecurring = computed( () => {
   // Check if work order has recurrence (not type 1 which means "Does not repeat")
   return props.workOrder?.recurrence_type?.id && props.workOrder.recurrence_type.id !== 1
-})
+} )
 
 // Watchers
 watch(
   () => props.workOrder,
   newWorkOrder => {
-    if (newWorkOrder) {
+    if ( newWorkOrder ) {
       localStatus.value = newWorkOrder.state?.name || 'Ready'
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
 
 // Methods
 const formatDate = dateString => {
-  return convertToLocalTime(dateString)
+  return convertToLocalTime( dateString )
 }
 
 const handleStatusChange = newStatus => {
-  emit('status-change', { workOrder: props.workOrder, status: newStatus })
+  emit( 'status-change', { workOrder : props.workOrder, status : newStatus } )
 }
 
 const handleHeaderAction = action => {
-  switch (action) {
+  switch ( action ) {
     case 'edit':
-      emit('edit', props.workOrder)
+      emit( 'edit', props.workOrder )
       break
     case 'share':
-      emit('share', props.workOrder)
+      emit( 'share', props.workOrder )
       break
     case 'export':
-      emit('export', props.workOrder)
+      emit( 'export', props.workOrder )
       break
     default:
-      console.warn(`Unhandled header action: ${action}`)
+      console.warn( `Unhandled header action: ${action}` )
   }
 }
 
@@ -338,17 +338,17 @@ const handleTimelineModalClose = () => {
 }
 
 const exportTimeline = () => {
-  ElMessage.success('Timeline export will be implemented by Yellow Guy')
+  ElMessage.success( 'Timeline export will be implemented by Yellow Guy' )
   timelineModalVisible.value = false
 }
 
 const navigateToLinkedOrder = () => {
-  ElMessage.info('Navigation to linked work order will be implemented by Yellow Guy')
+  ElMessage.info( 'Navigation to linked work order will be implemented by Yellow Guy' )
 }
 
-defineOptions({
-  name: 'WorkOrderDetail',
-})
+defineOptions( {
+  name : 'WorkOrderDetail'
+} )
 </script>
 
 <style scoped lang="scss">

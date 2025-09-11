@@ -25,28 +25,28 @@
 import { ref, computed } from 'vue'
 import { InfoFilled } from '@element-plus/icons-vue'
 
-const props = defineProps({
-  step: {
-    type: Object,
-    required: true,
+const props = defineProps( {
+  step : {
+    type : Object,
+    required : true
   },
-  interactive: {
-    type: Boolean,
-    default: false,
+  interactive : {
+    type : Boolean,
+    default : false
   },
-  config: {
-    type: Object,
-    default: () => ({
-      stackDirection: 'vertical',
-    }),
-  },
-})
+  config : {
+    type : Object,
+    default : () => ( {
+      stackDirection : 'vertical'
+    } )
+  }
+} )
 
-const isChecked = ref(props.step.ui.default || false)
+const isChecked = ref( props.step.ui.default || false )
 
-const stackDirection = computed(() => {
+const stackDirection = computed( () => {
   return props.config.stackDirection === 'horizontal' ? 'horizontal' : 'vertical'
-})
+} )
 </script>
 
 <style scoped>

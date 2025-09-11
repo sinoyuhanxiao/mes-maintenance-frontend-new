@@ -87,47 +87,47 @@ import { useI18n } from 'vue-i18n'
 import TimeSlot from '@/views/shift/components/TimeSlot.vue'
 import UserTag from '@/views/user/components/UserTag.vue'
 
-const props = defineProps({
-  shifts: Array,
-  searchInput: String,
-  userMap: Object,
-  loading: Boolean,
-})
+const props = defineProps( {
+  shifts : Array,
+  searchInput : String,
+  userMap : Object,
+  loading : Boolean
+} )
 
-const emit = defineEmits(['edit-shift', 'delete-shift'])
+const emit = defineEmits( ['edit-shift', 'delete-shift'] )
 
 const { t } = useI18n()
 
-const originalList = ref([])
-const filteredList = ref([])
-const currentPage = ref(1)
-const pageSize = ref(15)
-const sortSettings = ref({ prop: '', order: '' })
+const originalList = ref( [] )
+const filteredList = ref( [] )
+const currentPage = ref( 1 )
+const pageSize = ref( 15 )
+const sortSettings = ref( { prop : '', order : '' } )
 
-const tableHeight = ref(600)
+const tableHeight = ref( 600 )
 const updateTableHeight = () => {
   tableHeight.value = window.innerHeight - 50 - 100 - 20 - 20 - 10
 }
-onMounted(() => {
+onMounted( () => {
   updateTableHeight()
-  window.addEventListener('resize', updateTableHeight)
-})
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', updateTableHeight)
-})
+  window.addEventListener( 'resize', updateTableHeight )
+} )
+onBeforeUnmount( () => {
+  window.removeEventListener( 'resize', updateTableHeight )
+} )
 
 // Display as local time
 const formatTime = time => {
-  if (!time) return '-'
+  if ( !time ) return '-'
   try {
-    const utc = new Date(`1970-01-01T${time}`) // e.g. "03:00:00Z"
-    return utc.toLocaleTimeString(undefined, {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-    })
-  } catch (e) {
+    const utc = new Date( `1970-01-01T${time}` ) // e.g. "03:00:00Z"
+    return utc.toLocaleTimeString( undefined, {
+      hour : '2-digit',
+      minute : '2-digit',
+      second : '2-digit',
+      hour12 : false
+    } )
+  } catch ( e ) {
     return '-'
   }
 }
@@ -136,67 +136,67 @@ watch(
   () => props.shifts,
   newVal => {
     originalList.value = [...newVal]
-    filterTable(props.searchInput)
+    filterTable( props.searchInput )
     currentPage.value = 1
   },
-  { immediate: true, deep: true }
+  { immediate : true, deep : true }
 )
 
 watch(
   () => props.searchInput,
   val => {
-    filterTable(val)
+    filterTable( val )
   },
-  { immediate: true }
+  { immediate : true }
 )
 
 // TODO: Filter and search handle in frontend now, can delegate to backend later
-function filterTable(input) {
-  const searchText = (input || '').toLowerCase()
-  filteredList.value = originalList.value.filter(item => {
+function filterTable( input ) {
+  const searchText = ( input || '' ).toLowerCase()
+  filteredList.value = originalList.value.filter( item => {
     return ['id', 'name', 'description', 'created_at', 'created_by', 'start_time', 'end_time', 'grace_minute'].some(
-      key => item[key]?.toString().toLowerCase().includes(searchText)
+      key => item[key]?.toString().toLowerCase().includes( searchText )
     )
-  })
+  } )
 }
 
 // Sorting
-function handleSortChange({ prop, order }) {
+function handleSortChange( { prop, order } ) {
   sortSettings.value = { prop, order }
 }
 
 // Pagination
-function handleSizeChange(newSize) {
+function handleSizeChange( newSize ) {
   pageSize.value = newSize
   currentPage.value = 1
 }
-function handlePageChange(newPage) {
+function handlePageChange( newPage ) {
   currentPage.value = newPage
 }
 
-const sortedAndPaginatedList = computed(() => {
-  const sorted = [...filteredList.value].sort((a, b) => {
+const sortedAndPaginatedList = computed( () => {
+  const sorted = [...filteredList.value].sort( ( a, b ) => {
     const { prop, order } = sortSettings.value
     let valueA, valueB
 
-    if (!prop || !order) {
-      valueA = a.updated_at ? new Date(a.updated_at) : new Date(a.created_at)
-      valueB = b.updated_at ? new Date(b.updated_at) : new Date(b.created_at)
+    if ( !prop || !order ) {
+      valueA = a.updated_at ? new Date( a.updated_at ) : new Date( a.created_at )
+      valueB = b.updated_at ? new Date( b.updated_at ) : new Date( b.created_at )
     } else {
-      valueA = prop.includes('_at') ? new Date(a[prop] || 0) : a[prop] ?? 0
-      valueB = prop.includes('_at') ? new Date(b[prop] || 0) : b[prop] ?? 0
+      valueA = prop.includes( '_at' ) ? new Date( a[prop] || 0 ) : a[prop] ?? 0
+      valueB = prop.includes( '_at' ) ? new Date( b[prop] || 0 ) : b[prop] ?? 0
     }
 
-    if (order === 'ascending') return valueA > valueB ? 1 : -1
-    if (order === 'descending') return valueA < valueB ? 1 : -1
+    if ( order === 'ascending' ) return valueA > valueB ? 1 : -1
+    if ( order === 'descending' ) return valueA < valueB ? 1 : -1
 
     // fallback: compare by created_at
-    return new Date(a.created_at) - new Date(b.created_at)
-  })
+    return new Date( a.created_at ) - new Date( b.created_at )
+  } )
 
-  const start = (currentPage.value - 1) * pageSize.value
-  return sorted.slice(start, start + pageSize.value)
-})
+  const start = ( currentPage.value - 1 ) * pageSize.value
+  return sorted.slice( start, start + pageSize.value )
+} )
 </script>
 
 <style scoped></style>

@@ -8,7 +8,7 @@
 </template>
 
 <script setup>
-defineOptions({
-  name: 'Menu1-2-1',
-})
+defineOptions( {
+  name : 'Menu1-2-1'
+} )
 </script>

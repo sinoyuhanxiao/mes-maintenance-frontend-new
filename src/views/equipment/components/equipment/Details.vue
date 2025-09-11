@@ -88,47 +88,47 @@ import { ArrowRight, Document, Picture, VideoCamera, Microphone, Download } from
 import { getEquipmentById } from '@/api/equipment.js'
 import { getLocationPathById } from '@/api/location.js'
 
-const props = defineProps({
-  equipmentId: {
-    type: Number,
-  },
-})
+const props = defineProps( {
+  equipmentId : {
+    type : Number
+  }
+} )
 
-const equipmentData = ref(null)
-const locationPath = ref([])
-const loading = ref(false)
-const error = ref(null)
+const equipmentData = ref( null )
+const locationPath = ref( [] )
+const loading = ref( false )
+const error = ref( null )
 
 const parseFileList = fileArray => {
-  if (!fileArray || !Array.isArray(fileArray)) return []
+  if ( !fileArray || !Array.isArray( fileArray ) ) return []
 
-  return fileArray.map((url, index) => {
-    const urlParts = url.split('/')
+  return fileArray.map( ( url, index ) => {
+    const urlParts = url.split( '/' )
     const filename = urlParts[urlParts.length - 1] || `file_${index + 1}`
 
-    const cleanFilename = filename.replace(/\d{17}/, '')
+    const cleanFilename = filename.replace( /\d{17}/, '' )
 
     return {
-      id: index,
-      name: decodeURIComponent(cleanFilename),
+      id : index,
+      name : decodeURIComponent( cleanFilename ),
       url,
-      type: getFileTypeFromName(cleanFilename),
+      type : getFileTypeFromName( cleanFilename )
     }
-  })
+  } )
 }
 
-const fetchEquipmentData = async () => {
-  if (!props.equipmentId) return
+const fetchEquipmentData = async() => {
+  if ( !props.equipmentId ) return
 
   try {
     loading.value = true
     error.value = null
 
-    const response = await getEquipmentById(props.equipmentId)
+    const response = await getEquipmentById( props.equipmentId )
     equipmentData.value = response.data
 
-    if (equipmentData.value.file_list && Array.isArray(equipmentData.value.file_list)) {
-      equipmentData.value.file_list = parseFileList(equipmentData.value.file_list)
+    if ( equipmentData.value.file_list && Array.isArray( equipmentData.value.file_list ) ) {
+      equipmentData.value.file_list = parseFileList( equipmentData.value.file_list )
     }
 
     if (
@@ -136,11 +136,11 @@ const fetchEquipmentData = async () => {
       typeof equipmentData.value.location.id !== 'object' &&
       equipmentData.value.location.status !== 0
     ) {
-      await fetchLocationPath(equipmentData.value.location.id)
+      await fetchLocationPath( equipmentData.value.location.id )
     } else {
       locationPath.value = []
     }
-  } catch (err) {
+  } catch ( err ) {
     error.value = err.message || 'Failed to fetch equipment data'
   } finally {
     loading.value = false
@@ -149,15 +149,15 @@ const fetchEquipmentData = async () => {
 
 const fetchLocationPath = async locationId => {
   try {
-    const response = await getLocationPathById(locationId)
+    const response = await getLocationPathById( locationId )
     locationPath.value = response.data || []
-  } catch (err) {
+  } catch ( err ) {
     locationPath.value = []
   }
 }
 
-function getFileIcon(fileType) {
-  switch (fileType?.toLowerCase()) {
+function getFileIcon( fileType ) {
+  switch ( fileType?.toLowerCase() ) {
     case 'image':
     case 'jpg':
     case 'jpeg':
@@ -196,49 +196,49 @@ function getFileIcon(fileType) {
   }
 }
 
-function getFileTypeFromName(fileName) {
-  if (!fileName) return 'document'
+function getFileTypeFromName( fileName ) {
+  if ( !fileName ) return 'document'
 
-  const extension = fileName.split('.').pop()?.toLowerCase()
+  const extension = fileName.split( '.' ).pop()?.toLowerCase()
 
   const imageTypes = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg']
   const videoTypes = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv']
   const audioTypes = ['mp3', 'wav', 'flac', 'aac', 'ogg']
   const archiveTypes = ['zip', 'rar', '7z', 'tar', 'gz']
 
-  if (imageTypes.includes(extension)) return 'image'
-  if (videoTypes.includes(extension)) return 'video'
-  if (audioTypes.includes(extension)) return 'audio'
-  if (archiveTypes.includes(extension)) return 'download'
+  if ( imageTypes.includes( extension ) ) return 'image'
+  if ( videoTypes.includes( extension ) ) return 'video'
+  if ( audioTypes.includes( extension ) ) return 'audio'
+  if ( archiveTypes.includes( extension ) ) return 'download'
 
   return 'document'
 }
 
-function formatInstallDate(dateString) {
-  if (!dateString) return 'N/A'
+function formatInstallDate( dateString ) {
+  if ( !dateString ) return 'N/A'
 
   try {
     // Handle ISO datetime string (e.g., "2025-08-03T00:00:00Z")
-    const date = new Date(dateString)
+    const date = new Date( dateString )
 
     // Check if date is valid
-    if (isNaN(date.getTime())) return 'N/A'
+    if ( isNaN( date.getTime() ) ) return 'N/A'
 
     // Format as YYYY-MM-DD
-    return date.toISOString().split('T')[0]
-  } catch (error) {
+    return date.toISOString().split( 'T' )[0]
+  } catch ( error ) {
     return 'N/A'
   }
 }
 
-onMounted(() => {
+onMounted( () => {
   fetchEquipmentData()
-})
+} )
 
 watch(
   () => props.equipmentId,
   newId => {
-    if (newId) {
+    if ( newId ) {
       fetchEquipmentData()
     }
   }

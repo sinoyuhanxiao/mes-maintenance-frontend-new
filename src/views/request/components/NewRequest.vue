@@ -6,7 +6,8 @@
         <hr />
       </div>
       <el-form ref="formRef" :model="inputData" :rules="rules" label-width="120px">
-        <el-form-item label="Request Title" prop="name"
+        <el-form-item label="Request Title"
+prop="name"
           ><el-input clearable v-model="inputData.name" placeholder="Please Input Title" style="width: 98%"></el-input
         ></el-form-item>
         <el-form-item label="Description" prop="description">
@@ -72,36 +73,36 @@ import {
   equipmentGroupTypeId,
   equipmentTypeId,
   componentTypeId,
-  getEquipmentNodes,
+  getEquipmentNodes
 } from '../../../api/equipment'
 import { createRequest } from '../../../api/requests'
 import { ElMessage } from 'element-plus'
 import { uploadMultipleToMinio } from '../../../api/minio'
 import FileUploadMultiple from '../../../components/FileUpload/FileUploadMultiple.vue'
 
-const formRef = ref(null)
-const ruleFormRef = ref(null)
-const emit = defineEmits(['submitRequest'])
+const formRef = ref( null )
+const ruleFormRef = ref( null )
+const emit = defineEmits( ['submitRequest'] )
 
-const productionLines = ref(null)
-const equipmentGroups = ref(null)
-const equipment = ref(null)
-const components = ref(null)
+const productionLines = ref( null )
+const equipmentGroups = ref( null )
+const equipment = ref( null )
+const components = ref( null )
 
 async function getNodeData() {
-  const pResponse = await getEquipmentNodes(1, 100, 'name', 'ASC', { node_type_ids: [productionLineTypeId] })
-  const egResponse = await getEquipmentNodes(1, 100, 'name', 'ASC', {
-    parent_ids: [nodeData.value.p_id],
-    node_type_ids: [equipmentGroupTypeId],
-  })
-  const eResponse = await getEquipmentNodes(1, 100, 'name', 'ASC', {
-    parent_ids: [nodeData.value.eg_id],
-    node_type_ids: [equipmentTypeId],
-  })
-  const cResponse = await getEquipmentNodes(1, 100, 'name', 'ASC', {
-    parent_ids: [nodeData.value.e_id],
-    node_type_ids: [componentTypeId],
-  })
+  const pResponse = await getEquipmentNodes( 1, 100, 'name', 'ASC', { node_type_ids : [productionLineTypeId] } )
+  const egResponse = await getEquipmentNodes( 1, 100, 'name', 'ASC', {
+    parent_ids : [nodeData.value.p_id],
+    node_type_ids : [equipmentGroupTypeId]
+  } )
+  const eResponse = await getEquipmentNodes( 1, 100, 'name', 'ASC', {
+    parent_ids : [nodeData.value.eg_id],
+    node_type_ids : [equipmentTypeId]
+  } )
+  const cResponse = await getEquipmentNodes( 1, 100, 'name', 'ASC', {
+    parent_ids : [nodeData.value.e_id],
+    node_type_ids : [componentTypeId]
+  } )
 
   productionLines.value = pResponse.data.content
   equipmentGroups.value = egResponse.data.content
@@ -111,34 +112,34 @@ async function getNodeData() {
 
 getNodeData()
 
-const inputData = ref({
-  id: null,
-  name: null,
-  description: null,
-  equipment_node_id: null,
-  image_list: null,
-  work_order_id: null,
-})
+const inputData = ref( {
+  id : null,
+  name : null,
+  description : null,
+  equipment_node_id : null,
+  image_list : null,
+  work_order_id : null
+} )
 
-const nodeData = ref({
-  p_id: null,
-  eg_id: null,
-  e_id: null,
-  c_id: null,
-})
+const nodeData = ref( {
+  p_id : null,
+  eg_id : null,
+  e_id : null,
+  c_id : null
+} )
 
-const uploadedImages = ref([])
+const uploadedImages = ref( [] )
 
 watch(
   nodeData,
   newVal => {
-    const preferredId = [newVal.c_id, newVal.e_id, newVal.eg_id, newVal.p_id].find(id => id != null)
+    const preferredId = [newVal.c_id, newVal.e_id, newVal.eg_id, newVal.p_id].find( id => id != null )
 
-    if (preferredId != null) {
+    if ( preferredId != null ) {
       inputData.value.equipment_node_id = preferredId
     }
   },
-  { deep: true }
+  { deep : true }
 )
 
 watch(
@@ -146,64 +147,64 @@ watch(
   newVal => {
     getNodeData()
   },
-  { deep: true }
+  { deep : true }
 )
 
 // Form rules
-const rules = reactive({
-  name: [{ required: true, message: 'Please input Request Title', trigger: 'blur' }],
-  description: [
+const rules = reactive( {
+  name : [{ required : true, message : 'Please input Request Title', trigger : 'blur' }],
+  description : [
     {
-      required: true,
-      message: 'Please fill in Description',
-      trigger: 'change',
-    },
+      required : true,
+      message : 'Please fill in Description',
+      trigger : 'change'
+    }
   ],
-  equipment_node_id: [{ required: true, message: 'Please select Production Line' }],
-  equipment_group_id: [{ required: false }],
-  equipment_id: [{ required: false }],
-  component_id: [{ required: false }],
-})
+  equipment_node_id : [{ required : true, message : 'Please select Production Line' }],
+  equipment_group_id : [{ required : false }],
+  equipment_id : [{ required : false }],
+  component_id : [{ required : false }]
+} )
 
 const requestSubmitted = request => {
-  ElMessage({
-    message: 'Request Submitted: ' + request,
-    type: 'success',
-  })
+  ElMessage( {
+    message : 'Request Submitted: ' + request,
+    type : 'success'
+  } )
 }
 
 const handleImageListUpdate = images => {
   uploadedImages.value = images
   inputData.value.image_list = images
-  console.log(images)
+  console.log( images )
 }
 
-const uploadFilesToServer = async () => {
+const uploadFilesToServer = async() => {
   try {
     let uploadedImages = []
 
-    if (inputData.value.image_list.length > 0) {
-      const imageRes = await uploadMultipleToMinio(inputData.value.image_list)
+    if ( inputData.value.image_list.length > 0 ) {
+      const imageRes = await uploadMultipleToMinio( inputData.value.image_list )
       uploadedImages = imageRes.data.uploadedFiles || []
-      console.log(uploadedImages)
-      inputData.value.image_list = uploadedImages.map(file => file.url)
-      console.log(inputData.value)
+      console.log( uploadedImages )
+      inputData.value.image_list = uploadedImages.map( file => file.url )
+      console.log( inputData.value )
     }
 
     return { uploadedImages }
-  } catch (err) {
-    throw new Error('File upload failed')
+  } catch ( err ) {
+    throw new Error( 'File upload failed' )
   }
 }
 
-const submitRequest = async () => {
-  if (!formRef.value) return
+const submitRequest = async() => {
+  if ( !formRef.value ) return
   await uploadFilesToServer()
-  await formRef.value.validate((valid, fields) => {
-    if (valid) {
-      console.log('request submitted: ', inputData.value)
-      emit('submitRequest', createRequest(inputData.value))
-      requestSubmitted(inputData.value.name)
+  await formRef.value.validate( ( valid, fields ) => {
+    if ( valid ) {
+      console.log( 'request submitted: ', inputData.value )
+      emit( 'submitRequest', createRequest( inputData.value ) )
+      requestSubmitted( inputData.value.name )
       resetForm()
       // inputData.value = {
       //   name : null,
@@ -219,11 +220,11 @@ const submitRequest = async () => {
       //   c_id : null
       // }
     }
-  })
+  } )
 }
 
 const resetForm = () => {
-  if (formRef.value) {
+  if ( formRef.value ) {
     formRef.value.resetFields()
   }
 }

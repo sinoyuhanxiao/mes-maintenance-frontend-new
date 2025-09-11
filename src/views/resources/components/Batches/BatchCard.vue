@@ -16,7 +16,8 @@
     </div>
     <div class="middle-container">
       <el-descriptions :column="2" direction="vertical" style="max-width: 25vw">
-        <el-descriptions-item label="Batch Size" width="10vw"
+        <el-descriptions-item label="Batch Size"
+width="10vw"
           >{{ props.addStock ? batch.unit_in_stock + ' (+' + props.addStock + ')' : batch.unit_in_stock }}
         </el-descriptions-item>
         <el-descriptions-item label="Location">
@@ -34,17 +35,17 @@ import { convertToLocalTime } from '../../../../utils/datetime'
 import { ref, watch } from 'vue'
 import { getLocationPathById } from '../../../../api/location'
 
-const props = defineProps({
-  data: Object,
-  addStock: Number,
-})
+const props = defineProps( {
+  data : Object,
+  addStock : Number
+} )
 
-const batch = ref(props.data)
+const batch = ref( props.data )
 
-const locationTree = ref(null)
+const locationTree = ref( null )
 
 async function getLocationTreeData() {
-  const response = await getLocationPathById(batch.value.location_id)
+  const response = await getLocationPathById( batch.value.location_id )
 
   locationTree.value = response.data
   // console.log( locationTree.value )
@@ -58,7 +59,7 @@ watch(
     batch.value = newVal
     getLocationTreeData()
   },
-  { deep: true }
+  { deep : true }
 )
 </script>
 

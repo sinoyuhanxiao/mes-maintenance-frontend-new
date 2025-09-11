@@ -22,34 +22,34 @@ import { useTagsViewStore } from '@/store'
 const route = useRoute()
 const tagsViewStore = useTagsViewStore()
 
-const key = computed(() => route.path)
-const cachedViews = computed(() => {
-  console.log('[AppMain] Current cached views:', tagsViewStore.cachedViews)
+const key = computed( () => route.path )
+const cachedViews = computed( () => {
+  console.log( '[AppMain] Current cached views:', tagsViewStore.cachedViews )
   return tagsViewStore.cachedViews
-})
+} )
 
-const props = defineProps({
-  needTagsView: {
-    type: Boolean,
-    required: true,
-    default: false,
-  },
-})
+const props = defineProps( {
+  needTagsView : {
+    type : Boolean,
+    required : true,
+    default : false
+  }
+} )
 
-const height = ref('calc( 100vh - 84px)')
+const height = ref( 'calc( 100vh - 84px)' )
 watch(
   () => props.needTagsView,
   () => {
     height.value = props.needTagsView ? 'calc( 100vh - 84px )' : 'calc( 100vh - 50px )'
   },
   {
-    immediate: true,
+    immediate : true
   }
 )
 
-defineOptions({
-  name: 'AppMain',
-})
+defineOptions( {
+  name : 'AppMain'
+} )
 </script>
 
 <style lang="scss" scoped>

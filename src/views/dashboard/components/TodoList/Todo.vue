@@ -19,58 +19,58 @@
 
 <script>
 export default {
-  name: 'Todo',
-  directives: {
-    focus(el, { value }, { context }) {
-      if (value) {
-        context.$nextTick(() => {
+  name : 'Todo',
+  directives : {
+    focus( el, { value }, { context } ) {
+      if ( value ) {
+        context.$nextTick( () => {
           el.focus()
-        })
+        } )
       }
-    },
+    }
   },
-  props: {
-    todo: {
-      type: Object,
-      default: function () {
+  props : {
+    todo : {
+      type : Object,
+      default : function() {
         return {}
-      },
-    },
+      }
+    }
   },
   data() {
     return {
-      editing: false,
+      editing : false
     }
   },
-  methods: {
-    deleteTodo(todo) {
-      this.$emit('deleteTodo', todo)
+  methods : {
+    deleteTodo( todo ) {
+      this.$emit( 'deleteTodo', todo )
     },
-    editTodo({ todo, value }) {
-      this.$emit('editTodo', { todo, value })
+    editTodo( { todo, value } ) {
+      this.$emit( 'editTodo', { todo, value } )
     },
-    toggleTodo(todo) {
-      this.$emit('toggleTodo', todo)
+    toggleTodo( todo ) {
+      this.$emit( 'toggleTodo', todo )
     },
-    doneEdit(e) {
+    doneEdit( e ) {
       const value = e.target.value.trim()
       const { todo } = this
-      if (!value) {
-        this.deleteTodo({
+      if ( !value ) {
+        this.deleteTodo( {
+          todo
+        } )
+      } else if ( this.editing ) {
+        this.editTodo( {
           todo,
-        })
-      } else if (this.editing) {
-        this.editTodo({
-          todo,
-          value,
-        })
+          value
+        } )
         this.editing = false
       }
     },
-    cancelEdit(e) {
+    cancelEdit( e ) {
       e.target.value = this.todo.text
       this.editing = false
-    },
-  },
+    }
+  }
 }
 </script>

@@ -301,180 +301,180 @@ import { convertToLocalTime } from '@/utils/datetime'
 
 // Props
 // eslint-disable-next-line no-unused-vars
-const props = defineProps({
-  workOrder: {
-    type: Object,
-    required: true,
-  },
-})
+const props = defineProps( {
+  workOrder : {
+    type : Object,
+    required : true
+  }
+} )
 
 // Refs
-const pdfContainer = ref(null)
+const pdfContainer = ref( null )
 
 // Computed properties for sample data
-const workInstructions = computed(() => [
+const workInstructions = computed( () => [
   {
-    title: 'VISUAL INSPECTION AND CHECK FOR VISIBLE SIGNS OF WEAR OR DAMAGE',
-    assignee: 'Inspection (0.5 hr)',
-    duration: '30 min',
-    requirements: ['Visual inspection', 'Documentation'],
+    title : 'VISUAL INSPECTION AND CHECK FOR VISIBLE SIGNS OF WEAR OR DAMAGE',
+    assignee : 'Inspection (0.5 hr)',
+    duration : '30 min',
+    requirements : ['Visual inspection', 'Documentation']
   },
   {
-    title: 'COMPRESSOR REPLACEMENT',
-    assignee: 'Removal and Installation (3hrs)',
-    duration: '3 hrs',
-    requirements: ['Mounting Hardware - 1 set', 'Electrical Connectors - 2 pcs'],
+    title : 'COMPRESSOR REPLACEMENT',
+    assignee : 'Removal and Installation (3hrs)',
+    duration : '3 hrs',
+    requirements : ['Mounting Hardware - 1 set', 'Electrical Connectors - 2 pcs']
   },
   {
-    title: 'REFRIGERANT REFILL AND SYSTEM TESTING',
-    assignee: 'Refilling and leak test (1 hr)',
-    duration: '1 hr',
-    requirements: ['Leak Detection Dye - 1pc', 'Pressure Gauge - 1pc'],
-  },
-])
+    title : 'REFRIGERANT REFILL AND SYSTEM TESTING',
+    assignee : 'Refilling and leak test (1 hr)',
+    duration : '1 hr',
+    requirements : ['Leak Detection Dye - 1pc', 'Pressure Gauge - 1pc']
+  }
+] )
 
-const assetInfo = computed(() => ({
-  id: 'CONV-001',
-  name: 'Main Production Conveyor',
-  serialNumber: 'CB-2023-4567',
-  location: 'Plant A > Production Floor > Line 1',
-  manufacturer: 'Industrial Conveyor Corp',
-  model: 'IC-2000X',
-}))
+const assetInfo = computed( () => ( {
+  id : 'CONV-001',
+  name : 'Main Production Conveyor',
+  serialNumber : 'CB-2023-4567',
+  location : 'Plant A > Production Floor > Line 1',
+  manufacturer : 'Industrial Conveyor Corp',
+  model : 'IC-2000X'
+} ) )
 
-const partsUsed = computed(() => [
+const partsUsed = computed( () => [
   {
-    partNumber: 'LUB-001',
-    description: 'High-temp bearing grease',
-    quantity: 2,
-    unitCost: 25.5,
-    totalCost: 51.0,
-    vendor: 'Industrial Supply Co',
+    partNumber : 'LUB-001',
+    description : 'High-temp bearing grease',
+    quantity : 2,
+    unitCost : 25.5,
+    totalCost : 51.0,
+    vendor : 'Industrial Supply Co'
   },
   {
-    partNumber: 'BELT-TENS-001',
-    description: 'Belt tension adjustment kit',
-    quantity: 1,
-    unitCost: 85.0,
-    totalCost: 85.0,
-    vendor: 'Conveyor Parts Inc',
+    partNumber : 'BELT-TENS-001',
+    description : 'Belt tension adjustment kit',
+    quantity : 1,
+    unitCost : 85.0,
+    totalCost : 85.0,
+    vendor : 'Conveyor Parts Inc'
   },
   {
-    partNumber: 'COMP-REP-001',
-    description: 'Compressor replacement unit',
-    quantity: 1,
-    unitCost: 450.0,
-    totalCost: 450.0,
-    vendor: 'HVAC Solutions Ltd',
-  },
-])
+    partNumber : 'COMP-REP-001',
+    description : 'Compressor replacement unit',
+    quantity : 1,
+    unitCost : 450.0,
+    totalCost : 450.0,
+    vendor : 'HVAC Solutions Ltd'
+  }
+] )
 
-const laborLog = computed(() => [
+const laborLog = computed( () => [
   {
-    id: 1,
-    technicianName: 'Mike Johnson',
-    startTime: '2024-08-10T08:00:00Z',
-    stopTime: '2024-08-10T12:00:00Z',
-    hoursWorked: 4.0,
-    hourlyRate: 45.0,
-    totalCost: 180.0,
+    id : 1,
+    technicianName : 'Mike Johnson',
+    startTime : '2024-08-10T08:00:00Z',
+    stopTime : '2024-08-10T12:00:00Z',
+    hoursWorked : 4.0,
+    hourlyRate : 45.0,
+    totalCost : 180.0
   },
   {
-    id: 2,
-    technicianName: 'Sarah Davis',
-    startTime: '2024-08-10T10:00:00Z',
-    stopTime: '2024-08-10T12:00:00Z',
-    hoursWorked: 2.0,
-    hourlyRate: 42.0,
-    totalCost: 84.0,
-  },
-])
+    id : 2,
+    technicianName : 'Sarah Davis',
+    startTime : '2024-08-10T10:00:00Z',
+    stopTime : '2024-08-10T12:00:00Z',
+    hoursWorked : 2.0,
+    hourlyRate : 42.0,
+    totalCost : 84.0
+  }
+] )
 
-const safetyRequirements = computed(() => [
+const safetyRequirements = computed( () => [
   {
-    requirement: 'LOTO procedures completed',
-    compliance: true,
-    notes: 'All energy sources isolated and tagged',
+    requirement : 'LOTO procedures completed',
+    compliance : true,
+    notes : 'All energy sources isolated and tagged'
   },
   {
-    requirement: 'PPE requirements met',
-    compliance: true,
-    notes: 'Hard hat, safety glasses, steel-toed boots worn',
+    requirement : 'PPE requirements met',
+    compliance : true,
+    notes : 'Hard hat, safety glasses, steel-toed boots worn'
   },
   {
-    requirement: 'Confined space permit',
-    compliance: false,
-    notes: 'Not required for this work',
+    requirement : 'Confined space permit',
+    compliance : false,
+    notes : 'Not required for this work'
   },
   {
-    requirement: 'Hot work permit',
-    compliance: false,
-    notes: 'No welding or cutting required',
-  },
-])
+    requirement : 'Hot work permit',
+    compliance : false,
+    notes : 'No welding or cutting required'
+  }
+] )
 
-const activityTimeline = computed(() => [
+const activityTimeline = computed( () => [
   {
-    timestamp: '2024-08-08T14:30:00Z',
-    action: 'Work Order Created',
-    performedBy: 'Erik Yu',
-    details: 'Scheduled preventive maintenance',
+    timestamp : '2024-08-08T14:30:00Z',
+    action : 'Work Order Created',
+    performedBy : 'Erik Yu',
+    details : 'Scheduled preventive maintenance'
   },
   {
-    timestamp: '2024-08-09T09:15:00Z',
-    action: 'Assigned to Technician',
-    performedBy: 'Maintenance Supervisor',
-    details: 'Assigned to Mike Johnson',
+    timestamp : '2024-08-09T09:15:00Z',
+    action : 'Assigned to Technician',
+    performedBy : 'Maintenance Supervisor',
+    details : 'Assigned to Mike Johnson'
   },
   {
-    timestamp: '2024-08-10T08:00:00Z',
-    action: 'Work Started',
-    performedBy: 'Mike Johnson',
-    details: 'Began on-site inspection',
+    timestamp : '2024-08-10T08:00:00Z',
+    action : 'Work Started',
+    performedBy : 'Mike Johnson',
+    details : 'Began on-site inspection'
   },
   {
-    timestamp: '2024-08-10T12:00:00Z',
-    action: 'Work Completed',
-    performedBy: 'Mike Johnson',
-    details: 'All maintenance tasks completed successfully',
-  },
-])
+    timestamp : '2024-08-10T12:00:00Z',
+    action : 'Work Completed',
+    performedBy : 'Mike Johnson',
+    details : 'All maintenance tasks completed successfully'
+  }
+] )
 
 // Methods
 const formatDate = dateString => {
-  if (!dateString) return 'N/A'
-  return convertToLocalTime(dateString, 'DD MMM, YYYY')
+  if ( !dateString ) return 'N/A'
+  return convertToLocalTime( dateString, 'DD MMM, YYYY' )
 }
 
 const formatDateTime = dateString => {
-  if (!dateString) return 'N/A'
-  return convertToLocalTime(dateString, 'DD/MM/YYYY HH:mm')
+  if ( !dateString ) return 'N/A'
+  return convertToLocalTime( dateString, 'DD/MM/YYYY HH:mm' )
 }
 
 const calculatePartsCost = () => {
-  return partsUsed.value.reduce((sum, part) => sum + part.totalCost, 0).toFixed(2)
+  return partsUsed.value.reduce( ( sum, part ) => sum + part.totalCost, 0 ).toFixed( 2 )
 }
 
 const calculateLaborCost = () => {
-  return laborLog.value.reduce((sum, entry) => sum + entry.totalCost, 0).toFixed(2)
+  return laborLog.value.reduce( ( sum, entry ) => sum + entry.totalCost, 0 ).toFixed( 2 )
 }
 
 const calculateTax = () => {
-  const subtotal = parseFloat(calculatePartsCost()) + parseFloat(calculateLaborCost())
-  return (subtotal * 0.1).toFixed(2)
+  const subtotal = parseFloat( calculatePartsCost() ) + parseFloat( calculateLaborCost() )
+  return ( subtotal * 0.1 ).toFixed( 2 )
 }
 
 const calculateTotal = () => {
-  const subtotal = parseFloat(calculatePartsCost()) + parseFloat(calculateLaborCost())
-  const tax = parseFloat(calculateTax())
-  return (subtotal + tax).toFixed(2)
+  const subtotal = parseFloat( calculatePartsCost() ) + parseFloat( calculateLaborCost() )
+  const tax = parseFloat( calculateTax() )
+  return ( subtotal + tax ).toFixed( 2 )
 }
 
 // Expose methods for external use
-defineExpose({
+defineExpose( {
   pdfContainer,
-  print: () => window.print(),
-})
+  print : () => window.print()
+} )
 </script>
 
 <style scoped>

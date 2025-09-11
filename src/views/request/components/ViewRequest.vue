@@ -54,21 +54,21 @@ import { ref, watch } from 'vue'
 import { convertToLocalTime } from '../../../utils/datetime'
 import { ArrowRight } from '@element-plus/icons-vue'
 
-const props = defineProps({
-  data: Object,
-})
+const props = defineProps( {
+  data : Object
+} )
 
-const emit = defineEmits(['create'])
+const emit = defineEmits( ['create'] )
 
-const localData = ref(props.data)
+const localData = ref( props.data )
 
 watch(
   () => props.data,
   newData => {
     localData.value = { ...newData }
-    console.log(localData.value)
+    console.log( localData.value )
   },
-  { immediate: true, deep: true }
+  { immediate : true, deep : true }
 )
 </script>
 

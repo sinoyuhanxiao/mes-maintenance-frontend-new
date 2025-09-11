@@ -5,7 +5,7 @@
 <script setup>
 import TemplateDesignerView from './TemplateDesignerView.vue'
 
-defineOptions({
-  name: 'TaskDesignerEdit',
-})
+defineOptions( {
+  name : 'TaskDesignerEdit'
+} )
 </script>

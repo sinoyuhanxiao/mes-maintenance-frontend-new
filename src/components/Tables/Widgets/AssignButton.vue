@@ -1,6 +1,10 @@
 <template>
   <div>
-    <el-button @click="handleAssign" v-if="currentAssignment === 1" :icon="Check" type="success" round
+    <el-button @click="handleAssign"
+v-if="currentAssignment === 1"
+:icon="Check"
+type="success"
+round
       >Assigned</el-button
     >
     <el-button @click="handleAssign" v-if="currentAssignment === 0" type="danger" round plain>Not Assigned</el-button>
@@ -11,15 +15,15 @@
 import { Check } from '@element-plus/icons-vue'
 import { ref, watch } from 'vue'
 
-const props = defineProps({
-  assigned: Number,
-  woId: Number,
-  personnelId: Number,
-})
+const props = defineProps( {
+  assigned : Number,
+  woId : Number,
+  personnelId : Number
+} )
 
-const emit = defineEmits(['update:assigned'])
+const emit = defineEmits( ['update:assigned'] )
 
-const currentAssignment = ref(props.assigned)
+const currentAssignment = ref( props.assigned )
 
 watch(
   () => props.assigned,
@@ -29,13 +33,13 @@ watch(
 )
 
 function handleAssign() {
-  if (currentAssignment.value == 1) {
+  if ( currentAssignment.value == 1 ) {
     currentAssignment.value = 0
   } else {
     currentAssignment.value = 1
   }
   // console.log('woId: ', props.woId, ' personnelId: ', props.personnelId)
-  emit('update:assigned', currentAssignment.value)
+  emit( 'update:assigned', currentAssignment.value )
 }
 </script>
 

@@ -205,234 +205,234 @@ import TextStepPreview from './StepCards/TextStepPreview.vue'
 import AttachmentStepPreview from './StepCards/AttachmentStepPreview.vue'
 import ServiceStepPreview from './StepCards/ServiceStepPreview.vue'
 
-const props = defineProps({
-  visible: {
-    type: Boolean,
-    default: false,
+const props = defineProps( {
+  visible : {
+    type : Boolean,
+    default : false
   },
-  templateForm: {
-    type: Object,
-    required: true,
+  templateForm : {
+    type : Object,
+    required : true
   },
-  dialogConfig: {
-    type: Object,
-    default: () => ({
-      title: 'Preview Procedure',
-      width: '60%',
-      fullscreen: false,
-      closeOnClickModal: true,
-      appendToBody: true,
-      customClass: '',
-    }),
+  dialogConfig : {
+    type : Object,
+    default : () => ( {
+      title : 'Preview Procedure',
+      width : '60%',
+      fullscreen : false,
+      closeOnClickModal : true,
+      appendToBody : true,
+      customClass : ''
+    } )
   },
-  headerConfig: {
-    type: Object,
-    default: () => ({
-      showSubtitle: true,
-      showMeta: true,
-      metaFields: ['category', 'estimated_minutes', 'applicable_assets'],
-    }),
+  headerConfig : {
+    type : Object,
+    default : () => ( {
+      showSubtitle : true,
+      showMeta : true,
+      metaFields : ['category', 'estimated_minutes', 'applicable_assets']
+    } )
   },
-  toolbarConfig: {
-    type: Object,
-    default: () => ({
-      showStepNumbersToggle: true,
-      showViewportSwitcher: true,
-      viewportOptions: ['desktop', 'mobile'],
-      interactionMode: 'static',
-    }),
+  toolbarConfig : {
+    type : Object,
+    default : () => ( {
+      showStepNumbersToggle : true,
+      showViewportSwitcher : true,
+      viewportOptions : ['desktop', 'mobile'],
+      interactionMode : 'static'
+    } )
   },
-  layoutConfig: {
-    type: Object,
-    default: () => ({
-      sectionCollapsible: true,
-      sectionsInitiallyExpanded: true,
-      showStepNumbers: true,
-      requiredMark: '*',
-      density: 'comfortable',
-    }),
+  layoutConfig : {
+    type : Object,
+    default : () => ( {
+      sectionCollapsible : true,
+      sectionsInitiallyExpanded : true,
+      showStepNumbers : true,
+      requiredMark : '*',
+      density : 'comfortable'
+    } )
   },
-  contentConfig: {
-    type: Object,
-    default: () => ({
-      grouping: 'by_section_field',
-      sectionTitleField: 'section',
-      unknownSectionTitle: 'General',
-      widgets: {
-        inspection: {
-          options: ['pass', 'flag', 'fail'],
-          buttonStyle: 'pill',
+  contentConfig : {
+    type : Object,
+    default : () => ( {
+      grouping : 'by_section_field',
+      sectionTitleField : 'section',
+      unknownSectionTitle : 'General',
+      widgets : {
+        inspection : {
+          options : ['pass', 'flag', 'fail'],
+          buttonStyle : 'pill'
         },
-        checkbox: {
-          stackDirection: 'vertical',
+        checkbox : {
+          stackDirection : 'vertical'
         },
-        number: {
-          showUnits: true,
-          showLimits: true,
-          unitsField: 'uom',
-          limitsField: 'limits',
+        number : {
+          showUnits : true,
+          showLimits : true,
+          unitsField : 'uom',
+          limitsField : 'limits'
         },
-        text: {
-          placeholderField: 'placeholder',
-          rows: 3,
+        text : {
+          placeholderField : 'placeholder',
+          rows : 3
         },
-        files: {
-          acceptImages: true,
-          acceptDocuments: true,
-        },
-      },
-    }),
+        files : {
+          acceptImages : true,
+          acceptDocuments : true
+        }
+      }
+    } )
   },
-  footerConfig: {
-    type: Object,
-    default: () => ({
-      showClose: true,
-      showPrint: false,
-    }),
-  },
-})
+  footerConfig : {
+    type : Object,
+    default : () => ( {
+      showClose : true,
+      showPrint : false
+    } )
+  }
+} )
 
-const emit = defineEmits(['open', 'close', 'print'])
+const emit = defineEmits( ['open', 'close', 'print'] )
 
 // Reactive state
-const currentViewport = ref('desktop')
-const isInteractive = ref(false)
-const sectionStates = reactive({})
-const windowWidth = ref(window.innerWidth)
-const stepToolsVisible = reactive({})
-const mobileToolsCollapsed = ref([])
+const currentViewport = ref( 'desktop' )
+const isInteractive = ref( false )
+const sectionStates = reactive( {} )
+const windowWidth = ref( window.innerWidth )
+const stepToolsVisible = reactive( {} )
+const mobileToolsCollapsed = ref( [] )
 
 // Computed properties
 // Use preview's viewport switcher primarily for deciding mobile vs desktop
-const isMobileView = computed(() => currentViewport.value === 'mobile')
+const isMobileView = computed( () => currentViewport.value === 'mobile' )
 
-const showToolbar = computed(() => {
+const showToolbar = computed( () => {
   return props.toolbarConfig.showStepNumbersToggle || props.toolbarConfig.showViewportSwitcher
-})
+} )
 
-const renderSnapshot = computed(() => {
-  if (!props.templateForm || !props.templateForm.steps) {
+const renderSnapshot = computed( () => {
+  if ( !props.templateForm || !props.templateForm.steps ) {
     return {
-      title: '',
-      subtitle: '',
-      sections: [],
+      title : '',
+      subtitle : '',
+      sections : []
     }
   }
 
   return {
-    title: props.templateForm.name || 'Untitled Procedure',
-    subtitle: props.templateForm.description || '',
-    sections: [],
+    title : props.templateForm.name || 'Untitled Procedure',
+    subtitle : props.templateForm.description || '',
+    sections : []
   }
-})
+} )
 
 // Watch for layout changes
 watch(
   () => props.layoutConfig.sectionsInitiallyExpanded,
   expanded => {
-    Object.keys(sectionStates).forEach(sectionId => {
+    Object.keys( sectionStates ).forEach( sectionId => {
       sectionStates[sectionId] = expanded
-    })
+    } )
   },
-  { immediate: true }
+  { immediate : true }
 )
 
 // Methods
 // eslint-disable-next-line no-unused-vars
 const groupStepsIntoSections = steps => {
-  if (props.contentConfig.grouping === 'none') {
+  if ( props.contentConfig.grouping === 'none' ) {
     return [
       {
-        sectionId: 'default',
-        title: props.contentConfig.unknownSectionTitle,
-        expanded: props.layoutConfig.sectionsInitiallyExpanded,
-        steps: steps.map(step => transformStepForPreview(step)),
-      },
+        sectionId : 'default',
+        title : props.contentConfig.unknownSectionTitle,
+        expanded : props.layoutConfig.sectionsInitiallyExpanded,
+        steps : steps.map( step => transformStepForPreview( step ) )
+      }
     ]
   }
 
   const sections = {}
   const sectionField = props.contentConfig.sectionTitleField
 
-  steps.forEach(step => {
+  steps.forEach( step => {
     const sectionTitle = step[sectionField] || props.contentConfig.unknownSectionTitle
-    const sectionId = sectionTitle.toLowerCase().replace(/\s+/g, '_')
+    const sectionId = sectionTitle.toLowerCase().replace( /\s+/g, '_' )
 
-    if (!sections[sectionId]) {
+    if ( !sections[sectionId] ) {
       sections[sectionId] = {
         sectionId,
-        title: sectionTitle,
-        expanded: sectionStates[sectionId] ?? props.layoutConfig.sectionsInitiallyExpanded,
-        steps: [],
+        title : sectionTitle,
+        expanded : sectionStates[sectionId] ?? props.layoutConfig.sectionsInitiallyExpanded,
+        steps : []
       }
     }
 
-    sections[sectionId].steps.push(transformStepForPreview(step))
-  })
+    sections[sectionId].steps.push( transformStepForPreview( step ) )
+  } )
 
-  return Object.values(sections).sort((a, b) => a.title.localeCompare(b.title))
+  return Object.values( sections ).sort( ( a, b ) => a.title.localeCompare( b.title ) )
 }
 
 const transformStepForPreview = step => {
   return {
-    id: step.step_id,
-    order: step.order,
-    type: step.type,
-    title: step.label || `${step.type} step`,
-    required: step.required || false,
-    ui: {
+    id : step.step_id,
+    order : step.order,
+    type : step.type,
+    title : step.label || `${step.type} step`,
+    required : step.required || false,
+    ui : {
       ...step.config,
-      description: step.description,
-      relevant_tools: step.relevant_tools,
-      relevant_resources: step.relevant_resources,
-    },
+      description : step.description,
+      relevant_tools : step.relevant_tools,
+      relevant_resources : step.relevant_resources
+    }
   }
 }
 
 const getStepComponent = stepType => {
   const components = {
-    inspection: InspectionStepPreview,
-    checkbox: CheckboxStepPreview,
-    number: NumberStepPreview,
-    text: TextStepPreview,
-    files: AttachmentStepPreview,
-    attachments: AttachmentStepPreview,
-    service: ServiceStepPreview,
+    inspection : InspectionStepPreview,
+    checkbox : CheckboxStepPreview,
+    number : NumberStepPreview,
+    text : TextStepPreview,
+    files : AttachmentStepPreview,
+    attachments : AttachmentStepPreview,
+    service : ServiceStepPreview
   }
   return components[stepType] || 'div'
 }
 
-const getStepWithNumber = (step, index) => {
-  if (!props.layoutConfig.showStepNumbers) {
+const getStepWithNumber = ( step, index ) => {
+  if ( !props.layoutConfig.showStepNumbers ) {
     return step
   }
 
   // Create a modified copy of the step with numbered label
   return {
     ...step,
-    label: `${index + 1}. ${step.label || `${getStepTypeLabel(step.type)} step`}`,
+    label : `${index + 1}. ${step.label || `${getStepTypeLabel( step.type )} step`}`
   }
 }
 
 // eslint-disable-next-line no-unused-vars
 const getMetaLabel = field => {
   const labels = {
-    category: 'Category',
-    estimated_minutes: 'Est. Time',
-    applicable_assets: 'Assets',
+    category : 'Category',
+    estimated_minutes : 'Est. Time',
+    applicable_assets : 'Assets'
   }
   return labels[field] || field
 }
 
 // eslint-disable-next-line no-unused-vars
 const getMetaValue = field => {
-  if (!props.templateForm) return ''
+  if ( !props.templateForm ) return ''
 
   const value = props.templateForm[field]
-  if (field === 'estimated_minutes') {
+  if ( field === 'estimated_minutes' ) {
     return `${value || 0} min`
   }
-  if (field === 'applicable_assets' && Array.isArray(value)) {
+  if ( field === 'applicable_assets' && Array.isArray( value ) ) {
     return value.length > 0 ? `${value.length} asset(s)` : 'Any asset'
   }
   return value || ''
@@ -440,13 +440,13 @@ const getMetaValue = field => {
 
 const getStepTypeLabel = type => {
   const labels = {
-    inspection: 'Inspection',
-    checkbox: 'Checkbox',
-    number: 'Number',
-    text: 'Text',
-    attachments: 'Files',
-    files: 'Files',
-    service: 'Service',
+    inspection : 'Inspection',
+    checkbox : 'Checkbox',
+    number : 'Number',
+    text : 'Text',
+    attachments : 'Files',
+    files : 'Files',
+    service : 'Service'
   }
   return labels[type] || type
 }
@@ -454,13 +454,13 @@ const getStepTypeLabel = type => {
 // eslint-disable-next-line no-unused-vars
 const getStepTypeColor = type => {
   const colors = {
-    inspection: '#67c23a',
-    checkbox: '#409eff',
-    number: '#e6a23c',
-    text: '#909399',
-    attachments: '#849aec',
-    files: '#849aec',
-    service: '#df869d',
+    inspection : '#67c23a',
+    checkbox : '#409eff',
+    number : '#e6a23c',
+    text : '#909399',
+    attachments : '#849aec',
+    files : '#849aec',
+    service : '#df869d'
   }
   return colors[type] || '#c0c4cc'
 }
@@ -468,12 +468,12 @@ const getStepTypeColor = type => {
 // eslint-disable-next-line no-unused-vars
 const toggleStepNumbers = () => {
   // This would need to be handled by parent component, but for sinec I do not have much time just emit it
-  emit('toggle-step-numbers')
+  emit( 'toggle-step-numbers' )
 }
 
 // eslint-disable-next-line no-unused-vars
 const toggleSection = sectionId => {
-  if (props.layoutConfig.sectionCollapsible) {
+  if ( props.layoutConfig.sectionCollapsible ) {
     sectionStates[sectionId] = !sectionStates[sectionId]
   }
 }
@@ -487,19 +487,19 @@ const toggleStepTools = stepId => {
 }
 
 const getStepToolsVisible = stepId => {
-  return Boolean(stepToolsVisible[stepId])
+  return Boolean( stepToolsVisible[stepId] )
 }
 
 const handleOpen = () => {
-  emit('open')
+  emit( 'open' )
 }
 
 const handleClose = () => {
-  emit('close')
+  emit( 'close' )
 }
 
 const handlePrint = () => {
-  emit('print')
+  emit( 'print' )
   // Could implement actual print functionality here
   window.print()
 }
@@ -508,25 +508,25 @@ const handleResize = () => {
   windowWidth.value = window.innerWidth
 }
 
-onMounted(() => {
-  window.addEventListener('resize', handleResize)
-})
+onMounted( () => {
+  window.addEventListener( 'resize', handleResize )
+} )
 
-onUnmounted(() => {
-  window.removeEventListener('resize', handleResize)
-})
+onUnmounted( () => {
+  window.removeEventListener( 'resize', handleResize )
+} )
 
 // Initialize section states
 watch(
   () => renderSnapshot.value.sections,
   sections => {
-    sections.forEach(section => {
-      if (!(section.sectionId in sectionStates)) {
+    sections.forEach( section => {
+      if ( !( section.sectionId in sectionStates ) ) {
         sectionStates[section.sectionId] = section.expanded
       }
-    })
+    } )
   },
-  { immediate: true }
+  { immediate : true }
 )
 </script>
 

@@ -10,28 +10,28 @@
 </template>
 
 <script setup>
-const props = defineProps({
-  image: {
-    type: String,
-    required: true,
+const props = defineProps( {
+  image : {
+    type : String,
+    required : true
   },
-  zIndex: {
-    type: Number,
-    default: 1,
+  zIndex : {
+    type : Number,
+    default : 1
   },
-  width: {
-    type: String,
-    default: '150px',
+  width : {
+    type : String,
+    default : '150px'
   },
-  height: {
-    type: String,
-    default: '150px',
-  },
-})
+  height : {
+    type : String,
+    default : '150px'
+  }
+} )
 
-defineOptions({
-  name: 'MesThumb',
-})
+defineOptions( {
+  name : 'MesThumb'
+} )
 </script>
 
 <style scoped>

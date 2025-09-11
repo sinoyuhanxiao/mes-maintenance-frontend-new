@@ -30,35 +30,35 @@
 import { Picture } from '@element-plus/icons-vue'
 import EquipmentSubItemCard from './components/EquipmentSubItemCard.vue'
 
-defineProps({
-  imageUrl: {
-    type: String,
-    default: 'https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg',
+defineProps( {
+  imageUrl : {
+    type : String,
+    default : 'https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg'
   },
-  imageAlt: {
-    type: String,
-    default: 'Equipment image',
+  imageAlt : {
+    type : String,
+    default : 'Equipment image'
   },
-  items: {
-    type: Array,
-    default: () => [
-      { id: 1, text: 'Primary safety features included', textType: 'default' },
-      { id: 2, text: 'Requires regular maintenance', textType: 'default' },
-      { id: 3, text: 'High performance rating achieved', textType: 'default' },
-      { id: 4, text: 'Temperature monitoring system', textType: 'default' },
-      { id: 5, text: 'Emergency shutdown capability', textType: 'default' },
-      { id: 6, text: 'Energy efficient operation mode', textType: 'default' },
-      { id: 7, text: 'User-friendly interface design', textType: 'default' },
-      { id: 8, text: 'Automated diagnostic functions', textType: 'default' },
-      { id: 9, text: 'Backup power supply available', textType: 'default' },
-      { id: 10, text: 'Compliance with safety standards', textType: 'default' },
-      { id: 11, text: 'Advanced monitoring capabilities', textType: 'default' },
-      { id: 12, text: 'Remote control functionality', textType: 'default' },
-      { id: 13, text: 'Predictive maintenance alerts', textType: 'default' },
-      { id: 14, text: 'Quality assurance protocols', textType: 'default' },
-    ],
-  },
-})
+  items : {
+    type : Array,
+    default : () => [
+      { id : 1, text : 'Primary safety features included', textType : 'default' },
+      { id : 2, text : 'Requires regular maintenance', textType : 'default' },
+      { id : 3, text : 'High performance rating achieved', textType : 'default' },
+      { id : 4, text : 'Temperature monitoring system', textType : 'default' },
+      { id : 5, text : 'Emergency shutdown capability', textType : 'default' },
+      { id : 6, text : 'Energy efficient operation mode', textType : 'default' },
+      { id : 7, text : 'User-friendly interface design', textType : 'default' },
+      { id : 8, text : 'Automated diagnostic functions', textType : 'default' },
+      { id : 9, text : 'Backup power supply available', textType : 'default' },
+      { id : 10, text : 'Compliance with safety standards', textType : 'default' },
+      { id : 11, text : 'Advanced monitoring capabilities', textType : 'default' },
+      { id : 12, text : 'Remote control functionality', textType : 'default' },
+      { id : 13, text : 'Predictive maintenance alerts', textType : 'default' },
+      { id : 14, text : 'Quality assurance protocols', textType : 'default' }
+    ]
+  }
+} )
 </script>
 
 <style scoped>

@@ -35,38 +35,38 @@
 <script setup>
 import { computed } from 'vue'
 
-const props = defineProps({
-  template: {
-    type: Object,
-    required: true,
+const props = defineProps( {
+  template : {
+    type : Object,
+    required : true
   },
-  isSelected: {
-    type: Boolean,
-    default: false,
+  isSelected : {
+    type : Boolean,
+    default : false
   },
-  isHighlighted: {
-    type: Boolean,
-    default: false,
-  },
-})
+  isHighlighted : {
+    type : Boolean,
+    default : false
+  }
+} )
 
 // eslint-disable-next-line no-unused-vars
-const emit = defineEmits(['select', 'edit', 'duplicate', 'delete'])
+const emit = defineEmits( ['select', 'edit', 'duplicate', 'delete'] )
 
-const stepsCount = computed(() => props.template?.steps?.length || 0)
+const stepsCount = computed( () => props.template?.steps?.length || 0 )
 
-const categoryLabel = computed(() => {
+const categoryLabel = computed( () => {
   const category = props.template?.category
-  if (!category) return ''
+  if ( !category ) return ''
   // Handle both string and object formats
   return typeof category === 'object' ? category.name : category
-})
+} )
 
-const assetLabel = computed(() => {
+const assetLabel = computed( () => {
   const a = props.template?.applicable_assets
-  if (!a || a.length === 0) return ''
+  if ( !a || a.length === 0 ) return ''
   return a.length === 1 ? a[0] : `${a.length} assets`
-})
+} )
 </script>
 
 <style scoped>

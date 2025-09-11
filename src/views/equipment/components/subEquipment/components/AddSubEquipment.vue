@@ -115,57 +115,57 @@ import { getEquipmentNodes, createNewNode } from '@/api/equipment.js'
 import { uploadMultipleToMinio } from '@/api/minio.js'
 import FileUploadMultiple from '@/components/FileUpload/FileUploadMultiple.vue'
 
-const formRef = ref(null)
-const labelPosition = ref('top')
-const treeData = ref([])
-const loading = ref(false)
-const error = ref(null)
-const filterText = ref('')
-const treeRef = ref(null)
-const selectedNodeId = ref(null)
-const submitLoading = ref(false)
-const sequenceOrders = ref([])
-const uploadedImages = ref([])
-const uploadedFiles = ref([])
-const uploadedExplosionView = ref([])
+const formRef = ref( null )
+const labelPosition = ref( 'top' )
+const treeData = ref( [] )
+const loading = ref( false )
+const error = ref( null )
+const filterText = ref( '' )
+const treeRef = ref( null )
+const selectedNodeId = ref( null )
+const submitLoading = ref( false )
+const sequenceOrders = ref( [] )
+const uploadedImages = ref( [] )
+const uploadedFiles = ref( [] )
+const uploadedExplosionView = ref( [] )
 
-const props = defineProps({
-  parentId: {
-    type: [Number, String],
-    default: null,
-  },
-})
+const props = defineProps( {
+  parentId : {
+    type : [Number, String],
+    default : null
+  }
+} )
 
-const emit = defineEmits(['close', 'cancel', 'success'])
+const emit = defineEmits( ['close', 'cancel', 'success'] )
 
-const formData = reactive({
-  name: '',
-  code: '',
-  model: '',
-  description: '',
-  parentId: props.parentId,
-  selectedLocationId: null,
-  sequenceOrder: 1,
-  imageList: [],
-  explodedViewDrawing: [],
-  filesList: [],
-})
+const formData = reactive( {
+  name : '',
+  code : '',
+  model : '',
+  description : '',
+  parentId : props.parentId,
+  selectedLocationId : null,
+  sequenceOrder : 1,
+  imageList : [],
+  explodedViewDrawing : [],
+  filesList : []
+} )
 
 watch(
   () => props.parentId,
-  (newParentId, oldParentId) => {
-    if (newParentId !== oldParentId && newParentId !== null) {
+  ( newParentId, oldParentId ) => {
+    if ( newParentId !== oldParentId && newParentId !== null ) {
       formData.parentId = newParentId
       resetFormData()
       fetchSequenceOrders()
     }
   },
-  { immediate: false }
+  { immediate : false }
 )
 
 const treeProps = {
-  children: 'children',
-  label: 'name',
+  children : 'children',
+  label : 'name'
 }
 
 const handleImageListUpdate = images => {
@@ -183,93 +183,93 @@ const handleFilesListUpdate = files => {
   formData.filesList = files
 }
 
-const uploadFilesToServer = async () => {
+const uploadFilesToServer = async() => {
   try {
     let uploadedImages = []
     let uploadedExplosionView = []
     let uploadedFiles = []
 
-    if (formData.imageList.length > 0) {
-      const imageRes = await uploadMultipleToMinio(formData.imageList)
+    if ( formData.imageList.length > 0 ) {
+      const imageRes = await uploadMultipleToMinio( formData.imageList )
       uploadedImages = imageRes.data.uploadedFiles || []
-      formData.imageList = uploadedImages.map(file => file.url)
+      formData.imageList = uploadedImages.map( file => file.url )
     }
 
-    if (formData.explodedViewDrawing.length > 0) {
-      const explosionRes = await uploadMultipleToMinio(formData.explodedViewDrawing)
+    if ( formData.explodedViewDrawing.length > 0 ) {
+      const explosionRes = await uploadMultipleToMinio( formData.explodedViewDrawing )
       uploadedExplosionView = explosionRes.data.uploadedFiles || []
-      formData.explodedViewDrawing = uploadedExplosionView.map(file => file.url)
+      formData.explodedViewDrawing = uploadedExplosionView.map( file => file.url )
     }
 
-    if (formData.filesList.length > 0) {
-      const fileRes = await uploadMultipleToMinio(formData.filesList)
+    if ( formData.filesList.length > 0 ) {
+      const fileRes = await uploadMultipleToMinio( formData.filesList )
       uploadedFiles = fileRes.data.uploadedFiles || []
-      formData.filesList = uploadedFiles.map(file => file.url)
+      formData.filesList = uploadedFiles.map( file => file.url )
     }
 
     return { uploadedImages, uploadedFiles }
-  } catch (err) {
-    throw new Error('File upload failed')
+  } catch ( err ) {
+    throw new Error( 'File upload failed' )
   }
 }
 
-const handleConfirm = async () => {
-  if (!formRef.value) return
+const handleConfirm = async() => {
+  if ( !formRef.value ) return
 
   const isValid = await formRef.value.validate()
-  if (!isValid) return
+  if ( !isValid ) return
 
   submitLoading.value = true
 
   try {
-    if (formData.imageList.length > 0 || formData.filesList.length > 0) {
+    if ( formData.imageList.length > 0 || formData.filesList.length > 0 ) {
       await uploadFilesToServer()
     }
 
     const submissionData = {
-      name: formData.name,
-      code: formData.code,
-      serial_number: formData.model,
-      description: formData.description,
-      node_type_id: 6,
-      parent_id: formData.parentId,
-      location_id: formData.selectedLocationId,
-      sequence_order: Number(formData.sequenceOrder),
-      image_list: formData.imageList,
-      exploded_view_drawing: formData.explodedViewDrawing,
-      file_list: formData.filesList,
+      name : formData.name,
+      code : formData.code,
+      serial_number : formData.model,
+      description : formData.description,
+      node_type_id : 6,
+      parent_id : formData.parentId,
+      location_id : formData.selectedLocationId,
+      sequence_order : Number( formData.sequenceOrder ),
+      image_list : formData.imageList,
+      exploded_view_drawing : formData.explodedViewDrawing,
+      file_list : formData.filesList
     }
 
-    const response = await createNewNode(submissionData)
-    ElMessage.success('Sub Equipment created successfully!')
+    const response = await createNewNode( submissionData )
+    ElMessage.success( 'Sub Equipment created successfully!' )
 
     resetForm()
-    emit('close')
-    emit('success', response.data)
-  } catch (error) {
-    ElMessage.error(`Failed to create sub equipment: ${error.message}`)
+    emit( 'close' )
+    emit( 'success', response.data )
+  } catch ( error ) {
+    ElMessage.error( `Failed to create sub equipment: ${error.message}` )
   } finally {
     submitLoading.value = false
   }
 }
 
 const resetFormData = () => {
-  if (formRef.value) {
+  if ( formRef.value ) {
     formRef.value.resetFields()
   }
 
-  Object.assign(formData, {
-    name: '',
-    code: '',
-    model: '',
-    description: '',
-    parentId: props.parentId,
-    selectedLocationId: null,
-    sequenceOrder: 1,
-    imageList: [],
-    explodedViewDrawing: [],
-    filesList: [],
-  })
+  Object.assign( formData, {
+    name : '',
+    code : '',
+    model : '',
+    description : '',
+    parentId : props.parentId,
+    selectedLocationId : null,
+    sequenceOrder : 1,
+    imageList : [],
+    explodedViewDrawing : [],
+    filesList : []
+  } )
 
   selectedNodeId.value = null
   uploadedImages.value = []
@@ -284,92 +284,92 @@ const resetForm = () => {
 
 const handleCancel = () => {
   resetForm()
-  emit('close')
-  emit('cancel')
+  emit( 'close' )
+  emit( 'cancel' )
 }
 
-const fetchSequenceOrders = async () => {
-  if (!props.parentId) {
+const fetchSequenceOrders = async() => {
+  if ( !props.parentId ) {
     return
   }
 
   try {
-    const equipmentGroupsResponse = await getEquipmentNodes(1, 100, 'sequenceOrder', 'ASC', {
-      node_type_ids: [6],
-      parent_ids: [props.parentId],
-    })
+    const equipmentGroupsResponse = await getEquipmentNodes( 1, 100, 'sequenceOrder', 'ASC', {
+      node_type_ids : [6],
+      parent_ids : [props.parentId]
+    } )
 
     const equipmentGroupsContent = equipmentGroupsResponse.data?.content || []
 
     const sequenceOrdersArray = equipmentGroupsContent
-      .map(item => item.sequence_order)
-      .filter(order => order !== null && order !== undefined && !isNaN(order))
+      .map( item => item.sequence_order )
+      .filter( order => order !== null && order !== undefined && !isNaN( order ) )
 
     sequenceOrders.value = sequenceOrdersArray
 
-    const maxSequenceOrder = sequenceOrdersArray.length > 0 ? Math.max(...sequenceOrdersArray) : 0
+    const maxSequenceOrder = sequenceOrdersArray.length > 0 ? Math.max( ...sequenceOrdersArray ) : 0
     const nextSequenceOrder = maxSequenceOrder + 1
     const maxAllowedSequence = sequenceOrdersArray.length + 1
 
     const finalSequenceOrder = nextSequenceOrder > maxAllowedSequence ? maxAllowedSequence : nextSequenceOrder
 
     formData.sequenceOrder = finalSequenceOrder
-  } catch (err) {
-    ElMessage.error('Failed to load sequence orders')
+  } catch ( err ) {
+    ElMessage.error( 'Failed to load sequence orders' )
   }
 }
 
-const maxSequenceOrder = computed(() => {
+const maxSequenceOrder = computed( () => {
   const calculatedMax = sequenceOrders.value.length + 1
-  return Math.max(calculatedMax, formData.sequenceOrder || 1)
-})
+  return Math.max( calculatedMax, formData.sequenceOrder || 1 )
+} )
 
-const fetchLocationTree = async () => {
+const fetchLocationTree = async() => {
   loading.value = true
   error.value = null
   try {
     const response = await getLocationTree()
 
     let dataArray
-    if (response.data?.data) {
+    if ( response.data?.data ) {
       dataArray = response.data.data
-    } else if (Array.isArray(response.data)) {
+    } else if ( Array.isArray( response.data ) ) {
       dataArray = response.data
-    } else if (response.data) {
+    } else if ( response.data ) {
       dataArray = [response.data]
     } else {
       dataArray = []
     }
 
     treeData.value = dataArray
-  } catch (err) {
+  } catch ( err ) {
     error.value = err.message || 'Failed to load location tree'
-    ElMessage.error('Failed to load location tree')
+    ElMessage.error( 'Failed to load location tree' )
   } finally {
     loading.value = false
   }
 }
 
-watch(filterText, val => {
-  treeRef.value?.filter(val)
-})
+watch( filterText, val => {
+  treeRef.value?.filter( val )
+} )
 
-const filterNode = (value, data) => {
-  if (!value) return true
-  return data.name.toLowerCase().includes(value.toLowerCase())
+const filterNode = ( value, data ) => {
+  if ( !value ) return true
+  return data.name.toLowerCase().includes( value.toLowerCase() )
 }
 
-const handleNodeClick = (data, node) => {
+const handleNodeClick = ( data, node ) => {
   selectedNodeId.value = data.id
   formData.selectedLocationId = data.id
 }
 
-onMounted(() => {
+onMounted( () => {
   fetchLocationTree()
-  if (props.parentId) {
+  if ( props.parentId ) {
     fetchSequenceOrders()
   }
-})
+} )
 </script>
 
 <style scoped>

@@ -124,7 +124,7 @@ const { showSuccess } = useErrorHandler()
 
 // Work Order composable
 const {
-  loading: listLoading,
+  loading : listLoading,
   list,
   total,
   listQuery,
@@ -136,28 +136,28 @@ const {
   handleSizeChange,
   handleCurrentChange,
   toggleRowHighlight,
-  handleDelete: deleteWorkOrder,
-  initializeCommonData,
+  handleDelete : deleteWorkOrder,
+  initializeCommonData
 } = useWorkOrder()
 
 // State
-const downloadLoading = ref(false)
-const currentView = ref('table') // 'table' or 'todo'
+const downloadLoading = ref( false )
+const currentView = ref( 'table' ) // 'table' or 'todo'
 const calendarViewRef = ref()
-const todoViewRef = ref(null)
+const todoViewRef = ref( null )
 
 // Methods
 const handleView = row => {
-  router.push({ name: 'ViewWorkOrder', params: { id: row.id } })
+  router.push( { name : 'ViewWorkOrder', params : { id : row.id }} )
 }
 
 const handleCreate = () => {
-  if (currentView.value === 'todo') {
+  if ( currentView.value === 'todo' ) {
     // For this view, emit create event to TodoView
     todoViewRef.value?.showCreateForm()
   } else {
     // For table view, navigate to separate page
-    router.push({ name: 'NewWorkOrder' })
+    router.push( { name : 'NewWorkOrder' } )
   }
 }
 
@@ -165,12 +165,12 @@ const handleUpdate = row => {
   // Edit work order functionality
 }
 
-const handleDelete = async (row, index) => {
+const handleDelete = async( row, index ) => {
   try {
-    await deleteWorkOrder(row, index)
-    showSuccess(t('workOrder.messages.deleteSuccess'))
-  } catch (error) {
-    console.error('Delete failed:', error)
+    await deleteWorkOrder( row, index )
+    showSuccess( t( 'workOrder.messages.deleteSuccess' ) )
+  } catch ( error ) {
+    console.error( 'Delete failed:', error )
   }
 }
 
@@ -178,7 +178,7 @@ const handleViewChange = async view => {
   currentView.value = view
 
   // Reset filter params that are specific to calendar view
-  if (view !== 'calendar') {
+  if ( view !== 'calendar' ) {
     delete listQuery.start_date_from
     delete listQuery.end_date_to
     listQuery.page = 1
@@ -186,33 +186,33 @@ const handleViewChange = async view => {
   }
 
   // When switching to to-do view, set default status filter for "to-do" tab
-  if (view === 'todo') {
-    updateFilters({ status: 'pending,in_progress' })
-  } else if (view === 'table') {
+  if ( view === 'todo' ) {
+    updateFilters( { status : 'pending,in_progress' } )
+  } else if ( view === 'table' ) {
     // Clear status filter for table view to show all items
-    updateFilters({ status: null })
+    updateFilters( { status : null } )
   }
 }
 
-const handleStatusChange = ({ workOrder, status }) => {
+const handleStatusChange = ( { workOrder, status } ) => {
   // Implement status change API call
-  showSuccess(t('workOrder.messages.statusChanged'))
+  showSuccess( t( 'workOrder.messages.statusChanged' ) )
 }
 
-const handleRefresh = async () => {
+const handleRefresh = async() => {
   try {
     await fetchWorkOrders()
-    showSuccess(t('workOrder.messages.refreshSuccess'))
-  } catch (error) {
-    console.error('Refresh failed:', error)
+    showSuccess( t( 'workOrder.messages.refreshSuccess' ) )
+  } catch ( error ) {
+    console.error( 'Refresh failed:', error )
   }
 }
 
 const handleFilterUpdate = newFilters => {
   // Avoid breaking reactivity of listQuery by mutating its property
-  Object.assign(listQuery, newFilters)
+  Object.assign( listQuery, newFilters )
   // If current view is calendar, trigger calendar to sync its internal events with the newest version of list
-  if (currentView.value === 'calendar') {
+  if ( currentView.value === 'calendar' ) {
     calendarViewRef.value?.refetchEvents()
   } else {
     handleFilter() // Triggers fetch
@@ -223,19 +223,19 @@ const handleDownload = () => {
   // Download functionality to be implemented
 }
 
-const handleCalendarDisplayDateChange = async ({ start_date_from, end_date_to, resolve, reject }) => {
-  Object.assign(listQuery, { start_date_from, end_date_to })
+const handleCalendarDisplayDateChange = async( { start_date_from, end_date_to, resolve, reject } ) => {
+  Object.assign( listQuery, { start_date_from, end_date_to } )
 
   // Set page to -1 and limit to -1 to indicate using non page fetchWorkOrder as calendar don't have table's page concept
   listQuery.page = -1
   listQuery.limit = -1
   try {
     await fetchWorkOrders()
-    resolve(list.value)
-  } catch (e) {
-    reject(e)
-    console.error('Unable to load work orders:', e)
-    ElMessage.error('Unable to load work-orders')
+    resolve( list.value )
+  } catch ( e ) {
+    reject( e )
+    console.error( 'Unable to load work orders:', e )
+    ElMessage.error( 'Unable to load work-orders' )
   }
 }
 
@@ -248,22 +248,22 @@ const handleWorkOrderCreated = async newWorkOrder => {
     await fetchWorkOrders()
 
     // Auto-select the newly created work order in todo view
-    if (todoViewRef.value && newWorkOrder.id) {
+    if ( todoViewRef.value && newWorkOrder.id ) {
       // Give the Vue reactivity system a tick to update the computed properties
       await nextTick()
 
-      const selected = todoViewRef.value.selectWorkOrderById(newWorkOrder.id)
-      if (!selected) {
-        const foundInList = list.value.find(wo => wo.id === newWorkOrder.id)
+      const selected = todoViewRef.value.selectWorkOrderById( newWorkOrder.id )
+      if ( !selected ) {
+        const foundInList = list.value.find( wo => wo.id === newWorkOrder.id )
 
-        if (!foundInList) {
+        if ( !foundInList ) {
           // Try fetching without status filter to see if it's a filtering issue
           const tempStatus = listQuery.status
           listQuery.status = null // Remove status filter temporarily
           await fetchWorkOrders()
-          const foundWithoutFilter = list.value.find(wo => wo.id === newWorkOrder.id)
-          if (!foundWithoutFilter) {
-            console.warn('Work order not found after creation - possible filtering issue')
+          const foundWithoutFilter = list.value.find( wo => wo.id === newWorkOrder.id )
+          if ( !foundWithoutFilter ) {
+            console.warn( 'Work order not found after creation - possible filtering issue' )
           }
           // Restore status filter
           listQuery.status = tempStatus
@@ -276,43 +276,43 @@ const handleWorkOrderCreated = async newWorkOrder => {
     }
 
     // Show success message after everything is updated
-    showSuccess(t('workOrder.messages.createSuccess'))
-  } catch (error) {
-    console.error('Failed to refresh after work order creation:', error)
+    showSuccess( t( 'workOrder.messages.createSuccess' ) )
+  } catch ( error ) {
+    console.error( 'Failed to refresh after work order creation:', error )
     // Still show success since creation succeeded, just list refresh failed
-    showSuccess(t('workOrder.messages.createSuccess'))
+    showSuccess( t( 'workOrder.messages.createSuccess' ) )
   }
 }
 
 const handleWorkOrderUpdated = async updatedWorkOrder => {
   // Update the work order in the list
-  const index = list.value.findIndex(wo => wo.id === updatedWorkOrder.id)
-  if (index !== -1) {
+  const index = list.value.findIndex( wo => wo.id === updatedWorkOrder.id )
+  if ( index !== -1 ) {
     list.value[index] = updatedWorkOrder
   }
-  showSuccess(t('workOrder.messages.updateSuccess'))
+  showSuccess( t( 'workOrder.messages.updateSuccess' ) )
   // Optionally refresh to ensure data consistency with server
   // await fetchWorkOrders()
 }
 
-const handleTabChange = async ({ tab, statusFilter }) => {
+const handleTabChange = async( { tab, statusFilter } ) => {
   // Update the status filter using the new updateFilters method
-  updateFilters({ status: statusFilter })
+  updateFilters( { status : statusFilter } )
 }
 
 // Lifecycle
-onMounted(async () => {
+onMounted( async() => {
   try {
     await initializeCommonData()
     await fetchWorkOrders()
-  } catch (error) {
-    console.error('Failed to initialize work order page:', error)
+  } catch ( error ) {
+    console.error( 'Failed to initialize work order page:', error )
   }
-})
+} )
 
-defineOptions({
-  name: 'WorkOrderManagement',
-})
+defineOptions( {
+  name : 'WorkOrderManagement'
+} )
 </script>
 
 <style scoped lang="scss">

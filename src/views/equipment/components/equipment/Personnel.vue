@@ -41,13 +41,13 @@
 <script setup>
 import { ref, computed } from 'vue'
 
-const searchQuery = ref('')
-const currentPage = ref(1)
-const pageSize = ref(15)
+const searchQuery = ref( '' )
+const currentPage = ref( 1 )
+const pageSize = ref( 15 )
 
 // Random Data
 const tableData = ref(
-  Array.from({ length: 22 }, (_, i) => {
+  Array.from( { length : 22 }, ( _, i ) => {
     const names = [
       'Alice',
       'Bob',
@@ -64,13 +64,13 @@ const tableData = ref(
       'Mona',
       'Nina',
       'Owen',
-      'Paul',
+      'Paul'
     ]
     const name = names[i % names.length]
-    const active = Math.floor(Math.random() * 5)
-    const complete = Math.floor(Math.random() * 20)
-    const failed = Math.floor(Math.random() * 3)
-    const incomplete = Math.floor(Math.random() * 5)
+    const active = Math.floor( Math.random() * 5 )
+    const complete = Math.floor( Math.random() * 20 )
+    const failed = Math.floor( Math.random() * 3 )
+    const incomplete = Math.floor( Math.random() * 5 )
     const total = active + complete + failed + incomplete
 
     return {
@@ -79,22 +79,22 @@ const tableData = ref(
       complete,
       failed,
       incomplete,
-      total,
+      total
     }
-  })
+  } )
 )
 
-const filteredData = computed(() => {
-  if (!searchQuery.value.trim()) return tableData.value
-  return tableData.value.filter(row => row.name.toLowerCase().includes(searchQuery.value.toLowerCase()))
-})
+const filteredData = computed( () => {
+  if ( !searchQuery.value.trim() ) return tableData.value
+  return tableData.value.filter( row => row.name.toLowerCase().includes( searchQuery.value.toLowerCase() ) )
+} )
 
-const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  return filteredData.value.slice(start, start + pageSize.value)
-})
+const paginatedData = computed( () => {
+  const start = ( currentPage.value - 1 ) * pageSize.value
+  return filteredData.value.slice( start, start + pageSize.value )
+} )
 
-function handlePageChange(page) {
+function handlePageChange( page ) {
   currentPage.value = page
 }
 </script>

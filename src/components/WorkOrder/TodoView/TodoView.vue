@@ -133,35 +133,35 @@ import WorkOrderEdit from './WorkOrderEdit.vue'
 import PdfPreviewModal from '../PdfPreview/PdfPreviewModal.vue'
 
 // Props
-const props = defineProps({
-  workOrders: {
-    type: Array,
-    default: () => [],
+const props = defineProps( {
+  workOrders : {
+    type : Array,
+    default : () => []
   },
-  loading: {
-    type: Boolean,
-    default: false,
+  loading : {
+    type : Boolean,
+    default : false
   },
-  filters: {
-    type: Object,
-    default: () => ({}),
+  filters : {
+    type : Object,
+    default : () => ( {} )
   },
-  total: {
-    type: Number,
-    default: 0,
+  total : {
+    type : Number,
+    default : 0
   },
-  currentPage: {
-    type: Number,
-    default: 1,
+  currentPage : {
+    type : Number,
+    default : 1
   },
-  pageSize: {
-    type: Number,
-    default: 10,
-  },
-})
+  pageSize : {
+    type : Number,
+    default : 10
+  }
+} )
 
 // Emits
-const emit = defineEmits([
+const emit = defineEmits( [
   'edit',
   'delete',
   'status-change',
@@ -170,42 +170,42 @@ const emit = defineEmits([
   'work-order-updated',
   'page-change',
   'page-size-change',
-  'tab-change',
-])
+  'tab-change'
+] )
 
 const { t } = useI18n()
 
 // State
-const selectedWorkOrder = ref(null)
-const activeTab = ref('todo')
-const sortBy = ref('priority-desc')
-const currentRightPanelView = ref('detail') // 'detail', 'create', or 'edit'
-const workOrderToEdit = ref(null)
+const selectedWorkOrder = ref( null )
+const activeTab = ref( 'todo' )
+const sortBy = ref( 'priority-desc' )
+const currentRightPanelView = ref( 'detail' ) // 'detail', 'create', or 'edit'
+const workOrderToEdit = ref( null )
 
 // PDF Preview state
-const showPdfPreview = ref(false)
-const pdfPreviewData = ref(null)
+const showPdfPreview = ref( false )
+const pdfPreviewData = ref( null )
 
 // Use pagination from props instead of local state
-const internalCurrentPage = ref(props.currentPage)
-const internalPageSize = ref(props.pageSize)
+const internalCurrentPage = ref( props.currentPage )
+const internalPageSize = ref( props.pageSize )
 
 // Server handles all filtering, sorting, and pagination
 // Use work orders directly from props - no client-side processing needed
-const displayedWorkOrders = computed(() => {
-  return Array.isArray(props.workOrders) ? props.workOrders : []
-})
+const displayedWorkOrders = computed( () => {
+  return Array.isArray( props.workOrders ) ? props.workOrders : []
+} )
 
-const paginationInfo = computed(() => {
+const paginationInfo = computed( () => {
   const total = props.total
-  const start = total === 0 ? 0 : (internalCurrentPage.value - 1) * internalPageSize.value + 1
-  const end = Math.min(internalCurrentPage.value * internalPageSize.value, total)
+  const start = total === 0 ? 0 : ( internalCurrentPage.value - 1 ) * internalPageSize.value + 1
+  const end = Math.min( internalCurrentPage.value * internalPageSize.value, total )
   return {
     start,
     end,
-    total,
+    total
   }
-})
+} )
 
 // Methods
 const selectWorkOrder = workOrder => {
@@ -219,26 +219,26 @@ const handleTabChange = tabName => {
 
   // Emit tab change to parent for server-side filtering
   const statusFilter = tabName === 'todo' ? 'pending,in_progress' : 'completed'
-  emit('tab-change', { tab: tabName, statusFilter })
+  emit( 'tab-change', { tab : tabName, statusFilter } )
 }
 
 const handleSortChange = sortValue => {
   sortBy.value = sortValue
 }
 
-const handleCardAction = ({ action, workOrder }) => {
-  switch (action) {
+const handleCardAction = ( { action, workOrder } ) => {
+  switch ( action ) {
     case 'edit':
-      handleEdit(workOrder)
+      handleEdit( workOrder )
       break
     case 'view':
-      selectWorkOrder(workOrder)
+      selectWorkOrder( workOrder )
       break
     case 'delete':
-      handleDelete(workOrder)
+      handleDelete( workOrder )
       break
     default:
-      console.warn(`Unhandled action: ${action}`, workOrder)
+      console.warn( `Unhandled action: ${action}`, workOrder )
   }
 }
 
@@ -250,11 +250,11 @@ const handleEdit = workOrder => {
 }
 
 const handleDelete = workOrder => {
-  emit('delete', workOrder)
+  emit( 'delete', workOrder )
 }
 
 const handleShare = _workOrder => {
-  ElMessage.success(t('workOrder.messages.shareSuccess'))
+  ElMessage.success( t( 'workOrder.messages.shareSuccess' ) )
 }
 
 const handleExport = async workOrder => {
@@ -262,10 +262,10 @@ const handleExport = async workOrder => {
     // Show PDF preview
     pdfPreviewData.value = workOrder
     showPdfPreview.value = true
-    ElMessage.success('PDF preview opened')
-  } catch (error) {
-    console.error('Export error:', error)
-    ElMessage.error('Failed to open PDF preview. Please try again.')
+    ElMessage.success( 'PDF preview opened' )
+  } catch ( error ) {
+    console.error( 'Export error:', error )
+    ElMessage.error( 'Failed to open PDF preview. Please try again.' )
   }
 }
 
@@ -274,55 +274,55 @@ const handlePdfPreviewClose = () => {
   pdfPreviewData.value = null
 }
 
-const handleStatusChange = ({ workOrder, status }) => {
-  emit('status-change', { workOrder, status })
+const handleStatusChange = ( { workOrder, status } ) => {
+  emit( 'status-change', { workOrder, status } )
 }
 
 const handleAddParts = () => {
   // Implement add parts functionality
-  ElMessage.info(t('workOrder.tracking.addParts'))
+  ElMessage.info( t( 'workOrder.tracking.addParts' ) )
 }
 
 const handleAddTime = () => {
   // Implement add time functionality
-  ElMessage.info(t('workOrder.tracking.addTime'))
+  ElMessage.info( t( 'workOrder.tracking.addTime' ) )
 }
 
 const handleAddCosts = () => {
   // Implement add costs functionality
-  ElMessage.info(t('workOrder.tracking.addCosts'))
+  ElMessage.info( t( 'workOrder.tracking.addCosts' ) )
 }
 
 const handleViewProcedure = () => {
   // Implement view procedure functionality
-  ElMessage.info(t('workOrder.tracking.viewProcedure'))
+  ElMessage.info( t( 'workOrder.tracking.viewProcedure' ) )
 }
 
 const handleAddComment = () => {
-  ElMessage.success(t('workOrder.comments.add'))
+  ElMessage.success( t( 'workOrder.comments.add' ) )
 }
 
 const handlePageChange = page => {
   internalCurrentPage.value = page
-  emit('page-change', page)
+  emit( 'page-change', page )
   selectedWorkOrder.value = null
 }
 
 const handlePageSizeChange = newPageSize => {
   internalPageSize.value = newPageSize
   internalCurrentPage.value = 1
-  emit('page-size-change', newPageSize)
+  emit( 'page-size-change', newPageSize )
   selectedWorkOrder.value = null
 }
 
 watch(
   () => props.workOrders,
   newWorkOrders => {
-    if (newWorkOrders.length > 0 && !selectedWorkOrder.value) {
+    if ( newWorkOrders.length > 0 && !selectedWorkOrder.value ) {
       selectedWorkOrder.value = displayedWorkOrders.value[0]
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
 
 watch(
@@ -341,33 +341,33 @@ watch(
 
 watch(
   () => props.filters,
-  (newFilters, oldFilters) => {
+  ( newFilters, oldFilters ) => {
     const stripPagination = f => {
-      if (!f) return {}
+      if ( !f ) return {}
       const rest = { ...f }
       delete rest.page
       delete rest.limit
       return rest
     }
-    const a = JSON.stringify(stripPagination(oldFilters))
-    const b = JSON.stringify(stripPagination(newFilters))
-    if (a !== b) {
+    const a = JSON.stringify( stripPagination( oldFilters ) )
+    const b = JSON.stringify( stripPagination( newFilters ) )
+    if ( a !== b ) {
       internalCurrentPage.value = 1
-      emit('page-change', 1)
+      emit( 'page-change', 1 )
       selectedWorkOrder.value = null
     }
   },
-  { deep: true }
+  { deep : true }
 )
 
 watch(
   [activeTab, sortBy],
   () => {
     internalCurrentPage.value = 1
-    emit('page-change', 1)
+    emit( 'page-change', 1 )
     selectedWorkOrder.value = null
   },
-  { deep: true }
+  { deep : true }
 )
 
 const showCreateForm = () => {
@@ -378,59 +378,59 @@ const showCreateForm = () => {
 const showDetailView = () => {
   currentRightPanelView.value = 'detail'
   workOrderToEdit.value = null
-  if (!selectedWorkOrder.value && displayedWorkOrders.value.length > 0) {
+  if ( !selectedWorkOrder.value && displayedWorkOrders.value.length > 0 ) {
     selectedWorkOrder.value = displayedWorkOrders.value[0]
   }
 }
 
 const handleWorkOrderCreated = newWorkOrder => {
-  emit('work-order-created', newWorkOrder)
+  emit( 'work-order-created', newWorkOrder )
 }
 
 const handleWorkOrderUpdated = updatedWorkOrder => {
-  const index = displayedWorkOrders.value.findIndex(wo => wo.id === updatedWorkOrder.id)
-  if (index !== -1) {
+  const index = displayedWorkOrders.value.findIndex( wo => wo.id === updatedWorkOrder.id )
+  if ( index !== -1 ) {
     displayedWorkOrders.value[index] = updatedWorkOrder
   }
 
-  if (selectedWorkOrder.value && selectedWorkOrder.value.id === updatedWorkOrder.id) {
+  if ( selectedWorkOrder.value && selectedWorkOrder.value.id === updatedWorkOrder.id ) {
     selectedWorkOrder.value = updatedWorkOrder
   }
 
   workOrderToEdit.value = null
   currentRightPanelView.value = 'detail'
 
-  emit('work-order-updated', updatedWorkOrder)
+  emit( 'work-order-updated', updatedWorkOrder )
 
-  ElMessage.success('Work order updated successfully')
+  ElMessage.success( 'Work order updated successfully' )
 }
 
 const selectWorkOrderById = workOrderId => {
-  const workOrder = displayedWorkOrders.value.find(wo => wo.id === workOrderId)
-  if (workOrder) {
+  const workOrder = displayedWorkOrders.value.find( wo => wo.id === workOrderId )
+  if ( workOrder ) {
     selectedWorkOrder.value = workOrder
     currentRightPanelView.value = 'detail'
     return true
   }
-  console.warn('Work order not found in displayedWorkOrders')
+  console.warn( 'Work order not found in displayedWorkOrders' )
   return false
 }
 
-defineExpose({
+defineExpose( {
   showCreateForm,
   showDetailView,
-  selectWorkOrderById,
-})
+  selectWorkOrderById
+} )
 
-onMounted(() => {
-  if (displayedWorkOrders.value.length > 0) {
+onMounted( () => {
+  if ( displayedWorkOrders.value.length > 0 ) {
     selectedWorkOrder.value = displayedWorkOrders.value[0]
   }
-})
+} )
 
-defineOptions({
-  name: 'TodoView',
-})
+defineOptions( {
+  name : 'TodoView'
+} )
 </script>
 
 <style scoped lang="scss">

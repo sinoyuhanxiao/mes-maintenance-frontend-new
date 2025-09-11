@@ -8,12 +8,12 @@
 </template>
 
 <script setup>
-defineProps({
-  item: {
-    type: Object,
-    required: true,
-  },
-})
+defineProps( {
+  item : {
+    type : Object,
+    required : true
+  }
+} )
 </script>
 
 <style scoped>

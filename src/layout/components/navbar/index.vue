@@ -102,41 +102,41 @@ const toggleSideBar = () => {
   appStore.TOGGLE_SIDEBAR()
 }
 
-const set = reactive({
-  showLogo: computed(() => {
+const set = reactive( {
+  showLogo : computed( () => {
     return settingsStore.sidebarLogo
-  }),
-  layoutMod: computed(() => {
+  } ),
+  layoutMod : computed( () => {
     return settingsStore.layoutMod
-  }),
-  sidebar: computed(() => {
+  } ),
+  sidebar : computed( () => {
     return appStore.sidebar
-  }),
-  avatar: computed(() => {
+  } ),
+  avatar : computed( () => {
     return userStore.avatar
-  }),
-  userName: computed(() => {
+  } ),
+  userName : computed( () => {
     return userStore.name
-  }),
-  device: computed(() => {
+  } ),
+  device : computed( () => {
     return appStore.device
-  }),
-})
+  } )
+} )
 
 // 退出登录
-const logout = async () => {
+const logout = async() => {
   await userStore.LOGIN_OUT()
-  router.push('/login')
+  router.push( '/login' )
   window.location.reload()
 }
 
 const openSettings = () => {
-  emitter.emit('openSettings')
+  emitter.emit( 'openSettings' )
 }
 
-defineOptions({
-  name: 'NavBar',
-})
+defineOptions( {
+  name : 'NavBar'
+} )
 </script>
 
 <style lang="scss" scoped>
