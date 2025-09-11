@@ -30,7 +30,7 @@ export const uploadResource = async( file, stepId ) => {
     data : {
       id : `r-${Date.now()}`,
       name : file.name,
-      url : `https://cdn.example.com/files/${file.name}`,
+      url : `https://cdn.example.com/files/${file.name}`, // TODO: modify this for minio in the future
       mime : file.type
     }
   }

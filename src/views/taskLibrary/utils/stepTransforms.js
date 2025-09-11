@@ -1,4 +1,8 @@
-// Utility helpers for Template Designer step data transformations
+/**
+ * Utility helpers for Template Designer step data transformations.
+ * Provides functions to map, transform, and format step configuration data
+ * between backend API and designer formats.
+ */
 
 export const getDefaultStepConfig = stepType => {
   const configs = {
@@ -32,7 +36,7 @@ export const getDefaultStepConfig = stepType => {
       max_files : 5,
       max_file_size_mb : 10
     }
-    // service type is disabled in backend; keep shape for completeness
+    // service type is disabled temporarily
     // service: {
     //   kind: 'service',
     //   service_type: 'Replace',
@@ -44,6 +48,11 @@ export const getDefaultStepConfig = stepType => {
   return configs[stepType] || {}
 }
 
+/**
+ * Maps a backend API step type to the corresponding designer step type.
+ * @param {string} apiType - The step type string from the backend API.
+ * @returns {string} The mapped designer step type.
+ */
 export const mapApiStepTypeToDesigner = apiType => {
   const typeMap = {
     numeric : 'number',
@@ -236,7 +245,17 @@ export const transformLimitsFromBackend = backendLimits => {
   return result
 }
 
-// Format limits for display (consistent with BaseStepCard format)
+/**
+ * Formats number limits as a human-readable string for display.
+ * @param {Object} limits - The limits object with `lower`, `upper`, and `inclusive` properties.
+ * @param {number|string} [limits.lower] - The lower bound value.
+ * @param {number|string} [limits.upper] - The upper bound value.
+ * @param {Object} [limits.inclusive] - Inclusivity flags for bounds.
+ * @param {boolean} [limits.inclusive.lower] - Whether the lower bound is inclusive.
+ * @param {boolean} [limits.inclusive.upper] - Whether the upper bound is inclusive.
+ * @param {string} [unit=''] - The unit to display with the limits.
+ * @returns {string} The formatted limits string, or 'No limits set' if not defined.
+ */
 export const formatLimitsText = ( limits, unit = '' ) => {
   if ( !limits ) return 'No limits set'
 
