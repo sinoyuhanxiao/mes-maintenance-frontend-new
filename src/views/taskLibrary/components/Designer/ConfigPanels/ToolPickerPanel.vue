@@ -77,7 +77,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { Search } from '@element-plus/icons-vue'
-import { getAvailableTools } from '@/api/taskLibrary'
+import { getAvailableTools } from '@/api/task-library'
 
 const props = defineProps( {
   visible : {

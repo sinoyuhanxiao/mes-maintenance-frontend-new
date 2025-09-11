@@ -6,7 +6,7 @@ import {
   updateTemplate,
   deleteTemplate,
   publishTemplate
-} from '@/api/taskLibrary'
+} from '@/api/task-library'
 
 export const useTaskLibraryStore = defineStore( 'taskLibrary', {
   state : () => ( {

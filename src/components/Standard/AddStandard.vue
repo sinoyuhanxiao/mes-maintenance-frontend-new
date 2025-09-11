@@ -30,7 +30,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import CardTable from '../Tables/CardTable.vue'
-import { getStandards } from '@/api/taskLibrary.js'
+import { getStandards } from '@/api/task-library.js'
 
 // Define emits
 const emit = defineEmits( ['close', 'addStandards'] )

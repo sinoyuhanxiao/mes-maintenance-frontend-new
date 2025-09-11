@@ -231,13 +231,13 @@ export const asyncRoutes = [
     name : 'SystemManagement',
     component : Layout,
     redirect : '/system-management/user-management',
-    meta : { title : 'router.systemManagement', icon : 'map', noCache : true },
+    meta : { title : 'router.systemManagement', icon : 'users', noCache : true },
     children : [
       {
         path : 'user-management',
         component : () => import( '@/views/user/index.vue' ),
         name : 'UserManagement',
-        meta : { title : 'router.userManagement', icon : 'users', noCache : true }
+        meta : { title : 'router.userManagement', icon : 'users', noCache : false }
       },
       {
         path : 'team-management',
@@ -261,7 +261,7 @@ export const asyncRoutes = [
         path : 'user-detail/:id',
         component : () => import( '@/views/user/components/UserDetail.vue' ),
         name : 'UserDetail',
-        meta : { title : 'router.userDetail', icon : 'users', noCache : true }
+        meta : { title : 'router.userDetail', icon : 'users', noCache : true, hidden : true }
       }
     ]
   },

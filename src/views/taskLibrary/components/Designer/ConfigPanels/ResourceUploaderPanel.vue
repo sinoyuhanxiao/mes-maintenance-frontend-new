@@ -115,7 +115,7 @@
 import { ref, watch } from 'vue'
 import { UploadFilled, Close, Document, Picture, Files } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { uploadResource } from '@/api/taskLibrary'
+import { uploadResource } from '@/api/task-library'
 
 const props = defineProps( {
   visible : {

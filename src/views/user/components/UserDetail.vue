@@ -4,15 +4,36 @@
 
     <div class="left-container">
       <div class="profile-preview">
+        <!--              <WorkOrderImage :image-path="scope.row.image ? [scope.row.image] : null" />-->
         <el-image
-          :src="'https://api.dicebear.com/7.x/initials/svg?seed=' + user?.name"
-          style="width: 150px; height: 150px; border-radius: 50%"
+          :src="
+            user?.image !== null
+              ? user?.image
+              : 'https://api.dicebear.com/7.x/initials/svg?seed=' +
+                encodeURIComponent(user?.first_name + ' ' + user?.last_name)
+          "
           fit="cover"
-        />
+          :preview-src-list="[
+            user?.image !== null
+              ? user?.image
+              : 'https://api.dicebear.com/7.x/initials/svg?seed=' +
+                encodeURIComponent(user?.first_name + ' ' + user?.last_name),
+          ]"
+          class="circular-image"
+          :z-index="2000"
+          preview-teleported
+          style="width: 150px; height: 150px; border-radius: 50%"
+        >
+          <template #error>
+            <div class="image-slot-circle">
+              <el-icon><Picture /></el-icon>
+            </div>
+          </template>
+        </el-image>
 
         <div class="user-thumb">
           <div class="user-name">
-            {{ user?.name }}
+            {{ user?.first_name + ' ' + user?.last_name }}
           </div>
 
           <div v-for="role in user?.roles" :key="role.id" class="user-text">
@@ -25,7 +46,7 @@
 
       <div class="actions-group">
         <div style="flex: 1">
-          <el-button :icon="Edit" type="warning" @click="handleWIP">{{ t('common.edit') }}</el-button>
+          <el-button :icon="Edit" type="info" @click="handleEdit">{{ t('common.edit') }}</el-button>
         </div>
 
         <div>
@@ -45,7 +66,7 @@
       <!-- Personal Info Section -->
       <div class="detail-section">
         <el-descriptions class="general-details-descriptions" :column="4">
-          <el-descriptions-item :label="t('common.id')" :span="1">
+          <el-descriptions-item :label="'ID'" :span="1">
             <template #default>
               <div style="display: flex; align-items: center">
                 <span>{{ user?.id }}</span>
@@ -53,10 +74,18 @@
             </template>
           </el-descriptions-item>
 
-          <el-descriptions-item :label="t('common.name')" :span="1">
+          <el-descriptions-item :label="t('user.firstName')" :span="1">
             <template #default>
               <div style="display: flex; align-items: center">
-                <span>{{ user?.name }}</span>
+                <span>{{ user?.first_name }}</span>
+              </div>
+            </template>
+          </el-descriptions-item>
+
+          <el-descriptions-item :label="t('user.lastName')" :span="1">
+            <template #default>
+              <div style="display: flex; align-items: center">
+                <span>{{ user?.last_name }}</span>
               </div>
             </template>
           </el-descriptions-item>
@@ -64,7 +93,9 @@
           <el-descriptions-item :label="t('user.department')" :span="1">
             <template #default>
               <div style="display: flex; align-items: center">
-                <span>{{ user?.department?.name }}</span>
+                <el-text>
+                  {{ findDepartmentById(user?.department_id)?.name || '-' }}
+                </el-text>
               </div>
             </template>
           </el-descriptions-item>
@@ -93,7 +124,7 @@
             </template>
           </el-descriptions-item>
 
-          <el-descriptions-item :label="t('user.assignedTeam')" :span="2">
+          <el-descriptions-item :label="t('user.assignedTeam')" :span="2" v-if="user?.teams?.length > 0">
             <template #default>
               <div style="display: flex; align-items: center">
                 <el-tag
@@ -121,8 +152,8 @@
       <!-- Role cards -->
       <div class="detail-section">
         <div v-for="role in user?.roles || []" :key="role.id" class="el-col el-col-24 is-guttered card-container">
-          <div class="info-card">
-            <el-text size="large">
+          <div class="role-card">
+            <el-text size="large" style="color: var(--el-color-primary)">
               {{ role.name }}
             </el-text>
             <!-- Hide permission matrix table for now -->
@@ -183,38 +214,66 @@
     </div>
 
     <div class="padding-container" />
+
+    <el-dialog :title="t('user.form.editUser')" v-model="isUserFormDialogVisible" top="10vh" width="50%">
+      <div v-loading="isFormProcessing">
+        <UserForm
+          :user="user"
+          :role-options="roleOptions"
+          :department-options="departmentOptions"
+          @confirm="handleUserSubmit"
+          @cancel="() => (isUserFormDialogVisible = false)"
+          @update:loading="isFormProcessing = $event"
+        />
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getUserById } from '@/views/user/components/userService'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { getAllDepartments, getAllRoles, getUserById } from '@/api/user.js'
+import { ElMessageBox } from 'element-plus'
 // import RolePermissionContent from '@/views/user/components/RolePermissionContent.vue'
-import { Edit, SwitchButton } from '@element-plus/icons-vue'
+import { Edit, Picture, SwitchButton } from '@element-plus/icons-vue'
 import { useUserStore } from '@/store'
 import { useI18n } from 'vue-i18n'
+import UserForm from '@/views/user/components/UserForm.vue'
 
 const { t } = useI18n()
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
-// const currentUserId = parseInt( userStore.uid )
-const viewedUserId = parseInt( route.params.id )
-
+const roleOptions = ref( [] )
+const departmentOptions = ref( [] )
+const isFormProcessing = ref( false )
+const isUserFormDialogVisible = ref( false )
 const user = ref( null )
 
+const viewedUserId = ref( null )
+
 onMounted( async() => {
-  user.value = await getUserById( viewedUserId )
+  // 1. Use ID from URL if available, otherwise fallback to current user
+  const routeId = parseInt( route.params.id )
+  viewedUserId.value = isNaN( routeId ) ? parseInt( userStore.uid ) : routeId
+
+  await loadUser( viewedUserId.value )
+
+  const roles = await getAllRoles()
+  const departments = await getAllDepartments()
+  roleOptions.value = roles
+  departmentOptions.value = departments
 } )
 
-// const showActions = computed( () => currentUserId === viewedUserId )
-const handleWIP = async() => {
-  try {
-    ElMessage( 'This feature is still work in progress.' )
-  } catch ( e ) {}
+function handleEdit( user ) {
+  isUserFormDialogVisible.value = true
+}
+
+function handleUserSubmit() {
+  isUserFormDialogVisible.value = false
+  loadUser( viewedUserId.value )
 }
 
 const handleLogout = async() => {
@@ -223,13 +282,21 @@ const handleLogout = async() => {
       type : 'warning'
     } )
 
-    // TODO: Implement later
-    // 退出登录
-
     await userStore.LOGIN_OUT()
     await router.push( '/login' )
     window.location.reload()
   } catch ( error ) {}
+}
+
+function findDepartmentById( id ) {
+  return departmentOptions.value.find( dep => dep.id === id ) || null
+}
+
+async function loadUser( id ) {
+  try {
+    const response = await getUserById( id )
+    user.value = response.data
+  } catch ( e ) {}
 }
 </script>
 
@@ -299,6 +366,14 @@ const handleLogout = async() => {
   border: 1px solid var(--el-border-color-light);
   border-radius: 8px;
   margin-top: 16px;
+}
+
+.role-card {
+  padding: 16px;
+  border: 1px solid var(--el-color-primary-light-8);
+  border-radius: 8px;
+  margin-top: 16px;
+  background-color: var(--el-color-primary-light-9);
 }
 
 .role-permission-card {

@@ -27,6 +27,9 @@ export const ENV_CONFIG = {
   MINIO_URL : env.VITE_MINIO_URL || 'http://localhost:9000',
   DEFAULT_BUCKET_NAME : env.VITE_DEFAULT_BUCKET_NAME || 'default-bucket',
 
+  // User Client Configuration
+  USER_CLIENT_URL : env.VITE_USER_CLIENT_URL,
+
   // Build Configuration
   LEGACY : env.VITE_LEGACY === 'true' || env.VITE_LEGACY === true,
   DEBUG : env.VITE_DEBUG === 'true' || env.VITE_DEBUG === true,

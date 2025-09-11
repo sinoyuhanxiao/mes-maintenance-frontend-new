@@ -53,3 +53,12 @@ export const deactivateLocation = id => http.request( { method : 'post', url : `
 export const activateLocation = id => http.request( { method : 'post', url : `/location/${id}/activate` } )
 
 export const getLocationTypes = () => http.request( { method : 'get', url : '/location/location-type' } )
+
+export const searchLocations = ( search = {}, page = 1, size = 10, sortField = 'createdAt', direction = 'DESC' ) => {
+  return http.request( {
+    method : 'post',
+    url : '/location/search',
+    data : search,
+    params : { page, size, sortField, direction }
+  } )
+}

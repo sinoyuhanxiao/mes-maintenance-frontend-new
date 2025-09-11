@@ -21,16 +21,15 @@ class HttpRequest {
     return ENV_UTILS.getApiBaseUrl()
   }
 
-  getConfig() {
-    const config = {
-      baseURL : this.baseUrl,
+  getConfig( overrideBaseUrl ) {
+    return {
+      baseURL : overrideBaseUrl || this.baseUrl,
       timeout : this.timeout,
       withCredentials : this.withCredentials,
       headers : {
         'Content-Type' : 'application/json;charset=UTF-8'
       }
     }
-    return config
   }
 
   getParams( payload ) {
@@ -182,8 +181,9 @@ class HttpRequest {
 
   request( options ) {
     const instance = axios.create()
-    const baseOpt = this.getConfig()
+    const baseOpt = this.getConfig( options.baseURL )
     const params = Object.assign( {}, baseOpt, this.getParams( options ) )
+
     this.setInterceptors( instance )
     return instance( params )
   }

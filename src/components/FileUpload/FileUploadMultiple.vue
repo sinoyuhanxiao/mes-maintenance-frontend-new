@@ -411,6 +411,11 @@ const clearExistingFromNewLists = () => {
   fileList.value = fileList.value.filter( file => !file.isExisting )
 }
 
+const resetNewFileLists = () => {
+  imageList.value = []
+  fileList.value = []
+}
+
 // Watch for changes in existing props to reset removed items
 watch(
   () => [props.existingImageList, props.existingFileList],
@@ -439,7 +444,8 @@ onMounted( () => {
 // Expose reset function for parent components
 defineExpose( {
   resetRemovedItems,
-  clearExistingFromNewLists
+  clearExistingFromNewLists,
+  resetNewFileLists
 } )
 </script>
 

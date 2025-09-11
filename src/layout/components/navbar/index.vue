@@ -48,7 +48,7 @@
 
         <template #dropdown>
           <el-dropdown-menu>
-            <router-link to="/user/index">
+            <router-link :to="{ name: 'UserDetail', params: { id: userStore.uid } }">
               <el-dropdown-item>{{ $t('userCenter.myAccount') }}</el-dropdown-item>
             </router-link>
             <router-link to="/">

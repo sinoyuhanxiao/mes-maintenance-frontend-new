@@ -100,13 +100,24 @@ export const getEquipmentById = equipmentId => {
 /**
  * Search equipment nodes by criteria.
  * @param {Object} searchCriteria - Search criteria object.
+ * @param {number} page
+ * @param {number} size
+ * @param {string} sortField
+ * @param {"ASC"|"DESC"} direction
  * @returns {Promise} API response with equipment nodes.
  */
-export const searchEquipmentNodes = searchCriteria => {
+export const searchEquipmentNodes = (
+  searchCriteria = {},
+  page = 1,
+  size = 10,
+  sortField = 'createdAt',
+  direction = 'DESC'
+) => {
   return http.request( {
     method : 'post',
     url : '/equipment/node-search',
-    data : searchCriteria
+    data : searchCriteria,
+    params : { page, size, sortField, direction }
   } )
 }
 

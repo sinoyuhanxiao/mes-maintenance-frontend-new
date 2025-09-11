@@ -4,6 +4,7 @@
     @close="$emit('close')"
     :title="isEdit ? t('user.editCertificate') : t('user.addCertificate')"
     width="50%"
+    top="10vh"
     :show-close="false"
   >
     <template #header>
@@ -35,6 +36,7 @@
       </el-form-item>
       <div class="image-container">
         <FileUploadMultiple
+          ref="certificateFormImageUploadRef"
           :image-label="t('common.imageUpload')"
           @update:imageList="handleUpdate('imageList', $event)"
           @update:removedExistingImages="handleUpdate('removeImage', $event)"
@@ -80,6 +82,8 @@ const rules = ref( {
     // or: { required: true, message: t('user.validation.issueDateRequired'), trigger: 'change' }
   ]
 } )
+
+const certificateFormImageUploadRef = ref()
 
 const certificateForm = reactive( {
   id : null,

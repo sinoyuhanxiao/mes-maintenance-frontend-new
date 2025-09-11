@@ -66,11 +66,11 @@ import { formatDateObjectToOffsetTime } from '@/utils/datetime.js'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { RefreshRight, Search } from '@element-plus/icons-vue'
 import { createShift, deleteShift, getAllShifts, updateShift } from '@/api/shift'
-import { getUsers } from '@/views/user/components/userService'
 import ShiftList from '@/views/shift/components/shiftList.vue'
 import ShiftForm from '@/views/shift/components/shiftForm.vue'
 import { useI18n } from 'vue-i18n'
 import MesLayout from '@/components/MesLayout/src/index.vue'
+import { getAllUsers } from '@/api/user'
 
 const { t } = useI18n()
 
@@ -151,7 +151,8 @@ async function loadShifts() {
 
 async function loadUserMap() {
   try {
-    const list = await getUsers()
+    const response = await getAllUsers( 1, 1000 )
+    const list = response.data.content
     const map = {}
     list.forEach( u => {
       map[u.id] = u

@@ -475,7 +475,9 @@ export default {
     createdBy : '创建人',
     updatedAt : '更新时间',
     updatedBy : '更新人',
-    actions : '操作'
+    actions : '操作',
+    code : '编号',
+    type : '类型'
   },
   errors : {
     badRequest : '请求参数错误',
@@ -521,12 +523,16 @@ export default {
     menu2 : '菜单2'
   },
   user : {
+    firstName : '名',
+    lastName : '姓',
     unknownUser : '未知用户',
     department : '部门',
     assignedTeam : '所属班组',
     lastVisited : '最近登陆时间',
     loginCredential : '登陆信息',
     userInformation : '用户信息',
+    employeeNumber : '员工编号',
+    searchByName : '搜索用户姓名',
     managerAssignTeamMembershipHint : '经理不能被分配为班组成员',
     managerAssignTeamLeadershipHint : '经理不能被分配为班组组长',
     supervisorAssignTeamMembershipHint : '主管不能被分配为班组成员',
@@ -562,7 +568,8 @@ export default {
       editButton : '编辑',
       deleteButton : '删除',
       leader : '组长',
-      certificate : '证书'
+      certificate : '证书',
+      profileImage : '用户头像'
     },
     form : {
       newUser : '创建用户',
@@ -597,10 +604,10 @@ export default {
       userDeletedSuccess : '用户删除成功',
       teamsUpdatedSuccess : '班组更新成功',
       teamsUpdateFailed : '班组更新失败',
-      selfDeactivationSuccess : '你的账号已经成功注销，登出后将无法登入。',
-      selfDeactivationWarning : '您正在停用自己的账号。确定要继续吗？',
-      selfDeletionWarning : '您正在删除自己的账号及其关联的班组。确定要继续吗？',
-      deletionConfirmation : '确定要删除用户“{name}”及其班组关联吗？',
+      selfDeactivationSuccess : '你的账号已经成功注销，登出后将无法登入.',
+      selfDeactivationWarning : '您正在停用自己的账号。确定要继续吗?',
+      selfDeletionWarning : '您正在删除自己的账号及其关联的班组。确定要继续吗?',
+      deletionConfirmation : '确定要删除用户“{name}”及其班组关联吗?',
       deletionCanceled : '删除已取消',
       selfDeletionCanceled : '自我删除已取消',
       statusUpdatedSuccess : '状态更新成功',
@@ -610,7 +617,7 @@ export default {
       deletionTitle : '删除',
       deactivationFailed : '注销账号失败',
       pleaseCorrectErrors : '请修正错误！',
-      passwordNotMatchOrFewerCharacters : '密码不匹配或少于4个字符！',
+      passwordNotMatchOrFewerCharacters : '密码不匹配或少于4个字符!',
       yourAccountIsDeletedAndUnableToLogin : '你的账户已被删除，登出后将无法登入',
       deletionFailed : '删除失败',
       errorLoadingUsersData : '加载用户数据出错'
@@ -618,55 +625,42 @@ export default {
     validation : {
       nameRequired : '姓名是必填项',
       roleRequired : '角色是必填项',
-      usernameRequired : '用户名是必填项',
-      usernameMinLength : '用户名至少需要4个字符',
       passwordRequired : '请输入密码',
-      passwordMinLength : '密码至少需要4个字符',
-      passwordsNotMatch : '密码不匹配或为空！',
+      passwordsNotMatch : '密码不匹配',
       statusRequired : '激活状态是必填项',
       usernameExists : '该用户名已存在',
       emailRequired : '邮箱是必填项',
       emailInvalid : '邮箱格式不正确',
       phoneNumberRequired : '电话号码是必填项',
-      phoneNumberFormat : '电话号码格式不正确',
-      departmentRequired : '部门为必选项'
+      phoneNumberFormat : '电话号码必须为国际格式（例如：+1234567890），后跟10到15位数字',
+      departmentRequired : '部门为必选项',
+      passwordMinLength : '密码至少需要8个字符.',
+      passwordUppercase : '必须包含至少一个大写字母.',
+      passwordLowercase : '必须包含至少一个小写字母.',
+      passwordNumber : '必须包含至少一个数字.',
+      passwordSpecialChar : '必须包含至少一个特殊字符.',
+      confirmPasswordRequired : '请确认您的密码',
+      passwordMismatch : '两次输入的密码不一致',
+      employeeNumberRequired : '请输入员工编号',
+      nameNoNumbers : '不能包含数字.',
+      nameNoSpecialChars : '不能有符号.',
+      nameNoSpaces : '不能有空格.',
+      employeeNumberFormat : '员工编号只能包含字母, 数字, 连字符(-) 或下划线(_)'
     }
   },
   team : {
+    editTeam : '编辑班组',
+    newTeam : '新增班组',
+    assignedLocation : '负责设备',
+    assignedEquipment : '负责区域',
     team : '班组',
-    table : {
-      id : '编号',
-      name : '班组名称',
-      type : '类型',
-      leader : '负责人',
-      parentTeam : '上级班组',
-      level : '层级',
-      members : '成员',
-      forms : '分配表单',
-      description : '描述',
-      status : '状态',
-      createdAt : '创建时间',
-      updatedAt : '更新时间',
-      actions : '操作'
-    },
-    form : {
-      newTeam : '新建班组',
-      editTeam : '编辑班组',
-      name : '班组名称',
-      type : '类型',
-      leader : '班组负责人',
-      parentTeam : '上级班组',
-      description : '描述',
-      members : '班组成员',
-      forms : '分配表单',
-      status : '状态',
-      cancelButton : '取消',
-      confirmButton : '确认',
-      selectLeaderPlaceholder : '请选择负责人',
-      selectMembersPlaceholder : '请选择成员',
-      selectParentPlaceholder : '请选择上级班组',
-      selectFormsPlaceholder : '请选择表单'
-    },
+    code : '编号',
+    name : '名称',
+    type : '类型',
+    leader : '组长',
+    parentTeam : '上级班组',
+    level : '层级',
+    members : '成员',
     status : {
       active : '启用',
       inactive : '停用'
@@ -685,6 +679,7 @@ export default {
     },
     validation : {
       nameRequired : '请输入班组名称',
+      codeRequired : '请输入班组编号',
       typeRequired : '请选择班组类型',
       leaderRequired : '请选择负责人',
       parentTeamRequired : '请选择上级班组',
@@ -693,9 +688,14 @@ export default {
     placeholder : {
       teamName : '请输入班组名称',
       description : '请输入描述',
-      selectLeader : '请选择负责人',
       selectType : '请选择班组类型',
-      selectStatus : '请选择状态'
+      selectStatus : '请选择状态',
+      selectLeader : '请选择负责人',
+      selectMembers : '请选择成员',
+      selectParent : '请选择上级班组',
+      selectForms : '请选择表单',
+      selectLocation : '请选择负责区域',
+      selectEquipment : '请选择负责设备'
     }
   },
   shift : {
@@ -710,8 +710,8 @@ export default {
   },
   userCenter : {
     myAccount : '我的账号',
-    logout : '登 出',
-    home : '首 页'
+    logout : '登出',
+    home : '首页'
   },
   settings : {
     title : '维护系统配置',
