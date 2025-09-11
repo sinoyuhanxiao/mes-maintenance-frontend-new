@@ -113,9 +113,9 @@
             <template v-if="scope.row.team_locations_id && scope.row.team_locations_id.length">
               <div class="tag-list">
                 <LocationTag
-                    v-for="id in scope.row.team_locations_id"
-                    :key="id"
-                    :location="locationMap[String(id)] || null"
+                  v-for="id in scope.row.team_locations_id"
+                  :key="id"
+                  :location="locationMap[String(id)] || null"
                 />
               </div>
             </template>
@@ -130,9 +130,9 @@
             <template v-if="scope.row.team_equipment_nodes_id && scope.row.team_equipment_nodes_id.length">
               <div class="tag-list">
                 <EquipmentTag
-                    v-for="id in scope.row.team_equipment_nodes_id"
-                    :key="id"
-                    :equipment="equipmentMap[String(id)] || null"
+                  v-for="id in scope.row.team_equipment_nodes_id"
+                  :key="id"
+                  :equipment="equipmentMap[String(id)] || null"
                 />
               </div>
             </template>
@@ -145,11 +145,11 @@
         <el-table-column prop="code" :label="t('team.code')" width="150" sortable="custom" align="center" />
 
         <el-table-column
-            prop="description"
-            :label="t('common.description')"
-            width="400"
-            sortable="custom"
-            align="center"
+          prop="description"
+          :label="t('common.description')"
+          width="400"
+          sortable="custom"
+          align="center"
         />
 
         <el-table-column :label="t('common.actions')" fixed="right" align="center" header-align="center" width="160">
@@ -434,7 +434,7 @@ onMounted( async() => {
   }
 }
 
- .tag-list {
+.tag-list {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;

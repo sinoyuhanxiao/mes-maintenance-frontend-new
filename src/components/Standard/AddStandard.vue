@@ -30,7 +30,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import CardTable from '../Tables/CardTable.vue'
-import { getStandards } from '@/api/task-library.js'
+import { searchStandards } from '@/api/task-library.js'
 
 // Define emits
 const emit = defineEmits( ['close', 'addStandards'] )
@@ -39,7 +39,7 @@ const emit = defineEmits( ['close', 'addStandards'] )
 const standardTemplates = ref( [] )
 const totalItems = ref( 0 )
 const currentPage = ref( 1 )
-const pageSize = ref( 10 )
+const pageSize = ref( 100 )
 const loading = ref( false )
 
 // Track selected standards
@@ -54,25 +54,25 @@ const selectedStandardsList = computed( () => {
 const fetchStandards = async( page = 1 ) => {
   loading.value = true
   try {
-    const params = {
+    const filter = {} // Add filter fields if needed, e.g., { keyword, category }
+    const pagination = {
       page,
-      limit : pageSize.value
+      size : pageSize.value
+      // Add sortField and direction if needed
     }
 
-    const response = await getStandards( params )
-    standardTemplates.value = response.data || []
+    const response = await searchStandards( filter, pagination )
+    standardTemplates.value = response.data.content || []
     totalItems.value = response.total || 0
     currentPage.value = page
   } catch ( error ) {
     console.error( 'Error fetching standards:', error )
-    // You might want to show an error message to the user here
     standardTemplates.value = []
     totalItems.value = 0
   } finally {
     loading.value = false
   }
 }
-
 // Handle page changes
 const handlePageChange = page => {
   // Clear selections when changing pages if needed

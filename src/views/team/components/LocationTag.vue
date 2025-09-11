@@ -36,15 +36,14 @@ const { t } = useI18n()
 
       <div v-if="location.image_list?.length > 0">
         <el-image
-            :src="location.image_list[0]"
-            fit="cover"
-            :preview-src-list="location.image_list"
-            class="location-image-preview"
-            :z-index="2000"
-            preview-teleported
+          :src="location.image_list[0]"
+          fit="cover"
+          :preview-src-list="location.image_list"
+          class="location-image-preview"
+          :z-index="2000"
+          preview-teleported
         />
       </div>
-
     </template>
 
     <template #reference>

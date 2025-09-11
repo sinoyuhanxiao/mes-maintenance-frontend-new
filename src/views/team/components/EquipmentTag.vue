@@ -43,6 +43,4 @@ const { t } = useI18n()
   </el-popover>
 </template>
 
-<style scoped>
-
-</style>
+<style scoped></style>
