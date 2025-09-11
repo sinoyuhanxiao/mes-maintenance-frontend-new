@@ -1,4 +1,4 @@
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { ElMessage, ElNotification } from 'element-plus'
 import {
   searchStandards,
@@ -25,57 +25,25 @@ export function useStandards() {
     totalPages : 0
   } )
 
-  // Since API returns all data at once, we'll use client-side pagination for display
-  const filteredstandards = computed( () => {
-    return standards.value
-  } )
-
-  // Return all standards since server now handles pagination
-  const paginatedStandards = computed( () => {
-    return standards.value || []
-  } )
-
-  // standard operations - using server-side filtering (API doesn't support pagination)
+  // Standard operations - server-side filtering, pagination, and sorting
   const loadstandards = async( params = {} ) => {
+    loading.value = true
     try {
-      loading.value = true
-
-      // Build filter object for server-side filtering
       const filter = {}
       if ( filters.value.search ) filter.keyword = filters.value.search
       if ( filters.value.category ) filter.category = filters.value.category
-      // Note: module filtering not supported by API according to spec
 
-      // Prepare pagination parameters
       const paginationParams = {
-        page : pagination.value.currentPage, // Use 1-based indexing (no conversion needed)
+        page : pagination.value.currentPage,
         size : pagination.value.pageSize
       }
 
-      const response = await searchStandards( { ...filter, ...params }, paginationParams )
-      const standardsData = response.data || []
+      const { data } = await searchStandards( { ...filter, ...params }, paginationParams )
+      const { content = [], totalElements = 0, totalPages = 0 } = data
 
-      // Ensure consistent id field for all standards (based on API spec, should already use 'id')
-      standardsData.forEach( standard => {
-        if ( standard._id && !standard.id ) {
-          standard.id = standard._id
-        }
-      } )
-
-      standards.value = standardsData
-      // Handle pagination: if server provides pagination metadata, use it; otherwise calculate from data
-      const serverTotal = response.total || response.totalElements
-      const serverTotalPages = response.totalPages
-
-      if ( serverTotal && serverTotal > standardsData.length ) {
-        // Server has more data than what was returned - use server pagination
-        pagination.value.total = serverTotal
-        pagination.value.totalPages = serverTotalPages || Math.ceil( serverTotal / pagination.value.pageSize )
-      } else {
-        // Server returned all data - use client-side pagination
-        pagination.value.total = standardsData.length
-        pagination.value.totalPages = Math.ceil( standardsData.length / pagination.value.pageSize )
-      }
+      standards.value = content
+      pagination.value.total = totalElements
+      pagination.value.totalPages = totalPages
     } catch ( error ) {
       ElMessage.error( 'Failed to load standards' )
       console.error( 'Failed to load standards:', error )
@@ -89,7 +57,7 @@ export function useStandards() {
       const response = await getStandard( id )
       const standard = response.data
       currentstandard.value = standard
-      ElMessage.success( 'Safety measure loaded successfully' )
+      ElMessage.success( 'Standard loaded successfully' )
       return standard
     } catch ( error ) {
       ElMessage.error( 'Failed to load standard' )
@@ -102,14 +70,10 @@ export function useStandards() {
     try {
       const response = await createStandardApi( standardData )
       const newstandard = response.data
-      // Ensure consistent id field
-      if ( newstandard._id && !newstandard.id ) {
-        newstandard.id = newstandard._id
-      }
       standards.value.push( newstandard )
       ElNotification( {
         title : 'Success',
-        message : 'Safety measure created successfully',
+        message : 'Standard created successfully',
         type : 'success'
       } )
       return newstandard
@@ -125,11 +89,6 @@ export function useStandards() {
       const response = await updateStandardApi( id, standardData )
       const updatedstandard = response.data
 
-      // Ensure consistent id field
-      if ( updatedstandard._id && !updatedstandard.id ) {
-        updatedstandard.id = updatedstandard._id
-      }
-
       // Update in local array
       const index = standards.value.findIndex( sm => getStandardId( sm ) === id )
       if ( index !== -1 ) {
@@ -141,7 +100,7 @@ export function useStandards() {
         currentstandard.value = updatedstandard
       }
 
-      ElMessage.success( 'Safety measure updated successfully' )
+      ElMessage.success( 'Standard updated successfully' )
       return updatedstandard
     } catch ( error ) {
       ElMessage.error( 'Failed to update standard' )
@@ -167,7 +126,7 @@ export function useStandards() {
 
       ElNotification( {
         title : 'Success',
-        message : 'Safety measure deleted successfully',
+        message : 'Standard deleted successfully',
         type : 'success'
       } )
     } catch ( error ) {
@@ -241,7 +200,7 @@ export function useStandards() {
     const errors = []
 
     if ( !standard.name || standard.name.trim().length === 0 ) {
-      errors.push( 'Safety measure name is required' )
+      errors.push( 'Standard name is required' )
     }
 
     if ( !standard.description || standard.description.trim().length === 0 ) {
@@ -249,7 +208,7 @@ export function useStandards() {
     }
 
     if ( !standard.items || standard.items.length === 0 ) {
-      errors.push( 'Safety measure must have at least one rule' )
+      errors.push( 'Standard must have at least one item' )
     }
 
     // Validate each item
@@ -272,8 +231,6 @@ export function useStandards() {
     // State
     loading,
     standards,
-    filteredstandards,
-    paginatedStandards,
     currentstandard,
     filters,
     pagination,

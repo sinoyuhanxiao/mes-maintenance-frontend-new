@@ -497,10 +497,10 @@ import {
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 // Native drag and drop implementation
-import { useTaskLibrary } from '@/composables/useTaskLibrary'
+import { useTaskLibrary } from '@/composables/designer/useTaskLibrary'
 import { getTaskTemplateById } from '@/api/task-library'
-import { useDesignerStateCache } from '@/composables/useDesignerStateCache'
-import { useDesignerTour } from '@/composables/useDesignerTour'
+import { useDesignerStateCache } from '@/composables/designer/useDesignerStateCache'
+import { useDesignerTour } from '@/composables/designer/useDesignerTour'
 import { useAppStore, useSettingsStore, useTagsViewStore } from '@/store'
 import { getEquipmentTree } from '@/api/equipment.js'
 import { getAllCategories } from '@/api/common.js'

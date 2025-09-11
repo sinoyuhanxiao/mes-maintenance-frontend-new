@@ -4,12 +4,7 @@ import {
   getTaskTemplateById,
   createTaskTemplate,
   updateTaskTemplate,
-  deleteTaskTemplate,
-  getTemplates,
-  getTemplate,
-  createTemplate,
-  updateTemplate,
-  publishTemplate
+  deleteTaskTemplate
 } from '@/api/task-library'
 
 export const useTaskLibraryStore = defineStore( 'taskLibrary', {
@@ -37,9 +32,6 @@ export const useTaskLibraryStore = defineStore( 'taskLibrary', {
 
   getters : {
     filteredTemplates : state => {
-      // Since we're now doing server-side filtering via API,
-      // we return all templates as they're already filtered
-      // Ensure we always return an array
       return Array.isArray( state.templates ) ? state.templates : []
     },
     // Returns unique, non-empty template categories
@@ -104,42 +96,15 @@ export const useTaskLibraryStore = defineStore( 'taskLibrary', {
           filter
         )
 
-        // Handle API response structure
-        if ( response.data && response.data.content ) {
-          // New API format: response.data.content contains the templates array
-          const content = response.data.content || []
-          this.templates = Array.isArray( content ) ? content.map( this.transformApiTemplate ) : []
-          this.pagination.total = response.data.totalElements || 0
-        } else if ( response.data && response.data.data ) {
-          // Alternative nested format: response.data.data.content
-          const content = response.data.data.content || []
-          this.templates = Array.isArray( content ) ? content.map( this.transformApiTemplate ) : []
-          this.pagination.total = response.data.data.totalElements || 0
-        } else {
-          // Fallback to legacy format (already in correct format)
-          const data = response.data || []
-          this.templates = Array.isArray( data ) ? data : []
-          this.pagination.total = response.total || ( Array.isArray( data ) ? data.length : 0 )
-        }
+        // Handle API response: response.data.content contains the templates array
+        const content = response.data.content || []
+        this.templates = Array.isArray( content ) ? content.map( this.transformApiTemplate ) : []
+        this.pagination.total = response.data.totalElements || 0
       } catch ( error ) {
         console.error( 'Failed to fetch templates:', error )
-        // Fallback to legacy API on error
-        try {
-          const fallbackResponse = await getTemplates( {
-            ...params,
-            page : this.pagination.page,
-            limit : this.pagination.size
-          } )
-          const fallbackData = fallbackResponse.data || []
-          this.templates = Array.isArray( fallbackData ) ? fallbackData : []
-          this.pagination.total = fallbackResponse.total || ( Array.isArray( fallbackData ) ? fallbackData.length : 0 )
-        } catch ( fallbackError ) {
-          console.error( 'All APIs failed:', fallbackError )
-          // Ensure templates is always an array even on complete failure
-          this.templates = []
-          this.pagination.total = 0
-          throw error
-        }
+        this.templates = []
+        this.pagination.total = 0
+        throw error
       } finally {
         this.loading = false
       }
@@ -149,27 +114,12 @@ export const useTaskLibraryStore = defineStore( 'taskLibrary', {
       this.templateDetailLoading = true
       try {
         const response = await getTaskTemplateById( id )
-        // Handle API response structure
-        if ( response.data && response.data.data ) {
-          // API format: response.data.data contains the template object
-          this.currentTemplate = response.data.data
-          return response.data.data
-        } else {
-          // Fallback to legacy format: response.data contains the template directly
-          this.currentTemplate = response.data
-          return response.data
-        }
+        // Handle API response: response.data contains the template
+        this.currentTemplate = response.data
+        return response.data
       } catch ( error ) {
         console.error( 'Failed to fetch template:', error )
-        // Fallback to legacy API on error
-        try {
-          const fallbackResponse = await getTemplate( id )
-          this.currentTemplate = fallbackResponse.data
-          return fallbackResponse.data
-        } catch ( fallbackError ) {
-          console.error( 'All APIs failed:', fallbackError )
-          throw error
-        }
+        throw error
       } finally {
         this.templateDetailLoading = false
       }
@@ -178,18 +128,11 @@ export const useTaskLibraryStore = defineStore( 'taskLibrary', {
     async createNewTemplate( templateData ) {
       this.loading = true
       try {
-        // Use the new backend API for creating task templates
+        // Create task template via API
         const response = await createTaskTemplate( templateData )
 
-        // Handle the response structure from the backend
-        let createdTemplate
-        if ( response.data?.data ) {
-          createdTemplate = response.data.data
-        } else {
-          createdTemplate = response.data
-        }
-
-        // Transform the created template to match frontend expectations
+        // Handle response: response.data contains the created template
+        const createdTemplate = response.data
         const transformedTemplate = this.transformApiTemplate( createdTemplate )
 
         // Add to templates list and set as current
@@ -199,16 +142,7 @@ export const useTaskLibraryStore = defineStore( 'taskLibrary', {
         return transformedTemplate
       } catch ( error ) {
         console.error( 'Failed to create template:', error )
-        // Fallback to legacy API if the new one fails
-        try {
-          const fallbackResponse = await createTemplate( templateData )
-          this.templates.unshift( fallbackResponse.data )
-          this.currentTemplate = fallbackResponse.data
-          return fallbackResponse.data
-        } catch ( fallbackError ) {
-          console.error( 'Fallback create API also failed:', fallbackError )
-          throw error
-        }
+        throw error
       } finally {
         this.loading = false
       }
@@ -217,26 +151,8 @@ export const useTaskLibraryStore = defineStore( 'taskLibrary', {
     async updateCurrentTemplate( templateData ) {
       if ( !this.currentTemplate ) return
 
-      this.loading = true
-      try {
-        const response = await updateTemplate( this.currentTemplate.template_id, templateData )
-
-        // Update in templates list
-        const index = this.templates.findIndex( t => t.template_id === this.currentTemplate.template_id )
-        if ( index !== -1 ) {
-          this.templates[index] = { ...this.templates[index], ...response.data }
-        }
-
-        // Update current template
-        this.currentTemplate = { ...this.currentTemplate, ...response.data }
-
-        return response.data
-      } catch ( error ) {
-        console.error( 'Failed to update template:', error )
-        throw error
-      } finally {
-        this.loading = false
-      }
+      // Use the unified updateTemplateById method
+      return await this.updateTemplateById( this.currentTemplate.template_id || this.currentTemplate.id, templateData )
     },
 
     async updateTemplateById( templateId, templateData ) {
@@ -264,18 +180,11 @@ export const useTaskLibraryStore = defineStore( 'taskLibrary', {
           }
         }
 
-        // Use the real API for updating templates with original template for comparison
+        // Update template via API with original template for comparison
         const response = await updateTaskTemplate( templateId, templateData, originalTemplate )
 
-        // Handle API response structure
-        let updatedTemplate
-        if ( response.data?.data ) {
-          updatedTemplate = response.data.data
-        } else {
-          updatedTemplate = response.data
-        }
-
-        // Transform the updated template to match frontend expectations
+        // Handle response: response.data contains the updated template
+        const updatedTemplate = response.data
         const transformedTemplate = this.transformApiTemplate( updatedTemplate )
 
         // Update in templates list
@@ -295,14 +204,7 @@ export const useTaskLibraryStore = defineStore( 'taskLibrary', {
         return transformedTemplate
       } catch ( error ) {
         console.error( 'Failed to update template:', error )
-        // Fallback to legacy API if the new one fails
-        try {
-          const fallbackResponse = await updateTemplate( templateId, templateData )
-          return fallbackResponse.data
-        } catch ( fallbackError ) {
-          console.error( 'Fallback update API also failed:', fallbackError )
-          throw error
-        }
+        throw error
       } finally {
         this.loading = false
       }
@@ -322,31 +224,6 @@ export const useTaskLibraryStore = defineStore( 'taskLibrary', {
         }
       } catch ( error ) {
         console.error( 'Failed to delete template:', error )
-        throw error
-      } finally {
-        this.loading = false
-      }
-    },
-
-    async publishTemplateById( id ) {
-      this.loading = true
-      try {
-        const response = await publishTemplate( id )
-
-        // Update status in templates list
-        const index = this.templates.findIndex( t => t.template_id === id )
-        if ( index !== -1 ) {
-          this.templates[index].status = 'published'
-        }
-
-        // Update current template if it matches
-        if ( this.currentTemplate?.template_id === id ) {
-          this.currentTemplate.status = 'published'
-        }
-
-        return response.data
-      } catch ( error ) {
-        console.error( 'Failed to publish template:', error )
         throw error
       } finally {
         this.loading = false

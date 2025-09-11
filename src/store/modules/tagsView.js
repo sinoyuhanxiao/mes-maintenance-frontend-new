@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { clearDesignerCacheByPath } from '@/composables/useDesignerStateCache'
+import { clearDesignerCacheByPath } from '@/composables/designer/useDesignerStateCache'
 
 const useTagsViewStore = defineStore( {
   id : 'tagsView',

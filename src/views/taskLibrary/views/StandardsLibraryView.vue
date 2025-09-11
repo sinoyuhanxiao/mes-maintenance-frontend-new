@@ -51,7 +51,7 @@
           <el-skeleton :rows="3" animated />
         </div>
 
-        <div v-else-if="paginatedStandards.length === 0" class="empty-list">
+        <div v-else-if="standards.length === 0" class="empty-list">
           <el-empty description="No standards found" :image-size="80" />
         </div>
 
@@ -71,7 +71,7 @@
           <!-- standard Cards List -->
           <div class="standards-container">
             <standardCard
-              v-for="standard in paginatedStandards"
+              v-for="standard in standards"
               :key="getStandardId(standard)"
               :standard="standard"
               :is-selected="selectedstandardId === getStandardId(standard)"
@@ -352,14 +352,13 @@ import {
   Close
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { useStandards } from '@/composables/useStandards'
+import { useStandards } from '@/composables/designer/useStandards'
 import standardCard from '../components/Library/StandardCard.vue'
 
 const settingsStore = useSettingsStore()
 const {
   loading,
   standards,
-  paginatedStandards,
   loadstandards,
   createStandard,
   updateStandard,

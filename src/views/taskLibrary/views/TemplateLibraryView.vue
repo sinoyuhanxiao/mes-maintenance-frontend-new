@@ -469,7 +469,7 @@ import {
   Tools
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { useTaskLibrary } from '@/composables/useTaskLibrary'
+import { useTaskLibrary } from '@/composables/designer/useTaskLibrary'
 import { getEquipmentTree } from '@/api/equipment.js'
 import { getAllCategories } from '@/api/common.js'
 import TemplateCard from '../components/Library/TemplateCard.vue'
