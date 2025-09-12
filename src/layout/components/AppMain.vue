@@ -24,7 +24,6 @@ const tagsViewStore = useTagsViewStore()
 
 const key = computed( () => route.path )
 const cachedViews = computed( () => {
-  console.log( '[AppMain] Current cached views:', tagsViewStore.cachedViews )
   return tagsViewStore.cachedViews
 } )
 
