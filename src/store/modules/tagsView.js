@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { clearDesignerCacheByPath } from '@/composables/designer/useDesignerStateCache'
 
 const useTagsViewStore = defineStore( {
   id : 'tagsView',
@@ -50,18 +51,19 @@ const useTagsViewStore = defineStore( {
         } )
       )
     },
+
+    UPDATE_VISITED_VIEW_TITLE( path, newTitle ) {
+      const view = this.visitedViews.find( v => v.path === path )
+      if ( view ) {
+        view.title = newTitle
+      }
+    },
     ADD_CACHED_VIEW( view ) {
-      console.log( '🏷️ ADD_CACHED_VIEW called with:', { name : view.name, meta : view.meta, noCache : view.meta?.noCache } )
       if ( this.cachedViews.includes( view.name ) ) {
-        console.log( '🏷️ View already cached:', view.name )
         return
       }
       if ( !view.meta.noCache ) {
-        console.log( '🏷️ Adding to cache:', view.name )
         this.cachedViews.push( view.name )
-        console.log( '🏷️ Current cached views:', this.cachedViews )
-      } else {
-        console.log( '🏷️ Not caching (noCache=true):', view.name )
       }
     },
 
@@ -69,6 +71,10 @@ const useTagsViewStore = defineStore( {
       for ( const [i, v] of this.visitedViews.entries() ) {
         if ( v.path === view.path ) {
           this.visitedViews.splice( i, 1 )
+          // Clear designer state cache for this path if it's a designer route
+          if ( view.path && view.path.includes( '/maintenance-library/designer' ) ) {
+            clearDesignerCacheByPath( view.path )
+          }
           break
         }
       }
@@ -79,6 +85,12 @@ const useTagsViewStore = defineStore( {
     },
 
     DEL_OTHERS_VISITED_VIEWS( view ) {
+      // Clear designer cache for all views except current and affix
+      this.visitedViews.forEach( v => {
+        if ( !v.meta.affix && v.path !== view.path && v.path && v.path.includes( '/maintenance-library/designer' ) ) {
+          clearDesignerCacheByPath( v.path )
+        }
+      } )
       this.visitedViews = this.visitedViews.filter( v => {
         return v.meta.affix || v.path === view.path
       } )
@@ -93,6 +105,12 @@ const useTagsViewStore = defineStore( {
     },
 
     DEL_ALL_VISITED_VIEWS() {
+      // Clear designer cache for all non-affix views
+      this.visitedViews.forEach( v => {
+        if ( !v.meta.affix && v.path && v.path.includes( '/maintenance-library/designer' ) ) {
+          clearDesignerCacheByPath( v.path )
+        }
+      } )
       const affixTags = this.visitedViews.filter( tag => tag.meta.affix )
       this.visitedViews = affixTags
     },

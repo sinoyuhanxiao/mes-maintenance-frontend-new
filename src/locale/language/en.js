@@ -272,7 +272,7 @@ export default {
       addTime : 'Add Time Log',
       addCosts : 'Add Other Costs',
       viewProcedure : 'View Procedure',
-      viewSafetyMeasures : 'View Safety Measures',
+      viewstandards : 'View standards',
       viewTimeLogs : 'View Time Logs',
       viewPartsUsage : 'View Parts Usage'
     },

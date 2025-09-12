@@ -63,7 +63,7 @@ const fullName = computed( () =>
 </script>
 
 <style scoped>
-.role-list{
+.role-list {
   padding-left: 10px;
 }
 </style>

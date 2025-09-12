@@ -310,7 +310,7 @@ export default {
       addTime : '添加时间记录',
       addCosts : '添加其他费用',
       viewProcedure : '查看程序',
-      viewSafetyMeasures : '查看安全措施',
+      viewstandards : '查看安全措施',
       viewTimeLogs : '查看时间记录',
       viewPartsUsage : '查看零件使用记录'
     },

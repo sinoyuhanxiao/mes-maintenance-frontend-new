@@ -23,7 +23,9 @@ const route = useRoute()
 const tagsViewStore = useTagsViewStore()
 
 const key = computed( () => route.path )
-const cachedViews = computed( () => tagsViewStore.cachedViews )
+const cachedViews = computed( () => {
+  return tagsViewStore.cachedViews
+} )
 
 const props = defineProps( {
   needTagsView : {

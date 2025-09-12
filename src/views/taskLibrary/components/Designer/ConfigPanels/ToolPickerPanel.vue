@@ -47,7 +47,10 @@
 
       <!-- Selected Tools -->
       <div v-if="localSelectedTools.length > 0" class="selected-section">
-        <h4>Selected Tools ({{ localSelectedTools.length }})</h4>
+        <div class="selected-section-header">
+          <h4>Selected Tools ({{ localSelectedTools.length }})</h4>
+          <el-button type="text" size="small" @click="clearAllTools" class="clear-all-btn"> Clear All </el-button>
+        </div>
         <div class="selected-tools">
           <el-tag
             v-for="tool in getSelectedToolObjects()"
@@ -76,8 +79,9 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { debounce } from 'lodash-unified'
 import { Search } from '@element-plus/icons-vue'
-import { getAvailableTools } from '@/api/task-library'
+import { searchTools } from '@/api/resources'
 
 const props = defineProps( {
   visible : {
@@ -103,6 +107,8 @@ const emit = defineEmits( ['save', 'close'] )
 const searchQuery = ref( '' )
 const availableTools = ref( [] )
 const localSelectedTools = ref( [] )
+// Cache full metadata for selected tools so search does not hide them
+const selectedToolCache = ref( new Map() )
 const saveLoading = ref( false )
 // eslint-disable-next-line vue/no-dupe-keys
 const loading = ref( false )
@@ -111,11 +117,20 @@ const loading = ref( false )
 watch(
   () => props.selectedTools,
   newTools => {
-    // Handle both array of IDs and array of objects
+    // Normalize to numeric IDs to avoid string/number mismatches
     if ( newTools.length > 0 && typeof newTools[0] === 'object' ) {
-      localSelectedTools.value = newTools.map( tool => tool.tool_id )
+      localSelectedTools.value = newTools.map( tool => {
+        const id = Number( tool.tool_id )
+        // Seed/refresh cache with provided metadata
+        selectedToolCache.value.set( id, {
+          tool_id : id,
+          name : tool.name,
+          spec : tool.spec || ''
+        } )
+        return id
+      } )
     } else {
-      localSelectedTools.value = [...newTools]
+      localSelectedTools.value = newTools.map( id => Number( id ) )
     }
   },
   { immediate : true }
@@ -142,6 +157,12 @@ const toggleTool = tool => {
   if ( isSelected ) {
     removeSelectedTool( tool.tool_id )
   } else {
+    // Cache metadata so selected list is not affected by search
+    selectedToolCache.value.set( Number( tool.tool_id ), {
+      tool_id : Number( tool.tool_id ),
+      name : tool.name,
+      spec : tool.spec || ''
+    } )
     addSelectedTool( tool.tool_id )
   }
 }
@@ -154,10 +175,29 @@ const addSelectedTool = toolId => {
 
 const removeSelectedTool = toolId => {
   localSelectedTools.value = localSelectedTools.value.filter( id => id !== toolId )
+  selectedToolCache.value.delete( Number( toolId ) )
+}
+
+const clearAllTools = () => {
+  localSelectedTools.value = []
+  selectedToolCache.value.clear()
 }
 
 const getSelectedToolObjects = () => {
-  return availableTools.value.filter( tool => localSelectedTools.value.includes( tool.tool_id ) )
+  // Build selected list from cache to avoid coupling with availableTools filtering
+  return localSelectedTools.value.map( id => {
+    const cached = selectedToolCache.value.get( Number( id ) )
+    if ( cached ) return cached
+    // Fallback: try to find in currently loaded available tools
+    const found = availableTools.value.find( t => Number( t.tool_id ) === Number( id ) )
+    if ( found ) {
+      const obj = { tool_id : Number( found.tool_id ), name : found.name, spec : found.spec || '' }
+      selectedToolCache.value.set( obj.tool_id, obj )
+      return obj
+    }
+    // Last resort: minimal object
+    return { tool_id : Number( id ), name : `Tool #${id}`, spec : '' }
+  } )
 }
 
 const handleSave = () => {
@@ -179,14 +219,49 @@ const handleSave = () => {
 const loadTools = async() => {
   loading.value = true
   try {
-    const response = await getAvailableTools()
-    availableTools.value = response.data
+    const response = await searchTools( 1, 20, 'name', 'ASC', {
+      keyword : searchQuery.value || null
+    } )
+    const list = response?.data?.content || []
+    // Normalize backend payload to the panel's expected structure
+    availableTools.value = list.map( item => ( {
+      tool_id : Number( item.id ),
+      name : item.name,
+      // Use code primarily; fallback to tool class name
+      spec : item.code || ( item.tool_class && item.tool_class.name ) || ''
+    } ) )
+    // Refresh cache entries for selected tools found in current page
+    availableTools.value.forEach( t => {
+      if ( localSelectedTools.value.includes( Number( t.tool_id ) ) ) {
+        selectedToolCache.value.set( Number( t.tool_id ), {
+          tool_id : Number( t.tool_id ),
+          name : t.name,
+          spec : t.spec || ''
+        } )
+      }
+    } )
   } catch ( error ) {
-    console.error( 'Failed to load tools:', error )
+    console.error( 'Tool load failed:', error )
+    availableTools.value = []
   } finally {
     loading.value = false
   }
 }
+
+// Debounced server-side search when keyword changes
+const debouncedSearch = debounce( () => {
+  // Only query when dialog is visible to avoid unnecessary calls
+  if ( props.visible ) {
+    loadTools()
+  }
+}, 300 )
+
+watch(
+  () => searchQuery.value,
+  () => {
+    debouncedSearch()
+  }
+)
 
 // Load tools when dialog opens
 watch(
@@ -217,12 +292,34 @@ onMounted( () => {
   margin-bottom: 8px;
 }
 
+.selected-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
 .selected-section h4,
 .available-section h4 {
   margin: 0 0 12px 0;
   color: #303133;
   font-size: 14px;
   font-weight: 600;
+}
+
+.selected-section-header h4 {
+  margin: 0;
+}
+
+.clear-all-btn {
+  color: #f56c6c;
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.clear-all-btn:hover {
+  color: #f56c6c;
+  background-color: rgba(245, 108, 108, 0.1);
 }
 
 .selected-tools {

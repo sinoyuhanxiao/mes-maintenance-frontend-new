@@ -1,6 +1,6 @@
 <template>
   <div class="checkbox-step-preview">
-    <el-checkbox :model-value="step.config?.default || false" disabled :size="step.config?.element_size || 'default'">
+    <el-checkbox v-model="currentValue" :disabled="!interactive" :size="step.config?.element_size || 'default'">
       <span v-if="step.required" class="required-asterisk">*</span>{{ step.label || 'Confirmation required' }}
     </el-checkbox>
     <div v-if="step.description && step.description.trim()" class="step-description">
@@ -10,6 +10,8 @@
 </template>
 
 <script setup>
+import { ref, watch } from 'vue'
+
 // eslint-disable-next-line no-unused-vars
 const props = defineProps( {
   step : {
@@ -19,8 +21,26 @@ const props = defineProps( {
   previewMode : {
     type : Boolean,
     default : true
+  },
+  interactive : {
+    type : Boolean,
+    default : false
   }
 } )
+
+// Reactive state for user input
+const currentValue = ref( props.step.config?.default || false )
+
+// Watch for prop changes to sync initial values
+watch(
+  () => props.step.config?.default,
+  newValue => {
+    if ( !props.interactive ) {
+      currentValue.value = newValue || false
+    }
+  },
+  { immediate : true }
+)
 </script>
 
 <style scoped>

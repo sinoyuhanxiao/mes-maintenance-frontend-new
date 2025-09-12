@@ -1139,6 +1139,7 @@
     "angular-animate",
     "htmlparser",
     "es6-promisify",
+
     "copy-paste",
     "gulp-task-listing",
     "check-types",

@@ -24,12 +24,7 @@
       <div v-if="showLimits && limits" class="limits-display">
         <div class="limits-info">
           <el-icon><DataAnalysis /></el-icon>
-          <span class="limits-text">
-            Range:
-            <strong>{{ limits.lower ?? 'No min' }}</strong> -
-            <strong>{{ limits.upper ?? 'No max' }}</strong>
-            {{ unit ? unit : '' }}
-          </span>
+          <span class="limits-text"> Range: {{ formatLimitsText(limits, unit) }} </span>
         </div>
 
         <div v-if="isOutOfRange" class="out-of-range-warning">
@@ -51,6 +46,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { DataAnalysis, Warning, Aim } from '@element-plus/icons-vue'
+import { formatLimitsText } from 'src/views/taskLibrary/utils/stepTransforms'
 
 const props = defineProps( {
   step : {

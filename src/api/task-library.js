@@ -1,185 +1,124 @@
 import http from '@/utils/request'
-// Placeholder functions for backend integration
-// These will be replaced with actual HTTP calls once backend is ready
+import { transformTemplateForBackend, transformTemplateForUpdate } from '@/views/taskLibrary/utils/templateTransforms'
+import { getAvailableTools, uploadResource } from '@/views/taskLibrary/utils/mockData'
 
-// Template CRUD operations
-export const getTemplates = async params => {
-  // return http.request({ method: 'get', url: '/maintenance-library/templates', params })
-  await new Promise( resolve => setTimeout( resolve, 500 ) )
-  return {
-    data : [
-      {
-        template_id : '#65421',
-        name : 'Monthly Freezer PM',
-        status : 'published',
-        estimated_minutes : 45,
-        description :
-          'Conduct monthly preventive maintenance on freezer equipment to ensure reliable operation and food safety. Tasks include inspecting electrical connections, cleaning coils and filters, checking compressor performance, verifying thermostat accuracy, and documenting any issues.',
-        category : 'Preventative',
-        asset : 'Steam Peeler',
-        version : { major : 1, minor : 0 },
-        created_at : '2025-08-20T10:00:00Z',
-        updated_at : '2025-08-20T10:00:00Z'
-      },
-      {
-        template_id : '#23412',
-        name : 'Weekly Equipment Check',
-        status : 'draft',
-        estimated_minutes : 30,
-        description :
-          'Carry out a weekly routine inspection of equipment to check for proper operation, cleanliness, safety compliance, and early signs of wear or malfunction.',
-        category : 'Inspection',
-        asset : 'Freezer',
-        version : { major : 1, minor : 0 },
-        created_at : '2025-08-19T14:30:00Z',
-        updated_at : '2025-08-19T14:30:00Z'
-      }
-    ],
-    total : 2
+/**
+ * Search task templates with pagination and filtering.
+ * @param {number} page - Page number
+ * @param {number} size - Items per page
+ * @param {string} sortField - Sort field
+ * @param {string} direction - Sort direction (ASC/DESC)
+ * @param {Object} filter - Filter criteria
+ * @returns {Promise} API response with paginated templates
+ */
+export const searchTaskTemplates = ( page = 1, size = 10, sortField = 'createdAt', direction = 'DESC', filter = {} ) => {
+  return http.request( {
+    method : 'post',
+    url : '/task/templates/search',
+    params : {
+      page,
+      size,
+      sortField,
+      direction
+    },
+    data : filter
+  } )
+}
+
+/**
+ * Fetch a task template by its ID.
+ * @param {string} id - Template ID
+ * @returns {Promise} API response with template data
+ */
+export const getTaskTemplateById = id => {
+  return http.request( {
+    method : 'get',
+    url : `/task/template/${id}`
+  } )
+}
+
+/**
+ * Update a task template by its ID.
+ * @param {string} id - Template ID
+ * @param {Object} frontendData - Template data
+ * @param {Object} originalTemplate - Original template for comparison
+ * @returns {Promise} API response with updated template
+ */
+export const updateTaskTemplate = ( id, frontendData, originalTemplate = null ) => {
+  // Validate template ID
+  if ( !id || id === 'undefined' || id === 'null' ) {
+    throw new Error( `Invalid template ID provided: ${id}` )
   }
+  const backendPayload = transformTemplateForUpdate( frontendData, originalTemplate )
+  return http.request( {
+    method : 'patch',
+    url : `/task/template/${id}`,
+    data : backendPayload
+  } )
 }
 
-export const getTemplate = async id => {
-  // return http.request({ method: 'get', url: `/maintenance-library/templates/${id}` })
-  await new Promise( resolve => setTimeout( resolve, 500 ) )
-  return {
-    data : {
-      template_id : id,
-      name : 'Monthly Freezer PM',
-      description : 'Monthly freezer preventive maintenance inspection',
-      category : 'PM',
-      applicable_assets : ['asset:freezer#2'],
-      version : { major : 1, minor : 0 },
-      estimated_minutes : 45,
-      status : 'draft',
-      created_at : '2025-08-20T10:00:00Z',
-      created_by : 37,
-      updated_at : '2025-08-20T10:00:00Z',
-      updated_by : 37,
-      steps : [
-        {
-          step_id : '11111111-1111-4111-8111-111111111111',
-          order : 1,
-          type : 'inspection',
-          label : 'Door gasket condition',
-          placeholder : '',
-          description : 'Check if door gasket is intact and properly sealed.',
-          required : true,
-          required_image : false,
-          relevant_resources : [],
-          relevant_tools : [{ tool_id : 't-001', name : 'Flashlight' }],
-          config : {
-            kind : 'inspection',
-            choices : ['pass', 'fail'],
-            default : 'fail',
-            require_comment_on_fail : true,
-            require_photo_on_fail : true,
-            button_style : {
-              size : 'large',
-              type : 'primary'
-            }
-          }
-        }
-      ]
-    }
-  }
+/**
+ * Create a new task template.
+ * @param {Object} frontendData - Template data
+ * @returns {Promise} API response with created template
+ */
+export const createTaskTemplate = frontendData => {
+  const backendPayload = transformTemplateForBackend( frontendData )
+  return http.request( {
+    method : 'post',
+    url : '/task/template',
+    data : backendPayload
+  } )
 }
 
-export const createTemplate = async data => {
-  // return http.request({ method: 'post', url: '/maintenance-library/templates', data })
-  await new Promise( resolve => setTimeout( resolve, 500 ) )
-  return {
-    data : {
-      template_id : Date.now().toString(),
-      ...data,
-      status : 'draft',
-      version : { major : 1, minor : 0 },
-      created_at : new Date().toISOString(),
-      updated_at : new Date().toISOString(),
-      steps : []
-    }
-  }
+/**
+ * Delete a task template by its ID.
+ * @param {string} id - Template ID
+ * @returns {Promise} API response confirming deletion
+ */
+export const deleteTaskTemplate = id => {
+  return http.request( {
+    method : 'delete',
+    url : `/task/template/${id}`
+  } )
 }
 
-export const updateTemplate = async( id, data ) => {
-  // return http.request({ method: 'put', url: `/maintenance-library/templates/${id}`, data })
-  await new Promise( resolve => setTimeout( resolve, 500 ) )
-  return {
-    data : {
-      template_id : id,
-      ...data,
-      updated_at : new Date().toISOString()
-    }
-  }
-}
-
-export const deleteTemplate = async id => {
-  // return http.request({ method: 'delete', url: `/maintenance-library/templates/${id}` })
-  await new Promise( resolve => setTimeout( resolve, 500 ) )
-  return { success : true }
-}
-
-// Additional operations
-export const publishTemplate = async id => {
-  // return http.request({ method: 'post', url: `/maintenance-library/templates/${id}/publish` })
-  await new Promise( resolve => setTimeout( resolve, 500 ) )
-  return { data : { template_id : id, status : 'published' }}
-}
-
-// Keep this here as extensible for the future
-export const getTemplateVersions = async id => {
-  // return http.request({ method: 'get', url: `/maintenance-library/templates/${id}/versions` })
-  await new Promise( resolve => setTimeout( resolve, 500 ) )
-  return {
-    data : [{ version : '1.0', created_at : '2025-08-20T10:00:00Z' }]
-  }
-}
-
-// Tools and resources (for step configuration)
-export const getAvailableTools = async() => {
-  await new Promise( resolve => setTimeout( resolve, 300 ) )
-  return {
-    data : [
-      { tool_id : 't-001', name : 'Flashlight', spec : 'Yellow LED Flashlight' },
-      { tool_id : 't-002', name : 'Thermometer', spec : 'King Digital -50°C to 150°C' },
-      { tool_id : 't-003', name : 'Multimeter', spec : 'King Digital Multimeter' },
-      { tool_id : 't-004', name : 'Screwdriver Set', spec : 'Hurry Phillips and Flathead' },
-      { tool_id : 't-005', name : 'Wrench Set', spec : 'Adjustable Wrench Set for Peach Brother' }
-    ]
-  }
-}
-
-export const uploadResource = async( file, stepId ) => {
-  await new Promise( resolve => setTimeout( resolve, 1000 ) )
-  return {
-    data : {
-      id : `r-${Date.now()}`,
-      name : file.name,
-      url : `https://cdn.example.com/files/${file.name}`,
-      mime : file.type
-    }
-  }
-}
+// TODO: Re-export mock functions for backward compatibility (will do this in future)
+export { getAvailableTools, uploadResource }
 
 // standards CRUD operations
-export const getStandards = async params => {
-  try {
-    // Using http.request for real API calls
-    const response = await http.request( {
-      method : 'get',
-      url : '/library/standards',
-      params
-    } )
-    return {
-      data : response.data?.data || response.data,
-      total : response.data?.total || response.data?.length || 0
+/**
+ * Search standards with pagination and filtering.
+ * @param {Object} filter - Filter criteria (e.g., keyword, category)
+ * @param {Object} pagination - Pagination and sorting options
+ * @param {number} [pagination.page] - Page number
+ * @param {number} [pagination.size] - Items per page
+ * @param {string} [pagination.sortField] - Field to sort by
+ * @param {string} [pagination.direction] - Sort direction (ASC/DESC)
+ * @returns {Promise} API response with paginated standards
+ */
+export const searchStandards = async( filter = {}, pagination = {} ) => {
+  return http.request( {
+    method : 'post',
+    url : '/library/standards/search',
+    params : {
+      page : pagination.page,
+      size : pagination.size,
+      sortField : pagination.sortField,
+      direction : pagination.direction
+    },
+    data : {
+      keyword : filter.keyword?.trim(),
+      category : filter.category?.trim()
     }
-  } catch ( error ) {
-    console.error( 'Failed to fetch standards:', error )
-    throw error
-  }
+  } )
 }
 
+/**
+ * Fetch a standard by its ID.
+ * @param {string} id - Standard ID
+ * @returns {Promise<Object>} API response with standard data
+ */
 export const getStandard = async id => {
   try {
     const response = await http.request( {
@@ -193,6 +132,11 @@ export const getStandard = async id => {
   }
 }
 
+/**
+ * Create a new standard.
+ * @param {Object} data - Standard data to create.
+ * @returns {Promise<Object>} API response with created standard data.
+ */
 export const createStandard = async data => {
   try {
     const response = await http.request( {
@@ -207,11 +151,17 @@ export const createStandard = async data => {
   }
 }
 
+/**
+ * Update a standard by its ID.
+ * @param {string} id - The ID of the standard to update.
+ * @param {Object} data - The updated standard data.
+ * @returns {Promise<Object>} API response with updated standard data.
+ */
 export const updateStandard = async( id, data ) => {
   try {
     const response = await http.request( {
       method : 'put',
-      url : '/library/standards',
+      url : '/library/standard',
       data : { _id : id, ...data }
     } )
     return { data : response.data }
@@ -221,6 +171,11 @@ export const updateStandard = async( id, data ) => {
   }
 }
 
+/**
+ * Delete a standard by its ID.
+ * @param {string} id - The ID of the standard to delete.
+ * @returns {Promise<{success: boolean}>} API response indicating success.
+ */
 export const deleteStandard = async id => {
   try {
     await http.request( {

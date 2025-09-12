@@ -71,7 +71,13 @@
           @change="handleTypeChange"
           class="step-type-dropdown"
         >
-          <el-option v-for="stepType in stepTypes" :key="stepType.type" :label="stepType.name" :value="stepType.type">
+          <el-option
+            v-for="stepType in stepTypes"
+            :key="stepType.type"
+            :label="stepType.name"
+            :value="stepType.type"
+            :disabled="stepType.disabled"
+          >
             <div class="type-option">
               <div class="type-option-color" :style="{ backgroundColor: stepType.color }"></div>
               <span class="type-option-name">{{ stepType.name }}</span>
@@ -116,13 +122,6 @@
           <el-option label="P100016" value="P100016" />
           <el-option label="CE79950" value="CE79950" />
           <el-option label="P100004" value="P100004" />
-          <el-option label="MX45782" value="MX45782" />
-          <el-option label="RT89431" value="RT89431" />
-          <el-option label="QE67502" value="QE67502" />
-          <el-option label="PL33891" value="PL33891" />
-          <el-option label="CV12456" value="CV12456" />
-          <el-option label="DR78923" value="DR78923" />
-          <el-option label="FB55601" value="FB55601" />
         </el-select>
         <el-input-number
           :model-value="localStep.config?.quantity || 1"
@@ -163,15 +162,48 @@
             @update="handleStepUpdate"
           />
 
-          <!-- Preview Bottom Section (only show if required image is checked) -->
-          <div v-if="localStep.required_image" class="preview-bottom-section">
+          <!-- Preview Bottom Section (show if required image is checked OR tools exist) -->
+          <div
+            v-if="localStep.required_image || (localStep.relevant_tools && localStep.relevant_tools.length > 0)"
+            class="preview-bottom-section"
+          >
             <!-- Upload Image Button -->
-            <div class="preview-upload-section">
+            <div v-if="localStep.required_image" class="preview-upload-section">
               <el-button type="info" size="small" disabled>
                 <span class="required-asterisk">*</span>
                 <el-icon><Upload /></el-icon>
                 Upload Image
               </el-button>
+            </div>
+
+            <!-- Show Tools Button -->
+            <div v-if="localStep.relevant_tools && localStep.relevant_tools.length > 0" class="preview-tools-section">
+              <el-button
+                disabled
+                size="small"
+                plain
+                @click="showToolsPreview = !showToolsPreview"
+                class="tools-toggle-btn"
+              >
+                <el-icon><Tools /></el-icon>
+                {{ showToolsPreview ? 'Hide Tools' : 'Show Tools' }} ({{ localStep.relevant_tools.length }})
+              </el-button>
+            </div>
+          </div>
+
+          <!-- Tools List (expandable section) -->
+          <div
+            v-if="showToolsPreview && localStep.relevant_tools && localStep.relevant_tools.length > 0"
+            class="preview-tools-list"
+          >
+            <div class="tools-list-header">
+              <h4>Required Tools</h4>
+            </div>
+            <div class="tools-list-content">
+              <div v-for="tool in localStep.relevant_tools" :key="tool.tool_id || tool.id" class="tool-item">
+                <el-icon><Tools /></el-icon>
+                <span class="tool-name">{{ tool.name || 'Unnamed Tool' }}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -255,6 +287,7 @@ import NumberStepPreview from './NumberStepPreview.vue'
 import TextStepPreview from './TextStepPreview.vue'
 import AttachmentStepPreview from './AttachmentStepPreview.vue'
 import ServiceStepPreview from './ServiceStepPreview.vue'
+import { formatLimitsText } from 'src/views/taskLibrary/utils/stepTransforms'
 
 const props = defineProps( {
   step : {
@@ -299,6 +332,7 @@ if ( localStep.type === 'service' ) {
 const showDescriptionEdit = ref( false )
 const showPreview = ref( false )
 const isDeleteHovered = ref( false )
+const showToolsPreview = ref( false )
 
 // Computed property to check if step has limitations
 const hasLimitations = computed( () => {
@@ -338,7 +372,8 @@ const stepTypes = [
   {
     type : 'service',
     name : 'Service',
-    color : '#df869d'
+    color : '#df869d',
+    disabled : true
   }
 ]
 
@@ -387,7 +422,6 @@ const handleAction = command => {
       emit( 'duplicate', props.step.step_id )
       break
     default:
-      console.warn( 'Unknown action command:', command )
       break
   }
 }
@@ -482,27 +516,7 @@ const getStepTypeLabel = type => {
 }
 
 const getLimitationsText = () => {
-  const limits = localStep.config?.limits
-  if ( !limits ) return 'No limits set'
-
-  const lower = limits.lower
-  const upper = limits.upper
-  const lowerIncl = limits.inclusive?.lower !== false
-  const upperIncl = limits.inclusive?.upper !== false
-  const unit = localStep.config?.unit || ''
-
-  let text = ''
-
-  if ( lower !== null && lower !== undefined ) {
-    text += `${lowerIncl ? '≥' : '>'} ${lower}${unit ? ' ' + unit : ''}`
-  }
-
-  if ( upper !== null && upper !== undefined ) {
-    if ( text ) text += ' and '
-    text += `${upperIncl ? '≤' : '<'} ${upper}${unit ? ' ' + unit : ''}`
-  }
-
-  return text || 'No limits set'
+  return formatLimitsText( localStep.config?.limits, localStep.config?.unit )
 }
 
 const getStepComponent = type => {
@@ -525,7 +539,7 @@ const getStepComponent = type => {
   border-radius: 8px;
   background: white;
   padding: 16px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -700,6 +714,66 @@ const getStepComponent = type => {
   margin-right: 4px;
 }
 
+/* Tools Preview Section */
+.preview-tools-section {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+}
+
+.tools-toggle-btn {
+  font-size: 12px;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 6px;
+}
+
+.preview-tools-list {
+  margin-top: 12px;
+  padding: 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e4e7ed;
+}
+
+.tools-list-header {
+  margin-bottom: 8px;
+}
+
+.tools-list-header h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.tools-list-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tool-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: #f8f9fb;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.tool-item .el-icon {
+  color: #409eff;
+  font-size: 14px;
+  margin-right: 0;
+}
+
+.tool-name {
+  color: #303133;
+  font-weight: 500;
+}
+
 .step-options {
   display: flex;
   justify-content: space-between;
@@ -737,8 +811,8 @@ const getStepComponent = type => {
 
 .meta-button {
   height: 24px;
-  font-size: 11px;
-  padding: 0 8px;
+  font-size: 12px;
+  padding: 12px;
 }
 
 .meta-button .el-icon {

@@ -13,8 +13,9 @@
           :key="option"
           :type="getOptionType(option)"
           :class="['inspection-option', `option-${option}`]"
-          disabled
+          :disabled="!interactive"
           style="width: 50%"
+          @click="interactive && setInspectionResult(option)"
         >
           <el-icon>
             <Check v-if="option === 'pass'" />
@@ -28,15 +29,12 @@
       <el-icon><InfoFilled /></el-icon>
       Comment required on fail
     </div>
-    <div v-if="step.config?.require_photo_on_fail" class="config-note">
-      <el-icon><Camera /></el-icon>
-      Photo required on fail
-    </div>
   </div>
 </template>
 
 <script setup>
-import { InfoFilled, Camera, Check, Close } from '@element-plus/icons-vue'
+import { ref, watch } from 'vue'
+import { InfoFilled, Check, Close } from '@element-plus/icons-vue'
 
 // eslint-disable-next-line no-unused-vars
 const props = defineProps( {
@@ -47,8 +45,27 @@ const props = defineProps( {
   previewMode : {
     type : Boolean,
     default : true
+  },
+  interactive : {
+    type : Boolean,
+    default : false
   }
 } )
+
+// Reactive state for user input
+// Default to 'pass' in preview modes when no explicit result is provided
+const currentResult = ref( props.step?.config?.result ?? ( props.previewMode ? 'pass' : null ) )
+
+// Watch for prop changes to sync initial values
+watch(
+  () => props.step?.config?.result,
+  newValue => {
+    if ( !props.interactive ) {
+      currentResult.value = newValue ?? ( props.previewMode ? 'pass' : null )
+    }
+  },
+  { immediate : true }
+)
 
 const getOptionLabel = option => {
   const labels = {
@@ -59,11 +76,16 @@ const getOptionLabel = option => {
 }
 
 const getOptionType = option => {
-  const types = {
-    pass : 'success',
-    fail : 'info'
+  if ( currentResult.value === option ) {
+    return option === 'pass' ? 'success' : 'danger'
   }
-  return types[option] || 'primary'
+  return '' // Use default button styling (no type) for unselected buttons
+}
+
+const setInspectionResult = result => {
+  if ( props.interactive ) {
+    currentResult.value = result
+  }
 }
 </script>
 

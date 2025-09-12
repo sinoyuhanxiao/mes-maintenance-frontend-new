@@ -6,17 +6,34 @@
       <div class="filters-section" :class="{ 'filters-collapsed': !showFilters }">
         <!-- Search Input -->
         <div class="search-bar">
-          <el-input v-model="searchQuery" placeholder="Search tasks..." clearable @input="handleSearch">
+          <el-input
+            v-model="searchQuery"
+            :placeholder="searchByIdMode ? 'Search template ID...' : 'Search task templates...'"
+            @input="handleSearch"
+          >
             <template #prefix>
               <el-icon><Search /></el-icon>
             </template>
-            <!-- ADD -->
             <template #suffix>
-              <el-tooltip content="Show/Hide filters" placement="top">
-                <el-icon class="filter-toggle" @click.stop="showFilters = !showFilters">
-                  <Filter />
-                </el-icon>
-              </el-tooltip>
+              <div class="search-suffix-icons">
+                <el-tooltip :content="searchByIdMode ? 'Search by Name' : 'Search by ID'" placement="bottom">
+                  <el-icon
+                    :class="['search-mode-toggle', { 'is-active': searchByIdMode }]"
+                    @click.stop="toggleSearchMode"
+                  >
+                    #
+                  </el-icon>
+                </el-tooltip>
+                <el-tooltip content="Show/Hide filters" placement="top">
+                  <el-icon
+                    class="filter-toggle"
+                    :class="{ 'is-active': showFilters }"
+                    @click.stop="toggleFilterVisibility"
+                  >
+                    <Filter />
+                  </el-icon>
+                </el-tooltip>
+              </div>
             </template>
           </el-input>
         </div>
@@ -24,18 +41,6 @@
         <!-- Filter Controls -->
         <div class="filter-controls" v-show="showFilters">
           <div class="filter-controls">
-            <!--            <el-select-->
-            <!--              v-model="statusFilter"-->
-            <!--              placeholder="Status"-->
-            <!--              clearable-->
-            <!--              size="small"-->
-            <!--              style="width: 120px"-->
-            <!--              @change="handleStatusFilter"-->
-            <!--            >-->
-            <!--              <el-option label="Published" value="published" />-->
-            <!--              <el-option label="Draft" value="draft" />-->
-            <!--              <el-option label="Archived" value="archived" />-->
-            <!--            </el-select>-->
             <el-tree-select
               v-model="assetFilter"
               placeholder="Asset"
@@ -99,11 +104,11 @@
               :key="template.template_id"
               :template="template"
               :is-selected="selectedTemplateId === template.template_id"
+              :is-highlighted="highlightedTemplateId === template.template_id"
               @select="handleTemplateSelect"
               @edit="handleTemplateEdit"
               @duplicate="handleTemplateDuplicate"
               @delete="handleTemplateDelete"
-              @publish="handleTemplatePublish"
             />
           </div>
 
@@ -112,7 +117,7 @@
             <el-pagination
               v-model:current-page="currentPage"
               v-model:page-size="pageSize"
-              :total="filteredTemplates.length"
+              :total="pagination.total || 0"
               :page-sizes="[10, 20, 50]"
               layout="total, prev, pager, next, jumper"
               @current-change="handlePageChange"
@@ -125,7 +130,11 @@
 
     <!-- Right Panel - Template Details/Actions -->
     <div class="right-panel">
-      <div v-if="!selectedTemplate" class="no-selection">
+      <div v-if="templateDetailLoading" class="loading-container">
+        <el-skeleton :rows="5" animated />
+      </div>
+
+      <div v-else-if="!selectedTemplate" class="no-selection">
         <div class="no-selection-content">
           <el-icon class="no-selection-icon"><DocumentCopy /></el-icon>
           <h3>Select a Task</h3>
@@ -143,12 +152,17 @@
           <!-- Template Header -->
           <div class="details-header">
             <div class="header-main">
-              <h2 class="template-title">{{ selectedTemplate.name }}</h2>
+              <h2 class="template-title">
+                {{ selectedTemplate.name }}
+                <el-tag type="info" class="template-id-header">
+                  <span v-if="selectedTemplate.reference_id"> #{{ selectedTemplate.reference_id }}</span>
+                </el-tag>
+              </h2>
             </div>
             <div class="header-actions">
-              <el-button type="primary" size="default" @click="handleTemplateEdit" class="edit-button">
-                <el-icon><Edit /></el-icon>
-                Edit Task
+              <el-button type="primary" size="default" @click="createNewTemplate" class="create-button">
+                <el-icon><Plus /></el-icon>
+                Create
               </el-button>
               <el-dropdown trigger="click" @command="handleHeaderAction">
                 <el-button type="text" size="default" class="action-button">
@@ -156,15 +170,16 @@
                 </el-button>
                 <template #dropdown>
                   <el-dropdown-menu>
+                    <el-dropdown-item command="edit">
+                      <el-icon><Edit /></el-icon>
+                      Edit
+                    </el-dropdown-item>
                     <el-dropdown-item command="duplicate">
                       <el-icon><DocumentCopy /></el-icon>
                       Duplicate
                     </el-dropdown-item>
-                    <el-dropdown-item command="publish" :disabled="selectedTemplate.status === 'published'">
-                      <el-icon><Check /></el-icon>
-                      Publish
-                    </el-dropdown-item>
-                    <el-dropdown-item command="delete" divided>
+
+                    <el-dropdown-item command="delete" divided class="delete-dropdown-item">
                       <el-icon><Delete /></el-icon>
                       Delete
                     </el-dropdown-item>
@@ -192,33 +207,24 @@
               <div class="overview-card">
                 <div class="card-content">
                   <el-descriptions :column="3" direction="vertical">
-                    <el-descriptions-item width="33%" label="Status">
-                      <el-tag :type="getStatusType(selectedTemplate.status)" size="default">
-                        {{ selectedTemplate.status }}
-                      </el-tag>
-                    </el-descriptions-item>
                     <el-descriptions-item label="Category">{{
-                      selectedTemplate.category || 'Uncategorized'
+                      getCategoryLabel(selectedTemplate.category)
                     }}</el-descriptions-item>
                     <el-descriptions-item label="Asset/Equipment">{{
-                      selectedTemplate.asset || 'No asset specified'
+                      selectedTemplate.equipment_node?.name || 'No asset specified'
                     }}</el-descriptions-item>
-                    <el-descriptions-item width="33%" label="Estimated Time">
-                      <span class="info-value highlight">
+                    <el-descriptions-item width="33%" label="Estimated Time (minutes)">
+                      <span class="info-value warning">
                         {{
-                          selectedTemplate.estimated_minutes
-                            ? `${selectedTemplate.estimated_minutes} minutes`
+                          selectedTemplate.time_estimate_sec
+                            ? `${Math.ceil(selectedTemplate.time_estimate_sec / 60)} minutes`
                             : 'Not specified'
                         }}
                       </span>
                     </el-descriptions-item>
                     <el-descriptions-item width="33%" label="Total Steps">
-                      <span class="info-value step-count">{{ selectedTemplate.steps?.length || 0 }} steps</span>
+                      <span class="info-value highlight">{{ selectedTemplate.steps?.length || 0 }} steps</span>
                     </el-descriptions-item>
-                    <el-descriptions-item label="Template ID">
-                      <span class="template-id">{{ selectedTemplate.template_id }}</span>
-                    </el-descriptions-item>
-
                     <el-descriptions-item label="Created On">{{
                       formatDate(selectedTemplate.created_at)
                     }}</el-descriptions-item>
@@ -247,7 +253,7 @@
                   <h3 class="card-title">Quick Statistics</h3>
                 </div>
                 <div class="card-content">
-                  <el-row :gutter="16">
+                  <el-row :gutter="24">
                     <el-col :span="6">
                       <div class="stat-item">
                         <div class="stat-number">{{ selectedTemplate.steps?.length || 8 }}</div>
@@ -275,48 +281,98 @@
                   </el-row>
                 </div>
               </div>
-
-              <!-- Step Types Overview -->
-              <div class="step-types-card" v-if="selectedTemplate.steps && selectedTemplate.steps.length > 0">
-                <div class="card-header">
-                  <h3 class="card-title">Step Types Breakdown</h3>
-                </div>
-                <div class="card-content">
-                  <div class="step-types-grid">
-                    <div v-for="(count, type) in getStepTypesBreakdown()" :key="type" class="step-type-item">
-                      <div class="step-type-icon">
-                        <el-icon><Document /></el-icon>
-                      </div>
-                      <div class="step-type-info">
-                        <div class="step-type-name">{{ getStepTypeLabel(type) }}</div>
-                        <div class="step-type-count">{{ count }} {{ count === 1 ? 'step' : 'steps' }}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
 
             <!-- Steps Tab Content -->
             <div v-if="activeTab === 'steps'" class="tab-pane-content">
-              <!-- Template Steps Preview -->
-              <div v-if="selectedTemplate.steps && selectedTemplate.steps.length > 0" class="steps-preview">
-                <div class="steps-list">
-                  <div v-for="step in selectedTemplate.steps" :key="step.step_id" class="step-preview-item">
-                    <div class="step-number">{{ step.order }}</div>
-                    <div class="step-content">
-                      <div class="step-title">{{ step.label }}</div>
-                      <div class="step-type">{{ getStepTypeLabel(step.type) }}</div>
-                      <div v-if="step.description" class="step-description">{{ step.description }}</div>
-                    </div>
-                    <div class="step-required">
-                      <el-tag v-if="step.required" type="danger" size="small">Required</el-tag>
+              <!-- Step Search Bar -->
+              <div class="step-search-bar">
+                <el-input
+                  v-model="stepSearchQuery"
+                  placeholder="Search steps by name..."
+                  clearable
+                  @input="handleStepSearch"
+                >
+                  <template #prefix>
+                    <el-icon><Search /></el-icon>
+                  </template>
+                </el-input>
+              </div>
+
+              <!-- Desktop-style Procedure Preview (read-only) -->
+              <div v-if="filteredPreviewSteps && filteredPreviewSteps.length > 0" class="procedure-preview">
+                <div class="preview-main viewport-desktop density-comfortable">
+                  <div class_="section-content">
+                    <div
+                      v-for="(step, index) in filteredPreviewSteps"
+                      :key="step.step_id || index"
+                      class="preview-step-simple"
+                    >
+                      <div class="step-config-preview">
+                        <component
+                          :is="getStepComponent(step.type)"
+                          :step="getStepWithNumber(step, index)"
+                          :preview-mode="true"
+                          :interactive="false"
+                        />
+
+                        <!-- Bottom section for required image OR tools (desktop style) -->
+                        <div
+                          v-if="step.required_image || (step.relevant_tools && step.relevant_tools.length > 0)"
+                          class="preview-bottom-section"
+                        >
+                          <div class="desktop-upload-button">
+                            <el-button v-if="step.required_image" type="info" size="small" disabled>
+                              <span class="required-asterisk">*</span>
+                              <el-icon><Upload /></el-icon>
+                              Upload Image
+                            </el-button>
+
+                            <!-- Show Tools Button -->
+                            <el-button
+                              disabled
+                              v-if="step.relevant_tools && step.relevant_tools.length > 0"
+                              size="small"
+                              plain
+                              @click="toggleStepTools(step.step_id)"
+                              class="tools-toggle-btn"
+                              :style="step.required_image ? 'margin-left: 8px;' : ''"
+                            >
+                              <el-icon><Tools /></el-icon>
+                              {{ getStepToolsVisible(step.step_id) ? 'Hide Tools' : 'Show Tools' }} ({{
+                                step.relevant_tools.length
+                              }})
+                            </el-button>
+                          </div>
+                        </div>
+
+                        <!-- Tools List (toggleable) -->
+                        <div
+                          v-if="
+                            getStepToolsVisible(step.step_id) && step.relevant_tools && step.relevant_tools.length > 0
+                          "
+                          class="desktop-tools-list"
+                        >
+                          <div class="tools-list-header">
+                            <h4>Required Tools</h4>
+                          </div>
+                          <div class="tools-list-content">
+                            <div v-for="tool in step.relevant_tools" :key="tool.tool_id || tool.id" class="tool-item">
+                              <el-icon><Tools /></el-icon>
+                              <span class="tool-name">{{ tool.name || 'Unnamed Tool' }}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
               <div v-else class="empty-steps">
-                <el-empty description="No steps defined yet" :image-size="60" />
+                <el-empty
+                  :description="stepSearchQuery ? 'No steps match your search' : 'No steps defined yet'"
+                  :image-size="60"
+                />
               </div>
             </div>
 
@@ -360,15 +416,36 @@
       :model-value="deleteDialogVisible"
       @update:model-value="val => (deleteDialogVisible = val)"
       title="Delete Task"
-      width="400px"
+      width="500px"
       :before-close="handleDeleteCancel"
     >
-      <p>Are you sure you want to delete "{{ templateToDelete?.name }}"?</p>
-      <p style="color: #f56c6c; font-size: 12px">This action cannot be undone.</p>
+      <div class="delete-confirmation-content">
+        <p>
+          <strong>Are you sure you want to delete "{{ templateToDelete?.name }}"?</strong>
+        </p>
+        <p style="color: #f56c6c; font-size: 14px; margin: 12px 0">This action cannot be undone.</p>
+
+        <div class="name-confirmation-section">
+          <el-input
+            v-model="deleteConfirmationText"
+            placeholder="Type the exact task name"
+            @input="validateDeleteConfirmation"
+            @keyup.enter="deleteConfirmationValid ? handleDeleteConfirm() : null"
+          />
+        </div>
+      </div>
+
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="handleDeleteCancel">Cancel</el-button>
-          <el-button type="danger" @click="handleDeleteConfirm" :loading="deleteLoading"> Delete </el-button>
+          <el-button
+            type="danger"
+            @click="handleDeleteConfirm"
+            :loading="deleteLoading"
+            :disabled="!deleteConfirmationValid"
+          >
+            Delete
+          </el-button>
         </span>
       </template>
     </el-dialog>
@@ -376,53 +453,76 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
-import { useSettingsStore } from '@/store'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick, reactive } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useSettingsStore, useTagsViewStore } from '@/store'
 import {
   Filter,
   Search,
   Plus,
   Edit,
   Delete,
-  Check,
   DocumentCopy,
   MoreFilled,
   Calendar,
-  Document
+  Upload,
+  Tools
 } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import { useTaskLibrary } from '@/composables/useTaskLibrary'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { useTaskLibrary } from '@/composables/designer/useTaskLibrary'
 import { getEquipmentTree } from '@/api/equipment.js'
+import { getAllCategories } from '@/api/common.js'
 import TemplateCard from '../components/Library/TemplateCard.vue'
+// Preview components reused from Procedure Designer
+import InspectionStepPreview from '../components/Designer/StepCards/InspectionStepPreview.vue'
+import CheckboxStepPreview from '../components/Designer/StepCards/CheckboxStepPreview.vue'
+import NumberStepPreview from '../components/Designer/StepCards/NumberStepPreview.vue'
+import TextStepPreview from '../components/Designer/StepCards/TextStepPreview.vue'
+import AttachmentStepPreview from '../components/Designer/StepCards/AttachmentStepPreview.vue'
+import ServiceStepPreview from '../components/Designer/StepCards/ServiceStepPreview.vue'
+import { transformLimitsFromBackend } from '../utils/stepTransforms'
 
 const router = useRouter()
+const route = useRoute()
 const settingsStore = useSettingsStore()
 const {
   loading,
+  templateDetailLoading,
   templates,
   filteredTemplates,
+  currentTemplate,
+  pagination,
   loadTemplates,
+  loadTemplate,
+  createTemplate,
   deleteTemplate,
-  publishTemplate,
   setFilter,
-  clearFilters
+  clearFilters,
+  setPage,
+  setPageSize
 } = useTaskLibrary()
 
 // Local state
 const searchQuery = ref( '' )
-const statusFilter = ref( '' )
+const searchByIdMode = ref( false )
+
 const categoryFilter = ref( '' )
 const currentPage = ref( 1 )
 const pageSize = ref( 20 )
 const selectedTemplateId = ref( null )
+const highlightedTemplateId = ref( null )
 const deleteDialogVisible = ref( false )
 const templateToDelete = ref( null )
 const deleteLoading = ref( false )
+const deleteConfirmationText = ref( '' )
+const deleteConfirmationValid = ref( false )
 const showFilters = ref( false )
 const assetFilter = ref( [] )
 const equipmentTreeData = ref( [] )
 const activeTab = ref( 'general' )
+const stepSearchQuery = ref( '' )
+const allCategories = ref( [] )
+const stepToolsVisible = reactive( {} )
 
 // Dynamic height calculation state
 const navbarHeight = ref( 50 ) // Fallback to default navbar height
@@ -454,43 +554,189 @@ const fetchEquipmentTreeData = async() => {
     }
     equipmentTreeData.value = dataArray.map( node => transformNode( node ) )
   } catch ( error ) {
-    console.error( 'Failed to fetch equipment tree:', error )
+    console.error( 'Equipment tree load failed:', error )
     ElMessage.error( 'Failed to load asset filter data.' )
   }
 }
 
+const fetchCategories = async() => {
+  try {
+    const response = await getAllCategories()
+    allCategories.value = response.data.map( category => category.name )
+  } catch ( error ) {
+    console.error( 'Categories load failed:', error )
+    ElMessage.error( 'Failed to load category filter data.' )
+  }
+}
+
 const handleAssetFilter = () => {
-  setFilter( 'asset', assetFilter.value )
+  setFilter( 'equipment_node_ids', assetFilter.value )
   currentPage.value = 1
 }
 
 // Computed properties
 const availableCategories = computed( () => {
-  const categories = [...new Set( templates.value.map( t => t.category ).filter( Boolean ) )]
-  return categories.sort()
+  // eslint-disable-next-line vue/no-side-effects-in-computed-properties
+  return allCategories.value.sort()
 } )
 
 const displayedTemplates = computed( () => {
-  const start = ( currentPage.value - 1 ) * pageSize.value
-  const end = start + pageSize.value
-  return filteredTemplates.value.slice( start, end )
+  // With server-side pagination, all templates returned are already the correct page
+  // Ensure we always return an array
+  return Array.isArray( filteredTemplates.value ) ? filteredTemplates.value : []
 } )
 
 const selectedTemplate = computed( () => {
-  return templates.value.find( t => t.template_id === selectedTemplateId.value )
+  // Use currentTemplate from store for detailed data, fallback to list item
+  if (
+    currentTemplate.value &&
+    ( currentTemplate.value.template_id === selectedTemplateId.value ||
+      currentTemplate.value.id === selectedTemplateId.value )
+  ) {
+    return currentTemplate.value
+  }
+  // Ensure templates.value is an array before calling find
+  if ( Array.isArray( templates.value ) ) {
+    return templates.value.find( t => t.template_id === selectedTemplateId.value || t.id === selectedTemplateId.value )
+  }
+  return null
 } )
 
+// Map backend step value types to preview component types
+const mapValueTypeToPreviewType = valueType => {
+  const mapping = {
+    numeric : 'number',
+    boolean : 'checkbox',
+    inspection : 'inspection',
+    text : 'text',
+    file : 'attachments',
+    service : 'service'
+  }
+  return mapping[valueType] || valueType || 'text'
+}
+
+// Transform backend steps to preview-ready steps
+const previewSteps = computed( () => {
+  const tmpl = selectedTemplate.value
+  const steps = Array.isArray( tmpl?.steps ) ? tmpl.steps : []
+  return steps.map( ( s, idx ) => {
+    const v = s.value || {}
+    const type = mapValueTypeToPreviewType( v.type )
+    const base = {
+      step_id : s.id || s.step_id || `step-${idx}`,
+      order : idx + 1,
+      type,
+      label : s.name || s.label || `Step ${idx + 1}`,
+      description : s.description || '',
+      required : Boolean( s.required ),
+      required_image : Boolean( v.require_image ),
+      relevant_tools : ( s.tools || [] ).map( t => ( { tool_id : t.id, name : t.name } ) ),
+      config : {}
+    }
+
+    if ( type === 'number' ) {
+      base.config = {
+        default_value : typeof v.value === 'number' ? v.value : undefined,
+        limits : transformLimitsFromBackend( v.numeric_limit_bounds ),
+        required_image : base.required_image
+      }
+    } else if ( type === 'checkbox' ) {
+      base.config = { default : Boolean( v.value ), required_image : base.required_image }
+    } else if ( type === 'text' ) {
+      base.config = { default_value : v.value ?? '', required_image : base.required_image }
+    } else if ( type === 'inspection' ) {
+      base.config = { default : 'pass', required_image : base.required_image }
+    } else if ( type === 'attachments' ) {
+      base.config = { upload_style : { list_type : 'picture-card' }, required_image : base.required_image }
+    }
+    return base
+  } )
+} )
+
+const filteredPreviewSteps = computed( () => {
+  if ( !stepSearchQuery.value ) {
+    return previewSteps.value
+  }
+  const query = stepSearchQuery.value.toLowerCase()
+  return previewSteps.value.filter( step => step.label.toLowerCase().includes( query ) )
+} )
+
+// Desktop preview helpers
+const getStepComponent = stepType => {
+  const components = {
+    inspection : InspectionStepPreview,
+    checkbox : CheckboxStepPreview,
+    number : NumberStepPreview,
+    text : TextStepPreview,
+    files : AttachmentStepPreview,
+    attachments : AttachmentStepPreview,
+    service : ServiceStepPreview
+  }
+  return components[stepType] || 'div'
+}
+
+const getStepWithNumber = ( step, index ) => ( {
+  ...step,
+  label : `${index + 1}. ${step.label || 'Step'}`
+} )
+
+const toggleStepTools = stepId => {
+  stepToolsVisible[stepId] = !stepToolsVisible[stepId]
+}
+
+const getStepToolsVisible = stepId => {
+  return Boolean( stepToolsVisible[stepId] )
+}
+
 const paginationInfo = computed( () => {
-  const total = filteredTemplates.value.length
-  const start = total === 0 ? 0 : ( currentPage.value - 1 ) * pageSize.value + 1
-  const end = Math.min( currentPage.value * pageSize.value, total )
+  const total = pagination.value.total || 0
+  const currentPageNum = pagination.value.page || 1
+  const currentPageSize = pagination.value.size || 20
+  const start = total === 0 ? 0 : ( currentPageNum - 1 ) * currentPageSize + 1
+  const end = Math.min( currentPageNum * currentPageSize, total )
   return { start, end, total }
 } )
 
+const searchDebounce = ref( null )
+
+const handleStepSearch = () => {
+  // The computed property `filteredPreviewSteps` will automatically update.
+  // This function is here for potential future use, like debouncing.
+}
+
 // Event handlers
 const handleSearch = () => {
-  setFilter( 'search', searchQuery.value )
-  currentPage.value = 1
+  clearTimeout( searchDebounce.value )
+  searchDebounce.value = setTimeout( () => {
+    if ( searchByIdMode.value ) {
+      setFilter( 'reference_id', searchQuery.value )
+    } else {
+      setFilter( 'keyword', searchQuery.value )
+    }
+    currentPage.value = 1
+  }, 500 ) // 500ms debounce delay
+}
+
+const toggleSearchMode = () => {
+  searchByIdMode.value = !searchByIdMode.value
+  searchQuery.value = '' // Clear the visual input
+
+  // Clear the alternative search filter in the store
+  if ( searchByIdMode.value ) {
+    // Switched TO ID mode, so clear keyword
+    setFilter( 'keyword', '' )
+  } else {
+    // Switched TO Name mode, so clear reference_id
+    setFilter( 'reference_id', '' )
+  }
+  // handleSearch() is no longer needed as setFilter triggers a fetch
+}
+
+const toggleFilterVisibility = () => {
+  showFilters.value = !showFilters.value
+  if ( !showFilters.value ) {
+    clearAllFilters()
+  }
 }
 const handleCategoryFilter = () => {
   setFilter( 'category', categoryFilter.value )
@@ -499,81 +745,299 @@ const handleCategoryFilter = () => {
 
 const clearAllFilters = () => {
   searchQuery.value = ''
-  statusFilter.value = ''
+  searchByIdMode.value = false
   categoryFilter.value = ''
+  assetFilter.value = []
   clearFilters()
   currentPage.value = 1
 }
 
 const handlePageChange = page => {
   currentPage.value = page
+  // Update store pagination and fetch new data
+  setPage( page )
+  loadTemplates()
 }
 
 const handlePageSizeChange = size => {
   pageSize.value = size
   currentPage.value = 1
+  // Update store pagination and fetch new data
+  setPageSize( size )
 }
 
-const handleTemplateSelect = template => {
-  selectedTemplateId.value = template.template_id
+const handleTemplateSelect = async template => {
+  selectedTemplateId.value = template.template_id || template.id
+  // Load full template details for right panel using new API
+  try {
+    await loadTemplate( template.template_id || template.id )
+  } catch ( error ) {
+    console.error( 'Template details load failed:', error )
+  }
 }
 
 const handleTemplateEdit = ( template = selectedTemplate.value ) => {
   if ( template ) {
+    // Template ID can be either template_id or id depending on API response format
+    const templateId = template.template_id || template.id
+    if ( !templateId ) {
+      console.error( 'Missing template ID:', template )
+      ElMessage.error( 'Unable to edit task - missing template ID' )
+      return
+    }
+
+    // Prevent opening duplicate edit tabs for the same ID
+    const tagsViewStore = useTagsViewStore()
+    const targetPath = `/maintenance-library/designer/${templateId}`
+    const existing = ( tagsViewStore.visitedViews || [] ).find( v => v.path === targetPath )
+    if ( existing ) {
+      router.push( existing.fullPath || existing.path )
+      return
+    }
+
     router.push( {
       name : 'TaskDesignerEdit',
-      params : { id : template.template_id }
+      params : { id : templateId }
     } )
+  } else {
+    ElMessage.error( 'No template selected for editing' )
+  }
+}
+
+// Helper function to transform template data for duplication
+const prepareDuplicateData = ( sourceTemplate, newName ) => {
+  if ( !sourceTemplate ) {
+    throw new Error( 'Source template is required' )
+  }
+
+  // Transform the template to match the designer format expected by createTemplate
+  const duplicateData = {
+    name : newName || `${sourceTemplate.name} (Copy)`,
+    description : sourceTemplate.description || '',
+    category : sourceTemplate.category?.id || sourceTemplate.category,
+    estimated_minutes : sourceTemplate.time_estimate_sec
+      ? Math.round( sourceTemplate.time_estimate_sec / 60 )
+      : sourceTemplate.estimated_minutes || 30,
+    applicable_assets : sourceTemplate.equipment_node_id
+      ? Array.isArray( sourceTemplate.equipment_node_id )
+        ? sourceTemplate.equipment_node_id
+        : [sourceTemplate.equipment_node_id]
+      : [],
+    steps : []
+  }
+
+  // Transform steps from API format to designer format if they exist
+  if ( sourceTemplate.steps && Array.isArray( sourceTemplate.steps ) ) {
+    duplicateData.steps = sourceTemplate.steps.map( ( step, index ) => {
+      const stepValue = step.value || {}
+      const stepType = mapApiStepTypeToDesigner( stepValue.type )
+
+      return {
+        step_id : `step-${Date.now()}-${index}`, // Generate new step IDs
+        order : index + 1,
+        type : stepType,
+        label : step.name || `Step ${index + 1}`,
+        description : step.description || '',
+        required : Boolean( step.required ),
+        required_image : Boolean( stepValue.require_image ),
+        relevant_tools : transformApiToolsToDesigner( step.tools || [] ),
+        relevant_resources : step.relevant_resources || [],
+        config : transformApiStepConfigToDesigner( stepType, stepValue )
+      }
+    } )
+  }
+
+  return duplicateData
+}
+
+// Helper function to map API step types to designer step types
+const mapApiStepTypeToDesigner = apiType => {
+  const typeMap = {
+    numeric : 'number',
+    boolean : 'checkbox',
+    checkbox : 'checkbox',
+    text : 'text',
+    file : 'attachments',
+    inspection : 'inspection',
+    service : 'service'
+  }
+  return typeMap[apiType] || 'text'
+}
+
+// Helper function to transform API tools to designer format
+const transformApiToolsToDesigner = apiTools => {
+  if ( !Array.isArray( apiTools ) ) return []
+  return apiTools.map( tool => ( {
+    tool_id : tool.id,
+    name : tool.name || 'Unnamed Tool'
+  } ) )
+}
+
+// Helper function to transform API step config to designer format
+const transformApiStepConfigToDesigner = ( stepType, apiValue ) => {
+  const baseConfig = {
+    required_image : Boolean( apiValue.require_image )
+  }
+
+  switch ( stepType ) {
+    case 'number':
+      return {
+        ...baseConfig,
+        kind : 'number',
+        unit : apiValue.unit || '',
+        decimal_places : apiValue.decimal_places || 0,
+        default_value : typeof apiValue.value === 'number' ? apiValue.value : 0,
+        limits : apiValue.numeric_limit_bounds || null
+      }
+
+    case 'checkbox':
+      return {
+        ...baseConfig,
+        kind : 'checkbox',
+        default : Boolean( apiValue.value )
+      }
+
+    case 'text':
+      return {
+        ...baseConfig,
+        kind : 'text',
+        multiline : true,
+        max_length : 1000,
+        default_value : String( apiValue.value || '' )
+      }
+
+    case 'inspection':
+      return {
+        ...baseConfig,
+        kind : 'inspection',
+        choices : ['pass', 'fail'],
+        default : apiValue.value ? 'pass' : 'fail',
+        require_comment_on_fail : false,
+        require_photo_on_fail : false
+      }
+
+    case 'attachments':
+      return {
+        ...baseConfig,
+        kind : 'attachments',
+        allow_types : ['image', 'pdf'],
+        max_files : 5,
+        max_file_size_mb : 10
+      }
+
+    default:
+      return baseConfig
   }
 }
 
 const handleTemplateDuplicate = async( template = selectedTemplate.value ) => {
-  if ( template ) {
-    try {
-      // Create a copy with a new name
-      // eslint-disable-next-line no-unused-vars
-      const duplicateData = {
-        ...template,
-        name : `${template.name} (Copy)`,
-        status : 'draft',
-        template_id : undefined,
-        created_at : undefined,
-        updated_at : undefined
-      }
+  if ( !template ) {
+    ElMessage.error( 'No template selected for duplication' )
+    return
+  }
 
-      // This would create a new template - for now just show success message
-      ElMessage.success( 'Task duplicated successfully' )
-      await loadTemplates() // Refresh list
-    } catch ( error ) {
-      ElMessage.error( 'Failed to duplicate task' )
+  try {
+    // Show confirmation dialog with name input
+    const result = await ElMessageBox.prompt(
+      'Are you sure you want to duplicate this task template?',
+      'Duplicate Task Template',
+      {
+        confirmButtonText : 'Duplicate',
+        cancelButtonText : 'Cancel',
+        inputPlaceholder : `${template.name} (Copy)`,
+        inputValue : `${template.name} (Copy)`,
+        inputValidator : value => {
+          if ( !value || value.trim().length === 0 ) {
+            return 'Template name is required'
+          }
+          if ( value.trim().length > 255 ) {
+            return 'Template name must be 255 characters or less'
+          }
+          return true
+        },
+        inputErrorMessage : 'Invalid template name'
+      }
+    )
+
+    const newName = result.value.trim()
+
+    // Prepare the duplicate data using the helper function
+    const duplicateData = prepareDuplicateData( template, newName )
+
+    // Create the new template using the existing createTemplate function
+    const newTemplate = await createTemplate( duplicateData )
+
+    // Refresh the template list
+    await loadTemplates()
+
+    // Success feedback
+    ElMessage.success( `Task "${newName}" duplicated successfully` )
+
+    // Optionally, select the newly created template
+    if ( newTemplate && newTemplate.id ) {
+      // Find and select the new template in the list after refresh
+      nextTick( () => {
+        const createdTemplate = templates.value.find( t => t.template_id === newTemplate.id || t.id === newTemplate.id )
+        if ( createdTemplate ) {
+          selectedTemplate.value = createdTemplate
+        }
+      } )
     }
+  } catch ( error ) {
+    // Handle user cancellation
+    if ( error === 'cancel' ) {
+      return // User cancelled, no error message needed
+    }
+
+    // Handle other errors
+    console.error( 'Template duplication failed:', error )
+    const errorMessage = error?.response?.data?.message || error?.message || 'Failed to duplicate task template'
+    ElMessage.error( errorMessage )
   }
 }
 
 const handleTemplateDelete = template => {
   templateToDelete.value = template
+  deleteConfirmationText.value = ''
+  deleteConfirmationValid.value = false
   deleteDialogVisible.value = true
+}
+
+const validateDeleteConfirmation = () => {
+  deleteConfirmationValid.value = deleteConfirmationText.value === templateToDelete.value?.name
 }
 
 const handleDeleteCancel = () => {
   deleteDialogVisible.value = false
   templateToDelete.value = null
+  deleteConfirmationText.value = ''
+  deleteConfirmationValid.value = false
 }
 
 const handleDeleteConfirm = async() => {
   if ( !templateToDelete.value ) return
 
+  // Get the template ID from either id or template_id field
+  const templateId = templateToDelete.value.id || templateToDelete.value.template_id
+
+  if ( !templateId ) {
+    ElMessage.error( 'Template ID is missing, cannot delete template' )
+    return
+  }
+
   deleteLoading.value = true
   try {
-    await deleteTemplate( templateToDelete.value.template_id )
+    await deleteTemplate( templateId )
 
     // Clear selection if deleted template was selected
-    if ( selectedTemplateId.value === templateToDelete.value.template_id ) {
+    if ( selectedTemplateId.value === templateId ) {
       selectedTemplateId.value = null
     }
 
     deleteDialogVisible.value = false
     templateToDelete.value = null
+    deleteConfirmationText.value = ''
+    deleteConfirmationValid.value = false
   } catch ( error ) {
     ElMessage.error( 'Failed to delete task' )
   } finally {
@@ -581,25 +1045,17 @@ const handleDeleteConfirm = async() => {
   }
 }
 
-const handleTemplatePublish = async( template = selectedTemplate.value ) => {
-  if ( template && template.status !== 'published' ) {
-    try {
-      await publishTemplate( template.template_id )
-    } catch ( error ) {
-      ElMessage.error( 'Failed to publish task' )
-    }
-  }
-}
-
 const handleHeaderAction = command => {
   // eslint-disable-next-line default-case
   switch ( command ) {
+    case 'edit':
+      handleTemplateEdit()
+      break
+
     case 'duplicate':
       handleTemplateDuplicate()
       break
-    case 'publish':
-      handleTemplatePublish()
-      break
+
     case 'delete':
       handleTemplateDelete( selectedTemplate.value )
       break
@@ -607,6 +1063,13 @@ const handleHeaderAction = command => {
 }
 
 const createNewTemplate = () => {
+  // Ensure only one Designer (create) tab exists at a time
+  const tagsViewStore = useTagsViewStore()
+  const existing = ( tagsViewStore.visitedViews || [] ).find( v => v.path === '/maintenance-library/designer' )
+  if ( existing ) {
+    router.push( existing.fullPath || existing.path )
+    return
+  }
   router.push( { name : 'TaskDesigner' } )
 }
 
@@ -616,17 +1079,11 @@ const createNewWorkOrder = () => {
 }
 
 // Helper functions
-const getStatusType = status => {
-  switch ( status ) {
-    case 'published':
-      return 'success'
-    case 'draft':
-      return 'warning'
-    case 'archived':
-      return 'info'
-    default:
-      return 'info'
-  }
+
+const getCategoryLabel = category => {
+  if ( !category ) return 'Uncategorized'
+  // Handle both string and object formats
+  return typeof category === 'object' ? category.name : category
 }
 
 const getStepTypeLabel = type => {
@@ -661,6 +1118,7 @@ const getOptionalStepsCount = () => {
   return selectedTemplate.value.steps.filter( step => !step.required ).length
 }
 
+// eslint-disable-next-line no-unused-vars
 const getStepTypesBreakdown = () => {
   if ( !selectedTemplate.value?.steps ) return {}
   const breakdown = {}
@@ -712,9 +1170,94 @@ onMounted( () => {
   // Add resize listener
   window.addEventListener( 'resize', handleResize )
 
+  // Initial load of templates
   loadTemplates()
+
+  // Load filter data
   fetchEquipmentTreeData()
+  fetchCategories()
 } )
+
+// Handle template focusing when navigating from template creation
+const handleTemplateFocus = async( templateId, refresh = false ) => {
+  try {
+    // If refresh is requested, reload templates first
+    if ( refresh ) {
+      await loadTemplates()
+    }
+
+    // Give a small delay to ensure DOM is updated
+    await nextTick()
+
+    // Clear filters and search to ensure the template is findable
+    clearAllFilters()
+
+    // Find the template in all templates (not just filtered ones)
+    let template = templates.value.find( t => t.id === templateId || t.template_id === templateId )
+
+    // If not found, try a second load (sometimes new items take a moment)
+    if ( !template ) {
+      await new Promise( resolve => setTimeout( resolve, 500 ) ) // Wait 500ms
+      await loadTemplates() // Reload templates
+      template = templates.value.find( t => t.id === templateId || t.template_id === templateId )
+    }
+
+    if ( template ) {
+      // Find which page the template is on
+      const templateIndex = templates.value.findIndex( t => t.id === templateId || t.template_id === templateId )
+      const templatePage = Math.ceil( ( templateIndex + 1 ) / pageSize.value )
+
+      // Navigate to the correct page if needed
+      if ( templatePage !== currentPage.value ) {
+        currentPage.value = templatePage
+        setPage( templatePage )
+        await loadTemplates()
+        await nextTick()
+      }
+
+      // Highlight the template card with animation
+      highlightedTemplateId.value = template.template_id || template.id
+
+      // Use the existing template selection function to properly focus the template
+      await handleTemplateSelect( template )
+
+      ElMessage.success( `Task "${template.name}" created successfully` )
+
+      // Remove highlight after 3 seconds
+      setTimeout( () => {
+        highlightedTemplateId.value = null
+      }, 3000 )
+
+      // Scroll the template card into view
+      await nextTick()
+      const templateCard = document.querySelector( `.template-card.highlighted` )
+      if ( templateCard ) {
+        templateCard.scrollIntoView( { behavior : 'smooth', block : 'center' } )
+      }
+    } else {
+      // Template might not be visible due to other issues - still show success
+      ElMessage.success( 'Task created successfully' )
+    }
+  } catch ( error ) {
+    console.error( 'Template focus failed:', error )
+    // Don't show another success message on error - the template was still created
+  }
+
+  // Clean up the query parameter
+  router.replace( { query : { ...route.query, focusTemplate : undefined, refresh : undefined }} )
+}
+
+// Watch for route changes to handle template focusing
+watch(
+  () => route.query,
+  newQuery => {
+    if ( newQuery.focusTemplate ) {
+      const refresh = newQuery.refresh === 'true'
+      handleTemplateFocus( newQuery.focusTemplate, refresh )
+    }
+  },
+  { immediate : true }
+)
 
 onBeforeUnmount( () => {
   // Remove resize listener
@@ -790,6 +1333,10 @@ defineOptions( {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+::v-deep(.el-checkbox__input.is-disabled + span.el-checkbox__label) {
+  color: #606266;
 }
 
 .pagination-info {
@@ -926,7 +1473,7 @@ defineOptions( {
   gap: 8px;
 }
 
-.edit-button {
+.create-button {
   margin-right: 8px;
 }
 
@@ -985,6 +1532,13 @@ defineOptions( {
   font-family: monospace;
 }
 
+.template-id-header {
+  font-size: 16px;
+  color: #606266;
+  margin-left: 10px;
+  font-weight: normal;
+}
+
 .card-content {
   padding: 12px 24px 12px 24px;
 }
@@ -1029,13 +1583,14 @@ defineOptions( {
   font-weight: 600;
 }
 
-.info-value.step-count {
-  color: #67c23a;
+.info-value.warning {
+  color: var(--el-color-warning);
   font-weight: 600;
 }
 
-.status-tag {
-  margin-left: auto;
+.info-value.step-count {
+  color: #67c23a;
+  font-weight: 600;
 }
 
 /* Description Card */
@@ -1050,32 +1605,30 @@ defineOptions( {
 /* Stats Card */
 .stat-item {
   text-align: center;
-  padding: 20px 16px;
-  background: #fafbfc;
-  border-radius: 8px;
-  border: 1px solid #f0f2f5;
-  transition: all 0.3s ease;
+  padding: 16px 12px;
+  background: transparent;
+  border-radius: 6px;
+  transition: all 0.2s ease;
 }
 
 .stat-item:hover {
-  background: #f0f9ff;
-  border-color: #409eff;
-  transform: translateY(-2px);
+  background: #f5f7fa;
 }
 
 .stat-number {
-  font-size: 28px;
-  font-weight: 700;
-  color: #409eff;
-  margin-bottom: 8px;
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--el-color-primary);
+  line-height: 1;
+  font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+  margin-bottom: 4px;
 }
 
 .stat-label {
   font-size: 12px;
-  color: #909399;
+  color: #8492a6;
   font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  line-height: 1;
 }
 
 /* Step Types Card */
@@ -1131,7 +1684,7 @@ defineOptions( {
 .floating-action {
   position: fixed;
   bottom: 24px;
-  right: 23%;
+  right: 24%;
   z-index: 1000;
 }
 
@@ -1154,6 +1707,114 @@ defineOptions( {
   justify-content: center;
   align-items: center;
   height: 200px;
+}
+
+/* Desktop-style preview (borrowed from PreviewDialog, simplified) */
+.step-search-bar {
+  padding: 0px 0px 12px 0px;
+}
+
+.procedure-preview {
+  margin-bottom: 24px;
+}
+
+.preview-main {
+  overflow-y: auto;
+}
+
+.preview-section {
+}
+
+.section-content {
+}
+
+.preview-step-simple {
+  margin-bottom: 12px;
+}
+
+.step-config-preview {
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 8px;
+  border: 1px solid #e4e7ed;
+}
+
+.preview-bottom-section {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #e4e7ed;
+  display: flex;
+  align-items: center;
+}
+
+.desktop-upload-button {
+  width: 100%;
+  text-align: left;
+}
+
+.desktop-upload-button .el-button {
+  min-width: 130px;
+  border: 1px dashed #dcdfe6;
+  color: #606266;
+  background: white;
+}
+
+.required-asterisk {
+  color: #f56c6c;
+  margin-right: 4px;
+}
+
+/* Tools Styling */
+.tools-toggle-btn {
+  font-size: 12px;
+  padding: 0 12px;
+  border-radius: 6px;
+}
+
+.desktop-tools-list {
+  margin-top: 12px;
+  padding: 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e4e7ed;
+}
+
+.tools-list-header {
+  margin-bottom: 8px;
+}
+
+.tools-list-header h4 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.tools-list-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tool-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: #f8f9fb;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.tool-item .el-icon {
+  color: #409eff;
+  font-size: 14px;
+  margin-right: 0;
+}
+
+.tool-name {
+  color: #303133;
+  font-weight: 500;
 }
 
 .steps-preview h4 {
@@ -1228,6 +1889,28 @@ defineOptions( {
   gap: 12px;
 }
 
+/* Delete Confirmation Styles */
+.delete-confirmation-content {
+  margin: 0;
+}
+
+.name-confirmation-section {
+}
+
+.validation-error {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: #f56c6c;
+  font-size: 13px;
+}
+
+.validation-error .el-icon {
+  font-size: 14px;
+  margin-right: 0;
+}
+
 .filter-toggle {
   cursor: pointer;
   display: inline-flex;
@@ -1235,6 +1918,32 @@ defineOptions( {
 }
 
 .filter-toggle:hover {
+  color: var(--el-color-primary);
+}
+
+.filter-toggle.is-active {
+  color: var(--el-color-primary);
+}
+
+.search-suffix-icons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-mode-toggle {
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 16px;
+  color: #909399;
+  transition: color 0.2s ease;
+}
+
+.search-mode-toggle:hover {
+  color: var(--el-color-primary);
+}
+
+.search-mode-toggle.is-active {
   color: var(--el-color-primary);
 }
 
@@ -1255,5 +1964,27 @@ defineOptions( {
 
 :deep(.el-tree.asset-tree-select) {
   width: 300px !important;
+}
+
+:deep(.el-icon) {
+  margin-right: 5px;
+}
+
+:deep(.delete-dropdown-item) {
+  color: var(--el-color-danger);
+}
+
+:deep(.delete-dropdown-item:hover) {
+  color: var(--el-color-danger);
+  background-color: var(--el-color-danger-light-9);
+}
+
+:deep(.el-tabs__item.is-top) {
+  font-size: 16px;
+  width: 50%;
+}
+
+:deep(.el-tabs__nav.is-top) {
+  width: 100%;
 }
 </style>
