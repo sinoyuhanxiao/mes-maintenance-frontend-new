@@ -12,7 +12,7 @@
     </div>
 
     <div class="card-scroll-container" :class="{ 'with-border': showBorder }">
-      <el-row :gutter="0" style="gap: 0.5rem">
+      <el-row :gutter="0">
         <el-col v-for="sp in filteredData" :key="sp.id" :xs="24" :sm="24" :md="24" :lg="24">
           <Card v-if="props.module === 1" :data="sp" @selection="handleSelection" />
           <MaintenanceRequestCard v-if="props.module === 2" :data="sp" @selection="handleSelection" />

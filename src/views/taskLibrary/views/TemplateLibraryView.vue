@@ -223,7 +223,10 @@
                       </span>
                     </el-descriptions-item>
                     <el-descriptions-item width="33%" label="Total Steps">
-                      <span class="info-value highlight">{{ selectedTemplate.steps?.length || 0 }} steps</span>
+                      <span class="info-value highlight clickable-steps"
+@click="navigateToStepsTab"
+                        >{{ selectedTemplate.steps?.length || 0 }} steps</span
+                      >
                     </el-descriptions-item>
                     <el-descriptions-item label="Created On">{{
                       formatDate(selectedTemplate.created_at)
@@ -1078,6 +1081,10 @@ const createNewWorkOrder = () => {
   ElMessage.success( 'Thanks for clicking! Work Order Creation will come soon!' )
 }
 
+const navigateToStepsTab = () => {
+  activeTab.value = 'steps'
+}
+
 // Helper functions
 
 const getCategoryLabel = category => {
@@ -1591,6 +1598,16 @@ defineOptions( {
 .info-value.step-count {
   color: #67c23a;
   font-weight: 600;
+}
+
+.clickable-steps {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clickable-steps:hover {
+  color: #409eff !important;
+  text-decoration: underline;
 }
 
 /* Description Card */

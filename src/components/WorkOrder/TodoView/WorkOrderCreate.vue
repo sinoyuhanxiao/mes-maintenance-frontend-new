@@ -10,11 +10,11 @@
         </el-col>
         <el-col :span="6">
           <div class="header-actions">
-            <el-button type="default" size="small" @click="$emit('back-to-detail')">
+            <el-button type="default" @click="$emit('back-to-detail')">
               <el-icon><ArrowLeft /></el-icon>
               {{ $t('workOrder.actions.backToDetail') }}
             </el-button>
-            <el-button type="warning" size="small" @click="resetForm">
+            <el-button type="warning" @click="resetForm" plain>
               <el-icon><RefreshLeft /></el-icon>
               {{ $t('workOrder.actions.reset') }}
             </el-button>
