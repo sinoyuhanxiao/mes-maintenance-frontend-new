@@ -172,7 +172,8 @@ export default {
       loadingData : '加载数据中...',
       noData : '暂无数据',
       formReset : '表单已重置',
-      validationFailed : '请修正验证错误'
+      validationFailed : '请修正验证错误',
+      statusChanged : '状态已更改'
     },
 
     // Create form specific
@@ -272,6 +273,8 @@ export default {
       status : '状态',
       category : '类别',
       equipment : '设备',
+      location : '位置',
+      recurrence : '重复',
       search : '搜索',
       searchFiltersPlaceholder : '搜索筛选项'
     },

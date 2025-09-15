@@ -173,3 +173,27 @@ export const getEquipmentNodeTrees = () => {
     url : '/equipment/node-trees'
   } )
 }
+
+/**
+ * Delete an individual work order by its ID.
+ * @param {number} id - The ID of the work order to delete.
+ * @returns {Promise} API response containing the deleted work order data.
+ */
+export const deleteIndividualWorkOrder = id => {
+  return http.request( {
+    method : 'delete',
+    url : `/work-order/delete-individual/${id}`
+  } )
+}
+
+/**
+ * Delete all work orders associated with a recurrence ID.
+ * @param {string} recurrenceId - The recurrence UUID to identify the group of work orders to delete.
+ * @returns {Promise} API response containing the list of deleted work orders.
+ */
+export const deleteRecurrenceWorkOrders = recurrenceId => {
+  return http.request( {
+    method : 'delete',
+    url : `/work-order/delete-recurrence/${recurrenceId}`
+  } )
+}

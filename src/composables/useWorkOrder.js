@@ -34,6 +34,7 @@ export function useWorkOrder() {
     search : undefined,
     dueDate : undefined,
     customDateRange : undefined,
+    recurrence : undefined,
     sort : 'created_at_desc' // Use consistent created_at desc sorting for most recent first
   } )
 
@@ -58,6 +59,7 @@ export function useWorkOrder() {
       if ( listQuery.search ) filters.search = listQuery.search
       if ( listQuery.dueDate ) filters.dueDate = listQuery.dueDate
       if ( listQuery.customDateRange ) filters.customDateRange = listQuery.customDateRange
+      if ( listQuery.recurrence ) filters.recurrence = listQuery.recurrence
 
       let response
       let data
@@ -264,10 +266,11 @@ export function useWorkOrder() {
       priority_ids : q.priority ? [q.priority] : [],
       state_ids : q.state ? [q.state] : [],
       category_ids : q.category ? [q.category] : [],
+      recurrence_type_id : q.recurrence || null,
       latest_per_recurrence : q.latest_per_recurrence,
       start_date_from : q.start_date_from,
       end_date_to : q.end_date_to
-      // TODO: add more supported filter param later (equipment_node, recurrence_type_id, approved/finished at)
+      // TODO: add more supported filter param later (equipment_node, approved/finished at)
     }
 
     const dueDateObj = processDueDateOptions()

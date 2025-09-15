@@ -5,11 +5,16 @@
       <el-row justify="space-between" align="top" :gutter="16">
         <el-col :span="18">
           <div class="header-main">
-            <h2 class="detail-title">{{ workOrder.name }}</h2>
-            <div class="header-meta">
+            <div class="title-row">
+              <h2 class="detail-title">{{ workOrder.name }}</h2>
               <span class="work-order-id">#{{ workOrder.id }}</span>
+            </div>
+            <div class="meta-info">
               <span class="created-date">
                 {{ $t('workOrder.form.createdOn') }}: {{ formatDate(workOrder.created_at) }}
+              </span>
+              <span v-if="workOrder.updated_at" class="updated-date">
+                Updated: {{ formatDate(workOrder.updated_at) }}
               </span>
             </div>
           </div>
@@ -17,7 +22,7 @@
         <el-col :span="4">
           <div class="header-actions">
             <el-dropdown trigger="click" @command="handleHeaderAction">
-              <el-button type="text" size="small" class="action-button">
+              <el-button type="text" size="default" class="action-button">
                 <el-icon class="rotated-icon"><MoreFilled /></el-icon>
               </el-button>
               <template #dropdown>
@@ -30,9 +35,13 @@
                     <el-icon><Share /></el-icon>
                     {{ $t('workOrder.actions.share') }}
                   </el-dropdown-item>
-                  <el-dropdown-item command="export" divided>
+                  <el-dropdown-item command="export">
                     <el-icon><Download /></el-icon>
                     {{ $t('workOrder.actions.export') }}
+                  </el-dropdown-item>
+                  <el-dropdown-item command="delete" divided class="delete-item">
+                    <el-icon><Delete /></el-icon>
+                    {{ $t('workOrder.actions.delete') }}
                   </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -53,29 +62,66 @@
             <el-option label="Completed" value="Completed" />
           </el-select>
         </el-descriptions-item>
+        <el-descriptions-item v-if="workOrder.code" label="Work Order Code">
+          <span class="detail-value work-order-code">{{ workOrder.code }}</span>
+        </el-descriptions-item>
         <el-descriptions-item :label="$t('workOrder.table.priority')">
           <PriorityTag :priority="workOrder.priority" />
         </el-descriptions-item>
         <el-descriptions-item :label="$t('workOrder.table.assignedTo')">
           <span class="field-value">{{ workOrder.created_by || 'Unassigned' }}</span>
         </el-descriptions-item>
-        <el-descriptions-item label="Supervisor">
-          <span class="field-value">Erik Yu</span>
+        <el-descriptions-item label="Updated By">
+          <span class="field-value">{{ workOrder.updated_by || '-' }}</span>
         </el-descriptions-item>
         <el-descriptions-item :label="$t('workOrder.table.workType')">
           <WorkTypeTag :work-type="workOrder.work_type" />
         </el-descriptions-item>
         <el-descriptions-item :label="$t('workOrder.table.category')">
-          <CategoryTag :category="workOrder.category" />
+          <CategoryTag :category="workOrder.categories || workOrder.category_list?.[0]" />
         </el-descriptions-item>
         <el-descriptions-item :label="$t('workOrder.table.estimatedTime')">
           <span class="detail-value">
             {{ workOrder.estimated_minutes ? `${workOrder.estimated_minutes} min` : '-' }}
           </span>
         </el-descriptions-item>
+        <el-descriptions-item v-if="workOrder.vendor_ids?.length" label="Vendors">
+          <span class="detail-value">{{ workOrder.vendor_ids.join(', ') }}</span>
+        </el-descriptions-item>
+        <el-descriptions-item v-if="workOrder.request" label="Related Request">
+          <span class="detail-value linked-value" @click="viewRequest(workOrder.request)">
+            {{ workOrder.request.name }}
+          </span>
+        </el-descriptions-item>
+      </el-descriptions>
+    </div>
+
+    <!-- Dates Section -->
+    <div class="detail-section dates-section">
+      <el-descriptions :column="4" class="dates-descriptions">
+        <el-descriptions-item label="Start Date">
+          <span class="detail-value">
+            {{ workOrder.start_date ? formatDate(workOrder.start_date) : '-' }}
+          </span>
+        </el-descriptions-item>
+        <el-descriptions-item label="End Date">
+          <span class="detail-value">
+            {{ workOrder.end_date ? formatDate(workOrder.end_date) : '-' }}
+          </span>
+        </el-descriptions-item>
         <el-descriptions-item :label="$t('workOrder.table.dueDate')">
           <span class="detail-value" :class="{ overdue: isOverdue }">
             {{ workOrder.due_date ? formatDate(workOrder.due_date) : '-' }}
+          </span>
+        </el-descriptions-item>
+        <el-descriptions-item label="Recurrence Type">
+          <span
+            class="detail-value"
+            :class="{ 'recurrence-clickable': isRecurring }"
+            @click="isRecurring ? scrollToScheduleSection() : null"
+            :style="{ cursor: isRecurring ? 'pointer' : 'default' }"
+          >
+            {{ getRecurrenceTypeLabel() }}
           </span>
         </el-descriptions-item>
       </el-descriptions>
@@ -92,77 +138,173 @@
       </el-descriptions>
     </div>
 
-    <!-- Attachments Section -->
-    <div class="detail-section" v-if="hasAttachments">
+    <!-- Related Equipment Section -->
+    <div class="detail-section" v-if="workOrder.equipment_node_ids?.length">
       <el-divider />
-      <h3 class="section-title">{{ $t('workOrder.attachments.title') }}</h3>
-      <el-row :gutter="12">
-        <el-col :span="6" v-for="(image, index) in workOrder.image_list" :key="index">
-          <div class="attachment-item">
-            <el-image :src="image" fit="cover" :preview-src-list="workOrder.image_list" class="attachment-image">
-              <template #error>
-                <div class="image-slot">
-                  <el-icon><Picture /></el-icon>
-                </div>
-              </template>
-            </el-image>
+      <h3 class="section-title">Related Equipment</h3>
+      <div v-if="loadingEquipment" class="loading-container">
+        <el-skeleton :rows="2" animated />
+      </div>
+      <div v-else-if="hasValidEquipment" class="equipment-grid">
+        <el-tooltip
+          v-for="equipment in validEquipmentList"
+          :key="`equipment-${equipment.id}-${equipment.name}`"
+          effect="light"
+          placement="top"
+          popper-class="equipment-tooltip-popper"
+        >
+          <template #content>
+            <div class="equipment-tooltip">
+              <div v-if="equipment.manufacturer"><strong>Manufacturer:</strong> {{ equipment.manufacturer.name }}</div>
+              <div v-if="equipment.location?.name"><strong>Location:</strong> {{ equipment.location.name }}</div>
+              <div v-if="equipment.person_in_charge">
+                <strong>Person in Charge:</strong> {{ equipment.person_in_charge }}
+              </div>
+              <div v-if="!equipment.manufacturer && !equipment.location?.name && !equipment.person_in_charge">
+                No additional details available
+              </div>
+            </div>
+          </template>
+          <div class="equipment-card">
+            <div class="equipment-image">
+              <el-image
+                v-if="equipment.image_list?.length"
+                :src="equipment.image_list[0]"
+                fit="cover"
+                class="equipment-thumbnail"
+              >
+                <template #error>
+                  <div class="equipment-icon">
+                    <el-icon><Tools /></el-icon>
+                  </div>
+                </template>
+              </el-image>
+              <div v-else class="equipment-icon">
+                <el-icon><Tools /></el-icon>
+              </div>
+            </div>
+            <div class="equipment-info">
+              <div class="equipment-name">{{ equipment.name || `Equipment ${equipment.id}` }}</div>
+              <div class="equipment-type">{{ equipment.type || equipment.equipment_type || 'Equipment' }}</div>
+            </div>
           </div>
-        </el-col>
-      </el-row>
+        </el-tooltip>
+      </div>
+      <div v-else class="no-equipment">
+        <el-empty description="No equipment details available" :image-size="60" />
+      </div>
     </div>
 
-    <!-- Schedule Conditions Section -->
-    <div v-if="isRecurring" class="detail-section schedule-conditions-section">
-      <!-- Schedule Conditions Card -->
-      <div class="schedule-conditions-card">
-        <!-- Header -->
-        <div class="schedule-header">
-          <div class="header-left">
-            <h3 class="schedule-title">{{ $t('workOrder.schedule.title') }}</h3>
+    <!-- Work Order Progress Section -->
+    <div class="detail-section" v-if="workOrderProgress">
+      <el-divider />
+      <h3 class="section-title">Task Progress</h3>
+      <div class="progress-section">
+        <div class="progress-stats">
+          <div class="stat-item">
+            <span class="stat-label">Total Tasks:</span>
+            <span class="stat-value">{{ workOrderProgress.total }}</span>
           </div>
-          <el-button
-            type="default"
-            size="small"
-            @click="openTimelineModal"
-            :title="$t('workOrder.schedule.viewTimeline')"
-            class="timeline-button"
-          >
-            <el-icon><View /></el-icon>
-            {{ $t('workOrder.schedule.viewTimeline') }}
-          </el-button>
+          <div class="stat-item">
+            <span class="stat-label">Completed:</span>
+            <span class="stat-value completed">{{ workOrderProgress.completed }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Failed:</span>
+            <span class="stat-value failed">{{ workOrderProgress.failed }}</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Remaining:</span>
+            <span class="stat-value">{{ workOrderProgress.remaining }}</span>
+          </div>
         </div>
-
-        <!-- Content Grid -->
-        <div class="schedule-content-grid">
-          <!-- Repeat Type -->
-          <div class="data-section">
-            <div class="data-label">{{ $t('workOrder.schedule.repeatTypeLabel') }}</div>
-            <div class="data-value">{{ $t('workOrder.schedule.timeBased') }}</div>
+        <div class="progress-bar-container">
+          <el-progress
+            :percentage="workOrderProgress.percentage"
+            :stroke-width="12"
+            :status="workOrderProgress.percentage === 100 ? 'success' : 'primary'"
+          />
+          <div class="progress-text">
+            {{ workOrderProgress.completed }} of {{ workOrderProgress.total }} tasks completed
           </div>
+        </div>
+      </div>
+    </div>
 
-          <!-- Frequency -->
-          <div class="data-section">
-            <div class="data-label">{{ $t('workOrder.schedule.frequencyLabel') }}</div>
-            <div class="data-value">{{ $t('workOrder.schedule.weeklyPattern') }}</div>
-          </div>
+    <!-- Attachments Section -->
+    <div class="detail-section" v-if="hasAttachments || hasFileAttachments">
+      <el-divider />
+      <h3 class="section-title">{{ $t('workOrder.attachments.title') }}</h3>
 
-          <!-- Continued From -->
-          <div class="data-section">
-            <div class="data-label">{{ $t('workOrder.schedule.continuedFromLabel') }}</div>
-            <div class="data-value linked-value" @click="navigateToLinkedOrder">Daily Wash - Washin Washer</div>
-          </div>
+      <!-- Image Attachments -->
+      <div v-if="hasAttachments" class="attachments-subsection">
+        <h4 class="subsection-title">Images</h4>
+        <el-row :gutter="12">
+          <el-col :span="6" v-for="(image, index) in workOrder.image_list" :key="index">
+            <div class="attachment-item">
+              <el-image :src="image" fit="cover" :preview-src-list="workOrder.image_list" class="attachment-image">
+                <template #error>
+                  <div class="image-slot">
+                    <el-icon><Picture /></el-icon>
+                  </div>
+                </template>
+              </el-image>
+            </div>
+          </el-col>
+        </el-row>
+      </div>
 
-          <!-- Weekly Pattern -->
-          <div class="data-section weekly-pattern-section">
-            <div class="data-label">{{ $t('workOrder.schedule.weeklyPatternLabel') }}</div>
-            <div class="day-indicators">
-              <div v-for="day in weekDays" :key="day.name" class="day-indicator" :class="{ active: day.active }">
-                {{ day.name.charAt(0) }}
+      <!-- File Attachments -->
+      <div v-if="hasFileAttachments" class="attachments-subsection">
+        <h4 class="subsection-title">Files</h4>
+        <div class="file-list">
+          <div v-for="(file, index) in workOrder.file_list" :key="index" class="file-item">
+            <div class="file-icon">
+              <el-icon><component :is="getFileIcon(file)" /></el-icon>
+            </div>
+            <div class="file-info">
+              <div class="file-name">{{ file }}</div>
+              <div class="file-actions">
+                <el-button type="text" size="small" @click="downloadFile(file)">
+                  <el-icon><Download /></el-icon>
+                  Download
+                </el-button>
               </div>
             </div>
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Schedule Conditions Section -->
+    <div v-if="isRecurring" class="detail-section schedule-conditions-section">
+      <el-divider />
+      <div class="schedule-header" ref="scheduleSection">
+        <h3 class="section-title">{{ $t('workOrder.schedule.title') }}</h3>
+        <el-button
+          type="default"
+          size="small"
+          @click="openTimelineModal"
+          :title="$t('workOrder.schedule.viewTimeline')"
+          class="timeline-button"
+        >
+          <el-icon><View /></el-icon>
+          {{ $t('workOrder.schedule.viewTimeline') }}
+        </el-button>
+      </div>
+
+      <!-- Schedule Details -->
+      <el-descriptions :column="4" class="general-details-descriptions" style="margin-left: 4px !important">
+        <el-descriptions-item :label="$t('workOrder.schedule.repeatTypeLabel')">
+          <span class="detail-value">{{ $t('workOrder.schedule.timeBased') }}</span>
+        </el-descriptions-item>
+        <el-descriptions-item :label="$t('workOrder.schedule.frequencyLabel')">
+          <span class="detail-value">{{ $t('workOrder.schedule.weeklyPattern') }}</span>
+        </el-descriptions-item>
+        <el-descriptions-item :label="$t('workOrder.schedule.continuedFromLabel')">
+          <span class="detail-value linked-value" @click="navigateToLinkedOrder">Daily Wash - Washin Washer</span>
+        </el-descriptions-item>
+      </el-descriptions>
     </div>
 
     <!-- Time & Cost Tracking Card -->
@@ -172,29 +314,47 @@
 
       <!-- Tracking Tabs -->
       <el-tabs v-model="activeTrackingTab" class="tracking-tabs">
-        <!-- Combined Costs Tab -->
+        <!-- Tasks Tab -->
+        <el-tab-pane label="Tasks" name="tasks">
+          <div class="tab-content">
+            <div v-if="workOrder.task_list?.length" class="tasks-list">
+              <div v-for="(taskId, index) in workOrder.task_list" :key="taskId" class="task-item">
+                <div class="task-number">{{ index + 1 }}</div>
+                <div class="task-info">
+                  <div class="task-id">Task ID: {{ taskId }}</div>
+                  <div class="task-status">Status: Pending</div>
+                </div>
+              </div>
+            </div>
+            <div v-else class="no-data-placeholder">
+              <el-empty description="No Tasks" :image-size="120" />
+            </div>
+          </div>
+        </el-tab-pane>
+
+        <!-- Standards Tab -->
+        <el-tab-pane label="Standards" name="standards">
+          <div class="tab-content">
+            <div v-if="workOrder.standards?.length" class="standards-list">
+              <div v-for="standard in workOrder.standards" :key="standard.id" class="standard-item">
+                <div class="standard-header">
+                  <span class="standard-name">{{ standard.name }}</span>
+                  <span class="standard-code">{{ standard.code }}</span>
+                </div>
+                <div class="standard-description">{{ standard.description }}</div>
+              </div>
+            </div>
+            <div v-else class="no-data-placeholder">
+              <el-empty description="No Standards" :image-size="120" />
+            </div>
+          </div>
+        </el-tab-pane>
+
+        <!-- Costs Tab -->
         <el-tab-pane label="Costs" name="costs">
           <div class="tab-content">
             <div class="no-data-placeholder">
-              <el-empty description="No Data" :image-size="120" />
-            </div>
-          </div>
-        </el-tab-pane>
-
-        <!-- standards Tab -->
-        <el-tab-pane label="standards" name="standards">
-          <div class="tab-content">
-            <div class="no-data-placeholder">
-              <el-empty description="No Data" :image-size="120" />
-            </div>
-          </div>
-        </el-tab-pane>
-
-        <!-- Procedures Tab -->
-        <el-tab-pane label="Procedures" name="procedures">
-          <div class="tab-content">
-            <div class="no-data-placeholder">
-              <el-empty description="No Data" :image-size="120" />
+              <el-empty description="No Cost Data" :image-size="120" />
             </div>
           </div>
         </el-tab-pane>
@@ -220,6 +380,37 @@
         </span>
       </template>
     </el-dialog>
+
+    <!-- Delete Confirmation Modal for Recurring Work Orders -->
+    <el-dialog
+      v-model="deleteDialogVisible"
+      title="Delete Work Order"
+      width="480px"
+      :before-close="() => (deleteDialogVisible = false)"
+      class="delete-dialog"
+    >
+      <div class="delete-dialog-content">
+        <el-icon class="warning-icon"><Warning /></el-icon>
+        <div class="delete-message">
+          <h4>This is a recurring work order</h4>
+          <p>Choose which work orders you want to delete:</p>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="delete-dialog-footer">
+          <el-button @click="deleteDialogVisible = false" :disabled="deleting"> Cancel </el-button>
+          <el-button type="warning" @click="handleDeleteConfirmation('individual')" :loading="deleting">
+            <el-icon><DocumentDelete /></el-icon>
+            Individual
+          </el-button>
+          <el-button type="danger" @click="handleDeleteConfirmation('recurrence')" :loading="deleting">
+            <el-icon><DocumentDelete /></el-icon>
+            Recurrence
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 
   <!-- Empty State -->
@@ -230,13 +421,27 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import { Edit, Share, Picture, Download, View, MoreFilled } from '@element-plus/icons-vue'
+import {
+  Edit,
+  Share,
+  Picture,
+  Download,
+  View,
+  MoreFilled,
+  Tools,
+  Delete,
+  Warning,
+  Document,
+  DocumentDelete
+} from '@element-plus/icons-vue'
 import { convertToLocalTime } from '@/utils/datetime'
+import { getEquipmentById } from '@/api/equipment'
+import { deleteIndividualWorkOrder, deleteRecurrenceWorkOrders } from '@/api/work-order'
 import PriorityTag from '../PriorityTag.vue'
 import WorkTypeTag from '../WorkTypeTag.vue'
 import CategoryTag from '../CategoryTag.vue'
 import Timeline from '../Timeline/Timeline.vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 // Props
 const props = defineProps( {
@@ -256,13 +461,19 @@ const emit = defineEmits( [
   'add-time',
   'add-costs',
   'view-procedure',
-  'add-comment'
+  'add-comment',
+  'delete'
 ] )
 
 // State
 const localStatus = ref( '' )
-const activeTrackingTab = ref( 'costs' )
+const activeTrackingTab = ref( 'tasks' )
 const timelineModalVisible = ref( false )
+const equipmentDetails = ref( [] )
+const loadingEquipment = ref( false )
+const deleteDialogVisible = ref( false )
+const deleting = ref( false )
+const scheduleSection = ref( null )
 
 // Week days for schedule display
 const weekDays = ref( [
@@ -289,8 +500,103 @@ const hasAttachments = computed( () => {
 
 const isRecurring = computed( () => {
   // Check if work order has recurrence (not type 1 which means "Does not repeat")
-  return props.workOrder?.recurrence_type?.id && props.workOrder.recurrence_type.id !== 1
+  const recurrenceType = props.workOrder?.recurrence_type
+  
+  if ( !recurrenceType ) {
+    return false
+  }
+  
+  // Debug: log the recurrence type for debugging
+  console.log( 'IsRecurring check:', recurrenceType )
+  
+  // If it has an id, check if it's not 1 ("Does not repeat")
+  if ( recurrenceType.id ) {
+    return recurrenceType.id !== 1
+  }
+  
+  // If it's a string, check if it's not "Does not repeat"
+  if ( typeof recurrenceType === 'string' ) {
+    return recurrenceType.toLowerCase() !== 'does not repeat' && recurrenceType.toLowerCase() !== 'none'
+  }
+  
+  // If it's an object with name property
+  if ( recurrenceType.name ) {
+    return recurrenceType.name.toLowerCase() !== 'does not repeat' && recurrenceType.name.toLowerCase() !== 'none'
+  }
+  
+  return false
 } )
+
+const workOrderProgress = computed( () => {
+  const progress = props.workOrder?.work_order_progress
+  if ( !progress ) return null
+
+  const total = progress.total_task_amount || 0
+  const completed = progress.completed_task_amount || 0
+  const failed = progress.failed_task_amount || 0
+  const percentage = total > 0 ? Math.round( ( completed / total ) * 100 ) : 0
+
+  return {
+    total,
+    completed,
+    failed,
+    percentage,
+    remaining : total - completed - failed
+  }
+} )
+
+const hasFileAttachments = computed( () => {
+  return props.workOrder?.file_list && props.workOrder.file_list.length > 0
+} )
+
+const validEquipmentList = computed( () => {
+  if ( !equipmentDetails.value || !Array.isArray( equipmentDetails.value ) ) {
+    return []
+  }
+  return equipmentDetails.value.filter( eq => eq && eq.id && eq.name )
+} )
+
+const hasValidEquipment = computed( () => {
+  return validEquipmentList.value.length > 0
+} )
+
+// Equipment loading function
+const loadEquipmentDetails = async() => {
+  if ( !props.workOrder?.equipment_node_ids?.length ) {
+    equipmentDetails.value = []
+    return
+  }
+
+  try {
+    loadingEquipment.value = true
+    const equipmentPromises = props.workOrder.equipment_node_ids.map( id =>
+      getEquipmentById( id ).catch( error => {
+        console.warn( `Failed to load equipment ${id}:`, error )
+        return null
+      } )
+    )
+
+    const results = await Promise.all( equipmentPromises )
+    equipmentDetails.value = results
+      .filter( result => result?.data && result.data.id )
+      .map( result => ( {
+        ...result.data,
+        // Ensure we have fallback values for required fields
+        id : result.data.id,
+        name : result.data.name || `Equipment ${result.data.id}`,
+        manufacturer : result.data.manufacturer || null,
+        location : result.data.location || null,
+        person_in_charge : result.data.person_in_charge || null,
+        image_list : result.data.image_list || [],
+        type : result.data.type || result.data.equipment_type || 'Equipment'
+      } ) )
+  } catch ( error ) {
+    console.error( 'Failed to load equipment details:', error )
+    equipmentDetails.value = []
+  } finally {
+    loadingEquipment.value = false
+  }
+}
 
 // Watchers
 watch(
@@ -298,6 +604,8 @@ watch(
   newWorkOrder => {
     if ( newWorkOrder ) {
       localStatus.value = newWorkOrder.state?.name || 'Ready'
+      // Load equipment details when work order changes
+      loadEquipmentDetails()
     }
   },
   { immediate : true }
@@ -323,8 +631,75 @@ const handleHeaderAction = action => {
     case 'export':
       emit( 'export', props.workOrder )
       break
+    case 'delete':
+      handleDeleteWorkOrder()
+      break
     default:
       console.warn( `Unhandled header action: ${action}` )
+  }
+}
+
+// Delete methods
+const handleDeleteWorkOrder = () => {
+  if ( isRecurring.value ) {
+    // For recurring work orders, show confirmation dialog with two options
+    deleteDialogVisible.value = true
+  } else {
+    // For non-recurring work orders, show simple confirmation
+    ElMessageBox.confirm(
+      'This action will permanently delete this work order. This cannot be undone.',
+      'Delete Work Order',
+      {
+        confirmButtonText : 'Delete',
+        cancelButtonText : 'Cancel',
+        type : 'warning',
+        confirmButtonClass : 'el-button--danger'
+      }
+    )
+      .then( async() => {
+        await performDeleteIndividual()
+      } )
+      .catch( () => {
+        // User cancelled
+      } )
+  }
+}
+
+const performDeleteIndividual = async() => {
+  try {
+    deleting.value = true
+    await deleteIndividualWorkOrder( props.workOrder.id )
+    ElMessage.success( 'Work order deleted successfully' )
+    emit( 'delete', { workOrder : props.workOrder, type : 'individual' } )
+  } catch ( error ) {
+    console.error( 'Failed to delete work order:', error )
+    ElMessage.error( 'Failed to delete work order' )
+  } finally {
+    deleting.value = false
+  }
+}
+
+const performDeleteRecurrence = async() => {
+  try {
+    deleting.value = true
+    await deleteRecurrenceWorkOrders( props.workOrder.recurrence_uuid )
+    ElMessage.success( 'All recurring work orders deleted successfully' )
+    emit( 'delete', { workOrder : props.workOrder, type : 'recurrence' } )
+    deleteDialogVisible.value = false
+  } catch ( error ) {
+    console.error( 'Failed to delete recurring work orders:', error )
+    ElMessage.error( 'Failed to delete recurring work orders' )
+  } finally {
+    deleting.value = false
+  }
+}
+
+const handleDeleteConfirmation = async type => {
+  if ( type === 'individual' ) {
+    await performDeleteIndividual()
+    deleteDialogVisible.value = false
+  } else if ( type === 'recurrence' ) {
+    await performDeleteRecurrence()
   }
 }
 
@@ -344,6 +719,76 @@ const exportTimeline = () => {
 
 const navigateToLinkedOrder = () => {
   ElMessage.info( 'Navigation to linked work order will be implemented by Yellow Guy' )
+}
+
+const getFileIcon = fileName => {
+  const extension = fileName.split( '.' ).pop()?.toLowerCase()
+  switch ( extension ) {
+    case 'pdf':
+      return 'DocumentText'
+    case 'doc':
+    case 'docx':
+      return 'Document'
+    case 'xls':
+    case 'xlsx':
+      return 'Grid'
+    case 'zip':
+    case 'rar':
+      return 'FolderZip'
+    default:
+      return 'Document'
+  }
+}
+
+const downloadFile = fileName => {
+  ElMessage.info( `Download functionality for ${fileName} will be implemented` )
+}
+
+const viewRequest = request => {
+  ElMessage.info( `Navigation to request ${request.name} will be implemented` )
+}
+
+const getRecurrenceTypeLabel = () => {
+  if ( !props.workOrder?.recurrence_type ) {
+    return 'Does not repeat'
+  }
+  
+  // Handle different possible data structures
+  const recurrenceType = props.workOrder.recurrence_type
+  
+  // Debug: log the recurrence type structure
+  console.log( 'Recurrence Type Data:', recurrenceType )
+  
+  // If it's an object with name property
+  if ( typeof recurrenceType === 'object' && recurrenceType.name ) {
+    return recurrenceType.name
+  }
+  
+  // If it's a string directly
+  if ( typeof recurrenceType === 'string' ) {
+    return recurrenceType
+  }
+  
+  // If it has an id property, check if it's not "Does not repeat" (id: 1)
+  if ( recurrenceType.id && recurrenceType.id !== 1 ) {
+    return recurrenceType.label || recurrenceType.name || 'Recurring'
+  }
+  
+  return 'Does not repeat'
+}
+
+const scrollToScheduleSection = () => {
+  if ( scheduleSection.value ) {
+    scheduleSection.value.scrollIntoView( { behavior: 'smooth', block: 'start' } )
+  } else {
+    // Fallback: try to find the schedule section by class
+    const scheduleElement = document.querySelector( '.schedule-conditions-section .schedule-header' )
+    if ( scheduleElement ) {
+      scheduleElement.scrollIntoView( { behavior: 'smooth', block: 'start' } )
+    } else {
+      console.warn( 'Schedule section not found for scrolling' )
+    }
+  }
 }
 
 defineOptions( {
@@ -373,12 +818,33 @@ defineOptions( {
   z-index: 10;
 
   .header-main {
-    .detail-title {
-      font-size: 20px;
-      font-weight: 600;
-      color: var(--el-text-color-primary);
-      margin: 0 0 8px 0;
-      line-height: 1.4;
+    .title-row {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 8px;
+
+      .detail-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--el-text-color-primary);
+        margin: 0;
+        line-height: 1.4;
+      }
+
+      .work-order-id {
+        color: var(--el-color-primary);
+        font-weight: 500;
+        font-size: 14px;
+      }
+    }
+
+    .meta-info {
+      display: flex;
+      gap: 16px;
+      font-size: 14px;
+      color: var(--el-text-color-secondary);
+      flex-wrap: wrap;
     }
 
     .header-meta {
@@ -386,11 +852,24 @@ defineOptions( {
       gap: 16px;
       font-size: 14px;
       color: var(--el-text-color-secondary);
+      flex-wrap: wrap;
 
-      .work-order-id {
-        color: var(--el-color-primary);
+      .work-order-code {
+        color: var(--el-color-success);
         font-weight: 500;
       }
+
+      .linked-value {
+        color: var(--el-color-primary);
+        cursor: pointer;
+        transition: color 0.2s ease;
+
+        &:hover {
+          color: var(--el-color-primary-dark-2);
+          text-decoration: underline;
+        }
+      }
+
     }
   }
 
@@ -419,7 +898,7 @@ defineOptions( {
     font-size: 16px;
     font-weight: 500;
     color: var(--el-text-color-primary);
-    margin: 0 0 12px 0;
+    margin: 36px 0px;
   }
 
   .section-row {
@@ -458,12 +937,15 @@ defineOptions( {
       border: none;
       border-collapse: separate;
       border-spacing: 0 16px;
+      width: 100%;
+      table-layout: fixed;
     }
 
     :deep(.el-descriptions__cell) {
-      padding: 0 70px 0 0;
+      padding: 0 24px 12px 0;
       border: none;
       vertical-align: top;
+      width: 25%;
 
       &:last-child {
         padding-right: 0;
@@ -490,6 +972,56 @@ defineOptions( {
 
       &:last-child {
         padding-right: 0;
+      }
+    }
+  }
+
+  // Dates section specific styling
+  .dates-descriptions {
+    :deep(.el-descriptions__table) {
+      border: none;
+      border-collapse: separate;
+      border-spacing: 0 16px;
+      width: 100%;
+      table-layout: fixed;
+      margin-top: -10px;
+    }
+
+    :deep(.el-descriptions__cell) {
+      padding: 0 24px 0 0;
+      border: none;
+      vertical-align: top;
+      width: 25%;
+
+      &:last-child {
+        padding-right: 0;
+      }
+    }
+
+    :deep(.el-descriptions__label) {
+      font-size: 13px;
+      color: var(--el-text-color-secondary);
+      font-weight: 500;
+      margin-bottom: 4px;
+      display: block;
+    }
+
+    :deep(.el-descriptions__content) {
+      font-size: 14px;
+      color: var(--el-text-color-primary);
+      line-height: 1.4;
+
+      .recurrence-clickable {
+        color: var(--el-color-primary) !important;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        font-weight: 500;
+
+        &:hover {
+          color: var(--el-color-primary-dark-2) !important;
+          text-decoration: underline;
+          transform: translateY(-1px);
+        }
       }
     }
   }
@@ -553,139 +1085,25 @@ defineOptions( {
 
 // Schedule Conditions Section
 .schedule-conditions-section {
-  margin-top: 24px;
-  .schedule-conditions-card {
-    background: var(--el-bg-color);
-    padding: 20px;
-    border-radius: 8px;
-    border: 1px solid var(--el-border-color-light);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-    transition: box-shadow 0.2s ease;
+  .schedule-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 32px;
 
-    &:hover {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    }
+    .timeline-button {
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 12px;
 
-    .schedule-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--el-border-color-lighter);
-
-      .header-left {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-
-        .schedule-title {
-          margin: 0;
-          font-size: 16px;
-          font-weight: 600;
-          color: var(--el-text-color-primary);
-        }
+      &:hover {
+        background-color: var(--el-color-primary-light-8);
+        border-color: var(--el-color-primary-light-3);
+        color: var(--el-color-primary-dark-2);
       }
 
-      .timeline-button {
-        font-size: 13px;
-        font-weight: 500;
-        padding: 12px 14px;
-
-        &:hover {
-          background-color: var(--el-color-primary-light-8);
-          border-color: var(--el-color-primary-light-3);
-          color: var(--el-color-primary-dark-2);
-        }
-
-        .el-icon {
-          margin-right: 6px;
-        }
-      }
-    }
-
-    .schedule-content-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 20px;
-      align-items: start;
-
-      @media (max-width: 1023px) {
-        grid-template-columns: 1fr;
-        text-align: center;
-      }
-
-      .data-section {
-        &.weekly-pattern-section {
-          @media (min-width: 1024px) {
-            text-align: right;
-          }
-        }
-
-        .data-label {
-          font-size: 12px;
-          color: var(--el-text-color-secondary);
-          margin-bottom: 6px;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          font-weight: 500;
-        }
-
-        .data-value {
-          font-size: 14px;
-          color: var(--el-text-color-primary);
-          font-weight: 500;
-          padding-top: 2px;
-
-          &.linked-value {
-            color: var(--el-color-primary);
-            cursor: pointer;
-            transition: color 0.2s ease;
-
-            &:hover {
-              color: var(--el-color-primary-dark-2);
-              text-decoration: underline;
-            }
-          }
-        }
-
-        .day-indicators {
-          display: flex;
-          gap: 6px;
-          justify-content: flex-start;
-
-          @media (max-width: 1023px) {
-            justify-content: center;
-          }
-
-          @media (min-width: 1024px) {
-            justify-content: flex-end;
-          }
-
-          .day-indicator {
-            width: 28px;
-            height: 28px;
-            border-radius: 6px;
-            font-size: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 500;
-            transition: all 0.2s ease;
-
-            &.active {
-              background-color: var(--el-color-primary);
-              color: white;
-              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            }
-
-            &:not(.active) {
-              background-color: var(--el-fill-color-light);
-              color: var(--el-text-color-secondary);
-              border: 1px solid var(--el-border-color-lighter);
-            }
-          }
-        }
+      .el-icon {
+        margin-right: 6px;
       }
     }
   }
@@ -826,6 +1244,281 @@ defineOptions( {
   min-height: 400px;
 }
 
+// Work Order Progress Styles
+.progress-section {
+  .progress-stats {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 80px;
+
+      .stat-label {
+        font-size: 12px;
+        color: var(--el-text-color-secondary);
+        margin-bottom: 4px;
+      }
+
+      .stat-value {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--el-text-color-primary);
+
+        &.completed {
+          color: var(--el-color-success);
+        }
+
+        &.failed {
+          color: var(--el-color-danger);
+        }
+      }
+    }
+  }
+
+  .progress-bar-container {
+    .progress-text {
+      text-align: center;
+      font-size: 13px;
+      color: var(--el-text-color-secondary);
+      margin-top: 8px;
+    }
+  }
+}
+
+// Equipment Grid Styles
+.equipment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 16px;
+  margin-bottom: 36px;
+
+  .equipment-card {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    border: 1px solid var(--el-border-color-light);
+    border-radius: 8px;
+    background: var(--el-bg-color);
+    transition: all 0.2s ease;
+
+    &:hover {
+      border-color: var(--el-color-primary);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .equipment-image,
+    .equipment-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 12px;
+      overflow: hidden;
+    }
+
+    .equipment-icon {
+      background: var(--el-color-primary-light-9);
+
+      .el-icon {
+        font-size: 20px;
+        color: var(--el-color-primary);
+      }
+    }
+
+    .equipment-thumbnail {
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+    }
+
+    .equipment-info {
+      flex: 1;
+
+      .equipment-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--el-text-color-primary);
+        margin-bottom: 4px;
+      }
+
+      .equipment-type {
+        font-size: 12px;
+        color: var(--el-text-color-secondary);
+      }
+    }
+  }
+}
+
+// Equipment Tooltip Styles
+.equipment-tooltip {
+  padding: 6px 12px;
+  background: white !important;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+  max-width: 280px;
+
+  div {
+    margin-bottom: 8px;
+    color: var(--el-text-color-primary);
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    strong {
+      margin-right: 8px;
+      color: var(--el-text-color-regular);
+      font-weight: 600;
+    }
+  }
+}
+
+// File Attachments Styles
+.attachments-subsection {
+  margin-bottom: 24px;
+  margin-left: 4px;
+
+  .subsection-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--el-text-color-primary);
+    margin-bottom: 12px;
+  }
+}
+
+.file-list {
+  .file-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid var(--el-border-color-light);
+    border-radius: 6px;
+    margin-bottom: 8px;
+    background: var(--el-bg-color);
+
+    .file-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+      background: var(--el-color-info-light-9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 12px;
+
+      .el-icon {
+        font-size: 16px;
+        color: var(--el-color-info);
+      }
+    }
+
+    .file-info {
+      flex: 1;
+
+      .file-name {
+        font-size: 14px;
+        color: var(--el-text-color-primary);
+        margin-bottom: 4px;
+      }
+
+      .file-actions {
+        .el-button {
+          padding: 0;
+          font-size: 12px;
+        }
+      }
+    }
+  }
+}
+
+// Standards and Tasks Lists
+.standards-list,
+.tasks-list {
+  .standard-item,
+  .task-item {
+    padding: 12px;
+    border: 1px solid var(--el-border-color-light);
+    border-radius: 6px;
+    margin-bottom: 8px;
+    background: var(--el-bg-color);
+  }
+}
+
+.standards-list {
+  .standard-item {
+    .standard-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+
+      .standard-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--el-text-color-primary);
+      }
+
+      .standard-code {
+        font-size: 12px;
+        color: var(--el-color-primary);
+        background: var(--el-color-primary-light-9);
+        padding: 2px 8px;
+        border-radius: 4px;
+      }
+    }
+
+    .standard-description {
+      font-size: 13px;
+      color: var(--el-text-color-secondary);
+      line-height: 1.4;
+    }
+  }
+}
+
+.tasks-list {
+  .task-item {
+    display: flex;
+    align-items: center;
+
+    .task-number {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--el-color-primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 500;
+      margin-right: 12px;
+    }
+
+    .task-info {
+      flex: 1;
+
+      .task-id {
+        font-size: 14px;
+        color: var(--el-text-color-primary);
+        margin-bottom: 4px;
+      }
+
+      .task-status {
+        font-size: 12px;
+        color: var(--el-text-color-secondary);
+      }
+    }
+  }
+}
+
 // No Data Placeholder
 .no-data-placeholder {
   display: flex;
@@ -833,6 +1526,15 @@ defineOptions( {
   align-items: center;
   padding: 40px 20px;
   min-height: 200px;
+}
+
+.loading-container {
+  padding: 20px;
+}
+
+.no-equipment {
+  padding: 20px;
+  text-align: center;
 }
 
 @media (max-width: 768px) {
@@ -853,6 +1555,113 @@ defineOptions( {
 
   .details-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+// Global tooltip styles for equipment tooltips
+:deep(.equipment-tooltip-popper) {
+  background: white !important;
+  border: 1px solid var(--el-border-color) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  padding: 0 !important;
+
+  .el-tooltip__content {
+    background: white !important;
+    color: var(--el-text-color-primary) !important;
+    border-radius: 8px !important;
+    padding: 0 !important;
+  }
+
+  .el-popper__arrow::before {
+    background: white !important;
+    border: 1px solid var(--el-border-color) !important;
+  }
+}
+
+// Delete Item Styles
+:deep(.delete-item) {
+  color: var(--el-color-danger) !important;
+
+  &:hover {
+    background-color: var(--el-color-danger-light-9) !important;
+    color: var(--el-color-danger-dark-2) !important;
+  }
+
+  .el-icon {
+    color: var(--el-color-danger) !important;
+  }
+}
+
+// Delete Dialog Styles
+.delete-dialog {
+  :deep(.el-dialog__header) {
+    background: var(--el-color-warning-light-9);
+    border-bottom: 1px solid var(--el-border-color-light);
+    padding: 20px 24px;
+    margin: 0;
+
+    .el-dialog__title {
+      color: var(--el-color-warning-dark-2);
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .el-dialog__headerbtn {
+      .el-dialog__close {
+        color: var(--el-color-warning-dark-2);
+
+        &:hover {
+          color: var(--el-color-warning);
+        }
+      }
+    }
+  }
+
+  .delete-dialog-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 20px 0;
+
+    .warning-icon {
+      font-size: 32px;
+      color: var(--el-color-warning);
+      margin-top: 4px;
+    }
+
+    .delete-message {
+      flex: 1;
+
+      h4 {
+        margin: 0 0 12px 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--el-text-color-primary);
+      }
+
+      p {
+        margin: 0;
+        font-size: 14px;
+        color: var(--el-text-color-regular);
+        line-height: 1.5;
+      }
+    }
+  }
+
+  .delete-dialog-footer {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+
+    .el-button {
+      padding: 12px 20px;
+      font-weight: 500;
+
+      .el-icon {
+        margin-right: 6px;
+      }
+    }
   }
 }
 </style>

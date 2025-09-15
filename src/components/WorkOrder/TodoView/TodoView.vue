@@ -72,6 +72,7 @@
             <el-pagination
               :current-page="internalCurrentPage"
               :page-size="internalPageSize"
+              :pager-count="pagerCount"
               :total="paginationInfo.total"
               layout="total, prev, pager, next, jumper"
               :small="true"
@@ -86,9 +87,15 @@
 
     <!-- Right Panel - Work Order Detail or Create -->
     <div class="right-panel">
+      <!-- Loading State -->
+      <div v-if="isLoadingWorkOrder" class="loading-container">
+        <el-skeleton :rows="5" animated />
+        <div class="loading-text">{{ 'Loading work order details...' }}</div>
+      </div>
+
       <!-- Work Order Detail View -->
       <WorkOrderDetail
-        v-if="currentRightPanelView === 'detail'"
+        v-else-if="currentRightPanelView === 'detail'"
         :work-order="selectedWorkOrder"
         @edit="handleEdit"
         @share="handleShare"
@@ -123,9 +130,10 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
+import { getWorkOrderById } from '@/api/work-order'
 import WorkOrderCard from './WorkOrderCard.vue'
 import WorkOrderDetail from './WorkOrderDetail.vue'
 import WorkOrderCreate from './WorkOrderCreate.vue'
@@ -181,6 +189,10 @@ const activeTab = ref( 'todo' )
 const sortBy = ref( 'priority-desc' )
 const currentRightPanelView = ref( 'detail' ) // 'detail', 'create', or 'edit'
 const workOrderToEdit = ref( null )
+const isLoadingWorkOrder = ref( false )
+
+// Screen width tracking for responsive pager count
+const screenWidth = ref( window.innerWidth )
 
 // PDF Preview state
 const showPdfPreview = ref( false )
@@ -189,6 +201,9 @@ const pdfPreviewData = ref( null )
 // Use pagination from props instead of local state
 const internalCurrentPage = ref( props.currentPage )
 const internalPageSize = ref( props.pageSize )
+
+// Dynamic pager count based on screen width
+const pagerCount = computed( () => ( screenWidth.value > 1800 ? 7 : 3 ) )
 
 // Server handles all filtering, sorting, and pagination
 // Use work orders directly from props - no client-side processing needed
@@ -208,8 +223,30 @@ const paginationInfo = computed( () => {
 } )
 
 // Methods
-const selectWorkOrder = workOrder => {
-  selectedWorkOrder.value = workOrder
+const selectWorkOrder = async workOrder => {
+  try {
+    isLoadingWorkOrder.value = true
+
+    // Call API to get latest work order data
+    const response = await getWorkOrderById( workOrder.id )
+
+    if ( response && response.data ) {
+      selectedWorkOrder.value = response.data
+    } else {
+      // Fallback to existing data if API response is invalid
+      selectedWorkOrder.value = workOrder
+    }
+
+    currentRightPanelView.value = 'detail'
+  } catch ( error ) {
+    console.error( 'Failed to fetch work order:', error )
+    // Fallback to existing data on error
+    selectedWorkOrder.value = workOrder
+    currentRightPanelView.value = 'detail'
+    ElMessage.error( 'Failed to load work order details' )
+  } finally {
+    isLoadingWorkOrder.value = false
+  }
 }
 
 const handleTabChange = tabName => {
@@ -426,8 +463,21 @@ onMounted( () => {
   if ( displayedWorkOrders.value.length > 0 ) {
     selectedWorkOrder.value = displayedWorkOrders.value[0]
   }
+
+  // Add resize listener for responsive pager count
+  const handleResize = () => {
+    screenWidth.value = window.innerWidth
+  }
+
+  window.addEventListener( 'resize', handleResize )
+
+  // Cleanup on unmount
+  onUnmounted( () => {
+    window.removeEventListener( 'resize', handleResize )
+  } )
 } )
 
+// Remove the standalone window.addEventListener outside the lifecycle hooks
 defineOptions( {
   name : 'TodoView'
 } )
@@ -593,6 +643,17 @@ defineOptions( {
   border-radius: 8px;
   border: 1px solid var(--el-border-color-light);
   overflow: hidden;
+
+  .loading-container {
+    padding: 24px;
+
+    .loading-text {
+      text-align: center;
+      color: var(--el-text-color-secondary);
+      font-size: 14px;
+      margin-top: 16px;
+    }
+  }
 }
 
 // Responsive design for smaller screen

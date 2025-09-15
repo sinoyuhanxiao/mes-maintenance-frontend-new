@@ -168,6 +168,26 @@
           </el-select>
         </div>
 
+        <!-- Recurrence Filter -->
+        <div v-if="isFilterVisible('recurrence')" class="filter-item">
+          <el-select
+            v-model="localFilters.recurrence"
+            :placeholder="$t('workOrder.filters.recurrence')"
+            clearable
+            size="default"
+            style="width: 140px"
+            :class="{ 'highlight-animation': animatingFilters.recurrence }"
+            @change="handleFilterChange"
+          >
+            <el-option
+              v-for="recurrence in recurrenceOptions"
+              :key="recurrence.id"
+              :label="recurrence.name"
+              :value="recurrence.id"
+            />
+          </el-select>
+        </div>
+
         <!-- Right group: Search + Actions -->
         <div class="right-group">
           <!-- Search Input (optional) -->
@@ -370,7 +390,8 @@ const localFilters = reactive( {
   latest_per_recurrence : props.currentView !== 'calendar',
   status : props.modelValue.status || null,
   equipment : props.modelValue.equipment || null,
-  location : props.modelValue.location || null
+  location : props.modelValue.location || null,
+  recurrence : props.modelValue.recurrence || null
 } )
 
 // Filter drawer state
@@ -387,7 +408,8 @@ const animatingFilters = reactive( {
   status : false,
   category : false,
   equipment : false,
-  location : false
+  location : false,
+  recurrence : false
 } )
 
 // Available filters configuration
@@ -401,7 +423,8 @@ const availableFilters = reactive( {
   status : { visible : false, category : 'advanced' },
   category : { visible : false, category : 'advanced' },
   equipment : { visible : false, category : 'advanced' },
-  location : { visible : false, category : 'advanced' }
+  location : { visible : false, category : 'advanced' },
+  recurrence : { visible : false, category : 'advanced' }
 } )
 
 // Filter options
@@ -439,6 +462,14 @@ const locationOptions = computed( () => [
   { id : 2, name : 'Factory Floor 2' },
   { id : 3, name : 'Warehouse' },
   { id : 4, name : 'Office Building' }
+] )
+
+const recurrenceOptions = computed( () => [
+  { id : 1, name : t( 'workOrder.recurrence.none' ) },
+  { id : 2, name : t( 'workOrder.recurrence.daily' ) },
+  { id : 3, name : t( 'workOrder.recurrence.weekly' ) },
+  { id : 4, name : t( 'workOrder.recurrence.monthlyByDate' ) },
+  { id : 5, name : t( 'workOrder.recurrence.yearly' ) }
 ] )
 
 // Filter definitions for drawer
@@ -501,6 +532,12 @@ const filterDefinitions = computed( () => ( {
     key : 'location',
     label : t( 'workOrder.filters.location' ),
     icon : 'Location',
+    category : 'advanced'
+  },
+  recurrence : {
+    key : 'recurrence',
+    label : t( 'workOrder.filters.recurrence' ),
+    icon : 'Refresh',
     category : 'advanced'
   }
 } ) )
@@ -619,6 +656,14 @@ computed( () => {
     tags.push( {
       key : 'location',
       label : `${t( 'workOrder.filters.location' )}: ${location?.name || localFilters.location}`
+    } )
+  }
+
+  if ( localFilters.recurrence ) {
+    const recurrence = recurrenceOptions.value.find( r => r.id === localFilters.recurrence )
+    tags.push( {
+      key : 'recurrence',
+      label : `${t( 'workOrder.filters.recurrence' )}: ${recurrence?.name || localFilters.recurrence}`
     } )
   }
 

@@ -174,7 +174,8 @@ export default {
       loadingData : 'Loading data...',
       noData : 'No data available',
       formReset : 'Form has been reset',
-      validationFailed : 'Please fix validation errors'
+      validationFailed : 'Please fix validation errors',
+      statusChanged : 'Status Changed'
     },
 
     // Validation messages
@@ -234,6 +235,8 @@ export default {
       status : 'Status',
       category : 'Category',
       equipment : 'Equipment',
+      location : 'Location',
+      recurrence : 'Recurrence',
       search : 'Search',
       searchFiltersPlaceholder : 'Search filters'
     },

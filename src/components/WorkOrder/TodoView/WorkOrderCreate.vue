@@ -52,7 +52,7 @@
 
       <!-- Location Tree Select -->
       <div class="form-section">
-        <el-form-item :label="$t('workOrder.create.location')" prop="location">
+        <el-form-item :label="$t('workOrder.create.location')" prop="location_id">
           <el-tree-select
             v-model="form.location_id"
             :data="locationTreeData"
@@ -67,14 +67,15 @@
 
       <!-- Asset Tree Select -->
       <div class="form-section">
-        <el-form-item :label="$t('workOrder.create.asset')" prop="asset">
+        <el-form-item :label="$t('workOrder.create.asset')" prop="equipment_node_ids">
           <el-tree-select
-            v-model="form.equipment_node_id"
+            v-model="form.equipment_node_ids"
             :data="assetTreeData"
             :props="treeProps"
             :placeholder="$t('workOrder.create.assetPlaceholder')"
             check-strictly
             :render-after-expand="false"
+            multiple
             style="width: 100%"
           />
         </el-form-item>
@@ -82,11 +83,12 @@
 
       <!-- Assigned To -->
       <div class="form-section">
-        <el-form-item :label="$t('workOrder.create.assignTo')" prop="assignedTo">
+        <el-form-item :label="$t('workOrder.create.assignTo')" prop="assignee_ids">
           <el-select
-            v-model="form.assignedTo"
+            v-model="form.assignee_ids"
             :placeholder="$t('workOrder.create.assigneePlaceholder')"
             filterable
+            multiple
             style="width: 100%"
           >
             <el-option v-for="user in assigneeOptions" :key="user.id" :label="user.name" :value="user.id" />
@@ -96,8 +98,8 @@
 
       <!-- Supervisor -->
       <div class="form-section">
-        <el-form-item label="Supervisor" prop="supervisor">
-          <el-select v-model="form.supervisor" placeholder="Select Supervisor" filterable style="width: 100%">
+        <el-form-item label="Supervisor" prop="approved_by_id">
+          <el-select v-model="form.approved_by_id" placeholder="Select Supervisor" filterable style="width: 100%">
             <el-option
               v-for="supervisor in supervisorOptions"
               :key="supervisor.id"
@@ -160,41 +162,9 @@
         </el-form-item>
       </div>
 
-      <!-- Estimated Time -->
-      <div class="form-section">
-        <el-form-item :label="$t('workOrder.create.estimatedTime')">
-          <el-row :gutter="8">
-            <el-col :span="12">
-              <el-form-item prop="estimatedHours">
-                <el-input-number
-                  v-model="form.estimatedHours"
-                  :min="0"
-                  :max="999"
-                  :placeholder="$t('workOrder.create.hours')"
-                  style="width: 100%"
-                />
-                <div class="input-label">{{ $t('workOrder.create.hours') }}</div>
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
-              <el-form-item prop="estimatedMinutes">
-                <el-input-number
-                  v-model="form.estimatedMinutes"
-                  :min="0"
-                  :max="59"
-                  :placeholder="$t('workOrder.create.minutes')"
-                  style="width: 100%"
-                />
-                <div class="input-label">{{ $t('workOrder.create.minutes') }}</div>
-              </el-form-item>
-            </el-col>
-          </el-row>
-        </el-form-item>
-      </div>
-
       <!-- Due Date -->
       <div class="form-section">
-        <el-form-item :label="$t('workOrder.create.dueDate')" prop="dueDate">
+        <el-form-item :label="$t('workOrder.create.dueDate')" prop="due_date">
           <el-date-picker
             v-model="form.due_date"
             type="datetime"
@@ -208,7 +178,7 @@
 
       <!-- Start Date -->
       <div class="form-section">
-        <el-form-item :label="$t('workOrder.create.startDate')" prop="startDate">
+        <el-form-item :label="$t('workOrder.create.startDate')" prop="start_date">
           <el-date-picker
             v-model="form.start_date"
             type="datetime"
@@ -220,11 +190,11 @@
         </el-form-item>
       </div>
 
-      <!-- Work Type and Priority -->
+      <!-- Work Type, Priority, and State -->
       <div class="form-section">
         <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item :label="$t('workOrder.create.workType')" prop="workType">
+          <el-col :span="8">
+            <el-form-item :label="$t('workOrder.create.workType')" prop="work_type_id">
               <el-select
                 v-model="form.work_type_id"
                 :placeholder="$t('workOrder.create.workTypePlaceholder')"
@@ -234,8 +204,8 @@
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
-            <el-form-item :label="$t('workOrder.create.priority')" prop="priority">
+          <el-col :span="8">
+            <el-form-item :label="$t('workOrder.create.priority')" prop="priority_id">
               <el-select
                 v-model="form.priority_id"
                 :placeholder="$t('workOrder.create.priorityPlaceholder')"
@@ -250,6 +220,13 @@
               </el-select>
             </el-form-item>
           </el-col>
+          <el-col :span="8">
+            <el-form-item label="State" prop="state_id">
+              <el-select v-model="form.state_id" placeholder="Select state..." style="width: 100%">
+                <el-option v-for="state in stateOptions" :key="state.id" :label="state.name" :value="state.id" />
+              </el-select>
+            </el-form-item>
+          </el-col>
         </el-row>
       </div>
 
@@ -260,9 +237,9 @@
 
       <!-- Categories -->
       <div class="form-section">
-        <el-form-item :label="$t('workOrder.create.categories')" prop="categories">
+        <el-form-item :label="$t('workOrder.create.categories')" prop="category_ids">
           <el-select
-            v-model="form.categories"
+            v-model="form.category_ids"
             :placeholder="$t('workOrder.create.categoriesPlaceholder')"
             multiple
             filterable
@@ -347,7 +324,7 @@
           <!-- File Upload -->
           <el-form-item :label="$t('workOrder.create.fileUpload')" prop="files">
             <el-upload
-              v-model:file-list="form.files_list"
+              v-model:file-list="form.file_list"
               action="#"
               list-type="text"
               :auto-upload="false"
@@ -392,6 +369,7 @@ import {
   getAllWorkTypes,
   getAllPriorities,
   getAllCategories,
+  getAllStates,
   getLocationNodeTrees,
   getEquipmentNodeTrees,
   createWorkOrder
@@ -623,27 +601,32 @@ onMounted( () => {
   loadFormData()
 } )
 
-// Form data - some hardcoded because waiting for yellow's banff trip
+// Form data - matching API requirements
 const form = reactive( {
   name : '',
   description : '',
-  estimated_minutes : 30,
-  location_id : null,
-  equipment_node_id : null,
+  category_ids : [],
   priority_id : null,
-  work_type_id : null,
   state_id : 1,
+  work_type_id : null,
+  location_id : null,
+  equipment_node_ids : [],
+  vendor_ids : [],
+  assignee_ids : [],
+  approved_by_id : null,
   time_zone : Intl.DateTimeFormat().resolvedOptions().timeZone,
-  created_by : 37,
-  recurrence_type : null,
-  image_list : [],
-  files_list : [],
-  recurrence_setting : {},
-  categories : [],
   start_date : null,
   due_date : null,
-  assignedTo : null,
-  supervisor : null,
+  recurrence_type_id : null,
+  recurrence_type : null,
+  recurrence_setting : {},
+  recurrence_setting_request : {
+    start_date_time : null
+  },
+  task_add_list : [],
+  image_list : [],
+  file_list : [],
+  standard_list : [],
   tasks : [],
   standards : []
 } )
@@ -651,10 +634,12 @@ const form = reactive( {
 // Validation rules
 const rules = reactive( {
   name : [{ required : true, message : t( 'workOrder.validation.taskTitleRequired' ), trigger : 'blur' }],
-  location_id : [{ required : true, message : t( 'workOrder.validation.locationRequired' ), trigger : 'change' }],
-  equipment_node_id : [{ required : true, message : t( 'workOrder.validation.assetRequired' ), trigger : 'change' }],
+  category_ids : [{ required : true, message : 'At least one category is required', trigger : 'change' }],
+  equipment_node_ids : [{ required : true, message : 'At least one equipment is required', trigger : 'change' }],
   work_type_id : [{ required : true, message : t( 'workOrder.validation.workTypeRequired' ), trigger : 'change' }],
-  priority_id : [{ required : true, message : t( 'workOrder.validation.priorityRequired' ), trigger : 'change' }]
+  priority_id : [{ required : true, message : t( 'workOrder.validation.priorityRequired' ), trigger : 'change' }],
+  start_date : [{ required : true, message : 'Start date is required', trigger : 'change' }],
+  due_date : [{ required : true, message : 'Due date is required', trigger : 'change' }]
 } )
 
 // Tree props for tree selects
@@ -668,6 +653,7 @@ const treeProps = {
 const priorityOptions = ref( [] )
 const workTypeOptions = ref( [] )
 const categoryOptions = ref( [] )
+const stateOptions = ref( [] )
 const locationTreeData = ref( [] )
 const assetTreeData = ref( [] )
 const loading = ref( false )
@@ -694,10 +680,11 @@ const loadFormData = async() => {
   try {
     loading.value = true
 
-    const [workTypesRes, prioritiesRes, categoriesRes, locationsRes, equipmentRes] = await Promise.all( [
+    const [workTypesRes, prioritiesRes, categoriesRes, statesRes, locationsRes, equipmentRes] = await Promise.all( [
       getAllWorkTypes(),
       getAllPriorities(),
       getAllCategories(),
+      getAllStates(),
       getLocationNodeTrees(),
       getEquipmentNodeTrees()
     ] )
@@ -712,6 +699,10 @@ const loadFormData = async() => {
 
     if ( categoriesRes.data ) {
       categoryOptions.value = categoriesRes.data
+    }
+
+    if ( statesRes.data ) {
+      stateOptions.value = statesRes.data
     }
 
     if ( locationsRes.data ) {
@@ -820,9 +811,9 @@ const handleImageDownload = file => {
 
 // File upload handlers
 const handleFileRemove = file => {
-  const index = form.files_list.findIndex( item => item.uid === file.uid )
+  const index = form.file_list.findIndex( item => item.uid === file.uid )
   if ( index !== -1 ) {
-    form.files_list.splice( index, 1 )
+    form.file_list.splice( index, 1 )
   } else {
     console.error( 'File not found in files list.' )
   }
@@ -862,7 +853,7 @@ const handleFileChange = ( file, newFileList ) => {
 
   Promise.all( readerPromises )
     .then( resolvedList => {
-      form.files_list = resolvedList
+      form.file_list = resolvedList
     } )
     .catch( error => {
       console.error( 'Error processing files:', error )
@@ -878,31 +869,55 @@ const resetForm = () => {
   Object.assign( form, {
     name : '',
     description : '',
-    estimated_minutes : 30,
-    location_id : null,
-    equipment_node_id : null,
+    category_ids : [],
     priority_id : null,
-    work_type_id : null,
     state_id : 1,
+    work_type_id : null,
+    location_id : null,
+    equipment_node_ids : [],
+    vendor_ids : [],
+    assignee_ids : [],
+    approved_by_id : null,
     time_zone : Intl.DateTimeFormat().resolvedOptions().timeZone,
-    created_by : 37,
-    recurrence_type : null,
-    image_list : [],
-    files_list : [],
-    recurrence_setting : {},
-    categories : [],
     start_date : null,
-    due_date : null
+    due_date : null,
+    recurrence_type_id : null,
+    recurrence_type : null,
+    recurrence_setting : {},
+    recurrence_setting_request : {
+      start_date_time : null
+    },
+    task_add_list : [],
+    image_list : [],
+    file_list : [],
+    standard_list : [],
+    tasks : [],
+    standards : []
   } )
 
   ElMessage.success( t( 'workOrder.messages.formReset' ) )
 }
 
-// Watcher to sync recurrence_type from recurrence_setting (like NewWorkOrder.vue)
+// Watcher to sync recurrence_type from recurrence_setting
 watch(
   () => form.recurrence_setting,
   newVal => {
-    form.recurrence_type = newVal.recurrence_type
+    if ( newVal && typeof newVal === 'object' ) {
+      // The RecurrenceEditor outputs recurrence_type, map it correctly
+      form.recurrence_type = newVal.recurrence_type
+      form.recurrence_type_id = newVal.recurrence_type
+
+      // Update the recurrence_setting_request
+      form.recurrence_setting_request = {
+        start_date_time : newVal.start_date_time || form.start_date,
+        end_date_time : newVal.end_date_time,
+        month_of_year : newVal.month_of_year,
+        day_of_month : newVal.day_of_month,
+        days_of_week : newVal.days_of_week,
+        interval : newVal.interval,
+        duration_minutes : newVal.duration_minutes
+      }
+    }
   },
   { deep : true }
 )
@@ -923,25 +938,94 @@ const submitForm = async() => {
     const formattedDueDate = toUtcIso( form.due_date )
     const formattedStartDate = toUtcIso( form.start_date )
 
-    // Prepare payload following NewWorkOrder.vue pattern
-    const payload = {
-      ...form,
-      start_date : formattedStartDate,
-      due_date : formattedDueDate,
-      image_path : form.image_list.map( pic => pic.url || pic.response?.url ).filter( Boolean ),
-      file_path : form.files_list.map( file => file.url || file.response?.url ).filter( Boolean ),
-      // Backend expects recurrence_type_id instead of recurrence_type
-      recurrence_type_id : form.recurrence_type,
-      // Backend expects recurrence_setting_request instead of recurrence_setting
-      recurrence_setting_request : form.recurrence_setting
+    // Ensure start_date_time is set for recurrence
+    if ( !form.recurrence_setting_request.start_date_time && formattedStartDate ) {
+      form.recurrence_setting_request.start_date_time = formattedStartDate
     }
 
-    // Remove the old fields to avoid confusion
-    delete payload.recurrence_type
-    delete payload.recurrence_setting
+    // Ensure we have a valid recurrence_type (default to 1 if not set)
+    const recurrenceType = form.recurrence_type || form.recurrence_type_id || 1
+
+    // Convert tasks to task_add_list format (ensure we always have an array)
+    const taskAddList =
+      form.tasks && form.tasks.length > 0
+        ? form.tasks.map( task => ( {
+          name : task.name,
+          description : task.description || '',
+          time_estimate_sec : ( task.estimated_minutes || 0 ) * 60,
+          steps : [], // Temporarily empty as per requirements
+          work_order_id : 0,
+          attachments : [],
+          assignee_ids : [],
+          equipment_node_id : null,
+          location_id : null,
+          category_id : null
+        } ) )
+        : [
+          {
+            name : 'Default Task',
+            description : 'Auto-generated default task',
+            time_estimate_sec : 300, // 5 minutes default
+            steps : [],
+            work_order_id : 0,
+            attachments : [],
+            assignee_ids : [],
+            equipment_node_id : null,
+            location_id : null,
+            category_id : null
+          }
+        ]
+
+    // Prepare payload according to API specification
+    const payload = {
+      name : form.name,
+      description : form.description,
+      category_ids : form.category_ids,
+      priority_id : form.priority_id,
+      state_id : form.state_id,
+      work_type_id : form.work_type_id,
+      location_id : form.location_id,
+      equipment_node_ids : form.equipment_node_ids,
+      vendor_ids : form.vendor_ids,
+      assignee_ids : form.assignee_ids,
+      approved_by_id : form.approved_by_id,
+      time_zone : form.time_zone,
+      start_date : formattedStartDate,
+      due_date : formattedDueDate,
+      recurrence_type : recurrenceType,
+      recurrence_type_id : recurrenceType,
+      recurrence_setting_request : form.recurrence_setting_request,
+      task_add_list : taskAddList,
+      image_list : form.image_list.map( pic => pic.url || pic.response?.url ).filter( Boolean ),
+      file_list : form.file_list.map( file => file.url || file.response?.url ).filter( Boolean ),
+      standard_list : form.standard_list
+    }
+
+    // Remove null/undefined values but keep required fields
+    Object.keys( payload ).forEach( key => {
+      if ( payload[key] === null || payload[key] === undefined ) {
+        // Don't delete required fields, set defaults instead
+        if ( ['category_ids', 'equipment_node_ids', 'task_add_list', 'recurrence_setting_request'].includes( key ) ) {
+          if ( key === 'category_ids' || key === 'equipment_node_ids' ) {
+            payload[key] = []
+          } else if ( key === 'task_add_list' ) {
+            // Already handled above
+          } else if ( key === 'recurrence_setting_request' ) {
+            payload[key] = { start_date_time : formattedStartDate }
+          }
+        } else {
+          delete payload[key]
+        }
+      }
+    } )
+
+    console.log( 'Sending payload:', payload )
 
     // Call backend API
     const response = await createWorkOrder( payload )
+
+    // Show success message
+    ElMessage.success( 'Work order created successfully!' )
 
     // Emit the created work order (can be single or array)
     const createdWorkOrders = Array.isArray( response.data ) ? response.data : [response.data]

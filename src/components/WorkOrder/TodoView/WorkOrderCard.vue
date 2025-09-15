@@ -199,7 +199,7 @@ defineOptions( {
   border: 1px solid var(--el-border-color-light);
   border-radius: 8px;
   padding: 16px;
-  margin-bottom: 12px;
+  margin-bottom: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
 
