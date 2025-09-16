@@ -235,7 +235,6 @@ export default {
       status : 'Status',
       category : 'Category',
       equipment : 'Equipment',
-      location : 'Location',
       recurrence : 'Recurrence',
       search : 'Search',
       searchFiltersPlaceholder : 'Search filters'

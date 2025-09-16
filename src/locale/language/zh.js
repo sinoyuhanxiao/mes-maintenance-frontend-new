@@ -273,7 +273,6 @@ export default {
       status : '状态',
       category : '类别',
       equipment : '设备',
-      location : '位置',
       recurrence : '重复',
       search : '搜索',
       searchFiltersPlaceholder : '搜索筛选项'

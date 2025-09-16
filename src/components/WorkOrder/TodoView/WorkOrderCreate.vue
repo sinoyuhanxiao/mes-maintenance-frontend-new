@@ -257,89 +257,39 @@
 
       <!-- Image and File Upload Section -->
       <div class="form-section">
+        <el-divider />
         <div class="upload-section">
-          <!-- Image Upload -->
-          <el-form-item :label="$t('workOrder.create.imageUpload')" prop="pictures">
-            <el-upload
-              v-model:file-list="form.image_list"
-              action="#"
-              list-type="picture-card"
-              :auto-upload="false"
-              :limit="5"
-              accept="image/*"
-              class="image-uploader"
-              :on-preview="handlePictureCardPreview"
-              :on-remove="handleImageRemove"
-              :on-change="handleImageChange"
-            >
-              <el-icon><Plus /></el-icon>
-
-              <!-- File Item Template -->
-              <template #file="{ file }">
-                <div>
-                  <img class="el-upload-list__item-thumbnail" :src="file.url" alt="" />
-                  <span class="el-upload-list__item-actions">
-                    <span class="el-upload-list__item-preview" @click="handlePictureCardPreview(file)">
-                      <el-icon><ZoomIn /></el-icon>
-                    </span>
-                    <span class="el-upload-list__item-delete" @click="handleImageDownload(file)">
-                      <el-icon><Download /></el-icon>
-                    </span>
-                    <span class="el-upload-list__item-delete" @click="handleImageRemove(file)">
-                      <el-icon><Delete /></el-icon>
-                    </span>
-                  </span>
-                </div>
-              </template>
-            </el-upload>
-
-            <!-- Image Preview Dialog -->
-            <el-dialog v-model="imageDialogVisible" fullscreen append-to-body>
-              <div class="image-wrapper">
-                <img :src="dialogImageUrl" alt="Preview Image" />
-              </div>
-            </el-dialog>
-          </el-form-item>
-
-          <!-- Add Task Dialog -->
-          <el-dialog
-            v-model="showAddTaskDialog"
-            title="Add New Task"
-            width="600px"
-            :before-close="handleCloseAddTaskDialog"
-          >
-            <AddTask v-if="showAddTaskDialog" @close="closeAddTaskDialog" @add-templates="onAddTaskTemplates" />
-          </el-dialog>
-
-          <!-- Add Standard Dialog -->
-          <el-dialog
-            v-model="showAddStandardDialog"
-            title="Add New Standard"
-            width="600px"
-            :before-close="handleCloseAddStandardDialog"
-          >
-            <AddStandard v-if="showAddStandardDialog" @close="closeAddStandardDialog" @add-standards="onAddStandards" />
-          </el-dialog>
-
-          <!-- File Upload -->
-          <el-form-item :label="$t('workOrder.create.fileUpload')" prop="files">
-            <el-upload
-              v-model:file-list="form.file_list"
-              action="#"
-              list-type="text"
-              :auto-upload="false"
-              :limit="10"
-              multiple
-              class="file-uploader"
-              :on-remove="handleFileRemove"
-              :on-change="handleFileChange"
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.zip,.rar,.csv,.json,.xml,.ppt,.pptx"
-            >
-              <el-button size="small" type="success">{{ $t('workOrder.create.clickToUpload') }}</el-button>
-            </el-upload>
-          </el-form-item>
+          <FileUploadMultiple
+            @update:imageList="handleImageListUpdate"
+            @update:filesList="handleFilesListUpdate"
+            :image-label="$t('workOrder.create.imageUpload')"
+            :file-label="$t('workOrder.create.fileUpload')"
+            upload-type="both"
+            :max-images="5"
+            :max-files="10"
+          />
         </div>
       </div>
+
+      <!-- Add Task Dialog -->
+      <el-dialog
+        v-model="showAddTaskDialog"
+        title="Add New Task"
+        width="600px"
+        :before-close="handleCloseAddTaskDialog"
+      >
+        <AddTask v-if="showAddTaskDialog" @close="closeAddTaskDialog" @add-templates="onAddTaskTemplates" />
+      </el-dialog>
+
+      <!-- Add Standard Dialog -->
+      <el-dialog
+        v-model="showAddStandardDialog"
+        title="Add New Standard"
+        width="600px"
+        :before-close="handleCloseAddStandardDialog"
+      >
+        <AddStandard v-if="showAddStandardDialog" @close="closeAddStandardDialog" @add-standards="onAddStandards" />
+      </el-dialog>
 
       <!-- Submit Button - Fixed at bottom -->
       <div class="form-actions-fixed">
@@ -359,12 +309,14 @@
 <script setup>
 import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { ArrowLeft, RefreshLeft, Plus, ZoomIn, Download, Delete } from '@element-plus/icons-vue'
+import { ArrowLeft, RefreshLeft, Plus, Delete } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import RecurrenceEditor from '@/views/workOrder/components/RecurrenceEditor.vue'
 import CardTable from '../../Tables/CardTable.vue'
 import AddTask from '../../Task/AddTask.vue'
 import AddStandard from '../../Standard/AddStandard.vue'
+import FileUploadMultiple from '@/components/FileUpload/FileUploadMultiple.vue'
+import { uploadMultipleToMinio } from '@/api/minio.js'
 import {
   getAllWorkTypes,
   getAllPriorities,
@@ -672,8 +624,6 @@ const supervisorOptions = ref( [
   { id : 4, name : 'Lisa Davis' }
 ] )
 const formRef = ref( null )
-const imageDialogVisible = ref( false )
-const dialogImageUrl = ref( '' )
 
 // Load data from APIs
 const loadFormData = async() => {
@@ -736,128 +686,40 @@ const toUtcIso = dateTimeString => {
   return d.toISOString() // e.g. 2025-08-12T17:15:15.425Z
 }
 
-// Image upload handlers
-const handlePictureCardPreview = file => {
-  if ( file.url ) {
-    dialogImageUrl.value = file.url
-    imageDialogVisible.value = true
-  } else {
-    console.error( 'Invalid image URL. Please check the file object:', file )
+// Upload handlers following equipment module pattern
+const handleImageListUpdate = images => {
+  form.image_list = images
+}
+
+const handleFilesListUpdate = files => {
+  form.file_list = files
+}
+
+// Upload files to MinIO server
+const uploadFilesToServer = async() => {
+  try {
+    let uploadedImages = []
+    let uploadedFiles = []
+
+    // Upload images if they exist
+    if ( form.image_list.length > 0 ) {
+      const imageRes = await uploadMultipleToMinio( form.image_list )
+      uploadedImages = imageRes.data.uploadedFiles || []
+      form.image_list = uploadedImages.map( file => file.url )
+    }
+
+    // Upload files if they exist
+    if ( form.file_list.length > 0 ) {
+      const fileRes = await uploadMultipleToMinio( form.file_list )
+      uploadedFiles = fileRes.data.uploadedFiles || []
+      form.file_list = uploadedFiles.map( file => file.url )
+    }
+
+    return { uploadedImages, uploadedFiles }
+  } catch ( error ) {
+    console.error( 'File upload failed:', error )
+    throw new Error( 'File upload failed' )
   }
-}
-
-const handleImageRemove = file => {
-  const index = form.image_list.findIndex( item => item.uid === file.uid )
-  if ( index !== -1 ) {
-    form.image_list.splice( index, 1 )
-  } else {
-    console.error( 'File not found in image list.' )
-  }
-}
-
-const handleImageChange = ( file, uploadFileList ) => {
-  const readerPromises = uploadFileList.map( uploadedFile => {
-    return new Promise( ( resolve, reject ) => {
-      if ( !uploadedFile.uid ) {
-        uploadedFile.uid = Date.now().toString()
-      }
-
-      if ( !uploadedFile.raw ) {
-        resolve( uploadedFile )
-        return
-      }
-
-      // Check file size (max 10MB)
-      if ( uploadedFile.raw.size > 10 * 1024 * 1024 ) {
-        ElMessage.error( t( 'workOrder.messages.fileTooLarge' ) )
-        reject( new Error( 'File too large' ) )
-        return
-      }
-
-      const reader = new FileReader()
-      reader.onload = e => {
-        uploadedFile.url = e.target.result
-        resolve( uploadedFile )
-      }
-      reader.onerror = () => {
-        ElMessage.error( t( 'workOrder.messages.fileReadError' ) )
-        reject( new Error( 'File read error' ) )
-      }
-      reader.readAsDataURL( uploadedFile.raw )
-    } )
-  } )
-
-  Promise.all( readerPromises )
-    .then( resolvedList => {
-      form.image_list = resolvedList
-    } )
-    .catch( error => {
-      console.error( 'Error processing images:', error )
-    } )
-}
-
-const handleImageDownload = file => {
-  if ( file.url ) {
-    const link = document.createElement( 'a' )
-    link.href = file.url
-    link.download = file.name || 'downloaded_image.png'
-    document.body.appendChild( link )
-    link.click()
-    document.body.removeChild( link )
-  } else {
-    console.error( 'File URL not available for download.' )
-  }
-}
-
-// File upload handlers
-const handleFileRemove = file => {
-  const index = form.file_list.findIndex( item => item.uid === file.uid )
-  if ( index !== -1 ) {
-    form.file_list.splice( index, 1 )
-  } else {
-    console.error( 'File not found in files list.' )
-  }
-}
-
-const handleFileChange = ( file, newFileList ) => {
-  const readerPromises = newFileList.map( uploadedFile => {
-    return new Promise( ( resolve, reject ) => {
-      if ( !uploadedFile.uid ) {
-        uploadedFile.uid = Date.now().toString()
-      }
-
-      if ( !uploadedFile.raw ) {
-        resolve( uploadedFile )
-        return
-      }
-
-      // Check file size (max 50MB for documents)
-      if ( uploadedFile.raw.size > 50 * 1024 * 1024 ) {
-        ElMessage.error( t( 'workOrder.messages.fileTooLarge' ) )
-        reject( new Error( 'File too large' ) )
-        return
-      }
-
-      const reader = new FileReader()
-      reader.onload = e => {
-        uploadedFile.url = e.target.result
-        resolve( uploadedFile )
-      }
-      reader.onerror = () => {
-        ElMessage.error( t( 'workOrder.messages.fileReadError' ) )
-        reject( new Error( 'File read error' ) )
-      }
-      reader.readAsDataURL( uploadedFile.raw )
-    } )
-  } )
-
-  Promise.all( readerPromises )
-    .then( resolvedList => {
-      form.file_list = resolvedList
-    } )
-    .catch( error => {
-      console.error( 'Error processing files:', error )
-    } )
 }
 
 const resetForm = () => {
@@ -934,6 +796,11 @@ const submitForm = async() => {
 
     loading.value = true
 
+    // Upload files to MinIO first if there are any files
+    if ( form.image_list.length > 0 || form.file_list.length > 0 ) {
+      await uploadFilesToServer()
+    }
+
     // Prepare properly formatted dates for backend (convert to UTC Z)
     const formattedDueDate = toUtcIso( form.due_date )
     const formattedStartDate = toUtcIso( form.start_date )
@@ -996,8 +863,8 @@ const submitForm = async() => {
       recurrence_type_id : recurrenceType,
       recurrence_setting_request : form.recurrence_setting_request,
       task_add_list : taskAddList,
-      image_list : form.image_list.map( pic => pic.url || pic.response?.url ).filter( Boolean ),
-      file_list : form.file_list.map( file => file.url || file.response?.url ).filter( Boolean ),
+      image_list : form.image_list, // Already URLs after MinIO upload
+      file_list : form.file_list, // Already URLs after MinIO upload
       standard_list : form.standard_list
     }
 

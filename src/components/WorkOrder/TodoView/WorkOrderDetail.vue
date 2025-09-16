@@ -231,18 +231,23 @@
       </div>
     </div>
 
-    <!-- Attachments Section -->
+    <!-- Attachments Section - Following equipment details pattern -->
     <div class="detail-section" v-if="hasAttachments || hasFileAttachments">
       <el-divider />
-      <h3 class="section-title">{{ $t('workOrder.attachments.title') }}</h3>
 
-      <!-- Image Attachments -->
-      <div v-if="hasAttachments" class="attachments-subsection">
-        <h4 class="subsection-title">Images</h4>
-        <el-row :gutter="12">
-          <el-col :span="6" v-for="(image, index) in workOrder.image_list" :key="index">
-            <div class="attachment-item">
-              <el-image :src="image" fit="cover" :preview-src-list="workOrder.image_list" class="attachment-image">
+      <!-- Images Section -->
+      <div v-if="hasAttachments" class="images-section">
+        <el-descriptions :column="1">
+          <el-descriptions-item label="Images">
+            <div class="image-gallery">
+              <el-image
+                v-for="(imagePath, index) in workOrder.image_list"
+                :key="index"
+                :src="imagePath"
+                :preview-src-list="workOrder.image_list"
+                fit="cover"
+                class="workorder-image"
+              >
                 <template #error>
                   <div class="image-slot">
                     <el-icon><Picture /></el-icon>
@@ -250,29 +255,23 @@
                 </template>
               </el-image>
             </div>
-          </el-col>
-        </el-row>
+          </el-descriptions-item>
+        </el-descriptions>
       </div>
 
-      <!-- File Attachments -->
-      <div v-if="hasFileAttachments" class="attachments-subsection">
-        <h4 class="subsection-title">Files</h4>
-        <div class="file-list">
-          <div v-for="(file, index) in workOrder.file_list" :key="index" class="file-item">
-            <div class="file-icon">
-              <el-icon><component :is="getFileIcon(file)" /></el-icon>
-            </div>
-            <div class="file-info">
-              <div class="file-name">{{ file }}</div>
-              <div class="file-actions">
-                <el-button type="text" size="small" @click="downloadFile(file)">
-                  <el-icon><Download /></el-icon>
-                  Download
-                </el-button>
+      <!-- Files Section -->
+      <div v-if="hasFileAttachments" class="files-section">
+        <el-descriptions :column="1" direction="vertical">
+          <el-descriptions-item label="Files">
+            <div class="file-list">
+              <div v-for="file in processedFileList" :key="file.id || file.name" class="file-item">
+                <el-link :href="file.url" target="_blank" :icon="getFileIcon(file.type)" class="file-link">
+                  {{ file.name }}
+                </el-link>
               </div>
             </div>
-          </div>
-        </div>
+          </el-descriptions-item>
+        </el-descriptions>
       </div>
     </div>
 
@@ -432,7 +431,9 @@ import {
   Delete,
   Warning,
   Document,
-  DocumentDelete
+  DocumentDelete,
+  VideoCamera,
+  Microphone
 } from '@element-plus/icons-vue'
 import { convertToLocalTime } from '@/utils/datetime'
 import { getEquipmentById } from '@/api/equipment'
@@ -475,17 +476,6 @@ const deleteDialogVisible = ref( false )
 const deleting = ref( false )
 const scheduleSection = ref( null )
 
-// Week days for schedule display
-const weekDays = ref( [
-  { name : 'Mon', active : false },
-  { name : 'Tue', active : true },
-  { name : 'Wed', active : false },
-  { name : 'Thu', active : false },
-  { name : 'Fri', active : true },
-  { name : 'Sat', active : true },
-  { name : 'Sun', active : false }
-] )
-
 // Timeline events data - Empty for now
 const timelineEvents = ref( [] )
 
@@ -501,29 +491,29 @@ const hasAttachments = computed( () => {
 const isRecurring = computed( () => {
   // Check if work order has recurrence (not type 1 which means "Does not repeat")
   const recurrenceType = props.workOrder?.recurrence_type
-  
+
   if ( !recurrenceType ) {
     return false
   }
-  
+
   // Debug: log the recurrence type for debugging
   console.log( 'IsRecurring check:', recurrenceType )
-  
+
   // If it has an id, check if it's not 1 ("Does not repeat")
   if ( recurrenceType.id ) {
     return recurrenceType.id !== 1
   }
-  
+
   // If it's a string, check if it's not "Does not repeat"
   if ( typeof recurrenceType === 'string' ) {
     return recurrenceType.toLowerCase() !== 'does not repeat' && recurrenceType.toLowerCase() !== 'none'
   }
-  
+
   // If it's an object with name property
   if ( recurrenceType.name ) {
     return recurrenceType.name.toLowerCase() !== 'does not repeat' && recurrenceType.name.toLowerCase() !== 'none'
   }
-  
+
   return false
 } )
 
@@ -558,6 +548,28 @@ const validEquipmentList = computed( () => {
 
 const hasValidEquipment = computed( () => {
   return validEquipmentList.value.length > 0
+} )
+
+// Process file list to match equipment details pattern
+const processedFileList = computed( () => {
+  if ( !props.workOrder?.file_list || !Array.isArray( props.workOrder.file_list ) ) {
+    return []
+  }
+
+  return props.workOrder.file_list.map( ( url, index ) => {
+    const urlParts = url.split( '/' )
+    const filename = urlParts[urlParts.length - 1] || `file_${index + 1}`
+
+    // Clean filename by removing timestamp prefixes
+    const cleanFilename = filename.replace( /\d{17}/, '' )
+
+    return {
+      id : index,
+      name : decodeURIComponent( cleanFilename ),
+      url,
+      type : getFileTypeFromName( cleanFilename )
+    }
+  } )
 } )
 
 // Equipment loading function
@@ -721,27 +733,63 @@ const navigateToLinkedOrder = () => {
   ElMessage.info( 'Navigation to linked work order will be implemented by Yellow Guy' )
 }
 
-const getFileIcon = fileName => {
-  const extension = fileName.split( '.' ).pop()?.toLowerCase()
-  switch ( extension ) {
+// File helper functions following equipment details pattern
+const getFileIcon = fileType => {
+  switch ( fileType?.toLowerCase() ) {
+    case 'image':
+    case 'jpg':
+    case 'jpeg':
+    case 'png':
+    case 'gif':
+    case 'bmp':
+    case 'webp':
+      return Picture
+    case 'video':
+    case 'mp4':
+    case 'avi':
+    case 'mov':
+    case 'wmv':
+    case 'flv':
+      return VideoCamera
+    case 'audio':
+    case 'mp3':
+    case 'wav':
+    case 'flac':
+    case 'aac':
+      return Microphone
     case 'pdf':
-      return 'DocumentText'
+    case 'document':
     case 'doc':
     case 'docx':
-      return 'Document'
-    case 'xls':
-    case 'xlsx':
-      return 'Grid'
+    case 'txt':
+    case 'rtf':
+      return Document
+    case 'download':
     case 'zip':
     case 'rar':
-      return 'FolderZip'
+    case '7z':
+      return Download
     default:
-      return 'Document'
+      return Document
   }
 }
 
-const downloadFile = fileName => {
-  ElMessage.info( `Download functionality for ${fileName} will be implemented` )
+const getFileTypeFromName = fileName => {
+  if ( !fileName ) return 'document'
+
+  const extension = fileName.split( '.' ).pop()?.toLowerCase()
+
+  const imageTypes = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg']
+  const videoTypes = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv']
+  const audioTypes = ['mp3', 'wav', 'flac', 'aac', 'ogg']
+  const archiveTypes = ['zip', 'rar', '7z', 'tar', 'gz']
+
+  if ( imageTypes.includes( extension ) ) return 'image'
+  if ( videoTypes.includes( extension ) ) return 'video'
+  if ( audioTypes.includes( extension ) ) return 'audio'
+  if ( archiveTypes.includes( extension ) ) return 'download'
+
+  return 'document'
 }
 
 const viewRequest = request => {
@@ -752,39 +800,39 @@ const getRecurrenceTypeLabel = () => {
   if ( !props.workOrder?.recurrence_type ) {
     return 'Does not repeat'
   }
-  
+
   // Handle different possible data structures
   const recurrenceType = props.workOrder.recurrence_type
-  
+
   // Debug: log the recurrence type structure
   console.log( 'Recurrence Type Data:', recurrenceType )
-  
+
   // If it's an object with name property
   if ( typeof recurrenceType === 'object' && recurrenceType.name ) {
     return recurrenceType.name
   }
-  
+
   // If it's a string directly
   if ( typeof recurrenceType === 'string' ) {
     return recurrenceType
   }
-  
+
   // If it has an id property, check if it's not "Does not repeat" (id: 1)
   if ( recurrenceType.id && recurrenceType.id !== 1 ) {
     return recurrenceType.label || recurrenceType.name || 'Recurring'
   }
-  
+
   return 'Does not repeat'
 }
 
 const scrollToScheduleSection = () => {
   if ( scheduleSection.value ) {
-    scheduleSection.value.scrollIntoView( { behavior: 'smooth', block: 'start' } )
+    scheduleSection.value.scrollIntoView( { behavior : 'smooth', block : 'start' } )
   } else {
     // Fallback: try to find the schedule section by class
     const scheduleElement = document.querySelector( '.schedule-conditions-section .schedule-header' )
     if ( scheduleElement ) {
-      scheduleElement.scrollIntoView( { behavior: 'smooth', block: 'start' } )
+      scheduleElement.scrollIntoView( { behavior : 'smooth', block : 'start' } )
     } else {
       console.warn( 'Schedule section not found for scrolling' )
     }
@@ -869,7 +917,6 @@ defineOptions( {
           text-decoration: underline;
         }
       }
-
     }
   }
 
@@ -1319,7 +1366,6 @@ defineOptions( {
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-right: 12px;
       overflow: hidden;
     }
 
@@ -1340,6 +1386,7 @@ defineOptions( {
 
     .equipment-info {
       flex: 1;
+      margin-left: 12px;
 
       .equipment-name {
         font-size: 14px;
@@ -1663,5 +1710,102 @@ defineOptions( {
       }
     }
   }
+}
+
+// Images and Files sections styling - matching equipment details pattern
+.images-section,
+.files-section {
+  margin-bottom: 20px;
+
+  :deep(.el-descriptions) {
+    margin: 0;
+  }
+
+  :deep(.el-descriptions__cell) {
+    padding: 8px 0;
+    border: none;
+    vertical-align: top;
+  }
+
+  :deep(.el-descriptions__label) {
+    font-size: 14px;
+    color: var(--el-text-color-primary);
+    font-weight: 600;
+    margin-bottom: 8px;
+    display: block;
+  }
+
+  :deep(.el-descriptions__content) {
+    font-size: 14px;
+    color: var(--el-text-color-primary);
+    line-height: 1.4;
+  }
+}
+
+.image-gallery {
+  display: flex;
+  flex-direction: row;
+  gap: 15px;
+  overflow-x: auto;
+  padding: 10px 0;
+}
+
+.workorder-image {
+  width: 200px;
+  height: 200px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.image-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background-color: #f5f7fa;
+  color: #909399;
+  font-size: 24px;
+}
+
+.file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  background-color: #fafafa;
+  transition: background-color 0.2s;
+}
+
+.file-item:hover {
+  background-color: #f0f9ff;
+}
+
+.file-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  text-decoration: none;
+  color: var(--el-color-info);
+
+  &:hover {
+    color: var(--el-color-primary-dark-2);
+  }
+}
+
+:deep(.images-section .el-descriptions__label, .files-section .el-descriptions__label) {
+  font-weight: 500;
+}
+
+:deep(.el-descriptions__label.el-descriptions__cell:not(.is-bordered-label).is-vertical-label) {
+  font-weight: 500;
 }
 </style>
