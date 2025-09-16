@@ -301,9 +301,16 @@
             {{ $t('workOrder.filters.basicFilters') }}
           </h4>
           <div class="filter-list">
-            <div v-for="filter in filteredBasicFilters" :key="filter.key" class="filter-item-row">
+            <div
+              v-for="filter in filteredBasicFilters"
+              :key="filter.key"
+              class="filter-item-row"
+              :class="{ disabled: isFilterLimitReached && !isFilterVisible(filter.key) }"
+              @click="handleDisabledFilterClick(filter.key)"
+            >
               <el-checkbox
                 :model-value="isFilterVisible(filter.key)"
+                :disabled="isFilterLimitReached && !isFilterVisible(filter.key)"
                 @change="toggleFilterVisibility(filter.key)"
                 class="filter-checkbox"
               >
@@ -325,9 +332,16 @@
             {{ $t('workOrder.filters.workOrderFilters') }}
           </h4>
           <div class="filter-list">
-            <div v-for="filter in filteredAdvancedFilters" :key="filter.key" class="filter-item-row">
+            <div
+              v-for="filter in filteredAdvancedFilters"
+              :key="filter.key"
+              class="filter-item-row"
+              :class="{ disabled: isFilterLimitReached && !isFilterVisible(filter.key) }"
+              @click="handleDisabledFilterClick(filter.key)"
+            >
               <el-checkbox
                 :model-value="isFilterVisible(filter.key)"
+                :disabled="isFilterLimitReached && !isFilterVisible(filter.key)"
                 @change="toggleFilterVisibility(filter.key)"
                 class="filter-checkbox"
               >
@@ -347,8 +361,9 @@
 </template>
 
 <script setup>
-import { reactive, computed, watch, ref, nextTick } from 'vue'
+import { reactive, computed, watch, ref, nextTick, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { ElMessage } from 'element-plus'
 import { Search, Operation, View, Plus, Star, Setting, EditPen, Download, Refresh, Grid } from '@element-plus/icons-vue'
 import { useCommonDataStore } from '@/store/modules/commonData'
 
@@ -396,6 +411,52 @@ const localFilters = reactive( {
 
 // Filter drawer state
 const drawerVisible = ref( false )
+
+// Screen width and filter limits
+const screenWidth = ref( window.innerWidth )
+const maxFilters = computed( () => ( screenWidth.value > 1800 ? 8 : 5 ) )
+const activeFilterCount = computed( () => {
+  return Object.values( availableFilters ).filter( f => f.visible ).length
+} )
+const isFilterLimitReached = computed( () => activeFilterCount.value >= maxFilters.value )
+
+const updateScreenWidth = () => {
+  screenWidth.value = window.innerWidth
+}
+
+onMounted( () => {
+  window.addEventListener( 'resize', updateScreenWidth )
+} )
+
+onUnmounted( () => {
+  window.removeEventListener( 'resize', updateScreenWidth )
+} )
+
+// Watch for screen width changes to handle filter limits
+watch( screenWidth, ( newWidth, oldWidth ) => {
+  // Check if we crossed the breakpoint from large to small
+  if ( oldWidth > 1800 && newWidth <= 1800 ) {
+    const maxAllowed = 5
+    if ( activeFilterCount.value > maxAllowed ) {
+      const excessCount = activeFilterCount.value - maxAllowed
+      const visibleFilters = Object.keys( availableFilters ).filter( key => availableFilters[key].visible )
+
+      // Shuffle the array of visible filters
+      for ( let i = visibleFilters.length - 1; i > 0; i-- ) {
+        const j = Math.floor( Math.random() * ( i + 1 ) )
+        ;[visibleFilters[i], visibleFilters[j]] = [visibleFilters[j], visibleFilters[i]]
+      }
+
+      // Deselect the required number of random filters
+      for ( let i = 0; i < excessCount; i++ ) {
+        const filterToDisable = visibleFilters[i]
+        availableFilters[filterToDisable].visible = false
+      }
+
+      ElMessage.info( t( 'workOrder.filters.autoDeselected', { count : excessCount } ) )
+    }
+  }
+} )
 
 // Animation state for border highlight
 const animatingFilters = reactive( {
@@ -698,8 +759,21 @@ const closeFilterDrawer = () => {
   drawerVisible.value = false
 }
 
+const handleDisabledFilterClick = filterKey => {
+  if ( isFilterLimitReached.value && !isFilterVisible( filterKey ) ) {
+    ElMessage.warning( t( 'workOrder.filters.noSpace' ) )
+  }
+}
+
 const toggleFilterVisibility = async filterKey => {
   const wasVisible = availableFilters[filterKey].visible
+
+  // Prevent adding more filters if the limit is reached
+  if ( !wasVisible && isFilterLimitReached.value ) {
+    ElMessage.warning( t( 'workOrder.filters.limitReached', { max : maxFilters.value } ) )
+    return
+  }
+
   availableFilters[filterKey].visible = !wasVisible
 
   // Trigger animation for the toggled filter item in main filters row
@@ -915,6 +989,15 @@ defineOptions( {
   padding: 6px 8px;
   border-radius: 6px;
   transition: background-color 0.15s ease;
+
+  &.disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+
+    &:hover {
+      background-color: transparent; // Override hover effect
+    }
+  }
 
   &:hover {
     background-color: var(--el-fill-color-lighter);

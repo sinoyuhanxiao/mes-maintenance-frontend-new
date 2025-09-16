@@ -237,7 +237,10 @@ export default {
       equipment : 'Equipment',
       recurrence : 'Recurrence',
       search : 'Search',
-      searchFiltersPlaceholder : 'Search filters'
+      searchFiltersPlaceholder : 'Search filters',
+      limitReached : 'You can only select up to {max} filters. Please uncheck one to add another.',
+      autoDeselected : '{count} filter(s) have been automatically deselected to fit the new screen size.',
+      noSpace : 'Filter limit reached. Please deselect a filter to add a new one.'
     },
 
     // Tabs
