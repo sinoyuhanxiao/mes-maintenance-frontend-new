@@ -1,12 +1,13 @@
 <template>
-  <div class="work-order-table">
+  <div class="work-order-table" ref="rootEl">
     <el-table
       v-loading="loading"
       :data="data"
       border
       fit
       highlight-current-row
-      style="width: 100%; height: 100%"
+      :height="tableHeight"
+      style="width: 100%"
       row-key="id"
       :tree-props="{ children: 'children' }"
       :lazy="true"
@@ -155,7 +156,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { convertToLocalTime } from '@/utils/datetime'
 import WorkOrderImage from './WorkOrderImage.vue'
 import PriorityTag from './PriorityTag.vue'
@@ -189,7 +190,8 @@ const props = defineProps( {
 const emit = defineEmits( ['expand-change', 'view', 'edit', 'delete'] )
 
 // State
-const tableHeight = ref( window.innerHeight - 320 )
+const tableHeight = ref( 300 )
+const rootEl = ref( null )
 
 // Computed
 const getRowClass = ( { row } ) => {
@@ -197,8 +199,38 @@ const getRowClass = ( { row } ) => {
 }
 
 // Methods
+let roNavbar = null
+let roTagsView = null
+let roHeader = null
+let roFooter = null
+
+const safeOffsetHeight = el => ( el && el.offsetHeight ) || 0
+
+const calcTableHeight = () => {
+  try {
+    let h = window.innerHeight
+    const navbar = document.querySelector( '.main-container .fixed-header .navbar' )
+    const tagsViewView = document.querySelector( '.main-container .fixed-header .tags-view-wrapper .el-scrollbar__view' )
+    const layout = rootEl.value ? rootEl.value.closest( '.mes-layout' ) : null
+    const header = layout ? layout.querySelector( ':scope > .header' ) : null
+    const footer = layout ? layout.querySelector( ':scope > .footer' ) : null
+
+    h -= safeOffsetHeight( navbar )
+    h -= safeOffsetHeight( tagsViewView )
+    h -= safeOffsetHeight( header )
+    h -= safeOffsetHeight( footer )
+    h -= 20
+
+    // Minimum sensible height to prevent collapse
+    tableHeight.value = Math.max( h, 160 )
+  } catch ( e ) {
+    // Fallback if any selector breaks
+    tableHeight.value = Math.max( window.innerHeight - 320, 160 )
+  }
+}
+
 const updateTableHeight = () => {
-  tableHeight.value = window.innerHeight - 320
+  calcTableHeight()
 }
 
 const onExpandChange = ( row, expanded ) => {
@@ -214,12 +246,50 @@ const isOverdue = dueDate => {
 }
 
 // Lifecycle
-onMounted( () => {
+onMounted( async() => {
+  await nextTick()
+  // Initial calculation after DOM paints
+  calcTableHeight()
+
+  // Recalculate on window resize
   window.addEventListener( 'resize', updateTableHeight )
+
+  // Observe dynamic height changes in relevant containers
+  if ( 'ResizeObserver' in window ) {
+    const layout = rootEl.value ? rootEl.value.closest( '.mes-layout' ) : null
+    const navbar = document.querySelector( '.main-container .fixed-header .navbar' )
+    const tagsViewView = document.querySelector( '.main-container .fixed-header .tags-view-wrapper .el-scrollbar__view' )
+    const header = layout ? layout.querySelector( ':scope > .header' ) : null
+    const footer = layout ? layout.querySelector( ':scope > .footer' ) : null
+
+    const makeRO = () => new ResizeObserver( () => calcTableHeight() )
+
+    if ( navbar ) {
+      roNavbar = makeRO()
+      roNavbar.observe( navbar )
+    }
+    if ( tagsViewView ) {
+      roTagsView = makeRO()
+      roTagsView.observe( tagsViewView )
+    }
+    if ( header ) {
+      roHeader = makeRO()
+      roHeader.observe( header )
+    }
+    if ( footer ) {
+      roFooter = makeRO()
+      roFooter.observe( footer )
+    }
+  }
 } )
 
 onBeforeUnmount( () => {
   window.removeEventListener( 'resize', updateTableHeight )
+  // Disconnect observers
+  if ( roNavbar ) roNavbar.disconnect()
+  if ( roTagsView ) roTagsView.disconnect()
+  if ( roHeader ) roHeader.disconnect()
+  if ( roFooter ) roFooter.disconnect()
 } )
 
 defineOptions( {
