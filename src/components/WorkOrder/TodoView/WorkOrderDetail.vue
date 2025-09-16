@@ -430,7 +430,6 @@ import {
   Tools,
   Delete,
   Warning,
-  DocumentDelete
   Document,
   DocumentDelete,
   VideoCamera,
