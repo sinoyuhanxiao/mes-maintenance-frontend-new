@@ -25,8 +25,12 @@
       <!-- Row 2: Tags + Steps -->
       <div class="row-2 card-tags">
         <div class="tags-left">
-          <el-tag v-if="template.category" size="small" class="tag-item">
-            {{ template.category }}
+          <el-tag v-if="categoryLabel" size="small" class="tag-item">
+            {{ categoryLabel }}
+          </el-tag>
+
+          <el-tag v-if="assetLabel" size="small" type="info" class="tag-item">
+            {{ assetLabel }}
           </el-tag>
 
           <el-tag v-if="template.estimated_minutes" size="small" type="warning" class="tag-item">
@@ -42,6 +46,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { ElMessageBox } from 'element-plus'
 import { MoreFilled } from '@element-plus/icons-vue'
 
 const props = defineProps( {
@@ -55,6 +60,19 @@ const emit = defineEmits( ['selection'] )
 
 const stepsCount = computed( () => props.template?.steps?.length || 0 )
 
+const categoryLabel = computed( () => {
+  const category = props.template?.category
+  if ( !category ) return ''
+  // Handle both string and object formats
+  return typeof category === 'object' ? category.name : category
+} )
+
+const assetLabel = computed( () => {
+  const a = props.template?.applicable_assets
+  if ( !a || a.length === 0 ) return ''
+  return a.length === 1 ? a[0] : `${a.length} assets`
+} )
+
 const handleEdit = () => {
   emit( 'selection', {
     id : props.template.id,
@@ -64,11 +82,21 @@ const handleEdit = () => {
 }
 
 const handleDelete = () => {
-  emit( 'selection', {
-    id : props.template.id,
-    action : 'delete',
-    data : props.template
+  ElMessageBox.confirm( `Are you sure you want to delete the task "${props.template.name}"?`, 'Confirm Delete', {
+    confirmButtonText : 'Delete',
+    cancelButtonText : 'Cancel',
+    type : 'warning'
   } )
+    .then( () => {
+      emit( 'selection', {
+        id : props.template.id,
+        action : 'delete',
+        data : props.template
+      } )
+    } )
+    .catch( () => {
+      // User cancelled - no action needed
+    } )
 }
 </script>
 
@@ -149,7 +177,7 @@ const handleDelete = () => {
 
 .row-3 {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
 }
 
 .steps-count {

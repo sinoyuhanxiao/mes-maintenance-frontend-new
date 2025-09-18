@@ -22,11 +22,21 @@
         </el-dropdown>
       </div>
 
-      <!-- Row 2: Tags + Steps -->
-      <div class="row-2 card-tags">
+      <!-- Row 2: Description -->
+      <!--      <div class="row-2" v-if="template.description">-->
+      <!--        <p class="card-description">{{ template.description }}</p>-->
+      <!--      </div>-->
+
+      <!-- Row 3: Tags + Rules -->
+      <div class="row-3 card-tags">
         <div class="tags-left">
-          <el-tag v-if="template.category" size="small" class="tag-item">
-            {{ template.category }}
+          <el-tag
+            v-if="categoryLabel"
+            :type="template.category === 'general' ? 'primary' : 'warning'"
+            size="small"
+            class="tag-item"
+          >
+            {{ categoryLabel }}
           </el-tag>
         </div>
 
@@ -38,6 +48,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { ElMessageBox } from 'element-plus'
 import { MoreFilled } from '@element-plus/icons-vue'
 
 const props = defineProps( {
@@ -49,7 +60,14 @@ const props = defineProps( {
 
 const emit = defineEmits( ['selection'] )
 
-const stepsCount = computed( () => props.template?.steps?.length || 0 )
+const stepsCount = computed( () => props.template?.steps?.length || props.template?.items?.length || 0 )
+
+const categoryLabel = computed( () => {
+  const category = props.template?.category
+  if ( !category ) return ''
+  // Handle both string and object formats
+  return typeof category === 'object' ? category.name : category
+} )
 
 const handleEdit = () => {
   emit( 'selection', {
@@ -60,11 +78,21 @@ const handleEdit = () => {
 }
 
 const handleDelete = () => {
-  emit( 'selection', {
-    id : props.template.id,
-    action : 'delete',
-    data : props.template
+  ElMessageBox.confirm( `Are you sure you want to delete the standard "${props.template.name}"?`, 'Confirm Delete', {
+    confirmButtonText : 'Delete',
+    cancelButtonText : 'Cancel',
+    type : 'warning'
   } )
+    .then( () => {
+      emit( 'selection', {
+        id : props.template.id,
+        action : 'delete',
+        data : props.template
+      } )
+    } )
+    .catch( () => {
+      // User cancelled - no action needed
+    } )
 }
 </script>
 
@@ -129,6 +157,22 @@ const handleDelete = () => {
 }
 
 .row-2 {
+  margin: 4px 0;
+}
+
+.card-description {
+  margin: 0;
+  color: #606266;
+  font-size: 13px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.row-3 {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -145,7 +189,7 @@ const handleDelete = () => {
 
 .row-3 {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
 }
 
 .steps-count {

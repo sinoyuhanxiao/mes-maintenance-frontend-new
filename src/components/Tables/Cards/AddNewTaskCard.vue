@@ -1,5 +1,5 @@
 <template>
-  <div class="template-card">
+  <div class="template-card" :class="{ focused: focused }" @click="handleCardClick">
     <div class="card-content">
       <!-- Row 1: Checkbox + Title -->
       <div class="row-1">
@@ -12,8 +12,12 @@
       <!-- Row 2: Tags + Steps -->
       <div class="row-2 card-tags">
         <div class="tags-left">
-          <el-tag v-if="template.category" size="small" class="tag-item">
-            {{ template.category }}
+          <el-tag v-if="categoryLabel" size="small" class="tag-item">
+            {{ categoryLabel }}
+          </el-tag>
+
+          <el-tag v-if="assetLabel" size="small" type="info" class="tag-item">
+            {{ assetLabel }}
           </el-tag>
 
           <el-tag v-if="template.estimated_minutes" size="small" type="warning" class="tag-item">
@@ -38,6 +42,10 @@ const props = defineProps( {
   selected : {
     type : Boolean,
     default : false
+  },
+  focused : {
+    type : Boolean,
+    default : false
   }
 } )
 
@@ -46,6 +54,19 @@ const emit = defineEmits( ['selection'] )
 const checked = ref( props.selected )
 
 const stepsCount = computed( () => props.template?.steps?.length || 0 )
+
+const categoryLabel = computed( () => {
+  const category = props.template?.category
+  if ( !category ) return ''
+  // Handle both string and object formats
+  return typeof category === 'object' ? category.name : category
+} )
+
+const assetLabel = computed( () => {
+  const a = props.template?.applicable_assets
+  if ( !a || a.length === 0 ) return ''
+  return a.length === 1 ? a[0] : `${a.length} assets`
+} )
 
 // Watch for external changes to selected prop
 watch(
@@ -78,6 +99,14 @@ const handleUncheck = () => {
     data : props.template
   } )
 }
+
+const handleCardClick = () => {
+  emit( 'selection', {
+    id : props.template.id,
+    action : 'focus',
+    data : props.template
+  } )
+}
 </script>
 
 <style scoped>
@@ -98,6 +127,12 @@ const handleUncheck = () => {
   border-color: #409eff;
   box-shadow: 0 2px 8px 0 rgba(64, 158, 255, 0.15);
   transform: translateY(-1px);
+}
+
+.template-card.focused {
+  border-color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+  box-shadow: 0 2px 8px 0 rgba(64, 158, 255, 0.15);
 }
 
 .card-checkbox {

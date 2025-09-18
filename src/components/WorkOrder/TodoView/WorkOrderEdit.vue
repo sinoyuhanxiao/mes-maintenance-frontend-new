@@ -60,21 +60,6 @@
         </el-form-item>
       </div>
 
-      <!-- Location Tree Select -->
-      <div class="form-section">
-        <el-form-item :label="$t('workOrder.create.location')" prop="location">
-          <el-tree-select
-            v-model="form.location"
-            :data="locationTreeData"
-            :props="treeProps"
-            :placeholder="$t('workOrder.create.locationPlaceholder')"
-            check-strictly
-            :render-after-expand="false"
-            style="width: 100%"
-          />
-        </el-form-item>
-      </div>
-
       <!-- Asset Tree Select -->
       <div class="form-section">
         <el-form-item :label="$t('workOrder.create.asset')" prop="asset">
@@ -463,13 +448,7 @@ import { ArrowLeft, RefreshLeft, Document, Edit, Calendar } from '@element-plus/
 import { useI18n } from 'vue-i18n'
 import { convertToLocalTime } from '@/utils/datetime'
 import FileUploadMultiple from '@/components/FileUpload/FileUploadMultiple.vue'
-import {
-  getAllWorkTypes,
-  getAllPriorities,
-  getAllCategories,
-  getLocationNodeTrees,
-  getEquipmentNodeTrees
-} from '@/api/work-order'
+import { getAllWorkTypes, getAllPriorities, getAllCategories, getEquipmentNodeTrees } from '@/api/work-order'
 
 // Valid recurrence values from the UI
 const VALID_RECURRENCES = new Set( ['daily', 'weekly', 'monthlyByDate', 'yearly'] )
@@ -517,7 +496,6 @@ const form = reactive( {
   taskTitle : '',
   pictures : [],
   description : '',
-  location : null,
   asset : null,
   procedure : null,
   assignee : null,
@@ -549,7 +527,6 @@ const form = reactive( {
 // Validation rules
 const rules = reactive( {
   taskTitle : [{ required : true, message : t( 'workOrder.validation.taskTitleRequired' ), trigger : 'blur' }],
-  location : [{ required : true, message : t( 'workOrder.validation.locationRequired' ), trigger : 'change' }],
   asset : [{ required : true, message : t( 'workOrder.validation.assetRequired' ), trigger : 'change' }]
 } )
 
@@ -564,7 +541,6 @@ const treeProps = {
 const priorityOptions = ref( [] )
 const workTypeOptions = ref( [] )
 const categoryOptions = ref( [] )
-const locationTreeData = ref( [] )
 const assetTreeData = ref( [] )
 
 const assigneeOptions = ref( [
@@ -585,15 +561,9 @@ const loadFormData = async() => {
   try {
     loading.value = true
 
-    const res = await Promise.all( [
-      getAllWorkTypes(),
-      getAllPriorities(),
-      getAllCategories(),
-      getLocationNodeTrees(),
-      getEquipmentNodeTrees()
-    ] )
+    const res = await Promise.all( [getAllWorkTypes(), getAllPriorities(), getAllCategories(), getEquipmentNodeTrees()] )
 
-    const [workTypesRes, prioritiesRes, categoriesRes, locationsRes, equipmentRes] = res
+    const [workTypesRes, prioritiesRes, categoriesRes, equipmentRes] = res
 
     if ( Array.isArray( workTypesRes.data.workTypes ) ) {
       workTypeOptions.value = workTypesRes.data.workTypes
@@ -605,10 +575,6 @@ const loadFormData = async() => {
 
     if ( Array.isArray( categoriesRes.data.categories ) ) {
       categoryOptions.value = categoriesRes.data.categories
-    }
-
-    if ( Array.isArray( locationsRes.data.locations ) ) {
-      locationTreeData.value = locationsRes.data.locations
     }
 
     if ( Array.isArray( equipmentRes.data.equipment ) ) {

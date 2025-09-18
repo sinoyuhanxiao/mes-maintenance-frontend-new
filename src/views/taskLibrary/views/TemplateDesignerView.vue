@@ -502,6 +502,7 @@ import { getTaskTemplateById } from '@/api/task-library'
 import { useDesignerStateCache } from '@/composables/designer/useDesignerStateCache'
 import { useDesignerTour } from '@/composables/designer/useDesignerTour'
 import { useAppStore, useSettingsStore, useTagsViewStore } from '@/store'
+import { useTaskLibraryStore } from '@/store/modules/taskLibrary'
 import { getEquipmentTree } from '@/api/equipment.js'
 import { getAllCategories } from '@/api/common.js'
 import VueDraggable from 'vuedraggable'
@@ -663,6 +664,42 @@ const closeChangeSummaryDialog = () => {
 
 const setChangeSummaryLoading = loading => {
   designerState.value.dialogs.change_summary.loading = loading
+}
+
+const showWorkOrderSaveConfirmation = ( workOrderId, workOrderName ) => {
+  const displayName = workOrderName || workOrderId || 'Work Order'
+
+  // Create custom dialog with both options
+  ElMessageBox( {
+    title : 'Save Confirmation',
+    message : `Do you want to save this edit locally only for Work Order ${displayName} or do you want to alter the template?`,
+    showCancelButton : true,
+    showConfirmButton : true,
+    cancelButtonText : 'Save Locally (Work Order Only)',
+    confirmButtonText : 'Alter Template',
+    type : 'question',
+    customClass : 'work-order-save-confirmation'
+  } ).then( () => {
+    // User chose "Alter Template"
+    performSave()
+  } ).catch( () => {
+    // User chose "Save Locally" or cancelled
+    ElMessage.info( 'Local save option will be implemented in future updates' )
+
+    // For now, emit a template update event so other work order forms can refresh
+    // This ensures consistency across all open work order tabs
+    const updatedTemplate = templateForm.value
+    const store = useTaskLibraryStore()
+    store.emitTemplateUpdate( {
+      template_id : route.params.id,
+      id : route.params.id,
+      name : updatedTemplate.name,
+      description : updatedTemplate.description,
+      category : updatedTemplate.category,
+      estimated_minutes : updatedTemplate.estimated_minutes,
+      steps : updatedTemplate.steps || []
+    } )
+  } )
 }
 
 const resetDesignerState = () => {
@@ -980,9 +1017,13 @@ const handleSave = async() => {
   try {
     await metadataFormRef.value.validate()
 
-    // For editing mode, show change summary dialog first
+    // Check if we're editing from a work order context
+    const fromWorkOrder = route.query.fromWorkOrder === 'true'
+    const workOrderName = route.query.workOrderName
+    const workOrderId = route.query.workOrderId
+
     if ( isEditing.value && originalTemplate.value ) {
-      // Prepare reference data for name resolution
+      // For editing mode (both regular and work order context), show change summary dialog first
       const referenceData = {
         categories : categoriesForDropdown.value,
         equipmentTree : equipmentTreeData.value
@@ -1938,7 +1979,7 @@ const initializeTemplate = async() => {
         estimated_minutes : template.time_estimate_sec
           ? Math.round( template.time_estimate_sec / 60 )
           : template.estimated_minutes || 30,
-        applicable_assets : template.equipment_node_id || null,
+        applicable_assets : template.equipment_node?.id || template.equipment_node_id || null,
         steps : Array.isArray( template.steps ) ? template.steps.map( transformApiStepToDesignerStep ) : []
       }
 
@@ -2203,9 +2244,24 @@ const handlePreviewPrint = () => {
 // Change summary dialog handlers
 const handleChangeSummaryConfirm = async() => {
   setChangeSummaryLoading( true )
+
+  // Check if we're coming from a work order context
+  const fromWorkOrder = route.query.fromWorkOrder === 'true'
+  const workOrderName = route.query.workOrderName
+  const workOrderId = route.query.workOrderId
+
   try {
-    await performSave()
-    closeChangeSummaryDialog()
+    if ( fromWorkOrder ) {
+      // Close change summary dialog first
+      closeChangeSummaryDialog()
+
+      // Then show work order save confirmation dialog
+      showWorkOrderSaveConfirmation( workOrderId, workOrderName )
+    } else {
+      // Regular flow - save directly
+      await performSave()
+      closeChangeSummaryDialog()
+    }
   } catch ( error ) {
     // Error handling is already done in performSave
   } finally {

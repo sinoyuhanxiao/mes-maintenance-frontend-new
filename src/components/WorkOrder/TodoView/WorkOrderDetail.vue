@@ -317,13 +317,12 @@
         <el-tab-pane label="Tasks" name="tasks">
           <div class="tab-content">
             <div v-if="workOrder.task_list?.length" class="tasks-list">
-              <div v-for="(taskId, index) in workOrder.task_list" :key="taskId" class="task-item">
-                <div class="task-number">{{ index + 1 }}</div>
-                <div class="task-info">
-                  <div class="task-id">Task ID: {{ taskId }}</div>
-                  <div class="task-status">Status: Pending</div>
-                </div>
-              </div>
+              <WorkOrderTaskCard
+                v-for="(task, index) in workOrder.task_list"
+                :key="task._id || task.id || index"
+                :task="task"
+                @preview="handleTaskPreview"
+              />
             </div>
             <div v-else class="no-data-placeholder">
               <el-empty description="No Tasks" :image-size="120" />
@@ -412,8 +411,28 @@
     </el-dialog>
   </div>
 
+  <!-- Task Preview Dialog -->
+  <el-dialog
+    v-model="showTaskPreviewDialog"
+    :title="`Task Preview: ${selectedTaskForPreview?.task_name || selectedTaskForPreview?.name || 'Task Details'}`"
+    width="800px"
+    :before-close="handleTaskPreviewClose"
+    class="task-preview-modal"
+    top="5vh"
+  >
+    <WorkOrderTaskPreview
+      v-if="selectedTaskForPreview && showTaskPreviewDialog"
+      :task="selectedTaskForPreview"
+    />
+    <template #footer>
+      <div class="preview-dialog-footer">
+        <el-button @click="handleTaskPreviewClose">Close</el-button>
+      </div>
+    </template>
+  </el-dialog>
+
   <!-- Empty State -->
-  <div v-else class="empty-detail">
+  <div v-if="!workOrder" class="empty-detail">
     <el-empty :description="$t('workOrder.selectWorkOrder')" :image-size="120" />
   </div>
 </template>
@@ -442,6 +461,8 @@ import PriorityTag from '../PriorityTag.vue'
 import WorkTypeTag from '../WorkTypeTag.vue'
 import CategoryTag from '../CategoryTag.vue'
 import Timeline from '../Timeline/Timeline.vue'
+import WorkOrderTaskCard from './WorkOrderTaskCard.vue'
+import WorkOrderTaskPreview from './WorkOrderTaskPreview.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 // Props
@@ -469,6 +490,8 @@ const emit = defineEmits( [
 // State
 const localStatus = ref( '' )
 const activeTrackingTab = ref( 'tasks' )
+const showTaskPreviewDialog = ref( false )
+const selectedTaskForPreview = ref( null )
 const timelineModalVisible = ref( false )
 const equipmentDetails = ref( [] )
 const loadingEquipment = ref( false )
@@ -727,6 +750,17 @@ const handleTimelineModalClose = () => {
 const exportTimeline = () => {
   ElMessage.success( 'Timeline export will be implemented by Yellow Guy' )
   timelineModalVisible.value = false
+}
+
+// Task preview handlers
+const handleTaskPreview = ( task ) => {
+  selectedTaskForPreview.value = task
+  showTaskPreviewDialog.value = true
+}
+
+const handleTaskPreviewClose = () => {
+  showTaskPreviewDialog.value = false
+  selectedTaskForPreview.value = null
 }
 
 const navigateToLinkedOrder = () => {
@@ -1807,5 +1841,39 @@ defineOptions( {
 
 :deep(.el-descriptions__label.el-descriptions__cell:not(.is-bordered-label).is-vertical-label) {
   font-weight: 500;
+}
+
+// Task Preview Modal
+.task-preview-modal {
+  .preview-dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding-top: 16px;
+
+    .el-button {
+      padding: 8px 16px;
+      font-weight: 500;
+    }
+  }
+
+  :deep(.el-dialog__body) {
+    padding: 20px;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+}
+
+// Enhanced Tasks List Styling
+.tasks-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-height: 200px;
+}
+
+// Remove old task-item styles that are no longer needed
+.task-item {
+  display: none; // This will hide any remaining old task items
 }
 </style>

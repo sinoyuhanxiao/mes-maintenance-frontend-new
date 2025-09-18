@@ -153,17 +153,6 @@ export const getAllRecurrenceTypes = () => {
 }
 
 /**
- * Fetch all location node trees.
- * @returns {Promise} API response with location node trees.
- */
-export const getLocationNodeTrees = () => {
-  return http.request( {
-    method : 'get',
-    url : '/location/node-trees'
-  } )
-}
-
-/**
  * Fetch all equipment node trees.
  * @returns {Promise} API response with equipment node trees.
  */

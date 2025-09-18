@@ -134,7 +134,16 @@
       format="YYYY-MM-DD HH:mm"
       value-format="YYYY-MM-DD HH:mm:ss"
       style="width: 500px"
+      :disabled-date="disabledStartDate"
+      :disabled-hours="disabledStartHours"
+      :disabled-minutes="disabledStartMinutes"
     />
+    <div v-if="showRecurrenceStartWarning" class="recurrence-warning">
+      <el-text type="warning" size="small">
+        <el-icon><Warning /></el-icon>
+        Recurrence start time should not be before work order start time
+      </el-text>
+    </div>
   </el-form-item>
 
   <!-- End Date Time Selection (Displayed if recurrence is not 'daily') -->
@@ -151,12 +160,22 @@
       format="YYYY-MM-DD HH:mm"
       value-format="YYYY-MM-DD HH:mm:ss"
       style="width: 500px"
+      :disabled-date="disabledEndDate"
+      :disabled-hours="disabledEndHours"
+      :disabled-minutes="disabledEndMinutes"
     />
+    <div v-if="showDurationWarning" class="duration-warning">
+      <el-text type="warning" size="small">
+        <el-icon><Warning /></el-icon>
+        Duration: {{ formatDuration(calculateDuration()) }}
+      </el-text>
+    </div>
   </el-form-item>
 </template>
 
 <script setup>
 import { ref, watch, computed, onMounted } from 'vue'
+import { Warning } from '@element-plus/icons-vue'
 import { getAllRecurrenceTypes } from '@/api/work-order'
 
 const startDate = ref( null )
@@ -169,6 +188,13 @@ const monthlyDate = ref( 1 ) // Control for which date to repeat
 const yearlyRepeatInterval = ref( 1 ) // Control for how many years to repeat
 const yearlyMonth = ref( 1 ) // default to January
 const yearlyDay = ref( 1 ) // default to 1st
+const props = defineProps( {
+  workOrderStartDate : {
+    type : String,
+    default : null
+  }
+} )
+
 const emit = defineEmits( ['update:recurrenceSetting'] )
 
 // Dynamic recurrence types from backend
@@ -231,6 +257,155 @@ const loadRecurrenceTypes = async() => {
 
 onMounted( () => {
   loadRecurrenceTypes()
+} )
+
+// Date validation functions
+const disabledStartDate = ( date ) => {
+  // Allow dates from 30 days ago to 2 years in the future
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate( thirtyDaysAgo.getDate() - 30 )
+
+  const twoYearsFromNow = new Date()
+  twoYearsFromNow.setFullYear( twoYearsFromNow.getFullYear() + 2 )
+
+  // Check if date is outside the general allowed range
+  if ( date < thirtyDaysAgo || date > twoYearsFromNow ) {
+    return true
+  }
+
+  // If work order start date is provided, recurrence start cannot be before it
+  if ( props.workOrderStartDate ) {
+    const workOrderStart = new Date( props.workOrderStartDate )
+    workOrderStart.setHours( 0, 0, 0, 0 ) // Reset time for date-only comparison
+
+    const compareDate = new Date( date )
+    compareDate.setHours( 0, 0, 0, 0 )
+
+    return compareDate < workOrderStart
+  }
+
+  return false
+}
+
+const disabledEndDate = ( date ) => {
+  if ( !startDate.value ) return false
+
+  const start = new Date( startDate.value )
+  start.setHours( 0, 0, 0, 0 )
+
+  const twoYearsFromNow = new Date()
+  twoYearsFromNow.setFullYear( twoYearsFromNow.getFullYear() + 2 )
+
+  return date <= start || date > twoYearsFromNow
+}
+
+const disabledStartHours = () => {
+  if ( !props.workOrderStartDate || !startDate.value ) return []
+
+  const workOrderStart = new Date( props.workOrderStartDate )
+  const recurrenceStart = new Date( startDate.value )
+
+  // If same day as work order start, disable hours before work order start hour
+  if ( workOrderStart.toDateString() === recurrenceStart.toDateString() ) {
+    const disabledHours = []
+    for ( let i = 0; i < workOrderStart.getHours(); i++ ) {
+      disabledHours.push( i )
+    }
+    return disabledHours
+  }
+
+  return []
+}
+
+const disabledStartMinutes = ( hour ) => {
+  if ( !props.workOrderStartDate || !startDate.value ) return []
+
+  const workOrderStart = new Date( props.workOrderStartDate )
+  const recurrenceStart = new Date( startDate.value )
+
+  // If same day and same hour as work order start, disable minutes before work order start minute
+  if ( workOrderStart.toDateString() === recurrenceStart.toDateString() &&
+       hour === workOrderStart.getHours() ) {
+    const disabledMinutes = []
+    for ( let i = 0; i < workOrderStart.getMinutes(); i++ ) {
+      disabledMinutes.push( i )
+    }
+    return disabledMinutes
+  }
+
+  return []
+}
+
+const disabledEndHours = () => {
+  if ( !startDate.value || !endDate.value ) return []
+
+  const start = new Date( startDate.value )
+  const end = new Date( endDate.value )
+
+  // If same day, disable hours before start hour
+  if ( start.toDateString() === end.toDateString() ) {
+    const disabledHours = []
+    for ( let i = 0; i < start.getHours(); i++ ) {
+      disabledHours.push( i )
+    }
+    return disabledHours
+  }
+
+  return []
+}
+
+const disabledEndMinutes = ( hour ) => {
+  if ( !startDate.value || !endDate.value ) return []
+
+  const start = new Date( startDate.value )
+  const end = new Date( endDate.value )
+
+  // If same day and same hour, disable minutes before start minute
+  if ( start.toDateString() === end.toDateString() && hour === start.getHours() ) {
+    const disabledMinutes = []
+    for ( let i = 0; i <= start.getMinutes(); i++ ) {
+      disabledMinutes.push( i )
+    }
+    return disabledMinutes
+  }
+
+  return []
+}
+
+// Duration helpers
+const calculateDuration = () => {
+  if ( !startDate.value || !endDate.value ) return 0
+
+  const start = new Date( startDate.value )
+  const end = new Date( endDate.value )
+  const diffMs = end - start
+
+  return diffMs > 0 ? Math.ceil( diffMs / ( 1000 * 60 ) ) : 0
+}
+
+const formatDuration = ( minutes ) => {
+  if ( minutes < 60 ) return `${minutes} minutes`
+
+  const hours = Math.floor( minutes / 60 )
+  const remainingMinutes = minutes % 60
+
+  if ( remainingMinutes === 0 ) return `${hours} hour${hours !== 1 ? 's' : ''}`
+
+  return `${hours}h ${remainingMinutes}m`
+}
+
+const showDurationWarning = computed( () => {
+  const duration = calculateDuration()
+  return duration > 0 && ( duration < 15 || duration > 480 ) // Less than 15min or more than 8 hours
+} )
+
+const showRecurrenceStartWarning = computed( () => {
+  if ( !props.workOrderStartDate || !startDate.value ) return false
+
+  const workOrderStart = new Date( props.workOrderStartDate )
+  const recurrenceStart = new Date( startDate.value )
+
+  return recurrenceStart < workOrderStart
 } )
 
 const recurrenceSetting = computed( () => {
@@ -320,5 +495,25 @@ watch(
 
 .yearly-selection {
   margin-top: 15px;
+}
+
+.duration-warning {
+  margin-top: 8px;
+
+  .el-text {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+}
+
+.recurrence-warning {
+  margin-top: 8px;
+
+  .el-text {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
 }
 </style>

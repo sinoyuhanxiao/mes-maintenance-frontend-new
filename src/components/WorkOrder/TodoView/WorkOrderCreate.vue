@@ -50,21 +50,6 @@
         </el-form-item>
       </div>
 
-      <!-- Location Tree Select -->
-      <div class="form-section">
-        <el-form-item :label="$t('workOrder.create.location')" prop="location_id">
-          <el-tree-select
-            v-model="form.location_id"
-            :data="locationTreeData"
-            :props="treeProps"
-            :placeholder="$t('workOrder.create.locationPlaceholder')"
-            check-strictly
-            :render-after-expand="false"
-            style="width: 100%"
-          />
-        </el-form-item>
-      </div>
-
       <!-- Asset Tree Select -->
       <div class="form-section">
         <el-form-item :label="$t('workOrder.create.asset')" prop="equipment_node_ids">
@@ -112,53 +97,93 @@
 
       <!-- Tasks -->
       <el-divider />
-      <div class="form-section">
-        <el-form-item label="Tasks">
-          <!-- Task Action Buttons -->
-          <div class="task-actions">
-            <el-button size="small" @click="handleAddTask" :icon="Plus"> Add Task </el-button>
-            <el-button size="small" @click="handleDeleteAllTasks" :icon="Delete">
-              Clear All ({{ form.tasks.length }})
-            </el-button>
+      <div class="form-section tasks-section">
+        <el-form-item>
+          <template #label>
+            <div class="section-header">
+              <span class="section-title">
+                <el-icon class="section-icon tasks-icon"><List /></el-icon>
+                Tasks
+              </span>
+              <div v-if="form.tasks.length > 0" class="task-actions">
+                <el-button size="default" @click="handleAddTask" :icon="Plus"> Add Task </el-button>
+                <el-button size="default" @click="handleDeleteAllTasks" :icon="Delete">
+                  Clear All ({{ form.tasks.length }})
+                </el-button>
+              </div>
+            </div>
+          </template>
+          <div class="tasks-container" :class="{ 'no-tasks': form.tasks.length === 0 }">
+            <!-- Empty State -->
+            <div v-if="form.tasks.length === 0" class="empty-tasks">
+              <div class="empty-content">
+                <el-icon class="empty-icon"><DocumentAdd /></el-icon>
+                <h4>No Tasks Added</h4>
+                <p>Add your first task to start building the work order</p>
+                <el-button type="primary" @click="handleAddTask">
+                  <el-icon><Plus /></el-icon>
+                  Add Task
+                </el-button>
+              </div>
+            </div>
+
+            <!-- Tasks List -->
+            <div v-else class="tasks-list">
+              <MaintenanceSelectedTaskCard
+                v-for="task in form.tasks"
+                :key="task.id"
+                :template="task"
+                @selection="handleTaskAction"
+                class="task-card"
+              />
+            </div>
           </div>
-          <CardTable
-            @selection="handleTaskAction"
-            :module="4"
-            :data="form.tasks"
-            :maxHeight="maxHeight"
-            :totalItems="totalItems"
-            :currentPage="currentPage"
-            :pageSize="pageSize"
-            :showBorder="true"
-            :showPagination="false"
-            :showSearch="false"
-          />
         </el-form-item>
       </div>
 
       <!-- Standards -->
       <el-divider />
-      <div class="form-section">
-        <el-form-item label="Standards">
-          <!-- Standards Action Buttons -->
-          <div class="standards-actions">
-            <el-button size="small" @click="handleAddStandard" :icon="Plus"> Add Standard </el-button>
-            <el-button size="small" @click="handleDeleteAllStandards" :icon="Delete">
-              Clear All ({{ form.standards.length }})
-            </el-button>
+      <div class="form-section standards-section">
+        <el-form-item>
+          <template #label>
+            <div class="section-header">
+              <span class="section-title">
+                <el-icon class="section-icon standards-icon"><DocumentChecked /></el-icon>
+                Standards
+              </span>
+              <div v-if="form.standards.length > 0" class="standards-actions">
+                <el-button size="default" @click="handleAddStandard" :icon="Plus"> Add Standard </el-button>
+                <el-button size="default" @click="handleDeleteAllStandards" :icon="Delete">
+                  Clear All ({{ form.standards.length }})
+                </el-button>
+              </div>
+            </div>
+          </template>
+          <div class="standards-container" :class="{ 'no-standards': form.standards.length === 0 }">
+            <!-- Empty State -->
+            <div v-if="form.standards.length === 0" class="empty-standards">
+              <div class="empty-content">
+                <el-icon class="empty-icon"><Document /></el-icon>
+                <h4>No Standards Added</h4>
+                <p>Add your first standard to ensure work order compliance</p>
+                <el-button type="primary" @click="handleAddStandard">
+                  <el-icon><Plus /></el-icon>
+                  Add Standard
+                </el-button>
+              </div>
+            </div>
+
+            <!-- Standards List -->
+            <div v-else class="standards-list">
+              <MaintenanceSelectedStandardsCard
+                v-for="standard in form.standards"
+                :key="standard.id"
+                :template="standard"
+                @selection="handleStandardAction"
+                class="standard-card"
+              />
+            </div>
           </div>
-          <CardTable
-            @selection="handleStandardAction"
-            :module="6"
-            :data="form.standards"
-            :maxHeight="maxHeight"
-            :totalItems="form.standards.length"
-            :currentPage="currentPage"
-            :pageSize="pageSize"
-            :showBorder="true"
-            :showPagination="false"
-            :showSearch="false"
-          />
         </el-form-item>
       </div>
 
@@ -172,7 +197,13 @@
             style="width: 100%"
             format="MM/DD/YYYY HH:mm"
             value-format="YYYY-MM-DDTHH:mm:ss"
+            :disabled-date="disabledDueDates"
           />
+          <div v-if="showWorkOrderDuration" class="work-order-duration">
+            <el-text type="info" size="small">
+              Work order duration: {{ formatWorkOrderDuration() }}
+            </el-text>
+          </div>
         </el-form-item>
       </div>
 
@@ -186,6 +217,7 @@
             style="width: 100%"
             format="MM/DD/YYYY HH:mm"
             value-format="YYYY-MM-DDTHH:mm:ss"
+            :disabled-date="disabledStartDates"
           />
         </el-form-item>
       </div>
@@ -232,7 +264,10 @@
 
       <!-- Recurrence Settings -->
       <div class="form-section">
-        <RecurrenceEditor v-model:recurrence-setting="form.recurrence_setting" />
+        <RecurrenceEditor
+          v-model:recurrence-setting="form.recurrence_setting"
+          :work-order-start-date="form.start_date"
+        />
       </div>
 
       <!-- Categories -->
@@ -275,8 +310,9 @@
       <el-dialog
         v-model="showAddTaskDialog"
         title="Add New Task"
-        width="600px"
+        width="700px"
         :before-close="handleCloseAddTaskDialog"
+        top="5vh"
       >
         <AddTask v-if="showAddTaskDialog" @close="closeAddTaskDialog" @add-templates="onAddTaskTemplates" />
       </el-dialog>
@@ -285,7 +321,8 @@
       <el-dialog
         v-model="showAddStandardDialog"
         title="Add New Standard"
-        width="600px"
+        width="700px"
+        top="5vh"
         :before-close="handleCloseAddStandardDialog"
       >
         <AddStandard v-if="showAddStandardDialog" @close="closeAddStandardDialog" @add-standards="onAddStandards" />
@@ -307,12 +344,22 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue'
-import { ElMessage } from 'element-plus'
-import { ArrowLeft, RefreshLeft, Plus, Delete } from '@element-plus/icons-vue'
+import { ref, reactive, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import {
+  ArrowLeft,
+  RefreshLeft,
+  Plus,
+  Delete,
+  DocumentAdd,
+  Document,
+  List,
+  DocumentChecked
+} from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import RecurrenceEditor from '@/views/workOrder/components/RecurrenceEditor.vue'
-import CardTable from '../../Tables/CardTable.vue'
+import MaintenanceSelectedTaskCard from '../../Tables/Cards/MaintenanceSelectedTaskCard.vue'
+import MaintenanceSelectedStandardsCard from '../../Tables/Cards/MaintenanceSelectedStandardsCard.vue'
 import AddTask from '../../Task/AddTask.vue'
 import AddStandard from '../../Standard/AddStandard.vue'
 import FileUploadMultiple from '@/components/FileUpload/FileUploadMultiple.vue'
@@ -322,91 +369,15 @@ import {
   getAllPriorities,
   getAllCategories,
   getAllStates,
-  getLocationNodeTrees,
   getEquipmentNodeTrees,
   createWorkOrder
 } from '@/api/work-order'
+import { useRouter } from 'vue-router'
+import { useTaskLibraryStore } from '@/store/modules/taskLibrary'
 
-// Initialize form.tasks with sample data
+// Initialize empty task and standards arrays
 onMounted( () => {
-  form.tasks = [
-    {
-      id : 1,
-      name : 'HVAC Filter Replacement',
-      category : 'Preventive Maintenance',
-      estimated_minutes : 30
-    },
-    {
-      id : 2,
-      name : 'Fire Extinguisher Inspection',
-      category : 'Safety',
-      estimated_minutes : 15
-    },
-    {
-      id : 3,
-      name : 'Electrical Panel Check',
-      category : 'Safety Inspection',
-      estimated_minutes : 45
-    },
-    {
-      id : 4,
-      name : 'Emergency Lighting Test',
-      category : 'Safety Testing',
-      estimated_minutes : 20
-    },
-    {
-      id : 5,
-      name : 'Conveyor Belt Maintenance',
-      category : 'Equipment Maintenance',
-      estimated_minutes : 90
-    },
-    {
-      id : 6,
-      name : 'Water System Pressure Check',
-      category : 'Plumbing',
-      estimated_minutes : 25
-    },
-    {
-      id : 7,
-      name : 'Generator Monthly Test',
-      category : 'Power Systems',
-      estimated_minutes : 60
-    },
-    {
-      id : 8,
-      name : 'Roof Drain Cleaning',
-      category : 'Building Maintenance',
-      estimated_minutes : 40
-    }
-  ]
-
-  form.standards = [
-    {
-      id : 1,
-      name : 'Safety Protocol Checklist',
-      category : 'Safety Standards',
-      estimated_minutes : 20
-    },
-    {
-      id : 2,
-      name : 'Equipment Inspection Standard',
-      category : 'Quality Control',
-      estimated_minutes : 35
-    },
-    {
-      id : 3,
-      name : 'Environmental Compliance Check',
-      category : 'Environmental',
-      estimated_minutes : 40
-    },
-    {
-      id : 4,
-      name : 'Documentation Standard',
-      category : 'Administrative',
-      estimated_minutes : 15
-    }
-  ]
-
+  initializeFormData()
   loadFormData()
 } )
 
@@ -425,11 +396,7 @@ const handleAddTask = () => {
   showAddTaskDialog.value = true
 }
 
-// Pagination variables for Tasks and Standards
-const totalItems = ref( 8 )
-const maxHeight = ref( '200px' )
-const currentPage = ref( 1 )
-const pageSize = ref( 10 )
+// Remove unused CardTable variables - tasks and standards now use direct card stacking
 
 const closeAddTaskDialog = () => {
   showAddTaskDialog.value = false
@@ -438,7 +405,7 @@ const closeAddTaskDialog = () => {
 const handleTaskAction = ( { id, action, data } ) => {
   console.log( 'Task action received:', id, action, data )
   if ( action === 'edit' ) {
-    // something here later
+    handleEditTask( data )
   } else if ( action === 'delete' ) {
     form.tasks = form.tasks.filter( t => t.id !== id )
     ElMessage.success( `Task "${data.name}" removed` )
@@ -466,13 +433,15 @@ const onAddTaskTemplates = selectedTemplates => {
     // Get the highest existing ID to generate new unique IDs
     const maxId = form.tasks.length > 0 ? Math.max( ...form.tasks.map( task => task.id ) ) : 0
 
-    // Append selected templates to form.tasks with new unique IDs
+    // Transform template data to match work order task format
     const newTasks = selectedTemplates.map( ( template, index ) => ( {
-      id : maxId + index + 1, // Generate new unique ID
-      name : template.name,
+      id : maxId + index + 1,
+      name : template.name || template.title,
       category : template.category,
-      estimated_minutes : template.estimated_minutes,
-      // Add any other properties from template that you need
+      estimated_minutes : template.estimated_minutes || template.estimatedMinutes || 30,
+      description : template.description || '',
+      // Include original template data for reference
+      templateId : template.id || template._id,
       ...template
     } ) )
 
@@ -495,8 +464,22 @@ const handleDeleteAllTasks = () => {
     return
   }
 
-  form.tasks = []
-  ElMessage.success( 'All task selections cleared' )
+  ElMessageBox.confirm(
+    `Are you sure you want to clear all ${form.tasks.length} task${form.tasks.length > 1 ? 's' : ''}?`,
+    'Confirm Clear All Tasks',
+    {
+      confirmButtonText : 'Clear All',
+      cancelButtonText : 'Cancel',
+      type : 'warning'
+    }
+  )
+    .then( () => {
+      form.tasks = []
+      ElMessage.success( 'All task selections cleared' )
+    } )
+    .catch( () => {
+      // User cancelled - no action needed
+    } )
 }
 
 const onAddStandards = selectedStandards => {
@@ -506,13 +489,15 @@ const onAddStandards = selectedStandards => {
     // Get the highest existing ID to generate new unique IDs
     const maxId = form.standards.length > 0 ? Math.max( ...form.standards.map( standard => standard.id ) ) : 0
 
-    // Append selected standards to form.standards with new unique IDs
+    // Transform standard data to match work order format
     const newStandards = selectedStandards.map( ( standard, index ) => ( {
-      id : maxId + index + 1, // Generate new unique ID
-      name : standard.name,
+      id : maxId + index + 1,
+      name : standard.name || standard.title,
       category : standard.category,
-      estimated_minutes : standard.estimated_minutes,
-      // Add any other properties from standard that you need
+      estimated_minutes : standard.estimated_minutes || standard.estimatedMinutes || 15,
+      description : standard.description || '',
+      // Include original standard data for reference
+      standardId : standard.id || standard._id,
       ...standard
     } ) )
 
@@ -535,22 +520,106 @@ const handleDeleteAllStandards = () => {
     return
   }
 
-  form.standards = []
-  ElMessage.success( 'All standard selections cleared' )
+  ElMessageBox.confirm(
+    `Are you sure you want to clear all ${form.standards.length} standard${form.standards.length > 1 ? 's' : ''}?`,
+    'Confirm Clear All Standards',
+    {
+      confirmButtonText : 'Clear All',
+      cancelButtonText : 'Cancel',
+      type : 'warning'
+    }
+  )
+    .then( () => {
+      form.standards = []
+      ElMessage.success( 'All standard selections cleared' )
+    } )
+    .catch( () => {
+      // User cancelled - no action needed
+    } )
 }
 
 const handleCloseAddStandardDialog = done => {
   done()
 }
 
+const handleEditTask = async( taskData ) => {
+  try {
+    loading.value = true
+
+    // Check if we have the original template ID
+    const originalTemplateId = taskData.templateId || taskData.template_id || taskData.id
+
+    if ( !originalTemplateId ) {
+      throw new Error( 'No template ID found for this task. Cannot edit template.' )
+    }
+
+    ElMessage.info( 'Opening template editor...' )
+
+    // Navigate directly to edit the original template with work order context
+    await router.push( {
+      name : 'TaskDesignerEdit',
+      params : { id : originalTemplateId },
+      query : {
+        fromWorkOrder : 'true',
+        workOrderId : form.name || 'New Work Order', // Use work order name as identifier
+        workOrderName : form.name || 'New Work Order',
+        taskId : taskData.id,
+        originalTemplateId // Keep track of the original template
+      }
+    } )
+  } catch ( error ) {
+    console.error( 'Failed to open template editor:', error )
+    const errorMessage = error.response?.data?.message || error.message || 'Failed to open task editor'
+    ElMessage.error( errorMessage )
+  } finally {
+    loading.value = false
+  }
+}
+
 // Emits
 const emit = defineEmits( ['back-to-detail', 'work-order-created'] )
 
 const { t } = useI18n()
+const router = useRouter()
+const taskLibraryStore = useTaskLibraryStore()
+
+// Template update listener for refreshing tasks when templates are updated
+const handleTemplateUpdate = ( updatedTemplate ) => {
+  // Find tasks that use this template and update them
+  const templateId = updatedTemplate.template_id || updatedTemplate.id
+
+  // Update tasks that match this template
+  form.tasks.forEach( ( task, index ) => {
+    if ( task.templateId === templateId || task.template_id === templateId ) {
+      // Update task with latest template data while preserving work order specific fields
+      form.tasks[index] = {
+        ...task, // Keep work order specific fields like id, etc.
+        name : updatedTemplate.name,
+        description : updatedTemplate.description,
+        category : updatedTemplate.category,
+        estimated_minutes : updatedTemplate.estimated_minutes,
+        steps : updatedTemplate.steps || []
+      }
+    }
+  } )
+
+  // Show notification that tasks were refreshed
+  if ( form.tasks.some( task => task.templateId === templateId || task.template_id === templateId ) ) {
+    ElMessage.success( `Tasks updated with latest template changes: ${updatedTemplate.name}` )
+  }
+}
 
 // Component mounted
 onMounted( () => {
   loadFormData()
+
+  // Register template update listener
+  taskLibraryStore.addTemplateUpdateListener( handleTemplateUpdate )
+} )
+
+// Component unmounted - cleanup listener
+onBeforeUnmount( () => {
+  taskLibraryStore.removeTemplateUpdateListener( handleTemplateUpdate )
 } )
 
 // Form data - matching API requirements
@@ -561,7 +630,6 @@ const form = reactive( {
   priority_id : null,
   state_id : 1,
   work_type_id : null,
-  location_id : null,
   equipment_node_ids : [],
   vendor_ids : [],
   assignee_ids : [],
@@ -583,6 +651,108 @@ const form = reactive( {
   standards : []
 } )
 
+// Custom validation functions
+const validateStartDate = ( rule, value, callback ) => {
+  if ( !value ) {
+    callback( new Error( 'Start date is required' ) )
+    return
+  }
+
+  const now = new Date()
+  const startDate = new Date( value )
+
+  // Allow past dates but warn if too far in the past (more than 30 days)
+  const thirtyDaysAgo = new Date( now.getTime() - 30 * 24 * 60 * 60 * 1000 )
+  if ( startDate < thirtyDaysAgo ) {
+    callback( new Error( 'Start date is more than 30 days in the past. Please verify this is correct.' ) )
+    return
+  }
+
+  callback()
+}
+
+const validateDueDate = ( rule, value, callback ) => {
+  if ( !value ) {
+    callback( new Error( 'Due date is required' ) )
+    return
+  }
+
+  const dueDate = new Date( value )
+  const startDate = form.start_date ? new Date( form.start_date ) : null
+
+  if ( startDate && dueDate <= startDate ) {
+    callback( new Error( 'Due date must be after start date' ) )
+    return
+  }
+
+  // Check if due date is too far in the future (more than 2 years)
+  const now = new Date()
+  const twoYearsFromNow = new Date( now.getTime() + 2 * 365 * 24 * 60 * 60 * 1000 )
+  if ( dueDate > twoYearsFromNow ) {
+    callback( new Error( 'Due date cannot be more than 2 years in the future' ) )
+    return
+  }
+
+  callback()
+}
+
+const validateRecurrenceStartTime = ( rule, value, callback ) => {
+  if ( !value ) {
+    callback()
+    return
+  }
+
+  const recurrenceSetting = form.recurrence_setting
+  if ( !recurrenceSetting || !recurrenceSetting.start_date_time ) {
+    callback()
+    return
+  }
+
+  // Check if recurrence start time is before work order start date
+  if ( form.start_date ) {
+    const workOrderStart = new Date( form.start_date )
+    const recurrenceStart = new Date( recurrenceSetting.start_date_time )
+
+    if ( recurrenceStart < workOrderStart ) {
+      callback( new Error( 'Recurrence start time cannot be before work order start date' ) )
+      return
+    }
+  }
+
+  callback()
+}
+
+const validateRecurrenceEndTime = ( rule, value, callback ) => {
+  if ( !value ) {
+    callback()
+    return
+  }
+
+  const recurrenceSetting = form.recurrence_setting
+  if ( !recurrenceSetting || !recurrenceSetting.start_date_time ) {
+    callback()
+    return
+  }
+
+  const startTime = new Date( recurrenceSetting.start_date_time )
+  const endTime = new Date( recurrenceSetting.end_date_time )
+
+  if ( endTime <= startTime ) {
+    callback( new Error( 'Recurrence end time must be after recurrence start time' ) )
+    return
+  }
+
+  // Check if the duration is reasonable (not more than 24 hours)
+  const diffMs = endTime - startTime
+  const diffHours = diffMs / ( 1000 * 60 * 60 )
+  if ( diffHours > 24 ) {
+    callback( new Error( 'Single work order duration cannot exceed 24 hours' ) )
+    return
+  }
+
+  callback()
+}
+
 // Validation rules
 const rules = reactive( {
   name : [{ required : true, message : t( 'workOrder.validation.taskTitleRequired' ), trigger : 'blur' }],
@@ -590,8 +760,20 @@ const rules = reactive( {
   equipment_node_ids : [{ required : true, message : 'At least one equipment is required', trigger : 'change' }],
   work_type_id : [{ required : true, message : t( 'workOrder.validation.workTypeRequired' ), trigger : 'change' }],
   priority_id : [{ required : true, message : t( 'workOrder.validation.priorityRequired' ), trigger : 'change' }],
-  start_date : [{ required : true, message : 'Start date is required', trigger : 'change' }],
-  due_date : [{ required : true, message : 'Due date is required', trigger : 'change' }]
+  start_date : [
+    { required : true, message : 'Start date is required', trigger : 'change' },
+    { validator : validateStartDate, trigger : 'change' }
+  ],
+  due_date : [
+    { required : true, message : 'Due date is required', trigger : 'change' },
+    { validator : validateDueDate, trigger : 'change' }
+  ],
+  'recurrence_setting.start_date_time' : [
+    { validator : validateRecurrenceStartTime, trigger : 'change' }
+  ],
+  'recurrence_setting.end_date_time' : [
+    { validator : validateRecurrenceEndTime, trigger : 'change' }
+  ]
 } )
 
 // Tree props for tree selects
@@ -606,7 +788,6 @@ const priorityOptions = ref( [] )
 const workTypeOptions = ref( [] )
 const categoryOptions = ref( [] )
 const stateOptions = ref( [] )
-const locationTreeData = ref( [] )
 const assetTreeData = ref( [] )
 const loading = ref( false )
 
@@ -625,17 +806,22 @@ const supervisorOptions = ref( [
 ] )
 const formRef = ref( null )
 
+// Initialize form data with empty arrays
+const initializeFormData = () => {
+  form.tasks = []
+  form.standards = []
+}
+
 // Load data from APIs
 const loadFormData = async() => {
   try {
     loading.value = true
 
-    const [workTypesRes, prioritiesRes, categoriesRes, statesRes, locationsRes, equipmentRes] = await Promise.all( [
+    const [workTypesRes, prioritiesRes, categoriesRes, statesRes, equipmentRes] = await Promise.all( [
       getAllWorkTypes(),
       getAllPriorities(),
       getAllCategories(),
       getAllStates(),
-      getLocationNodeTrees(),
       getEquipmentNodeTrees()
     ] )
 
@@ -653,10 +839,6 @@ const loadFormData = async() => {
 
     if ( statesRes.data ) {
       stateOptions.value = statesRes.data
-    }
-
-    if ( locationsRes.data ) {
-      locationTreeData.value = locationsRes.data
     }
 
     if ( equipmentRes.data ) {
@@ -723,41 +905,100 @@ const uploadFilesToServer = async() => {
 }
 
 const resetForm = () => {
-  if ( formRef.value ) {
-    formRef.value.resetFields()
+  ElMessageBox.confirm(
+    'Are you sure you want to reset the form? All unsaved changes will be lost.',
+    'Confirm Reset',
+    {
+      confirmButtonText : 'Reset',
+      cancelButtonText : 'Cancel',
+      type : 'warning'
+    }
+  )
+    .then( () => {
+      if ( formRef.value ) {
+        formRef.value.resetFields()
+      }
+
+      // Reset form to initial values
+      Object.assign( form, {
+        name : '',
+        description : '',
+        category_ids : [],
+        priority_id : null,
+        state_id : 1,
+        work_type_id : null,
+        equipment_node_ids : [],
+        vendor_ids : [],
+        assignee_ids : [],
+        approved_by_id : null,
+        time_zone : Intl.DateTimeFormat().resolvedOptions().timeZone,
+        start_date : null,
+        due_date : null,
+        recurrence_type_id : null,
+        recurrence_type : null,
+        recurrence_setting : {},
+        recurrence_setting_request : {
+          start_date_time : null
+        },
+        task_add_list : [],
+        image_list : [],
+        file_list : [],
+        standard_list : [],
+        tasks : [],
+        standards : []
+      } )
+
+      ElMessage.success( t( 'workOrder.messages.formReset' ) )
+    } )
+    .catch( () => {
+      // User cancelled - no action needed
+    } )
+}
+
+// Date picker constraints and helpers for main work order dates
+const disabledStartDates = ( date ) => {
+  // Allow dates from 30 days ago to 2 years in the future
+  const thirtyDaysAgo = new Date()
+  thirtyDaysAgo.setDate( thirtyDaysAgo.getDate() - 30 )
+
+  const twoYearsFromNow = new Date()
+  twoYearsFromNow.setFullYear( twoYearsFromNow.getFullYear() + 2 )
+
+  return date < thirtyDaysAgo || date > twoYearsFromNow
+}
+
+const disabledDueDates = ( date ) => {
+  // Don't allow dates more than 2 years in the future
+  const twoYearsFromNow = new Date()
+  twoYearsFromNow.setFullYear( twoYearsFromNow.getFullYear() + 2 )
+
+  return date > twoYearsFromNow
+}
+
+const showWorkOrderDuration = computed( () => {
+  return form.start_date && form.due_date
+} )
+
+const formatWorkOrderDuration = () => {
+  if ( !form.start_date || !form.due_date ) return ''
+
+  const start = new Date( form.start_date )
+  const due = new Date( form.due_date )
+  const diffMs = due - start
+
+  if ( diffMs <= 0 ) return 'Invalid duration'
+
+  const diffDays = Math.floor( diffMs / ( 1000 * 60 * 60 * 24 ) )
+  const diffHours = Math.floor( ( diffMs % ( 1000 * 60 * 60 * 24 ) ) / ( 1000 * 60 * 60 ) )
+  const diffMinutes = Math.floor( ( diffMs % ( 1000 * 60 * 60 ) ) / ( 1000 * 60 ) )
+
+  if ( diffDays > 0 ) {
+    return `${diffDays} day${diffDays !== 1 ? 's' : ''} ${diffHours}h ${diffMinutes}m`
+  } else if ( diffHours > 0 ) {
+    return `${diffHours}h ${diffMinutes}m`
+  } else {
+    return `${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''}`
   }
-
-  // Reset form to initial values
-  Object.assign( form, {
-    name : '',
-    description : '',
-    category_ids : [],
-    priority_id : null,
-    state_id : 1,
-    work_type_id : null,
-    location_id : null,
-    equipment_node_ids : [],
-    vendor_ids : [],
-    assignee_ids : [],
-    approved_by_id : null,
-    time_zone : Intl.DateTimeFormat().resolvedOptions().timeZone,
-    start_date : null,
-    due_date : null,
-    recurrence_type_id : null,
-    recurrence_type : null,
-    recurrence_setting : {},
-    recurrence_setting_request : {
-      start_date_time : null
-    },
-    task_add_list : [],
-    image_list : [],
-    file_list : [],
-    standard_list : [],
-    tasks : [],
-    standards : []
-  } )
-
-  ElMessage.success( t( 'workOrder.messages.formReset' ) )
 }
 
 // Watcher to sync recurrence_type from recurrence_setting
@@ -779,6 +1020,57 @@ watch(
         interval : newVal.interval,
         duration_minutes : newVal.duration_minutes
       }
+    }
+  },
+  { deep : true }
+)
+
+// Watcher to trigger due date validation when start date changes
+watch(
+  () => form.start_date,
+  () => {
+    // Re-validate due date when start date changes
+    nextTick( () => {
+      if ( formRef.value && form.due_date ) {
+        formRef.value.validateField( 'due_date' )
+      }
+      // Also re-validate recurrence start time
+      if ( formRef.value && form.recurrence_setting && form.recurrence_setting.start_date_time ) {
+        formRef.value.validateField( 'recurrence_setting.start_date_time' )
+      }
+    } )
+  }
+)
+
+// Watcher to trigger start date validation when due date changes
+watch(
+  () => form.due_date,
+  () => {
+    // Re-validate start date when due date changes
+    nextTick( () => {
+      if ( formRef.value && form.start_date ) {
+        formRef.value.validateField( 'start_date' )
+      }
+    } )
+  }
+)
+
+// Watcher to trigger recurrence validation when recurrence settings change
+watch(
+  () => form.recurrence_setting,
+  ( newVal ) => {
+    if ( newVal && ( newVal.start_date_time || newVal.end_date_time ) ) {
+      nextTick( () => {
+        if ( formRef.value ) {
+          // Validate both recurrence start and end times
+          if ( newVal.start_date_time ) {
+            formRef.value.validateField( 'recurrence_setting.start_date_time' )
+          }
+          if ( newVal.end_date_time ) {
+            formRef.value.validateField( 'recurrence_setting.end_date_time' )
+          }
+        }
+      } )
     }
   },
   { deep : true }
@@ -825,7 +1117,6 @@ const submitForm = async() => {
           attachments : [],
           assignee_ids : [],
           equipment_node_id : null,
-          location_id : null,
           category_id : null
         } ) )
         : [
@@ -838,7 +1129,6 @@ const submitForm = async() => {
             attachments : [],
             assignee_ids : [],
             equipment_node_id : null,
-            location_id : null,
             category_id : null
           }
         ]
@@ -851,7 +1141,6 @@ const submitForm = async() => {
       priority_id : form.priority_id,
       state_id : form.state_id,
       work_type_id : form.work_type_id,
-      location_id : form.location_id,
       equipment_node_ids : form.equipment_node_ids,
       vendor_ids : form.vendor_ids,
       assignee_ids : form.assignee_ids,
@@ -1046,18 +1335,111 @@ defineOptions( {
     }
   }
 
+  // Section-specific styling
+  .tasks-section {
+    background: var(--el-fill-color-extra-light);
+    border-radius: 6px;
+    padding: 12px;
+  }
+
+  .standards-section {
+    background: #fbfff9;
+    border-radius: 6px;
+    padding: 12px;
+  }
+
+  // Task and Standard containers
+  .tasks-container,
+  .standards-container {
+    min-height: 120px;
+    flex: 1;
+  }
+
+  // Direct card stacking lists
+  .tasks-list,
+  .standards-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  // Individual card styling
+  .task-card,
+  .standard-card {
+    width: 100%;
+  }
+
+  .tasks-container.no-tasks,
+  .standards-container.no-standards {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .empty-tasks,
+  .empty-standards {
+    text-align: center;
+    color: #909399;
+  }
+
+  .empty-icon {
+    font-size: 64px;
+    color: #c0c4cc;
+  }
+
+  .empty-content {
+    h4 {
+      margin: 0 0 0 0;
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--el-text-color-regular);
+    }
+
+    p {
+      margin: -8px 0 6px 0;
+      font-size: 14px;
+      color: var(--el-text-color-secondary);
+    }
+  }
+
+  // Section header with actions
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      font-size: 16px;
+      gap: 8px;
+      font-weight: 500;
+      color: var(--el-text-color-regular);
+    }
+
+    .section-icon {
+      font-size: 18px;
+
+      &.tasks-icon {
+        color: var(--el-color-primary);
+      }
+
+      &.standards-icon {
+        color: var(--el-color-success);
+      }
+    }
+  }
+
   // Task action buttons
   .task-actions {
     display: flex;
     gap: 5px;
-    margin-bottom: 10px;
   }
 
-  // Task action buttons
+  // Standard action buttons
   .standards-actions {
     display: flex;
     gap: 5px;
-    margin-bottom: 10px;
   }
 
   // Estimated time inputs
@@ -1125,6 +1507,10 @@ defineOptions( {
   }
 }
 
+:deep(.el-form-item--default) {
+  margin-bottom: 18px !important;
+}
+
 // Responsive adjustments
 @media (max-width: 768px) {
   .work-order-create-enhanced {
@@ -1166,6 +1552,18 @@ defineOptions( {
     :deep(.el-checkbox-group) {
       flex-direction: column;
       gap: 4px;
+    }
+  }
+
+  // Duration display styling
+  .work-order-duration {
+    margin-top: 8px;
+
+    .el-text {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
     }
   }
 }

@@ -4,13 +4,13 @@
     <template #viewMode>
       <div class="view-mode-selector">
         <el-select v-model="currentView" @change="handleViewChange" size="default" style="width: 140px">
-          <el-option :label="$t('workOrder.viewModes.table')" value="table">
-            <el-icon style="margin-right: 8px"><Grid /></el-icon>
-            {{ $t('workOrder.viewModes.table') }}
-          </el-option>
           <el-option :label="$t('workOrder.viewModes.todo')" value="todo">
             <el-icon style="margin-right: 8px"><List /></el-icon>
             {{ $t('workOrder.viewModes.todo') }}
+          </el-option>
+          <el-option :label="$t('workOrder.viewModes.table')" value="table">
+            <el-icon style="margin-right: 8px"><Grid /></el-icon>
+            {{ $t('workOrder.viewModes.table') }}
           </el-option>
           <el-option :label="$t('workOrder.viewModes.calendar')" value="calendar">
             <el-icon style="margin-right: 8px"><Calendar /></el-icon>
@@ -142,7 +142,7 @@ const {
 
 // State
 const downloadLoading = ref( false )
-const currentView = ref( 'table' ) // 'table' or 'todo'
+const currentView = ref( 'todo' ) // 'table' or 'todo' or 'calendar'
 const calendarViewRef = ref()
 const todoViewRef = ref( null )
 

@@ -27,7 +27,9 @@ export const useTaskLibraryStore = defineStore( 'taskLibrary', {
       total : 0,
       sortField : 'createdAt',
       direction : 'DESC'
-    }
+    },
+    // Event listeners for template updates
+    templateUpdateListeners : []
   } ),
 
   getters : {
@@ -201,6 +203,9 @@ export const useTaskLibraryStore = defineStore( 'taskLibrary', {
           this.currentTemplate = transformedTemplate
         }
 
+        // Emit template update event to notify listeners
+        this.emitTemplateUpdate( transformedTemplate )
+
         return transformedTemplate
       } catch ( error ) {
         console.error( 'Failed to update template:', error )
@@ -291,12 +296,34 @@ export const useTaskLibraryStore = defineStore( 'taskLibrary', {
         updated_at : apiTemplate.updated_at,
         created_by : apiTemplate.created_by,
         updated_by : apiTemplate.updated_by,
-        equipment_node_id : apiTemplate.equipment_node_id,
+        equipment_node_id : apiTemplate.equipment_node?.id || apiTemplate.equipment_node_id,
         file_list : apiTemplate.file_list || [],
         reference_id : apiTemplate.reference_id,
         // Keep original API data for compatibility
         ...apiTemplate
       }
+    },
+
+    // Event system for template updates
+    addTemplateUpdateListener( callback ) {
+      this.templateUpdateListeners.push( callback )
+    },
+
+    removeTemplateUpdateListener( callback ) {
+      const index = this.templateUpdateListeners.indexOf( callback )
+      if ( index > -1 ) {
+        this.templateUpdateListeners.splice( index, 1 )
+      }
+    },
+
+    emitTemplateUpdate( updatedTemplate ) {
+      this.templateUpdateListeners.forEach( callback => {
+        try {
+          callback( updatedTemplate )
+        } catch ( error ) {
+          console.error( 'Error in template update listener:', error )
+        }
+      } )
     }
   }
 } )

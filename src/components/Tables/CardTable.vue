@@ -18,9 +18,19 @@
           <MaintenanceRequestCard v-if="props.module === 2" :data="sp" @selection="handleSelection" />
           <MaintenanceWorkOrderCard v-if="props.module === 3" :wo="sp" @requestData="handleSelection" :module="2" />
           <MaintenanceSelectedTaskCard v-if="props.module === 4" :template="sp" @selection="handleSelection" />
-          <AddNewTaskCard v-if="props.module === 5" :template="sp" @selection="handleSelection" />
+          <AddNewTaskCard
+            v-if="props.module === 5"
+            :template="sp"
+            :focused="props.focusedCardId === sp.id"
+            @selection="handleSelection"
+          />
           <MaintenanceSelectedStandardsCard v-if="props.module === 6" :template="sp" @selection="handleSelection" />
-          <AddNewStandardCard v-if="props.module === 7" :template="sp" @selection="handleSelection" />
+          <AddNewStandardCard
+            v-if="props.module === 7"
+            :template="sp"
+            :focused="props.focusedCardId === sp.id"
+            @selection="handleSelection"
+          />
         </el-col>
       </el-row>
 
@@ -59,7 +69,6 @@ const props = defineProps( {
   data : Object,
   maxHeight : String,
   totalItems : Number,
-  handleCurrentChange : Function,
   currentPage : Number,
   selectedItems : {
     type : Set,
@@ -88,6 +97,10 @@ const props = defineProps( {
   searchFields : {
     type : Array,
     default : () => ['name', 'category', 'description']
+  },
+  focusedCardId : {
+    type : [String, Number],
+    default : null
   }
 } )
 
@@ -107,7 +120,12 @@ onBeforeUnmount( () => {
   window.removeEventListener( 'resize', updateHeight )
 } )
 
-const emit = defineEmits( ['selection'] )
+const emit = defineEmits( ['selection', 'page-change'] )
+
+// Pagination handler
+function handleCurrentChange( page ) {
+  emit( 'page-change', page )
+}
 
 // Computed property to filter data based on search query
 const filteredData = computed( () => {
