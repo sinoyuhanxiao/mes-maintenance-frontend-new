@@ -679,27 +679,29 @@ const showWorkOrderSaveConfirmation = ( workOrderId, workOrderName ) => {
     confirmButtonText : 'Alter Template',
     type : 'question',
     customClass : 'work-order-save-confirmation'
-  } ).then( () => {
-    // User chose "Alter Template"
-    performSave()
-  } ).catch( () => {
-    // User chose "Save Locally" or cancelled
-    ElMessage.info( 'Local save option will be implemented in future updates' )
-
-    // For now, emit a template update event so other work order forms can refresh
-    // This ensures consistency across all open work order tabs
-    const updatedTemplate = templateForm.value
-    const store = useTaskLibraryStore()
-    store.emitTemplateUpdate( {
-      template_id : route.params.id,
-      id : route.params.id,
-      name : updatedTemplate.name,
-      description : updatedTemplate.description,
-      category : updatedTemplate.category,
-      estimated_minutes : updatedTemplate.estimated_minutes,
-      steps : updatedTemplate.steps || []
-    } )
   } )
+    .then( () => {
+      // User chose "Alter Template"
+      performSave()
+    } )
+    .catch( () => {
+      // User chose "Save Locally" or cancelled
+      ElMessage.info( 'Local save option will be implemented in future updates' )
+
+      // For now, emit a template update event so other work order forms can refresh
+      // This ensures consistency across all open work order tabs
+      const updatedTemplate = templateForm.value
+      const store = useTaskLibraryStore()
+      store.emitTemplateUpdate( {
+        template_id : route.params.id,
+        id : route.params.id,
+        name : updatedTemplate.name,
+        description : updatedTemplate.description,
+        category : updatedTemplate.category,
+        estimated_minutes : updatedTemplate.estimated_minutes,
+        steps : updatedTemplate.steps || []
+      } )
+    } )
 }
 
 const resetDesignerState = () => {
@@ -1018,8 +1020,11 @@ const handleSave = async() => {
     await metadataFormRef.value.validate()
 
     // Check if we're editing from a work order context
+    // eslint-disable-next-line no-unused-vars
     const fromWorkOrder = route.query.fromWorkOrder === 'true'
+    // eslint-disable-next-line no-unused-vars
     const workOrderName = route.query.workOrderName
+    // eslint-disable-next-line no-unused-vars
     const workOrderId = route.query.workOrderId
 
     if ( isEditing.value && originalTemplate.value ) {

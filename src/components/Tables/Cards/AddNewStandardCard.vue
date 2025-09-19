@@ -4,7 +4,7 @@
       <!-- Row 1: Checkbox + Title -->
       <div class="row-1">
         <el-checkbox v-model="checked" class="card-checkbox" @change="handleCheckboxChange" />
-        <el-text class="card-title" :title="template.name" truncated>
+        <el-text class="card-title" :title="template.name" style="width: 200px" truncated>
           {{ template.name }}
         </el-text>
       </div>
@@ -200,5 +200,9 @@ const handleCardClick = () => {
 
 .tag-item {
   --el-tag-border-color: #e4e7ed;
+}
+
+:deep(.el-text.is-truncated) {
+  max-width: 80%;
 }
 </style>

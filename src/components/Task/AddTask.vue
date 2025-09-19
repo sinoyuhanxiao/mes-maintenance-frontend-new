@@ -17,9 +17,7 @@
             <el-icon><Search /></el-icon>
           </template>
         </el-input>
-        <el-link type="primary" @click="handleNewTask" class="new-task-link">
-          + New Task
-        </el-link>
+        <el-link type="primary" @click="handleNewTask" class="new-task-link"> + New Task </el-link>
       </div>
 
       <!-- Content Area -->

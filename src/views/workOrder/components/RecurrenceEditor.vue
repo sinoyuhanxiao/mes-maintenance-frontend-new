@@ -260,7 +260,7 @@ onMounted( () => {
 } )
 
 // Date validation functions
-const disabledStartDate = ( date ) => {
+const disabledStartDate = date => {
   // Allow dates from 30 days ago to 2 years in the future
   const thirtyDaysAgo = new Date()
   thirtyDaysAgo.setDate( thirtyDaysAgo.getDate() - 30 )
@@ -287,7 +287,7 @@ const disabledStartDate = ( date ) => {
   return false
 }
 
-const disabledEndDate = ( date ) => {
+const disabledEndDate = date => {
   if ( !startDate.value ) return false
 
   const start = new Date( startDate.value )
@@ -317,15 +317,14 @@ const disabledStartHours = () => {
   return []
 }
 
-const disabledStartMinutes = ( hour ) => {
+const disabledStartMinutes = hour => {
   if ( !props.workOrderStartDate || !startDate.value ) return []
 
   const workOrderStart = new Date( props.workOrderStartDate )
   const recurrenceStart = new Date( startDate.value )
 
   // If same day and same hour as work order start, disable minutes before work order start minute
-  if ( workOrderStart.toDateString() === recurrenceStart.toDateString() &&
-       hour === workOrderStart.getHours() ) {
+  if ( workOrderStart.toDateString() === recurrenceStart.toDateString() && hour === workOrderStart.getHours() ) {
     const disabledMinutes = []
     for ( let i = 0; i < workOrderStart.getMinutes(); i++ ) {
       disabledMinutes.push( i )
@@ -354,7 +353,7 @@ const disabledEndHours = () => {
   return []
 }
 
-const disabledEndMinutes = ( hour ) => {
+const disabledEndMinutes = hour => {
   if ( !startDate.value || !endDate.value ) return []
 
   const start = new Date( startDate.value )
@@ -383,7 +382,7 @@ const calculateDuration = () => {
   return diffMs > 0 ? Math.ceil( diffMs / ( 1000 * 60 ) ) : 0
 }
 
-const formatDuration = ( minutes ) => {
+const formatDuration = minutes => {
   if ( minutes < 60 ) return `${minutes} minutes`
 
   const hours = Math.floor( minutes / 60 )

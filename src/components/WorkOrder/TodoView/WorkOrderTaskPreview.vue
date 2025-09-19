@@ -23,11 +23,7 @@
       <h4 class="steps-title">Task Steps ({{ task.steps.length }})</h4>
 
       <div class="steps-list">
-        <div
-          v-for="(step, index) in task.steps"
-          :key="step.id || index"
-          class="step-card"
-        >
+        <div v-for="(step, index) in task.steps" :key="step.id || index" class="step-card">
           <!-- Step Header -->
           <div class="step-header">
             <span class="step-number">{{ index + 1 }}</span>
@@ -98,7 +94,7 @@
                     <el-image
                       :src="image.url || image"
                       fit="cover"
-                      style="width: 60px; height: 60px; border-radius: 4px;"
+                      style="width: 60px; height: 60px; border-radius: 4px"
                       :preview-src-list="step.value.image.map(img => img.url || img)"
                     >
                       <template #error>
@@ -117,13 +113,7 @@
           <div v-if="step.tools && step.tools.length > 0" class="step-tools">
             <div class="tools-header">Required Tools:</div>
             <div class="tools-list">
-              <el-tag
-                v-for="tool in step.tools"
-                :key="tool.id || tool.name"
-                size="small"
-                type="info"
-                class="tool-tag"
-              >
+              <el-tag v-for="tool in step.tools" :key="tool.id || tool.name" size="small" type="info" class="tool-tag">
                 <el-icon><Tools /></el-icon>
                 {{ tool.name }}
               </el-tag>
@@ -148,14 +138,7 @@
 
 <script setup>
 // import { computed } from 'vue' // Removed unused import
-import {
-  Clock,
-  Timer,
-  Document,
-  Camera,
-  Picture,
-  Tools
-} from '@element-plus/icons-vue'
+import { Clock, Timer, Document, Camera, Picture, Tools } from '@element-plus/icons-vue'
 
 defineProps( {
   task : {
@@ -164,24 +147,24 @@ defineProps( {
   }
 } )
 
-const getStepTypeLabel = ( type ) => {
+const getStepTypeLabel = type => {
   const typeMap = {
-    'numeric_field' : 'Number',
-    'boolean_field' : 'Yes/No',
-    'text_field' : 'Text',
-    'file_field' : 'File',
-    'inspection' : 'Inspection'
+    numeric_field : 'Number',
+    boolean_field : 'Yes/No',
+    text_field : 'Text',
+    file_field : 'File',
+    inspection : 'Inspection'
   }
   return typeMap[type] || type
 }
 
-const getStepTypeTag = ( type ) => {
+const getStepTypeTag = type => {
   const tagMap = {
-    'numeric_field' : 'primary',
-    'boolean_field' : 'success',
-    'text_field' : 'info',
-    'file_field' : 'warning',
-    'inspection' : 'danger'
+    numeric_field : 'primary',
+    boolean_field : 'success',
+    text_field : 'info',
+    file_field : 'warning',
+    inspection : 'danger'
   }
   return tagMap[type] || 'default'
 }

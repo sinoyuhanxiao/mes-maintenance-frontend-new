@@ -12,7 +12,6 @@
 
     <!-- Content -->
     <div v-else>
-
       <!-- Step Search Bar -->
       <div class="step-search-bar">
         <el-input v-model="stepSearchQuery" placeholder="Search steps by name..." clearable @input="handleStepSearch">
@@ -96,7 +95,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, reactive, watch } from 'vue'
+import { ref, computed, reactive, watch } from 'vue'
 import { Search, Upload, Tools } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { useTaskLibrary } from '@/composables/designer/useTaskLibrary'
@@ -113,7 +112,11 @@ import ServiceStepPreview from '@/views/taskLibrary/components/Designer/StepCard
 const props = defineProps( {
   templateId : {
     type : [String, Number],
-    required : true
+    default : ''
+  },
+  steps : {
+    type : Array,
+    default : () => []
   },
   interactive : {
     type : Boolean,
@@ -146,24 +149,51 @@ watch(
 
 // Map backend step value types to preview component types
 const mapValueTypeToPreviewType = valueType => {
-  const mapping = {
-    numeric : 'number',
-    boolean : 'checkbox',
-    inspection : 'inspection',
-    text : 'text',
-    file : 'attachments',
-    service : 'service'
+  const normalized = ( valueType || '' ).toString().toLowerCase()
+
+  if ( normalized.includes( 'numeric' ) || normalized === 'number' ) {
+    return 'number'
   }
-  return mapping[valueType] || valueType || 'text'
+
+  if ( normalized.includes( 'boolean' ) || normalized.includes( 'checkbox' ) ) {
+    return 'checkbox'
+  }
+
+  if ( normalized.includes( 'inspection' ) ) {
+    return 'inspection'
+  }
+
+  if ( normalized.includes( 'file' ) || normalized.includes( 'attachment' ) ) {
+    return 'attachments'
+  }
+
+  if ( normalized.includes( 'service' ) ) {
+    return 'service'
+  }
+
+  if ( normalized.includes( 'text' ) ) {
+    return 'text'
+  }
+
+  return normalized || 'text'
 }
 
 // Transform backend steps to preview-ready steps
-const previewSteps = computed( () => {
+const sourceSteps = computed( () => {
+  if ( Array.isArray( props.steps ) && props.steps.length > 0 ) {
+    return props.steps
+  }
+
   const tmpl = template.value
-  const steps = Array.isArray( tmpl?.steps ) ? tmpl.steps : []
-  return steps.map( ( s, idx ) => {
+  return Array.isArray( tmpl?.steps ) ? tmpl.steps : []
+} )
+
+const previewSteps = computed( () => {
+  return sourceSteps.value.map( ( s, idx ) => {
     const v = s.value || {}
     const type = mapValueTypeToPreviewType( v.type )
+    const tools = Array.isArray( s.tools ) && s.tools.length > 0 ? s.tools : s.relevant_tools || []
+    const numericBounds = v.numeric_limit_bounds || v.numericLimitBounds || {}
     const base = {
       step_id : s.id || s.step_id || `step-${idx}`,
       order : idx + 1,
@@ -172,14 +202,17 @@ const previewSteps = computed( () => {
       description : s.description || '',
       required : Boolean( s.required ),
       required_image : Boolean( v.require_image ),
-      relevant_tools : ( s.tools || [] ).map( t => ( { tool_id : t.id, name : t.name } ) ),
+      relevant_tools : tools.map( t => ( {
+        tool_id : t.id || t.tool_id,
+        name : t.name || t.tool_name || 'Unnamed Tool'
+      } ) ),
       config : {}
     }
 
     if ( type === 'number' ) {
       base.config = {
         default_value : typeof v.value === 'number' ? v.value : undefined,
-        limits : transformLimitsFromBackend( v.numeric_limit_bounds ),
+        limits : transformLimitsFromBackend( numericBounds ),
         required_image : base.required_image
       }
     } else if ( type === 'checkbox' ) {
@@ -234,13 +267,24 @@ const handleStepSearch = () => {
   // The computed property `filteredPreviewSteps` will automatically update.
 }
 
+// eslint-disable-next-line no-unused-vars
 const handleModeChange = value => {
   isInteractive.value = value
 }
 
+const hasExternalSteps = computed( () => Array.isArray( props.steps ) && props.steps.length > 0 )
+
+const resetStepToolsVisibility = () => {
+  Object.keys( stepToolsVisible ).forEach( key => {
+    delete stepToolsVisible[key]
+  } )
+}
+
 // Load template data
 const fetchTemplate = async() => {
-  if ( !props.templateId ) return
+  if ( !props.templateId || hasExternalSteps.value ) return
+
+  resetStepToolsVisibility()
 
   loading.value = true
   error.value = false
@@ -256,22 +300,51 @@ const fetchTemplate = async() => {
   }
 }
 
+const refreshPreviewSource = () => {
+  resetStepToolsVisibility()
+
+  if ( hasExternalSteps.value ) {
+    loading.value = false
+    error.value = false
+    template.value = null
+    return
+  }
+
+  if ( props.templateId ) {
+    fetchTemplate()
+  } else {
+    template.value = null
+    loading.value = false
+    error.value = false
+  }
+}
+
 // Watch for template ID changes
 watch(
   () => props.templateId,
   newId => {
+    if ( hasExternalSteps.value ) {
+      return
+    }
+
     if ( newId ) {
       fetchTemplate()
+    } else {
+      template.value = null
+      loading.value = false
+      error.value = false
     }
   },
   { immediate : true }
 )
 
-onMounted( () => {
-  if ( props.templateId ) {
-    fetchTemplate()
-  }
-} )
+watch(
+  () => props.steps,
+  () => {
+    refreshPreviewSource()
+  },
+  { deep : true, immediate : true }
+)
 </script>
 
 <style scoped>
@@ -308,7 +381,7 @@ onMounted( () => {
 .procedure-preview {
   flex: 1;
   min-height: 0;
-  max-height: 75vh;
+  max-height: 70vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;

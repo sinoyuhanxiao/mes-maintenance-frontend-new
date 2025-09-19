@@ -1,7 +1,7 @@
 <template>
   <div class="standard-dialog-container">
-    <!-- Standard Table -->
-    <div class="standard-dialog-content">
+    <!-- Main Add Standard Content -->
+    <div v-if="!showPreviewDialog" class="standard-dialog-content">
       <!-- Search Container (always visible) -->
       <div class="search-container">
         <el-input
@@ -64,7 +64,7 @@
     <!-- Footer Actions -->
     <div class="standard-dialog-footer">
       <div class="footer-actions">
-        <el-button :type="focusedCardId ? 'primary' : ''" :disabled="!focusedCardId" @click="handlePreview" plain>
+        <el-button :type="focusedCardId ? 'success' : ''" :disabled="!focusedCardId" @click="handlePreview">
           Preview
         </el-button>
         <el-button type="primary" :disabled="selectedStandards.size === 0" @click="handleAddStandards">
@@ -72,14 +72,35 @@
         </el-button>
       </div>
     </div>
+
+    <!-- Preview Dialog -->
+    <el-dialog
+      v-model="showPreviewDialog"
+      width="700px"
+      top="5vh"
+      :before-close="handleClosePreview"
+      class="preview-dialog"
+    >
+      <template #header="{ titleId }">
+        <div class="preview-dialog-header">
+          <el-button type="text" @click="handleBackToAddStandard" class="back-button">
+            <el-icon><ArrowLeft /></el-icon>
+          </el-button>
+          <span :id="titleId" class="dialog-title"> Preview: {{ getPreviewStandardTitle() }} </span>
+        </div>
+      </template>
+
+      <StandardsPreview v-if="previewStandardId" :standard-id="previewStandardId" />
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { Search } from '@element-plus/icons-vue'
+import { Search, ArrowLeft } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import CardTable from '../Tables/CardTable.vue'
+import StandardsPreview from '@/components/TaskLibrary/StandardsPreview.vue'
 import { searchStandards } from '@/api/task-library'
 import { debounce } from 'lodash-es'
 
@@ -99,6 +120,10 @@ const selectedStandards = ref( new Set() )
 
 // Track focused card for preview functionality
 const focusedCardId = ref( null )
+
+// Preview dialog state
+const showPreviewDialog = ref( false )
+const previewStandardId = ref( null )
 
 // Computed properties
 const selectedStandardsList = computed( () => {
@@ -192,8 +217,29 @@ const handleAddStandards = () => {
 }
 
 const handlePreview = () => {
-  // TODO: Implement preview functionality
-  console.log( 'Preview clicked for selected standards:', selectedStandardsList.value )
+  if ( !focusedCardId.value ) {
+    ElMessage.warning( 'Please select a standard to preview' )
+    return
+  }
+
+  previewStandardId.value = focusedCardId.value
+  showPreviewDialog.value = true
+}
+
+const handleBackToAddStandard = () => {
+  showPreviewDialog.value = false
+  previewStandardId.value = null
+}
+
+const handleClosePreview = () => {
+  handleBackToAddStandard()
+}
+
+const getPreviewStandardTitle = () => {
+  if ( !previewStandardId.value ) return 'Standard'
+
+  const standard = standardTemplates.value.find( s => ( s.id || s._id || s.standard_id ) === previewStandardId.value )
+  return standard?.name || 'Standard'
 }
 
 // Debounced search handler for better performance
@@ -292,6 +338,53 @@ defineOptions( {
   }
 }
 
+// Preview Dialog Styles
+:deep(.el-dialog.preview-dialog) {
+  height: 90vh !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: -16px;
+}
+
+.back-button {
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: var(--el-color-primary-light-9);
+    color: var(--el-color-primary);
+  }
+
+  .el-icon {
+    font-size: 16px;
+    margin-right: 0;
+  }
+}
+
+.dialog-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+  flex: 1;
+  max-width: 80%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 // Responsive adjustments
 @media (max-width: 768px) {
   .standard-dialog-container {
@@ -305,6 +398,13 @@ defineOptions( {
 
     .footer-actions {
       justify-content: center;
+    }
+  }
+
+  .preview-dialog {
+    :deep(.el-dialog) {
+      width: 95% !important;
+      margin: 0 auto;
     }
   }
 }

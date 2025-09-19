@@ -316,10 +316,10 @@
         <!-- Tasks Tab -->
         <el-tab-pane label="Tasks" name="tasks">
           <div class="tab-content">
-            <div v-if="workOrder.task_list?.length" class="tasks-list">
+            <div v-if="taskEntries.length" class="tasks-list">
               <WorkOrderTaskCard
-                v-for="(task, index) in workOrder.task_list"
-                :key="task._id || task.id || index"
+                v-for="(task, index) in taskEntries"
+                :key="task.id || index"
                 :task="task"
                 @preview="handleTaskPreview"
               />
@@ -414,15 +414,24 @@
   <!-- Task Preview Dialog -->
   <el-dialog
     v-model="showTaskPreviewDialog"
-    :title="`Task Preview: ${selectedTaskForPreview?.task_name || selectedTaskForPreview?.name || 'Task Details'}`"
-    width="800px"
+    :title="`Task Preview: ${
+      selectedTaskForPreview?.task_name ||
+      selectedTaskForPreview?.name ||
+      selectedTaskForPreview?.taskListText ||
+      'Task Details'
+    }`"
+    width="700px"
     :before-close="handleTaskPreviewClose"
     class="task-preview-modal"
-    top="5vh"
+    top="4vh"
   >
-    <WorkOrderTaskPreview
-      v-if="selectedTaskForPreview && showTaskPreviewDialog"
-      :task="selectedTaskForPreview"
+    <StepsPreview
+      v-if="showTaskPreviewDialog"
+      :key="selectedTaskTemplateId || selectedTaskForPreview?.id || 'task-preview'"
+      :template-id="selectedTaskTemplateId"
+      :steps="selectedTaskSteps"
+      :interactive="false"
+      :show-mode-switch="false"
     />
     <template #footer>
       <div class="preview-dialog-footer">
@@ -457,12 +466,13 @@ import {
 import { convertToLocalTime } from '@/utils/datetime'
 import { getEquipmentById } from '@/api/equipment'
 import { deleteIndividualWorkOrder, deleteRecurrenceWorkOrders } from '@/api/work-order'
+import { getTaskEntryById } from '@/api/task-entry'
 import PriorityTag from '../PriorityTag.vue'
 import WorkTypeTag from '../WorkTypeTag.vue'
 import CategoryTag from '../CategoryTag.vue'
 import Timeline from '../Timeline/Timeline.vue'
 import WorkOrderTaskCard from './WorkOrderTaskCard.vue'
-import WorkOrderTaskPreview from './WorkOrderTaskPreview.vue'
+import StepsPreview from '@/components/TaskLibrary/StepsPreview.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 // Props
@@ -498,6 +508,10 @@ const loadingEquipment = ref( false )
 const deleteDialogVisible = ref( false )
 const deleting = ref( false )
 const scheduleSection = ref( null )
+const taskEntries = ref( [] )
+const taskPreviewLoading = ref( false )
+const selectedTaskTemplateId = ref( '' )
+const selectedTaskSteps = ref( [] )
 
 // Timeline events data - Empty for now
 const timelineEvents = ref( [] )
@@ -595,6 +609,100 @@ const processedFileList = computed( () => {
   } )
 } )
 
+const normalizeTaskList = taskList => {
+  if ( !Array.isArray( taskList ) ) {
+    taskEntries.value = []
+    return
+  }
+
+  const existingEntriesMap = new Map(
+    Array.isArray( taskEntries.value ) ? taskEntries.value.map( entry => [entry.id, entry] ) : []
+  )
+
+  taskEntries.value = taskList.map( ( item, index ) => {
+    if ( typeof item === 'string' || typeof item === 'number' ) {
+      const id = String( item ).trim()
+      const label = String( item )
+      const lookupKey = id || `task-${index}`
+      const existing = existingEntriesMap.get( lookupKey )
+
+      if ( existing ) {
+        return {
+          ...existing,
+          id : lookupKey,
+          label,
+          taskListText : label,
+          hasValidId : Boolean( id ),
+          index
+        }
+      }
+
+      return {
+        id : lookupKey,
+        label,
+        taskListText : label,
+        hasValidId : Boolean( id ),
+        index
+      }
+    }
+
+    if ( item && typeof item === 'object' && !Array.isArray( item ) ) {
+      const rawId = item.id || item._id || item.task_id || item.taskId || item.reference_id || ''
+      const id = String( rawId ).trim()
+      const labelCandidate = item.task_list_text || item.taskListText || item.task_name || item.name || id || ''
+
+      const label = labelCandidate || `Task ${index + 1}`
+      const lookupKey = id || `task-${index}`
+      const existing = existingEntriesMap.get( lookupKey )
+
+      if ( existing ) {
+        return {
+          ...existing,
+          id : lookupKey,
+          label,
+          taskListText : label,
+          hasValidId : Boolean( id ),
+          index
+        }
+      }
+
+      return {
+        id : lookupKey,
+        label,
+        taskListText : label,
+        hasValidId : Boolean( id ),
+        index
+      }
+    }
+
+    return {
+      id : `task-${index}`,
+      label : `Task ${index + 1}`,
+      taskListText : `Task ${index + 1}`,
+      hasValidId : false,
+      index
+    }
+  } )
+}
+
+const resetTaskState = () => {
+  taskEntries.value = []
+  selectedTaskTemplateId.value = ''
+  selectedTaskForPreview.value = null
+  selectedTaskSteps.value = []
+  taskPreviewLoading.value = false
+  showTaskPreviewDialog.value = false
+  selectedTaskSteps.value = []
+}
+
+const resolveTaskTemplateId = task => {
+  if ( !task || typeof task !== 'object' ) {
+    return ''
+  }
+
+  return task.template_id || task.templateId || task.templateID || ''
+}
+
 // Equipment loading function
 const loadEquipmentDetails = async() => {
   if ( !props.workOrder?.equipment_node_ids?.length ) {
@@ -641,9 +749,28 @@ watch(
       localStatus.value = newWorkOrder.state?.name || 'Ready'
       // Load equipment details when work order changes
       loadEquipmentDetails()
+      resetTaskState()
+      normalizeTaskList( newWorkOrder.task_list )
+    } else {
+      resetTaskState()
     }
   },
   { immediate : true }
+)
+
+watch(
+  () => props.workOrder?.task_list,
+  newTaskList => {
+    if ( props.workOrder ) {
+      selectedTaskTemplateId.value = ''
+      selectedTaskForPreview.value = null
+      showTaskPreviewDialog.value = false
+      selectedTaskSteps.value = []
+      normalizeTaskList( newTaskList )
+    } else {
+      resetTaskState()
+    }
+  }
 )
 
 // Methods
@@ -753,14 +880,90 @@ const exportTimeline = () => {
 }
 
 // Task preview handlers
-const handleTaskPreview = ( task ) => {
-  selectedTaskForPreview.value = task
-  showTaskPreviewDialog.value = true
+const handleTaskPreview = async task => {
+  if ( !task || !task.id || task.hasValidId === false ) {
+    ElMessage.warning( 'Task preview is unavailable for this entry.' )
+    return
+  }
+
+  const openPreview = ( taskData, templateId = '', steps = [] ) => {
+    const normalizedTemplateId = templateId || ''
+    const normalizedSteps = Array.isArray( steps ) ? steps : []
+
+    if ( !normalizedTemplateId && normalizedSteps.length === 0 ) {
+      ElMessage.warning( 'Task preview is unavailable for this entry.' )
+      return false
+    }
+
+    selectedTaskForPreview.value = taskData
+    selectedTaskTemplateId.value = normalizedTemplateId
+    selectedTaskSteps.value = normalizedSteps.map( step => ( { ...step } ) )
+    showTaskPreviewDialog.value = true
+    return true
+  }
+
+  if ( task.cachedTask ) {
+    const cachedTemplateId = task.cachedTemplateId || resolveTaskTemplateId( task.cachedTask ) || ''
+    const cachedSteps = Array.isArray( task.cachedTask.steps ) ? task.cachedTask.steps : []
+
+    if ( openPreview( task.cachedTask, cachedTemplateId, cachedSteps ) ) {
+      return
+    }
+  }
+
+  if ( taskPreviewLoading.value ) {
+    return
+  }
+
+  selectedTaskTemplateId.value = ''
+  selectedTaskForPreview.value = null
+  selectedTaskSteps.value = []
+
+  try {
+    taskPreviewLoading.value = true
+    const response = await getTaskEntryById( task.id )
+    const taskData = response?.data
+
+    if ( !taskData ) {
+      ElMessage.error( 'Failed to load task details.' )
+      return
+    }
+
+    if ( task.taskListText || task.label ) {
+      taskData.taskListText = task.taskListText || task.label
+    }
+
+    const templateId = resolveTaskTemplateId( taskData ) || ''
+    const steps = Array.isArray( taskData.steps ) ? taskData.steps : []
+
+    if ( !openPreview( taskData, templateId, steps ) ) {
+      return
+    }
+
+    const entryIndex = taskEntries.value.findIndex( entry => entry.id === task.id )
+    if ( entryIndex !== -1 ) {
+      const updatedEntry = {
+        ...taskEntries.value[entryIndex],
+        cachedTask : taskData,
+        cachedTemplateId : templateId,
+        hasValidId : true
+      }
+      taskEntries.value.splice( entryIndex, 1, updatedEntry )
+    }
+  } catch ( error ) {
+    console.error( 'Failed to load task preview:', error )
+    ElMessage.error( 'Failed to load task preview.' )
+  } finally {
+    taskPreviewLoading.value = false
+  }
 }
 
 const handleTaskPreviewClose = () => {
   showTaskPreviewDialog.value = false
   selectedTaskForPreview.value = null
+  selectedTaskTemplateId.value = ''
+  taskPreviewLoading.value = false
+  selectedTaskSteps.value = []
 }
 
 const navigateToLinkedOrder = () => {
@@ -1862,18 +2065,17 @@ defineOptions( {
     max-height: 70vh;
     overflow-y: auto;
   }
+
+  :deep(.steps-preview-container) {
+    padding: 0;
+  }
 }
 
 // Enhanced Tasks List Styling
 .tasks-list {
   display: flex;
   flex-direction: column;
-  gap: 0;
-  min-height: 200px;
-}
-
-// Remove old task-item styles that are no longer needed
-.task-item {
-  display: none; // This will hide any remaining old task items
+  gap: 12px;
+  min-height: 160px;
 }
 </style>

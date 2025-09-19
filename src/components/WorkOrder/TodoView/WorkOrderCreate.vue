@@ -200,9 +200,7 @@
             :disabled-date="disabledDueDates"
           />
           <div v-if="showWorkOrderDuration" class="work-order-duration">
-            <el-text type="info" size="small">
-              Work order duration: {{ formatWorkOrderDuration() }}
-            </el-text>
+            <el-text type="info" size="small"> Work order duration: {{ formatWorkOrderDuration() }} </el-text>
           </div>
         </el-form-item>
       </div>
@@ -542,7 +540,7 @@ const handleCloseAddStandardDialog = done => {
   done()
 }
 
-const handleEditTask = async( taskData ) => {
+const handleEditTask = async taskData => {
   try {
     loading.value = true
 
@@ -584,7 +582,7 @@ const router = useRouter()
 const taskLibraryStore = useTaskLibraryStore()
 
 // Template update listener for refreshing tasks when templates are updated
-const handleTemplateUpdate = ( updatedTemplate ) => {
+const handleTemplateUpdate = updatedTemplate => {
   // Find tasks that use this template and update them
   const templateId = updatedTemplate.template_id || updatedTemplate.id
 
@@ -768,12 +766,8 @@ const rules = reactive( {
     { required : true, message : 'Due date is required', trigger : 'change' },
     { validator : validateDueDate, trigger : 'change' }
   ],
-  'recurrence_setting.start_date_time' : [
-    { validator : validateRecurrenceStartTime, trigger : 'change' }
-  ],
-  'recurrence_setting.end_date_time' : [
-    { validator : validateRecurrenceEndTime, trigger : 'change' }
-  ]
+  'recurrence_setting.start_date_time' : [{ validator : validateRecurrenceStartTime, trigger : 'change' }],
+  'recurrence_setting.end_date_time' : [{ validator : validateRecurrenceEndTime, trigger : 'change' }]
 } )
 
 // Tree props for tree selects
@@ -905,15 +899,11 @@ const uploadFilesToServer = async() => {
 }
 
 const resetForm = () => {
-  ElMessageBox.confirm(
-    'Are you sure you want to reset the form? All unsaved changes will be lost.',
-    'Confirm Reset',
-    {
-      confirmButtonText : 'Reset',
-      cancelButtonText : 'Cancel',
-      type : 'warning'
-    }
-  )
+  ElMessageBox.confirm( 'Are you sure you want to reset the form? All unsaved changes will be lost.', 'Confirm Reset', {
+    confirmButtonText : 'Reset',
+    cancelButtonText : 'Cancel',
+    type : 'warning'
+  } )
     .then( () => {
       if ( formRef.value ) {
         formRef.value.resetFields()
@@ -956,7 +946,7 @@ const resetForm = () => {
 }
 
 // Date picker constraints and helpers for main work order dates
-const disabledStartDates = ( date ) => {
+const disabledStartDates = date => {
   // Allow dates from 30 days ago to 2 years in the future
   const thirtyDaysAgo = new Date()
   thirtyDaysAgo.setDate( thirtyDaysAgo.getDate() - 30 )
@@ -967,7 +957,7 @@ const disabledStartDates = ( date ) => {
   return date < thirtyDaysAgo || date > twoYearsFromNow
 }
 
-const disabledDueDates = ( date ) => {
+const disabledDueDates = date => {
   // Don't allow dates more than 2 years in the future
   const twoYearsFromNow = new Date()
   twoYearsFromNow.setFullYear( twoYearsFromNow.getFullYear() + 2 )
@@ -1058,7 +1048,7 @@ watch(
 // Watcher to trigger recurrence validation when recurrence settings change
 watch(
   () => form.recurrence_setting,
-  ( newVal ) => {
+  newVal => {
     if ( newVal && ( newVal.start_date_time || newVal.end_date_time ) ) {
       nextTick( () => {
         if ( formRef.value ) {
