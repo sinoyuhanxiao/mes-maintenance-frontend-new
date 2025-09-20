@@ -326,15 +326,152 @@
         <AddStandard v-if="showAddStandardDialog" @close="closeAddStandardDialog" @add-standards="onAddStandards" />
       </el-dialog>
 
+      <!-- Edit Standard Dialog -->
+      <EditStandardDialog
+        v-if="editingStandard"
+        :visible="showEditStandardDialog"
+        :standard="editingStandard"
+        @update:visible="showEditStandardDialog = false"
+        @update:standard="onStandardUpdate"
+      />
+
+      <!-- Task Preview Dialog -->
+      <el-dialog
+        v-model="showTaskPreviewDialog"
+        width="700px"
+        top="5vh"
+        :before-close="handleCloseTaskPreview"
+        class="preview-dialog"
+      >
+        <template #header="{ titleId }">
+          <div class="preview-dialog-header">
+            <el-button type="text" @click="handleBackToTaskList" class="back-button">
+              <el-icon><ArrowLeft /></el-icon>
+            </el-button>
+            <span :id="titleId" class="dialog-title"> Preview: {{ getPreviewTaskTitle() }} </span>
+            <el-tooltip content="Interactive Mode" placement="top">
+              <el-switch v-model="isTaskInteractive" />
+            </el-tooltip>
+          </div>
+        </template>
+
+        <StepsPreview
+          v-if="previewTaskTemplateId"
+          :template-id="previewTaskTemplateId"
+          :interactive="isTaskInteractive"
+          :show-mode-switch="false"
+        />
+        <StepsPreview
+          v-else-if="previewTaskData && previewTaskData.steps"
+          :steps="previewTaskData.steps"
+          :interactive="isTaskInteractive"
+          :show-mode-switch="false"
+        />
+      </el-dialog>
+
+      <!-- Standard Preview Dialog -->
+      <el-dialog
+        v-model="showStandardPreviewDialog"
+        :title="`Preview: ${previewStandardData?.name || 'Standard'}`"
+        width="700px"
+        top="5vh"
+        class="preview-dialog"
+      >
+        <StandardsPreview
+          v-if="showStandardPreviewDialog && previewStandardData && !previewStandardData.isStandalone"
+          :standard-id="previewStandardData.standardId || previewStandardData.id"
+        />
+        <!-- Standalone Standard Preview -->
+        <div
+          v-else-if="showStandardPreviewDialog && previewStandardData && previewStandardData.isStandalone"
+          class="standalone-standard-preview"
+        >
+          <div class="standard-details">
+            <!-- Fixed Header Section -->
+            <div class="fixed-header-section">
+              <div class="standard-tabs-header">
+                <el-tabs v-model="standalonePreviewTab" class="details-tabs">
+                  <el-tab-pane label="General" name="general"></el-tab-pane>
+                  <el-tab-pane label="Standard Rules" name="rules"></el-tab-pane>
+                </el-tabs>
+              </div>
+            </div>
+
+            <!-- Scrollable Content Area -->
+            <div class="scrollable-content">
+              <div class="tab-content-wrapper">
+                <!-- General Tab Content -->
+                <div v-if="standalonePreviewTab === 'general'" class="tab-pane-content">
+                  <div class="overview-card">
+                    <div class="card-content">
+                      <el-descriptions :column="2" direction="vertical">
+                        <el-descriptions-item width="50%" label="Category">
+                          {{ previewStandardData.category || 'Uncategorized' }}
+                        </el-descriptions-item>
+                        <el-descriptions-item width="50%" label="Total Rules">
+                          <span class="info-value highlight">{{ previewStandardData.items?.length || 0 }} rules</span>
+                        </el-descriptions-item>
+                        <el-descriptions-item width="50%" label="Type">
+                          <el-tag type="info" size="small">Work Order Only</el-tag>
+                        </el-descriptions-item>
+                      </el-descriptions>
+                    </div>
+                  </div>
+
+                  <div class="description-card" v-if="previewStandardData.description">
+                    <div class="card-header">
+                      <h3 class="card-title">Description</h3>
+                    </div>
+                    <div class="card-content">
+                      <div class="description-text">
+                        {{ previewStandardData.description }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Standard Rules Tab Content -->
+                <div v-if="standalonePreviewTab === 'rules'" class="tab-pane-content">
+                  <div v-if="previewStandardData.items && previewStandardData.items.length > 0" class="rules-list">
+                    <div class="card-header">
+                      <h3 class="card-title">Standard Rules</h3>
+                      <el-tag type="warning" size="small">Read Only</el-tag>
+                    </div>
+                    <div class="rules-container">
+                      <div v-for="(rule, index) in previewStandardData.items" :key="index" class="rule-item">
+                        <div class="rule-number">{{ index + 1 }}</div>
+                        <div class="rule-content">
+                          <div class="rule-text">{{ rule }}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-else class="empty-rules">
+                    <el-empty description="No standard rules defined yet" :image-size="60" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!--        <template #footer>-->
+        <!--          <div class="standard-dialog-footer">-->
+        <!--            <div class="footer-actions">-->
+        <!--              <el-button @click="showStandardPreviewDialog = false">Close</el-button>-->
+        <!--            </div>-->
+        <!--          </div>-->
+        <!--        </template>-->
+      </el-dialog>
+
       <!-- Submit Button - Fixed at bottom -->
       <div class="form-actions-fixed">
         <div class="form-actions-content">
           <el-button type="default" @click="handleCancel" class="cancel-button">
             {{ $t('workOrder.actions.cancel') }}
           </el-button>
-          <el-button 
-            type="info" 
-            @click="logCurrentPayload" 
+          <el-button
+            type="info"
+            @click="logCurrentPayload"
             class="logs-button"
             :loading="isLoggingInProgress"
             :disabled="isLoggingInProgress"
@@ -349,15 +486,14 @@
     </el-form>
 
     <!-- JSON Debug Drawer -->
-    <JsonDebugDrawer 
-      v-model="showJsonDisplayer" 
-      :payload-data="currentPayload" 
+    <JsonDebugDrawer
+      v-model="showJsonDisplayer"
+      :payload-data="currentPayload"
       title="Work Order Payload"
       subtitle="Click 'Logs' to refresh"
     />
   </div>
 </template>
-
 
 <script setup>
 import { ref, reactive, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
@@ -380,6 +516,9 @@ import AddTask from '../../Task/AddTask.vue'
 import AddStandard from '../../Standard/AddStandard.vue'
 import FileUploadMultiple from '@/components/FileUpload/FileUploadMultiple.vue'
 import JsonDebugDrawer from './JsonDebugDrawer.vue'
+import EditStandardDialog from '@/components/TaskLibrary/EditStandardDialog.vue'
+import StepsPreview from '@/components/TaskLibrary/StepsPreview.vue'
+import StandardsPreview from '@/components/TaskLibrary/StandardsPreview.vue'
 import { uploadMultipleToMinio } from '@/api/minio.js'
 import {
   getAllWorkTypes,
@@ -397,12 +536,21 @@ import { DEFAULT_TASK_STATE, buildDisplayTaskFromTemplate } from './taskPayloadH
 
 const showAddTaskDialog = ref( false )
 const showAddStandardDialog = ref( false )
+const showEditStandardDialog = ref(false)
+const editingStandard = ref(null)
+
+// Preview dialog state
+const showTaskPreviewDialog = ref( false )
+const showStandardPreviewDialog = ref( false )
+const previewTaskTemplateId = ref( null )
+const previewTaskData = ref( null )
+const previewStandardData = ref( null )
+const isTaskInteractive = ref( false )
+const standalonePreviewTab = ref( 'general' )
 
 // JSON Displayer state
 const showJsonDisplayer = ref( false )
 const currentPayload = ref( null )
-
-
 
 const handleAddStandard = () => {
   showAddStandardDialog.value = true
@@ -425,6 +573,8 @@ const closeAddTaskDialog = () => {
 const handleTaskAction = ( { id, action, data } ) => {
   if ( action === 'edit' ) {
     handleEditTask( data )
+  } else if ( action === 'preview' ) {
+    handlePreviewTask( data )
   } else if ( action === 'delete' ) {
     form.tasks = form.tasks.filter( t => t.id !== id )
     syncTaskPayloads()
@@ -434,11 +584,22 @@ const handleTaskAction = ( { id, action, data } ) => {
 
 const handleStandardAction = ( { id, action, data } ) => {
   if ( action === 'edit' ) {
-    // something here later
+    editingStandard.value = data
+    showEditStandardDialog.value = true
+  } else if ( action === 'preview' ) {
+    handlePreviewStandard( data )
   } else if ( action === 'delete' ) {
     form.standards = form.standards.filter( s => s.id !== id )
-    syncStandardCodes()
+    syncStandards()
     ElMessage.success( `Standard "${data.name}" removed` )
+  }
+}
+
+const onStandardUpdate = (updatedStandard) => {
+  const index = form.standards.findIndex(s => s.id === updatedStandard.id)
+  if (index !== -1) {
+    form.standards.splice(index, 1, updatedStandard)
+    syncStandards()
   }
 }
 
@@ -494,28 +655,29 @@ const onAddStandards = selectedStandards => {
   }
 
   // Get the highest existing ID to generate new unique IDs
-  const maxId = form.standards.length > 0 ? Math.max( ...form.standards.map( standard => standard.id ) ) : 0
+  const maxId =
+    form.standards.length > 0
+      ? Math.max( ...form.standards.map( standard => ( typeof standard.id === 'number' ? standard.id : 0 ) ) )
+      : 0
 
   // Transform standard data to match work order format
-  const newStandards = selectedStandards.map( ( standard, index ) => ( {
-    id : maxId + index + 1,
-    name : standard.name || standard.title,
-    category : standard.category,
-    estimated_minutes : standard.estimated_minutes || standard.estimatedMinutes || 15,
-    description : standard.description || '',
-    // Include original standard data for reference
-    standardId : standard.id || standard._id,
-    ...standard
-  } ) )
+  const newStandards = selectedStandards.map( ( standard, index ) => {
+    const newId = maxId + index + 1
+    return {
+      ...standard,
+      id : newId,
+      name : standard.name || standard.title,
+      items : standard.items || [],
+      standardId : standard.id || standard._id
+    }
+  } )
 
   // Append to existing standards
   form.standards.push( ...newStandards )
-  syncStandardCodes()
+  syncStandards()
 
   // Show success message
-  ElMessage.success(
-    `${selectedStandards.length} standard${selectedStandards.length > 1 ? 's' : ''} added successfully`
-  )
+  ElMessage.success( `${selectedStandards.length} standard${selectedStandards.length > 1 ? 's' : ''} added successfully` )
 
   // Close the dialog
   closeAddStandardDialog()
@@ -538,7 +700,7 @@ const handleDeleteAllStandards = () => {
   )
     .then( () => {
       form.standards = []
-      syncStandardCodes()
+      syncStandards()
       ElMessage.success( 'All standard selections cleared' )
     } )
     .catch( () => {
@@ -550,6 +712,54 @@ const handleCloseAddStandardDialog = done => {
   done()
 }
 
+const handlePreviewTask = taskData => {
+  // Check if this is an adhoc task with inline steps
+  if ( taskData.source === 'adhoc' && taskData.steps ) {
+    previewTaskData.value = taskData
+    previewTaskTemplateId.value = null
+    showTaskPreviewDialog.value = true
+    return
+  }
+
+  // For template-based tasks, get the template ID
+  const templateId = taskData.templateId || taskData.template_id || taskData.id
+  if ( !templateId ) {
+    ElMessage.warning( 'Cannot preview this task - no template ID found' )
+    return
+  }
+
+  previewTaskTemplateId.value = templateId
+  previewTaskData.value = null
+  showTaskPreviewDialog.value = true
+}
+
+const handlePreviewStandard = standardData => {
+  previewStandardData.value = standardData
+  showStandardPreviewDialog.value = true
+}
+
+const handleBackToTaskList = () => {
+  showTaskPreviewDialog.value = false
+  previewTaskTemplateId.value = null
+  previewTaskData.value = null
+}
+
+const handleCloseTaskPreview = () => {
+  handleBackToTaskList()
+}
+
+const getPreviewTaskTitle = () => {
+  // If we have task data directly (adhoc task), use its name
+  if ( previewTaskData.value ) {
+    return previewTaskData.value.name || 'Task'
+  }
+
+  // If we have a template ID, find the task in our form.tasks array
+  if ( !previewTaskTemplateId.value ) return 'Task'
+  const task = form.tasks.find( t => ( t.templateId || t.template_id || t.id ) === previewTaskTemplateId.value )
+  return task?.name || 'Task'
+}
+
 const handleEditTask = async taskData => {
   try {
     loading.value = true
@@ -559,7 +769,7 @@ const handleEditTask = async taskData => {
     const taskId = taskData.id
 
     // Check if this is a standalone task (starts with 'work-order-task-')
-    const isStandaloneTask = taskId && taskId.startsWith('work-order-task-')
+    const isStandaloneTask = taskId && taskId.startsWith( 'work-order-task-' )
 
     if ( !originalTemplateId && !isStandaloneTask ) {
       ElMessage.warning( 'This task was created specifically for this work order and cannot be edited as a template.' )
@@ -667,23 +877,21 @@ let isHydratingForm = false
 
 const clonePayload = payload => JSON.parse( JSON.stringify( payload || {} ) )
 
-const getStandardCode = standard => standard?.code || standard?.standard_code || standard?.identifier || null
-
 const syncTaskPayloads = () => {
   form.task_add_list = form.tasks
     .map( task => clonePayload( task.payload ) )
     .filter( payload => payload && Array.isArray( payload.steps ) && payload.steps.length > 0 )
 }
 
-const syncStandardCodes = () => {
-  const codes = new Set()
-  form.standards.forEach( standard => {
-    const code = getStandardCode( standard )
-    if ( code ) {
-      codes.add( code )
+const syncStandards = () => {
+  form.standard_list = form.standards.map(s => {
+    const { id, standardId, ...rest } = s
+    if (s.isStandalone) {
+      return rest
+    } else {
+      return { ...rest, standard_id: standardId }
     }
-  } )
-  form.standard_list = Array.from( codes )
+  })
 }
 
 const resolveCategoryMeta = categoryValue => {
@@ -725,8 +933,7 @@ const decorateTaskCategory = task => {
   let changed = false
 
   if ( meta ) {
-    const needsCategoryUpdate =
-      !task.category || task.category.id !== meta.id || task.category.name !== meta.name
+    const needsCategoryUpdate = !task.category || task.category.id !== meta.id || task.category.name !== meta.name
     if ( needsCategoryUpdate ) {
       task.category = { id : meta.id, name : meta.name }
       changed = true
@@ -768,7 +975,6 @@ const decorateTasksCategories = tasks => {
   return mutated
 }
 
-
 const hydrateFormFromDraft = () => {
   isHydratingForm = true
   const source = workOrderDraftStore.hasDraft
@@ -778,7 +984,7 @@ const hydrateFormFromDraft = () => {
   Object.assign( form, source )
   decorateTasksCategories( form.tasks )
   syncTaskPayloads()
-  syncStandardCodes()
+  syncStandards()
 
   nextTick( () => {
     isHydratingForm = false
@@ -800,7 +1006,7 @@ watch(
   () => form.standards,
   () => {
     if ( isHydratingForm ) return
-    syncStandardCodes()
+    syncStandards()
   },
   { deep : true }
 )
@@ -1062,27 +1268,27 @@ const uploadFilesToServer = async() => {
 // Helper function to check if the form has meaningful changes
 const hasFormChanges = () => {
   return (
-    (form.name && form.name.trim() !== '') ||
-    (form.description && form.description.trim() !== '') ||
+    ( form.name && form.name.trim() !== '' ) ||
+    ( form.description && form.description.trim() !== '' ) ||
     form.tasks.length > 0 ||
     form.standards.length > 0 ||
-    (form.category_ids && form.category_ids.length > 0) ||
-    (form.equipment_node_ids && form.equipment_node_ids.length > 0) ||
-    (form.assignee_ids && form.assignee_ids.length > 0) ||
-    (form.approved_by_id && form.approved_by_id !== null) ||
-    (form.work_type_id && form.work_type_id !== null) ||
-    (form.priority_id && form.priority_id !== null) ||
-    (form.state_id && form.state_id !== 1) || // 1 is default state
-    (form.start_date && form.start_date !== null) ||
-    (form.due_date && form.due_date !== null) ||
-    (form.vendor_ids && form.vendor_ids.length > 0) ||
-    (form.image_list && form.image_list.length > 0) ||
-    (form.file_list && form.file_list.length > 0)
+    ( form.category_ids && form.category_ids.length > 0 ) ||
+    ( form.equipment_node_ids && form.equipment_node_ids.length > 0 ) ||
+    ( form.assignee_ids && form.assignee_ids.length > 0 ) ||
+    ( form.approved_by_id && form.approved_by_id !== null ) ||
+    ( form.work_type_id && form.work_type_id !== null ) ||
+    ( form.priority_id && form.priority_id !== null ) ||
+    ( form.state_id && form.state_id !== 1 ) || // 1 is default state
+    ( form.start_date && form.start_date !== null ) ||
+    ( form.due_date && form.due_date !== null ) ||
+    ( form.vendor_ids && form.vendor_ids.length > 0 ) ||
+    ( form.image_list && form.image_list.length > 0 ) ||
+    ( form.file_list && form.file_list.length > 0 )
   )
 }
 
 const handleBackToDetail = () => {
-  if (!hasFormChanges()) {
+  if ( !hasFormChanges() ) {
     // No meaningful changes, just close without confirmation
     emit( 'back-to-detail' )
     return
@@ -1102,7 +1308,7 @@ const handleBackToDetail = () => {
       isHydratingForm = true
       Object.assign( form, createEmptyWorkOrderForm() )
       syncTaskPayloads()
-      syncStandardCodes()
+      syncStandards()
       workOrderDraftStore.clearDraft()
 
       nextTick( () => {
@@ -1118,7 +1324,7 @@ const handleBackToDetail = () => {
 }
 
 const handleCancel = () => {
-  if (!hasFormChanges()) {
+  if ( !hasFormChanges() ) {
     // No meaningful changes, just close without confirmation
     emit( 'back-to-detail' )
     return
@@ -1138,7 +1344,7 @@ const handleCancel = () => {
       isHydratingForm = true
       Object.assign( form, createEmptyWorkOrderForm() )
       syncTaskPayloads()
-      syncStandardCodes()
+      syncStandards()
       workOrderDraftStore.clearDraft()
 
       nextTick( () => {
@@ -1167,7 +1373,7 @@ const resetForm = () => {
       isHydratingForm = true
       Object.assign( form, createEmptyWorkOrderForm() )
       syncTaskPayloads()
-      syncStandardCodes()
+      syncStandards()
       workOrderDraftStore.clearDraft()
 
       nextTick( () => {
@@ -1190,19 +1396,19 @@ const logCurrentPayload = () => {
   if ( isLoggingInProgress.value ) {
     return
   }
-  
+
   isLoggingInProgress.value = true
-  
+
   // Clear any existing timeout
   if ( logButtonTimeout ) {
     clearTimeout( logButtonTimeout )
   }
-  
+
   // Reset the flag after a delay
   logButtonTimeout = setTimeout( () => {
     isLoggingInProgress.value = false
   }, 500 )
-  
+
   // Format dates the same way as in the submit function
   const formattedDueDate = toUtcIso( form.due_date )
   const formattedStartDate = toUtcIso( form.start_date )
@@ -1221,7 +1427,7 @@ const logCurrentPayload = () => {
     task_add_list : form.task_add_list,
     time_zone : form.time_zone,
     equipment_node_ids : form.equipment_node_ids,
-    
+
     // Optional fields (per API docs)
     description : form.description,
     location_id : form.location_id,
@@ -1231,7 +1437,7 @@ const logCurrentPayload = () => {
     approved_by_id : form.approved_by_id,
     image_list : form.image_list,
     file_list : form.file_list,
-    standard_list : Array.from( new Set( form.standard_list || [] ) ),
+    standard_list : form.standard_list || [],
     request_id : form.request_id,
     parent_work_order_id : form.parent_work_order_id,
     vendor_ids : form.vendor_ids,
@@ -1240,14 +1446,13 @@ const logCurrentPayload = () => {
 
   console.log( '[Work Order Complete Payload]', payload )
   console.log( '[Work Order Form Fields Count]', Object.keys( payload ).length )
-  
+
   // Update the drawer content and show it with a small delay to prevent conflicts
   setTimeout( () => {
     currentPayload.value = payload
     showJsonDisplayer.value = true
   }, 50 )
 }
-
 
 // Date picker constraints and helpers for main work order dates
 const disabledStartDates = date => {
@@ -1401,7 +1606,7 @@ const submitForm = async() => {
 
     // Ensure derived lists are up to date
     syncTaskPayloads()
-    syncStandardCodes()
+    syncStandards()
 
     // Ensure tasks exist before submitting
     const taskAddList = Array.isArray( form.task_add_list ) ? form.task_add_list : []
@@ -1416,9 +1621,8 @@ const submitForm = async() => {
       const payload = clonePayload( task )
       payload.work_order_id = payload.work_order_id ?? 0
       payload.state = payload.state ?? DEFAULT_TASK_STATE
-      payload.time_estimate_sec = payload.time_estimate_sec && payload.time_estimate_sec > 0
-        ? payload.time_estimate_sec
-        : 1800
+      payload.time_estimate_sec =
+        payload.time_estimate_sec && payload.time_estimate_sec > 0 ? payload.time_estimate_sec : 1800
       payload.steps = Array.isArray( payload.steps ) ? payload.steps : []
       return payload
     } )
@@ -1450,7 +1654,7 @@ const submitForm = async() => {
       task_add_list : normalizedTaskAddList,
       image_list : form.image_list, // Already URLs after MinIO upload
       file_list : form.file_list, // Already URLs after MinIO upload
-      standard_list : Array.from( new Set( form.standard_list || [] ) )
+      standard_list : form.standard_list || []
     }
 
     // Remove null/undefined values but keep required fields
@@ -1494,6 +1698,10 @@ const submitForm = async() => {
     loading.value = false
   }
 }
+
+defineExpose( {
+  hasFormChanges
+} )
 
 defineOptions( {
   name : 'WorkOrderCreate'
@@ -1809,57 +2017,38 @@ defineOptions( {
 @media (max-width: 768px) {
   .work-order-create-enhanced {
     padding: 16px 16px 0px 16px; // Extra bottom padding for mobile
+    margin-top: 0;
   }
 
   .create-header {
+    padding: 16px 0;
+    margin-bottom: 16px;
+
+    .header-main {
+      .create-title {
+        font-size: 20px;
+      }
+    }
+
     .header-actions {
       flex-direction: column;
-      gap: 4px;
+      align-items: flex-end;
     }
   }
 
-  // Mobile specific adjustments for fixed buttons
   .form-actions-fixed {
     padding: 12px 16px;
 
     .form-actions-content {
-      flex-direction: column;
       gap: 8px;
 
       .create-button,
       .cancel-button {
-        width: 100%;
-        min-width: auto;
+        padding: 10px 16px;
+        font-size: 14px;
+        min-width: 100px;
       }
     }
   }
 }
-
-.recurrence-editor {
-  .repeat-interval {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .weekly-selection {
-    :deep(.el-checkbox-group) {
-      flex-direction: column;
-      gap: 4px;
-    }
-  }
-
-  // Duration display styling
-  .work-order-duration {
-    margin-top: 8px;
-
-    .el-text {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 12px;
-    }
-  }
-}
-
 </style>

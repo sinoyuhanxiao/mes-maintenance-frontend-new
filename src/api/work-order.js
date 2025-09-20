@@ -13,19 +13,19 @@ export const searchWorkOrders = (
   size = 10,
   sortField = 'createdAt',
   direction = 'DESC',
-  search = { latest_per_recurrence: true }
+  search = { latest_per_recurrence : true }
 ) => {
-  return http.request({
-    method: 'post',
-    url: '/work-order/search',
-    params: {
+  return http.request( {
+    method : 'post',
+    url : '/work-order/search',
+    params : {
       page,
       size,
       sortField,
-      direction,
+      direction
     },
-    data: search,
-  })
+    data : search
+  } )
 }
 
 /**
@@ -34,13 +34,13 @@ export const searchWorkOrders = (
  * @param {Object} filter - The WorkOrderQueryRequest payload.
  * @returns {Promise} API response with filtered and paginated work orders.
  */
-export const searchWorkOrdersByList = (filter = {}) => {
-  return http.request({
-    method: 'post',
-    url: '/work-order/list-search',
-    data: filter,
-    params: {},
-  })
+export const searchWorkOrdersByList = ( filter = {} ) => {
+  return http.request( {
+    method : 'post',
+    url : '/work-order/list-search',
+    data : filter,
+    params : {}
+  } )
 }
 
 /**
@@ -59,16 +59,16 @@ export const getWorkOrdersByRecurrence = (
   sortField = 'createdAt',
   direction = 'DESC'
 ) => {
-  return http.request({
-    method: 'get',
-    url: `/work-order/recurrence/${recurrenceId}`,
-    params: {
+  return http.request( {
+    method : 'get',
+    url : `/work-order/recurrence/${recurrenceId}`,
+    params : {
       page,
       size,
       sortField,
-      direction,
-    },
-  })
+      direction
+    }
+  } )
 }
 
 /**
@@ -77,11 +77,11 @@ export const getWorkOrdersByRecurrence = (
  * @returns {Promise} API response from the server.
  */
 export const createWorkOrder = data => {
-  return http.request({
-    method: 'post',
-    url: '/work-order',
-    data,
-  })
+  return http.request( {
+    method : 'post',
+    url : '/work-order',
+    data
+  } )
 }
 
 /**
@@ -90,10 +90,10 @@ export const createWorkOrder = data => {
  * @returns {Promise} API response containing the work order data.
  */
 export const getWorkOrderById = id => {
-  return http.request({
-    method: 'get',
-    url: `/work-order/${id}`,
-  })
+  return http.request( {
+    method : 'get',
+    url : `/work-order/${id}`
+  } )
 }
 
 // API functions for work order creation form data
@@ -102,10 +102,10 @@ export const getWorkOrderById = id => {
  * @returns {Promise} API response with work types.
  */
 export const getAllWorkTypes = () => {
-  return http.request({
-    method: 'get',
-    url: '/common/work-type',
-  })
+  return http.request( {
+    method : 'get',
+    url : '/common/work-type'
+  } )
 }
 
 /**
@@ -113,10 +113,10 @@ export const getAllWorkTypes = () => {
  * @returns {Promise} API response with priorities.
  */
 export const getAllPriorities = () => {
-  return http.request({
-    method: 'get',
-    url: '/common/priority',
-  })
+  return http.request( {
+    method : 'get',
+    url : '/common/priority'
+  } )
 }
 
 /**
@@ -124,10 +124,10 @@ export const getAllPriorities = () => {
  * @returns {Promise} API response with categories.
  */
 export const getAllCategories = () => {
-  return http.request({
-    method: 'get',
-    url: '/common/category',
-  })
+  return http.request( {
+    method : 'get',
+    url : '/common/category'
+  } )
 }
 
 /**
@@ -135,10 +135,10 @@ export const getAllCategories = () => {
  * @returns {Promise} API response with states.
  */
 export const getAllStates = () => {
-  return http.request({
-    method: 'get',
-    url: '/common/state',
-  })
+  return http.request( {
+    method : 'get',
+    url : '/common/state'
+  } )
 }
 
 /**
@@ -146,10 +146,10 @@ export const getAllStates = () => {
  * @returns {Promise} API response with recurrence types.
  */
 export const getAllRecurrenceTypes = () => {
-  return http.request({
-    method: 'get',
-    url: '/common/recurrence-type',
-  })
+  return http.request( {
+    method : 'get',
+    url : '/common/recurrence-type'
+  } )
 }
 
 /**
@@ -157,10 +157,10 @@ export const getAllRecurrenceTypes = () => {
  * @returns {Promise} API response with equipment node trees.
  */
 export const getEquipmentNodeTrees = () => {
-  return http.request({
-    method: 'get',
-    url: '/equipment/node-trees',
-  })
+  return http.request( {
+    method : 'get',
+    url : '/equipment/node-trees'
+  } )
 }
 
 /**
@@ -169,10 +169,10 @@ export const getEquipmentNodeTrees = () => {
  * @returns {Promise} API response containing the deleted work order data.
  */
 export const deleteIndividualWorkOrder = id => {
-  return http.request({
-    method: 'delete',
-    url: `/work-order/delete-individual/${id}`,
-  })
+  return http.request( {
+    method : 'delete',
+    url : `/work-order/delete-individual/${id}`
+  } )
 }
 
 /**
@@ -181,8 +181,8 @@ export const deleteIndividualWorkOrder = id => {
  * @returns {Promise} API response containing the list of deleted work orders.
  */
 export const deleteRecurrenceWorkOrders = recurrenceId => {
-  return http.request({
-    method: 'delete',
-    url: `/work-order/delete-recurrence/${recurrenceId}`,
-  })
+  return http.request( {
+    method : 'delete',
+    url : `/work-order/delete-recurrence/${recurrenceId}`
+  } )
 }

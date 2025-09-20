@@ -9,23 +9,26 @@
             {{ template.name }}
           </el-text>
 
-          <el-tag v-if="isAdhoc" size="small" type="info" effect="plain" class="adhoc-tag">
-            Work Order Only
-          </el-tag>
+          <el-tag v-if="isAdhoc" size="small" type="info" effect="plain" class="adhoc-tag"> Work Order Only </el-tag>
         </div>
 
-        <!-- Kebab Dropdown -->
-        <el-dropdown class="kebab-dropdown" @click.stop>
-          <el-icon class="kebab-icon">
-            <MoreFilled />
+        <!-- Action Icons -->
+        <div class="action-icons">
+          <el-icon class="view-icon" @click.stop="handlePreview" title="Preview">
+            <View />
           </el-icon>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item @click="handleEdit">Edit</el-dropdown-item>
-              <el-dropdown-item divided @click="handleDelete">Delete</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
+          <el-dropdown class="kebab-dropdown" @click.stop>
+            <el-icon class="kebab-icon">
+              <MoreFilled />
+            </el-icon>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item @click="handleEdit">Edit</el-dropdown-item>
+                <el-dropdown-item divided @click="handleDelete">Delete</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
       </div>
 
       <!-- Row 2: Tags + Steps -->
@@ -53,7 +56,7 @@
 <script setup>
 import { computed } from 'vue'
 import { ElMessageBox } from 'element-plus'
-import { MoreFilled } from '@element-plus/icons-vue'
+import { MoreFilled, View } from '@element-plus/icons-vue'
 
 const props = defineProps( {
   template : {
@@ -90,6 +93,14 @@ const handleEdit = () => {
   emit( 'selection', {
     id : props.template.id,
     action : 'edit',
+    data : props.template
+  } )
+}
+
+const handlePreview = () => {
+  emit( 'selection', {
+    id : props.template.id,
+    action : 'preview',
     data : props.template
   } )
 }
@@ -160,6 +171,27 @@ const handleDelete = () => {
   text-overflow: ellipsis;
   white-space: nowrap;
   flex: 1;
+}
+
+.action-icons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.view-icon {
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  font-size: 16px;
+  color: #909399;
+}
+
+.view-icon:hover {
+  background-color: var(--el-fill-color-light);
+  color: #409eff;
 }
 
 .kebab-dropdown {

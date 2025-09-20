@@ -107,7 +107,7 @@ export const useWorkOrderDraftStore = defineStore( 'workOrderDraft', {
             ...updatedTaskData,
             id : taskId // Preserve the original ID
           }
-          
+
           // Update the payload if it exists
           if ( task.payload ) {
             updatedTask.payload = {
@@ -120,7 +120,7 @@ export const useWorkOrderDraftStore = defineStore( 'workOrderDraft', {
               steps : updatedTaskData.steps || task.payload.steps
             }
           }
-          
+
           return updatedTask
         }
         return task

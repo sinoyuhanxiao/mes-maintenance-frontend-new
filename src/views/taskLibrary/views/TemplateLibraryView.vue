@@ -1079,7 +1079,7 @@ const createNewTemplate = () => {
   router.push( { name : 'TaskDesigner' } )
 }
 
-const createNewWorkOrder = async () => {
+const createNewWorkOrder = async() => {
   if ( !selectedTemplate.value ) {
     ElMessage.error( 'No template selected. Please select a template first.' )
     return
@@ -1093,10 +1093,10 @@ const createNewWorkOrder = async () => {
         'You have an unfinished work order. Add this task there?',
         'Unfinished Work Order',
         {
-          confirmButtonText: 'Yes',
-          cancelButtonText: 'Cancel',
-          type: 'warning',
-          customClass: 'work-order-confirmation-dialog'
+          confirmButtonText : 'Yes',
+          cancelButtonText : 'Cancel',
+          type : 'warning',
+          customClass : 'work-order-confirmation-dialog'
         }
       )
 

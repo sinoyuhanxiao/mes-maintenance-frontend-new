@@ -503,7 +503,10 @@ import { useDesignerStateCache } from '@/composables/designer/useDesignerStateCa
 import { useDesignerTour } from '@/composables/designer/useDesignerTour'
 import { useAppStore, useSettingsStore, useTagsViewStore } from '@/store'
 import { useWorkOrderDraftStore } from '@/store/modules/workOrderDraft'
-import { buildDisplayTaskFromTemplate, buildDisplayTaskFromDesigner } from '@/components/WorkOrder/TodoView/taskPayloadHelpers'
+import {
+  buildDisplayTaskFromTemplate,
+  buildDisplayTaskFromDesigner
+} from '@/components/WorkOrder/TodoView/taskPayloadHelpers'
 import { getEquipmentTree } from '@/api/equipment.js'
 import { getAllCategories } from '@/api/common.js'
 import VueDraggable from 'vuedraggable'
@@ -1047,16 +1050,12 @@ const navigateBackToWorkOrder = async message => {
 
 const promptWorkOrderSaveMode = async() => {
   try {
-    await ElMessageBox.confirm(
-      'Do you want to save this as a template or only for this work order?',
-      'Save Task',
-      {
-        confirmButtonText : 'Save as Template',
-        cancelButtonText : 'Save Only for Work Order',
-        distinguishCancelAndClose : true,
-        type : 'info'
-      }
-    )
+    await ElMessageBox.confirm( 'Do you want to save this as a template or only for this work order?', 'Save Task', {
+      confirmButtonText : 'Save as Template',
+      cancelButtonText : 'Save Only for Work Order',
+      distinguishCancelAndClose : true,
+      type : 'info'
+    } )
 
     await performSave( { mode : 'template', fromWorkOrderContext : true } )
   } catch ( action ) {
@@ -1212,7 +1211,7 @@ const performSave = async( { mode = 'template', fromWorkOrderContext = false } =
 const performStandaloneSave = async() => {
   try {
     saving.value = true
-    
+
     // Get the original task ID from route query
     const originalTaskId = route.query.taskId
     if ( !originalTaskId ) {
@@ -1232,15 +1231,15 @@ const performStandaloneSave = async() => {
 
     // Update the task in the work order draft store
     workOrderDraftStore.updateTask( originalTaskId, updatedTaskData )
-    
+
     hasUnsavedChanges.value = false
     clearStateByKey( stableCacheKey.value )
-    
+
     // Navigate back to work order
     await navigateBackToWorkOrder( 'Standalone task updated successfully.' )
   } catch ( error ) {
     console.error( 'Standalone save error:', error )
-    
+
     if ( error.message ) {
       ElMessage.error( `Update failed: ${error.message}` )
     } else {
@@ -1287,7 +1286,9 @@ const handleReset = async() => {
         // Clear unsaved changes flag
         hasUnsavedChanges.value = false
 
-        const messageText = isStandaloneTask.value ? 'Standalone task restored to original state' : 'Template restored to original state'
+        const messageText = isStandaloneTask.value
+          ? 'Standalone task restored to original state'
+          : 'Template restored to original state'
         ElMessage.success( messageText )
 
         // Clear cached state after reset
@@ -2089,9 +2090,9 @@ const initializeTemplate = async() => {
       if ( !taskDataString ) {
         throw new Error( 'No task data provided for standalone task' )
       }
-      
+
       const taskData = JSON.parse( taskDataString )
-      
+
       // Transform standalone task data to match the designer form structure
       templateForm.value = {
         name : taskData.name || '',
@@ -2110,7 +2111,7 @@ const initializeTemplate = async() => {
         steps : taskData.steps || [],
         isStandalone : true
       }
-      
+
       // Store original template for change detection
       originalTemplate.value = JSON.parse( JSON.stringify( templateForm.value ) )
 

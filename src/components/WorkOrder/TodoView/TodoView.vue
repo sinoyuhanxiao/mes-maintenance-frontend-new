@@ -134,7 +134,7 @@
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { getWorkOrderById } from '@/api/work-order'
 import WorkOrderCard from './WorkOrderCard.vue'
 import WorkOrderDetail from './WorkOrderDetail.vue'
@@ -218,12 +218,12 @@ const computedCreatePanelKey = computed( () => `${createPanelKey.value}-${create
 // Function to scroll to tasks section after template designer return
 const scrollToTasksSection = () => {
   if ( !workOrderCreateRef.value ) return
-  
+
   try {
     // Look for the tasks section in the WorkOrderCreate component
     const createComponent = workOrderCreateRef.value.$el || workOrderCreateRef.value
     const tasksSection = createComponent.querySelector( '.tasks-section' )
-    
+
     if ( tasksSection ) {
       // Scroll the main container to bring tasks section into view
       const scrollContainer = createComponent.querySelector( '.work-order-create-enhanced' )
@@ -260,8 +260,52 @@ const paginationInfo = computed( () => {
   }
 } )
 
+// Helper function to check for unsaved changes and show confirmation
+const checkUnsavedChanges = async() => {
+  // If we're currently in create mode, check for unsaved changes
+  if ( currentRightPanelView.value === 'create' && workOrderCreateRef.value ) {
+    try {
+      // Check if the create form has unsaved changes
+      const hasChanges = workOrderCreateRef.value.hasFormChanges ? workOrderCreateRef.value.hasFormChanges() : false
+
+      if ( hasChanges ) {
+        // Show confirmation dialog
+        await ElMessageBox.confirm(
+          'Are you sure you want to leave the form? All unsaved changes will be lost.',
+          'Confirm Leave',
+          {
+            confirmButtonText : 'Leave',
+            cancelButtonText : 'Cancel',
+            type : 'warning'
+          }
+        )
+
+        // If user confirmed, clear the draft
+        if ( workOrderDraftStore && workOrderDraftStore.clearDraft ) {
+          workOrderDraftStore.clearDraft()
+        }
+      }
+      return true // Proceed with action
+    } catch ( error ) {
+      // User cancelled the confirmation dialog
+      if ( error === 'cancel' || error === 'close' ) {
+        return false // Don't proceed with action
+      }
+      console.error( 'Error checking form changes:', error )
+      return true // Proceed with action on error
+    }
+  }
+  return true // No create mode, proceed with action
+}
+
 // Methods
 const selectWorkOrder = async workOrder => {
+  // Check for unsaved changes before proceeding
+  const canProceed = await checkUnsavedChanges()
+  if ( !canProceed ) {
+    return // Don't proceed with selection
+  }
+
   try {
     isLoadingWorkOrder.value = true
 
@@ -287,7 +331,13 @@ const selectWorkOrder = async workOrder => {
   }
 }
 
-const handleTabChange = tabName => {
+const handleTabChange = async tabName => {
+  // Check for unsaved changes before proceeding
+  const canProceed = await checkUnsavedChanges()
+  if ( !canProceed ) {
+    return // Don't proceed with tab change
+  }
+
   activeTab.value = tabName
   // Clear selection when switching tabs
   selectedWorkOrder.value = null
@@ -377,7 +427,13 @@ const handleAddComment = () => {
   ElMessage.success( t( 'workOrder.comments.add' ) )
 }
 
-const handlePageChange = page => {
+const handlePageChange = async page => {
+  // Check for unsaved changes before proceeding
+  const canProceed = await checkUnsavedChanges()
+  if ( !canProceed ) {
+    return // Don't proceed with page change
+  }
+
   internalCurrentPage.value = page
   emit( 'page-change', page )
   selectedWorkOrder.value = null
@@ -448,11 +504,11 @@ watch(
 const showCreateForm = ( options = {} ) => {
   currentRightPanelView.value = 'create'
   selectedWorkOrder.value = null
-  
+
   // If coming from template designer, refresh the component and scroll to tasks
   if ( options.fromTemplateDesigner || workOrderDraftStore.shouldOpenCreatePanel ) {
     createPanelRefreshCounter.value += 1
-    
+
     // After component refreshes, scroll to tasks section
     nextTick( () => {
       setTimeout( () => {

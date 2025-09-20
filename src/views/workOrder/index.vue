@@ -152,7 +152,7 @@ const todoViewRef = ref( null )
 const clearShowCreateFlag = () => {
   if ( route.query.showCreate === undefined ) return
   const { showCreate, ...rest } = route.query
-  router.replace( { path : route.path, query : { ...rest } } )
+  router.replace( { path : route.path, query : { ...rest }} )
 }
 
 watch(

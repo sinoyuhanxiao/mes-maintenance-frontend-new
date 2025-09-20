@@ -17,6 +17,7 @@
             <el-icon><Search /></el-icon>
           </template>
         </el-input>
+        <el-link type="primary" @click="handleCreateNewStandard" class="new-standard-link"> + New Standard </el-link>
       </div>
 
       <!-- Content Area -->
@@ -92,16 +93,27 @@
 
       <StandardsPreview v-if="previewStandardId" :standard-id="previewStandardId" />
     </el-dialog>
+
+    <!-- Create Standard Dialog -->
+    <CreateStandardDialog
+      :visible="showCreateStandardDialog"
+      :is-edit-mode="false"
+      :initial-data="createStandardForm"
+      :loading="createStandardLoading"
+      @close="handleCreateStandardCancel"
+      @submit="handleCreateStandardSubmit"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { Search, ArrowLeft } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import CardTable from '../Tables/CardTable.vue'
 import StandardsPreview from '@/components/TaskLibrary/StandardsPreview.vue'
-import { searchStandards } from '@/api/task-library'
+import CreateStandardDialog from '@/components/TaskLibrary/CreateStandardDialog.vue'
+import { searchStandards, createStandard } from '@/api/task-library'
 import { debounce } from 'lodash-es'
 
 // Define emits
@@ -124,6 +136,16 @@ const focusedCardId = ref( null )
 // Preview dialog state
 const showPreviewDialog = ref( false )
 const previewStandardId = ref( null )
+
+// Create standard dialog state
+const showCreateStandardDialog = ref( false )
+const createStandardForm = ref( {
+  name : '',
+  description : '',
+  category : '',
+  items : []
+} )
+const createStandardLoading = ref( false )
 
 // Computed properties
 const selectedStandardsList = computed( () => {
@@ -254,6 +276,110 @@ const handleSearch = () => {
   debouncedSearch()
 }
 
+// Create standard event handlers
+const handleCreateNewStandard = () => {
+  createStandardForm.value = {
+    name : '',
+    description : '',
+    category : '',
+    items : []
+  }
+  showCreateStandardDialog.value = true
+}
+
+const handleCreateStandardCancel = () => {
+  showCreateStandardDialog.value = false
+  createStandardForm.value = {
+    name : '',
+    description : '',
+    category : '',
+    items : []
+  }
+}
+
+const handleCreateStandardSubmit = async formData => {
+  console.log( 'AddStandard received formData:', formData )
+  showCreateStandardDialog.value = false
+  await promptStandardSaveMode( formData )
+}
+
+const promptStandardSaveMode = async formData => {
+  try {
+    await ElMessageBox.confirm(
+      'Do you want to save this as a standard template or only for this work order?',
+      'Save Standard',
+      {
+        confirmButtonText : 'Save as Template',
+        cancelButtonText : 'Save Only for Work Order',
+        distinguishCancelAndClose : true,
+        type : 'info'
+      }
+    )
+
+    await handleSaveAsTemplate( formData )
+  } catch ( action ) {
+    if ( action === 'cancel' ) {
+      handleSaveForWorkOrderOnly( formData )
+    }
+  }
+}
+
+const handleSaveAsTemplate = async formData => {
+  try {
+    createStandardLoading.value = true
+
+    const payload = {
+      ...formData,
+      module : 200
+    }
+
+    const response = await createStandard( payload )
+
+    ElMessage.success( 'Standard created successfully' )
+
+    // Refresh the standards list
+    await fetchStandards( true )
+
+    // Auto-select the new standard
+    const newStandardId = response.data?.id || response.data?._id
+    if ( newStandardId ) {
+      selectedStandards.value.add( newStandardId )
+      focusedCardId.value = newStandardId
+    }
+  } catch ( error ) {
+    console.error( 'Failed to create standard:', error )
+    ElMessage.error( 'Failed to create standard' )
+  } finally {
+    createStandardLoading.value = false
+  }
+}
+
+const handleSaveForWorkOrderOnly = formData => {
+  // Debug: Log the form data to see what we're working with
+  console.log( 'createStandardForm.value:', formData )
+
+  // Create a standalone standard for this work order only
+  const standaloneStandard = {
+    id : `work-order-standard-${Date.now()}`,
+    name : formData.name,
+    description : formData.description,
+    category : formData.category,
+    items : formData.items,
+    estimated_minutes : 15,
+    isStandalone : true
+  }
+
+  console.log( 'standaloneStandard:', standaloneStandard )
+
+  // Emit directly to work order without saving to library
+  emit( 'addStandards', [standaloneStandard] )
+
+  ElMessage.success( 'Standard added to work order' )
+
+  // Close the main dialog
+  emit( 'close' )
+}
+
 // Watch for search query changes
 watch( searchQuery, () => {
   if ( !searchQuery.value?.trim() ) {
@@ -289,9 +415,17 @@ defineOptions( {
 
   .search-container {
     margin-bottom: 10px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
 
     .search-input {
-      width: 50%;
+      flex: 1;
+    }
+
+    .new-standard-link {
+      white-space: nowrap;
+      font-weight: 500;
     }
   }
 

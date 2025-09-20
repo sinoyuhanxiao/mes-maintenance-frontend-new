@@ -60,16 +60,20 @@ const normalizeTemplateStep = ( step, index ) => {
 
 const normalizeCategoryMeta = ( categoryOption, fallback ) => {
   if ( categoryOption && typeof categoryOption === 'object' ) {
-    if ( Object.prototype.hasOwnProperty.call( categoryOption, 'value' ) &&
-      Object.prototype.hasOwnProperty.call( categoryOption, 'label' ) ) {
+    if (
+      Object.prototype.hasOwnProperty.call( categoryOption, 'value' ) &&
+      Object.prototype.hasOwnProperty.call( categoryOption, 'label' )
+    ) {
       return {
         id : categoryOption.value ?? null,
         name : categoryOption.label ?? ''
       }
     }
 
-    if ( Object.prototype.hasOwnProperty.call( categoryOption, 'id' ) ||
-      Object.prototype.hasOwnProperty.call( categoryOption, 'name' ) ) {
+    if (
+      Object.prototype.hasOwnProperty.call( categoryOption, 'id' ) ||
+      Object.prototype.hasOwnProperty.call( categoryOption, 'name' )
+    ) {
       return {
         id : categoryOption.id ?? null,
         name : categoryOption.name ?? categoryOption.label ?? ''
@@ -78,8 +82,10 @@ const normalizeCategoryMeta = ( categoryOption, fallback ) => {
   }
 
   if ( fallback && typeof fallback === 'object' ) {
-    if ( Object.prototype.hasOwnProperty.call( fallback, 'id' ) ||
-      Object.prototype.hasOwnProperty.call( fallback, 'name' ) ) {
+    if (
+      Object.prototype.hasOwnProperty.call( fallback, 'id' ) ||
+      Object.prototype.hasOwnProperty.call( fallback, 'name' )
+    ) {
       return {
         id : fallback.id ?? null,
         name : fallback.name ?? fallback.label ?? ''
@@ -113,7 +119,8 @@ export const buildTaskPayloadFromTemplate = template => {
     steps.push( createFallbackStep() )
   }
 
-  const categorySource = template.category ||
+  const categorySource =
+    template.category ||
     ( template.category_name
       ? { id : template.category_id ?? template.categoryId ?? null, name : template.category_name }
       : null )
@@ -145,7 +152,8 @@ export const buildTaskPayloadFromTemplate = template => {
 export const buildDisplayTaskFromTemplate = template => {
   const payload = buildTaskPayloadFromTemplate( template )
   const estimatedMinutes = Math.round( ( payload.time_estimate_sec || 0 ) / 60 ) || 0
-  const categorySource = template.category ||
+  const categorySource =
+    template.category ||
     ( template.category_name
       ? { id : template.category_id ?? template.categoryId ?? null, name : template.category_name }
       : null )
@@ -186,7 +194,8 @@ export const buildDisplayTaskFromDesigner = ( templateForm, categoryOption = nul
 
   const categoryMeta = normalizeCategoryMeta( categoryOption, templateForm.category )
 
-  const estimatedMinutes = templateForm.estimated_minutes || Math.round( ( backendPayload.time_estimate_sec || 0 ) / 60 ) || 0
+  const estimatedMinutes =
+    templateForm.estimated_minutes || Math.round( ( backendPayload.time_estimate_sec || 0 ) / 60 ) || 0
 
   return {
     id : nextTaskLocalId(),

@@ -1,4 +1,4 @@
-export const createEmptyWorkOrderForm = () => ({
+export const createEmptyWorkOrderForm = () => ( {
   name : '',
   description : '',
   category_ids : [],
@@ -24,6 +24,6 @@ export const createEmptyWorkOrderForm = () => ({
   standard_list : [],
   tasks : [],
   standards : []
-})
+} )
 
 export const cloneWorkOrderForm = form => JSON.parse( JSON.stringify( form ) )

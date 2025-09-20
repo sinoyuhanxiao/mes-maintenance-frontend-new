@@ -10,10 +10,10 @@ export const componentTypeId = 6
  * @returns {Promise} API response with production lines.
  */
 export const getAllProductionLines = () => {
-  return http.request({
-    method: 'get',
-    url: '/equipment/production-lines',
-  })
+  return http.request( {
+    method : 'get',
+    url : '/equipment/production-lines'
+  } )
 }
 
 /**
@@ -22,18 +22,18 @@ export const getAllProductionLines = () => {
  * @returns {Promise} API response with equipment groups.
  */
 export const getEquipmentGroups = productionLineId => {
-  return http.request({
-    method: 'post',
-    url: '/equipment/equipment-groups',
-    data: {
-      production_line_ids: [productionLineId], // 需要数组格式
+  return http.request( {
+    method : 'post',
+    url : '/equipment/equipment-groups',
+    data : {
+      production_line_ids : [productionLineId] // 需要数组格式
       // equipment_group_ids : [0],
       // equipment_ids : [0],
       // component_ids : [0],
       // location_ids : [0],
       // vendor_ids : [0]
-    },
-  })
+    }
+  } )
 }
 
 /**
@@ -42,11 +42,11 @@ export const getEquipmentGroups = productionLineId => {
  * @returns {Promise} API response with equipments.
  */
 export const getEquipments = equipmentGroupId => {
-  return http.request({
-    method: 'get',
-    url: '/equipment/equipment',
-    data: { equipmentGroupId },
-  })
+  return http.request( {
+    method : 'get',
+    url : '/equipment/equipment',
+    data : { equipmentGroupId }
+  } )
 }
 
 /**
@@ -55,11 +55,11 @@ export const getEquipments = equipmentGroupId => {
  * @returns {Promise} API response with equipment components.
  */
 export const getEquipmentComponents = equipmentId => {
-  return http.request({
-    method: 'get',
-    url: '/equipment/equipment-component',
-    data: { equipmentId },
-  })
+  return http.request( {
+    method : 'get',
+    url : '/equipment/equipment-component',
+    data : { equipmentId }
+  } )
 }
 
 /**
@@ -67,10 +67,10 @@ export const getEquipmentComponents = equipmentId => {
  * @returns {Promise} API response with equipment tree nodes.
  */
 export const getEquipmentTree = () => {
-  return http.request({
-    method: 'get',
-    url: '/equipment/node-trees',
-  })
+  return http.request( {
+    method : 'get',
+    url : '/equipment/node-trees'
+  } )
 }
 
 /**
@@ -79,10 +79,10 @@ export const getEquipmentTree = () => {
  * @returns {Promise} API response with equipment Subtree nodes.
  */
 export const getEquipmentSubtree = equipmentId => {
-  return http.request({
-    method: 'get',
-    url: `/equipment/node-subtree/${equipmentId}`,
-  })
+  return http.request( {
+    method : 'get',
+    url : `/equipment/node-subtree/${equipmentId}`
+  } )
 }
 
 /**
@@ -91,10 +91,10 @@ export const getEquipmentSubtree = equipmentId => {
  * @returns {Promise} API response with equipment details.
  */
 export const getEquipmentById = equipmentId => {
-  return http.request({
-    method: 'get',
-    url: `/equipment/equipment-node/${equipmentId}`,
-  })
+  return http.request( {
+    method : 'get',
+    url : `/equipment/equipment-node/${equipmentId}`
+  } )
 }
 
 /**
@@ -113,12 +113,12 @@ export const searchEquipmentNodes = (
   sortField = 'createdAt',
   direction = 'DESC'
 ) => {
-  return http.request({
-    method: 'post',
-    url: '/equipment/node-search',
-    data: searchCriteria,
-    params: { page, size, sortField, direction },
-  })
+  return http.request( {
+    method : 'post',
+    url : '/equipment/node-search',
+    data : searchCriteria,
+    params : { page, size, sortField, direction }
+  } )
 }
 
 /**
@@ -127,12 +127,12 @@ export const searchEquipmentNodes = (
  * @param {Number} diagramId - The equipment diagram to patch
  * @returns {Promise} API response with the updated diagram.
  */
-export const patchEquipmentDiagram = (diagramId, payload) => {
-  return http.request({
-    method: 'patch',
-    url: `/equipment/equipment-diagram/update?diagramId=${diagramId}`,
-    data: payload,
-  })
+export const patchEquipmentDiagram = ( diagramId, payload ) => {
+  return http.request( {
+    method : 'patch',
+    url : `/equipment/equipment-diagram/update?diagramId=${diagramId}`,
+    data : payload
+  } )
 }
 
 /**
@@ -141,11 +141,11 @@ export const patchEquipmentDiagram = (diagramId, payload) => {
  * @returns {Promise} API response with the equipment diagram.
  */
 export const getEquipmentDiagram = diagramId => {
-  return http.request({
-    method: 'get',
-    url: '/equipment/equipment-diagram',
-    data: { diagramId },
-  })
+  return http.request( {
+    method : 'get',
+    url : '/equipment/equipment-diagram',
+    data : { diagramId }
+  } )
 }
 
 /**
@@ -154,18 +154,18 @@ export const getEquipmentDiagram = diagramId => {
  * @param {Number} equipmentNodeId - The equipment node to be associated with this diagram
  * @returns {Promise} API response with the created diagram.
  */
-export const createEquipmentDiagram = async (payload, equipmentNodeId) => {
+export const createEquipmentDiagram = async( payload, equipmentNodeId ) => {
   const requestBody = {
-    equipment_node_id: equipmentNodeId,
-    pins: payload.pins,
+    equipment_node_id : equipmentNodeId,
+    pins : payload.pins
   }
 
-  return http.request({
-    method: 'post',
-    url: '/equipment/equipment-diagram/create',
-    data: requestBody,
-    headers: { 'Content-Type': 'application/json' },
-  })
+  return http.request( {
+    method : 'post',
+    url : '/equipment/equipment-diagram/create',
+    data : requestBody,
+    headers : { 'Content-Type' : 'application/json' }
+  } )
 }
 
 /**
@@ -174,16 +174,16 @@ export const createEquipmentDiagram = async (payload, equipmentNodeId) => {
  * @param {string} diagramId - The diagram ID to associate.
  * @returns {Promise} API response.
  */
-export const updateEquipmentNodeDiagramId = (equipmentNodeId, diagramId) => {
+export const updateEquipmentNodeDiagramId = ( equipmentNodeId, diagramId ) => {
   const requestData = {
-    diagram_id: diagramId,
+    diagram_id : diagramId
   }
 
-  return http.request({
-    method: 'patch',
-    url: `/equipment/equipment-node/${equipmentNodeId}`,
-    data: requestData,
-  })
+  return http.request( {
+    method : 'patch',
+    url : `/equipment/equipment-node/${equipmentNodeId}`,
+    data : requestData
+  } )
 }
 
 /**
@@ -192,16 +192,16 @@ export const updateEquipmentNodeDiagramId = (equipmentNodeId, diagramId) => {
  * @param {string} imageUrl - The URL of the new image.
  * @returns {Promise} API response.
  */
-export const updateEquipmentNodeImage = (equipmentNodeId, imageUrl) => {
+export const updateEquipmentNodeImage = ( equipmentNodeId, imageUrl ) => {
   const requestData = {
-    exploded_view_drawing: [imageUrl],
+    exploded_view_drawing : [imageUrl]
   }
 
-  return http.request({
-    method: 'patch',
-    url: `/equipment/equipment-node/${equipmentNodeId}`,
-    data: requestData,
-  })
+  return http.request( {
+    method : 'patch',
+    url : `/equipment/equipment-node/${equipmentNodeId}`,
+    data : requestData
+  } )
 }
 
 /**
@@ -213,12 +213,12 @@ export const updateEquipmentNodeImage = (equipmentNodeId, imageUrl) => {
  * @param {object} search - Search filter
  * @returns {Promise} API response with the list of all Euipment.
  */
-export const getEquipmentNodes = (page = 1, size = 10, sortField = 'name', direction = 'ASC', search = {}) => {
-  return http.request({
-    method: 'post',
-    url: `/equipment/node-search?page=${page}&size=${size}&sortField=${sortField}&direction=${direction}`,
-    data: search,
-  })
+export const getEquipmentNodes = ( page = 1, size = 10, sortField = 'name', direction = 'ASC', search = {} ) => {
+  return http.request( {
+    method : 'post',
+    url : `/equipment/node-search?page=${page}&size=${size}&sortField=${sortField}&direction=${direction}`,
+    data : search
+  } )
 }
 
 /**
@@ -227,11 +227,11 @@ export const getEquipmentNodes = (page = 1, size = 10, sortField = 'name', direc
  * @returns {Promise} API response with equipment details.
  */
 export const createNewNode = equipmentInfo => {
-  return http.request({
-    method: 'post',
-    url: `/equipment/equipment-node`,
-    data: equipmentInfo,
-  })
+  return http.request( {
+    method : 'post',
+    url : `/equipment/equipment-node`,
+    data : equipmentInfo
+  } )
 }
 
 /**
@@ -240,12 +240,12 @@ export const createNewNode = equipmentInfo => {
  * @param {object} equipmentInfo - The equipment info to be edited.
  * @returns {Promise} API response with equipment details.
  */
-export const editEquipmentNode = (equipmentId, equipmentInfo) => {
-  return http.request({
-    method: 'patch',
-    url: `/equipment/equipment-node/${equipmentId}`,
-    data: equipmentInfo,
-  })
+export const editEquipmentNode = ( equipmentId, equipmentInfo ) => {
+  return http.request( {
+    method : 'patch',
+    url : `/equipment/equipment-node/${equipmentId}`,
+    data : equipmentInfo
+  } )
 }
 
 /**
@@ -254,8 +254,8 @@ export const editEquipmentNode = (equipmentId, equipmentInfo) => {
  * @returns {Promise} API response with status.
  */
 export const deactivateEquipmentNode = equipmentId => {
-  return http.request({
-    method: 'post',
-    url: `/equipment/equipment-node/${equipmentId}/deactivate`,
-  })
+  return http.request( {
+    method : 'post',
+    url : `/equipment/equipment-node/${equipmentId}/deactivate`
+  } )
 }
