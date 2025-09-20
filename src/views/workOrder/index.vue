@@ -104,8 +104,8 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, nextTick, watch } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Calendar, Grid, List } from '@element-plus/icons-vue'
 import MesLayout from 'src/components/MesLayout'
@@ -116,11 +116,14 @@ import CalendarView from '@/views/workOrder/components/workOrderCalendar.vue'
 import { useWorkOrder } from '@/composables/useWorkOrder'
 import { useErrorHandler } from '@/composables/useErrorHandler'
 import { ElMessage } from 'element-plus'
+import { useWorkOrderDraftStore } from '@/store/modules/workOrderDraft'
 
 // Composables
 const router = useRouter()
+const route = useRoute()
 const { t } = useI18n()
 const { showSuccess } = useErrorHandler()
+const workOrderDraftStore = useWorkOrderDraftStore()
 
 // Work Order composable
 const {
@@ -145,6 +148,37 @@ const downloadLoading = ref( false )
 const currentView = ref( 'todo' ) // 'table' or 'todo' or 'calendar'
 const calendarViewRef = ref()
 const todoViewRef = ref( null )
+
+const clearShowCreateFlag = () => {
+  if ( route.query.showCreate === undefined ) return
+  const { showCreate, ...rest } = route.query
+  router.replace( { path : route.path, query : { ...rest } } )
+}
+
+watch(
+  () => route.query.showCreate,
+  value => {
+    if ( value === '1' || value === 'true' ) {
+      nextTick( () => {
+        todoViewRef.value?.showCreateForm()
+        clearShowCreateFlag()
+      } )
+    }
+  },
+  { immediate : true }
+)
+
+watch(
+  () => workOrderDraftStore.shouldOpenCreatePanel,
+  value => {
+    if ( value ) {
+      nextTick( () => {
+        todoViewRef.value?.showCreateForm()
+        workOrderDraftStore.setShouldOpenCreatePanel( false )
+      } )
+    }
+  }
+)
 
 // Methods
 const handleView = row => {

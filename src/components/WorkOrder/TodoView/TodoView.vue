@@ -110,9 +110,11 @@
 
       <!-- Work Order Create View -->
       <WorkOrderCreate
+        :key="computedCreatePanelKey"
         v-else-if="currentRightPanelView === 'create'"
         @back-to-detail="showDetailView"
         @work-order-created="handleWorkOrderCreated"
+        ref="workOrderCreateRef"
       />
 
       <!-- Work Order Edit View -->
@@ -130,7 +132,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { getWorkOrderById } from '@/api/work-order'
@@ -139,6 +141,7 @@ import WorkOrderDetail from './WorkOrderDetail.vue'
 import WorkOrderCreate from './WorkOrderCreate.vue'
 import WorkOrderEdit from './WorkOrderEdit.vue'
 import PdfPreviewModal from '../PdfPreview/PdfPreviewModal.vue'
+import { useWorkOrderDraftStore } from '@/store/modules/workOrderDraft'
 
 // Props
 const props = defineProps( {
@@ -198,9 +201,44 @@ const screenWidth = ref( window.innerWidth )
 const showPdfPreview = ref( false )
 const pdfPreviewData = ref( null )
 
+// WorkOrderCreate component ref
+const workOrderCreateRef = ref( null )
+
 // Use pagination from props instead of local state
 const internalCurrentPage = ref( props.currentPage )
 const internalPageSize = ref( props.pageSize )
+
+const workOrderDraftStore = useWorkOrderDraftStore()
+const createPanelKey = ref( 'work-order-create' )
+const createPanelRefreshCounter = ref( 0 )
+
+// Computed key that changes when we need to refresh from template designer
+const computedCreatePanelKey = computed( () => `${createPanelKey.value}-${createPanelRefreshCounter.value}` )
+
+// Function to scroll to tasks section after template designer return
+const scrollToTasksSection = () => {
+  if ( !workOrderCreateRef.value ) return
+  
+  try {
+    // Look for the tasks section in the WorkOrderCreate component
+    const createComponent = workOrderCreateRef.value.$el || workOrderCreateRef.value
+    const tasksSection = createComponent.querySelector( '.tasks-section' )
+    
+    if ( tasksSection ) {
+      // Scroll the main container to bring tasks section into view
+      const scrollContainer = createComponent.querySelector( '.work-order-create-enhanced' )
+      if ( scrollContainer ) {
+        const tasksSectionTop = tasksSection.offsetTop
+        scrollContainer.scrollTo( {
+          top : tasksSectionTop - 50, // 50px padding from top
+          behavior : 'smooth'
+        } )
+      }
+    }
+  } catch ( error ) {
+    console.warn( 'Could not scroll to tasks section:', error )
+  }
+}
 
 // Dynamic pager count based on screen width
 const pagerCount = computed( () => ( screenWidth.value > 1800 ? 7 : 3 ) )
@@ -407,9 +445,21 @@ watch(
   { deep : true }
 )
 
-const showCreateForm = () => {
+const showCreateForm = ( options = {} ) => {
   currentRightPanelView.value = 'create'
   selectedWorkOrder.value = null
+  
+  // If coming from template designer, refresh the component and scroll to tasks
+  if ( options.fromTemplateDesigner || workOrderDraftStore.shouldOpenCreatePanel ) {
+    createPanelRefreshCounter.value += 1
+    
+    // After component refreshes, scroll to tasks section
+    nextTick( () => {
+      setTimeout( () => {
+        scrollToTasksSection()
+      }, 100 ) // Small delay to ensure DOM is fully rendered
+    } )
+  }
 }
 
 const showDetailView = () => {

@@ -26,5 +26,9 @@ selenium-debug.log
 *.local
 docs/*
 
+# Debug components (development only)
+src/components/WorkOrder/TodoView/JsonDebugDrawer.vue
+src/components/WorkOrder/TodoView/JsonTreeItem.vue
+
 #package-lock.json
 #yarn.lock

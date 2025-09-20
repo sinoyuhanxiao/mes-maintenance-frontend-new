@@ -304,7 +304,7 @@
       width="600px"
       :before-close="handleFormCancel"
     >
-      <el-form :model="formData" :rules="formRules" ref="standardForm" label-width="120px">
+      <el-form :model="formData" :rules="formRules" ref="standardForm" label-width="100px" style="margin-right: 16px;">
         <el-form-item label="Title" prop="name">
           <el-input v-model="formData.name" placeholder="Enter standard title" />
         </el-form-item>
@@ -321,6 +321,63 @@
             <el-option label="Food Safety" value="food-safety" />
             <el-option label="General" value="general" />
           </el-select>
+        </el-form-item>
+
+        <!-- Rules Management Section -->
+        <el-form-item label="Rules" v-if="formData.items && formData.items.length > 0">
+          <div class="dialog-rules-section" style="width: 100%">
+            <div class="dialog-rules-list">
+              <div class="dialog-rules-container">
+                <div v-for="(rule, index) in formData.items" :key="index" class="rule-item">
+                  <div class="rule-number">{{ index + 1 }}</div>
+                  <div class="rule-content">
+                    <div class="rule-text" v-if="editingDialogRuleIndex === null || editingDialogRuleIndex !== index">
+                      {{ rule }}
+                    </div>
+                    <el-input
+                      v-else
+                      v-model="editingDialogRuleText"
+                      @keyup.enter="saveRuleInForm(index)"
+                      placeholder="Enter rule text"
+                      autosize
+                    />
+                  </div>
+                  <div class="rule-actions">
+                    <template v-if="editingDialogRuleIndex === index">
+                      <el-button type="text" size="default" @click="saveRuleInForm(index)" title="Save">
+                        <el-icon><Check /></el-icon>
+                      </el-button>
+                      <el-button type="text" size="default" @click="cancelRuleEditInForm" title="Cancel">
+                        <el-icon><Close /></el-icon>
+                      </el-button>
+                    </template>
+                    <template v-else>
+                      <el-button type="text" size="default" @click="editRuleInForm(index, rule)" title="Edit">
+                        <el-icon><Edit /></el-icon>
+                      </el-button>
+                      <el-button
+                        type="text"
+                        size="default"
+                        @click="deleteRuleFromForm(index)"
+                        title="Delete"
+                        class="delete-btn"
+                      >
+                        <el-icon><Delete /></el-icon>
+                      </el-button>
+                    </template>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </el-form-item>
+
+        <!-- Always visible Add Rule Button -->
+        <el-form-item>
+          <el-button type="primary" size="default" @click="addNewRuleToForm" plain>
+            <el-icon><Plus /></el-icon>
+            Rule
+          </el-button>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -404,9 +461,13 @@ const formData = ref( {
   items : []
 } )
 
-// Rule editing state
+// Rule editing state (for detail view)
 const editingRuleIndex = ref( null )
 const editingRuleText = ref( '' )
+
+// Dialog rule editing state
+const editingDialogRuleIndex = ref( null )
+const editingDialogRuleText = ref( '' )
 
 const formRules = {
   name : [
@@ -582,6 +643,8 @@ const createNewstandard = () => {
     category : '',
     items : []
   }
+  editingDialogRuleIndex.value = null
+  editingDialogRuleText.value = ''
   formDialogVisible.value = true
 }
 
@@ -593,6 +656,8 @@ const handleFormCancel = () => {
     category : '',
     items : []
   }
+  editingDialogRuleIndex.value = null
+  editingDialogRuleText.value = ''
 }
 
 const handleFormSubmit = async() => {
@@ -610,6 +675,8 @@ const handleFormSubmit = async() => {
           ElMessage.success( 'Safety measure created successfully' )
         }
         formDialogVisible.value = false
+        editingDialogRuleIndex.value = null
+        editingDialogRuleText.value = ''
         await loadstandards()
       } catch ( error ) {
         ElMessage.error( isEditMode.value ? 'Failed to update standard' : 'Failed to create standard' )
@@ -624,6 +691,11 @@ const handleFormSubmit = async() => {
 const addNewRule = () => {
   if ( !selectedstandard.value ) return
 
+  // Don't add empty rule if there's already an empty rule being edited
+  if (editingRuleIndex.value !== null) {
+    return
+  }
+
   editingRuleIndex.value = selectedstandard.value.items.length
   editingRuleText.value = ''
   selectedstandard.value.items.push( '' )
@@ -637,11 +709,11 @@ const editRule = ( index, rule ) => {
 const cancelEdit = () => {
   if ( editingRuleIndex.value === null ) return
 
-  const isNewRule = editingRuleIndex.value === selectedstandard.value.items.length - 1
-  const isNewRuleEmpty = selectedstandard.value.items[editingRuleIndex.value] === ''
+  const isEmptyRule = selectedstandard.value.items[editingRuleIndex.value] === ''
 
-  if ( isNewRule && isNewRuleEmpty ) {
-    selectedstandard.value.items.pop()
+  if ( isEmptyRule ) {
+    // Remove empty rule completely
+    selectedstandard.value.items.splice(editingRuleIndex.value, 1)
   }
 
   editingRuleIndex.value = null
@@ -652,14 +724,18 @@ const saveRule = async index => {
   if ( !selectedstandard.value ) return
 
   if ( editingRuleText.value.trim() === '' ) {
-    // User is trying to save an empty rule.
-    const isNewRule = index === selectedstandard.value.items.length - 1
-    const isOriginalRuleEmpty = selectedstandard.value.items[index] === ''
+    // Remove empty rule completely
+    try {
+      const items = [...selectedstandard.value.items]
+      items.splice(index, 1)
+      const payload = { ...selectedstandard.value, items, module : 200 }
 
-    if ( isNewRule && isOriginalRuleEmpty ) {
-      // This was a new rule that the user didn't fill out. Remove it.
-      selectedstandard.value.items.pop()
+      await updateStandard( selectedstandardId.value, payload )
+      await loadstandards()
+    } catch ( error ) {
+      ElMessage.error( 'Failed to remove empty rule' )
     }
+
     editingRuleIndex.value = null
     editingRuleText.value = ''
     return
@@ -701,6 +777,72 @@ const deleteRule = async index => {
     if ( error !== 'cancel' ) {
       ElMessage.error( 'Failed to delete standard rule' )
     }
+  }
+}
+
+// Dialog rule management functions
+const addNewRuleToForm = () => {
+  // If there's a rule being edited, check if it has unsaved text
+  if (editingDialogRuleIndex.value !== null) {
+    // Check if the editing rule has text that needs to be saved
+    if (editingDialogRuleText.value && editingDialogRuleText.value.trim() !== '') {
+      // Auto-save the current rule before adding a new one
+      saveRuleInForm(editingDialogRuleIndex.value)
+    } else {
+      // If current rule is empty, just return without adding new rule
+      return
+    }
+  }
+
+  editingDialogRuleIndex.value = formData.value.items.length
+  editingDialogRuleText.value = ''
+  formData.value.items.push( '' )
+}
+
+const editRuleInForm = ( index, rule ) => {
+  editingDialogRuleIndex.value = index
+  editingDialogRuleText.value = rule
+}
+
+const cancelRuleEditInForm = () => {
+  if ( editingDialogRuleIndex.value === null ) return
+
+  const isEmptyRule = formData.value.items[editingDialogRuleIndex.value] === ''
+
+  if ( isEmptyRule ) {
+    // Remove empty rule completely
+    formData.value.items.splice(editingDialogRuleIndex.value, 1)
+  }
+
+  editingDialogRuleIndex.value = null
+  editingDialogRuleText.value = ''
+}
+
+const saveRuleInForm = index => {
+  if ( editingDialogRuleText.value.trim() === '' ) {
+    // Remove empty rule completely
+    formData.value.items.splice(index, 1)
+    editingDialogRuleIndex.value = null
+    editingDialogRuleText.value = ''
+    return
+  }
+
+  formData.value.items[index] = editingDialogRuleText.value.trim()
+  editingDialogRuleIndex.value = null
+  editingDialogRuleText.value = ''
+}
+
+const deleteRuleFromForm = async index => {
+  try {
+    await ElMessageBox.confirm( 'Are you sure you want to delete this rule?', 'Confirm Deletion', {
+      confirmButtonText : 'Delete',
+      cancelButtonText : 'Cancel',
+      type : 'warning'
+    } )
+
+    formData.value.items.splice( index, 1 )
+  } catch ( error ) {
+    // User cancelled, do nothing
   }
 }
 
@@ -1087,6 +1229,7 @@ defineOptions( {
   border-radius: 8px;
   background: #fafafa;
   transition: all 0.3s ease;
+  justify-content: space-evenly;
 }
 
 .rule-item:hover {
@@ -1204,5 +1347,105 @@ defineOptions( {
 .validation-error .el-icon {
   font-size: 14px;
   margin-right: 0;
+}
+
+/* Dialog Rules Section Styles */
+.dialog-rules-section {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.dialog-rules-list {
+  padding: 0px;
+}
+
+.dialog-rules-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dialog-rules-section .rule-item {
+  display: flex;
+  align-items: center;
+  padding: 4px 8px;
+  border: 1px solid #e4e7ed;
+  border-radius: 6px;
+  background: white;
+  transition: all 0.3s ease;
+}
+
+.dialog-rules-section .rule-item:hover {
+  border-color: #409eff;
+  background: #f0f7ff;
+}
+
+.dialog-rules-section .rule-number {
+  width: 20px;
+  height: 20px;
+  background: #409eff;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.dialog-rules-section .rule-content {
+  flex: 1;
+  margin-right: 8px;
+  max-width: 70%;
+}
+
+.dialog-rules-section .rule-text {
+  color: #303133;
+  line-height: 1.5;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dialog-rules-section .rule-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.dialog-rules-section::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dialog-rules-section::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.dialog-rules-section::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.dialog-rules-section::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+.dialog-rules-container > .rule-item > .rule-actions :nth-child(1) {
+  margin-right: 0px;
+}
+
+.dialog-rules-container > .rule-item > .rule-actions :nth-child(2) {
+  margin-right: 0px;
+}
+
+:deep(.el-form-item--default) {
+  margin-bottom: 20px !important;
+}
+
+:deep(.rule-content > .el-input > .el-input__wrapper) {
+  border: 0;
 }
 </style>

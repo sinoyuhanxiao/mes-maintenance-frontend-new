@@ -6,8 +6,8 @@ import http from '@/utils/request'
  * @returns {Promise<Object>} API response containing the task entry data.
  */
 export const getTaskEntryById = id => {
-  return http.request( {
-    method : 'get',
-    url : `/task/entry/${id}`
-  } )
+  return http.request({
+    method: 'get',
+    url: `/task/entry/${id}`,
+  })
 }

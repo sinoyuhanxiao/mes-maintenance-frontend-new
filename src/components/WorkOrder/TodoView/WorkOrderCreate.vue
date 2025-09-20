@@ -10,7 +10,7 @@
         </el-col>
         <el-col :span="6">
           <div class="header-actions">
-            <el-button type="default" @click="$emit('back-to-detail')">
+            <el-button type="default" @click="handleBackToDetail">
               <el-icon><ArrowLeft /></el-icon>
               {{ $t('workOrder.actions.backToDetail') }}
             </el-button>
@@ -329,8 +329,17 @@
       <!-- Submit Button - Fixed at bottom -->
       <div class="form-actions-fixed">
         <div class="form-actions-content">
-          <el-button type="default" @click="$emit('back-to-detail')" class="cancel-button">
+          <el-button type="default" @click="handleCancel" class="cancel-button">
             {{ $t('workOrder.actions.cancel') }}
+          </el-button>
+          <el-button 
+            type="info" 
+            @click="logCurrentPayload" 
+            class="logs-button"
+            :loading="isLoggingInProgress"
+            :disabled="isLoggingInProgress"
+          >
+            {{ isLoggingInProgress ? 'Loading...' : 'Logs' }}
           </el-button>
           <el-button type="primary" @click="submitForm" :loading="loading" class="create-button">
             {{ $t('workOrder.actions.create') }}
@@ -338,8 +347,17 @@
         </div>
       </div>
     </el-form>
+
+    <!-- JSON Debug Drawer -->
+    <JsonDebugDrawer 
+      v-model="showJsonDisplayer" 
+      :payload-data="currentPayload" 
+      title="Work Order Payload"
+      subtitle="Click 'Logs' to refresh"
+    />
   </div>
 </template>
+
 
 <script setup>
 import { ref, reactive, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
@@ -361,6 +379,7 @@ import MaintenanceSelectedStandardsCard from '../../Tables/Cards/MaintenanceSele
 import AddTask from '../../Task/AddTask.vue'
 import AddStandard from '../../Standard/AddStandard.vue'
 import FileUploadMultiple from '@/components/FileUpload/FileUploadMultiple.vue'
+import JsonDebugDrawer from './JsonDebugDrawer.vue'
 import { uploadMultipleToMinio } from '@/api/minio.js'
 import {
   getAllWorkTypes,
@@ -370,17 +389,20 @@ import {
   getEquipmentNodeTrees,
   createWorkOrder
 } from '@/api/work-order'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useTaskLibraryStore } from '@/store/modules/taskLibrary'
-
-// Initialize empty task and standards arrays
-onMounted( () => {
-  initializeFormData()
-  loadFormData()
-} )
+import { useWorkOrderDraftStore } from '@/store/modules/workOrderDraft'
+import { createEmptyWorkOrderForm, cloneWorkOrderForm } from './workOrderFormDefaults'
+import { DEFAULT_TASK_STATE, buildDisplayTaskFromTemplate } from './taskPayloadHelpers'
 
 const showAddTaskDialog = ref( false )
 const showAddStandardDialog = ref( false )
+
+// JSON Displayer state
+const showJsonDisplayer = ref( false )
+const currentPayload = ref( null )
+
+
 
 const handleAddStandard = () => {
   showAddStandardDialog.value = true
@@ -401,21 +423,21 @@ const closeAddTaskDialog = () => {
 }
 
 const handleTaskAction = ( { id, action, data } ) => {
-  console.log( 'Task action received:', id, action, data )
   if ( action === 'edit' ) {
     handleEditTask( data )
   } else if ( action === 'delete' ) {
     form.tasks = form.tasks.filter( t => t.id !== id )
+    syncTaskPayloads()
     ElMessage.success( `Task "${data.name}" removed` )
   }
 }
 
 const handleStandardAction = ( { id, action, data } ) => {
-  console.log( 'Standard action received:', id, action, data )
   if ( action === 'edit' ) {
     // something here later
   } else if ( action === 'delete' ) {
     form.standards = form.standards.filter( s => s.id !== id )
+    syncStandardCodes()
     ElMessage.success( `Standard "${data.name}" removed` )
   }
 }
@@ -425,35 +447,20 @@ const handleCloseAddTaskDialog = done => {
 }
 
 const onAddTaskTemplates = selectedTemplates => {
-  console.log( 'Adding templates:', selectedTemplates )
-
-  if ( selectedTemplates && selectedTemplates.length > 0 ) {
-    // Get the highest existing ID to generate new unique IDs
-    const maxId = form.tasks.length > 0 ? Math.max( ...form.tasks.map( task => task.id ) ) : 0
-
-    // Transform template data to match work order task format
-    const newTasks = selectedTemplates.map( ( template, index ) => ( {
-      id : maxId + index + 1,
-      name : template.name || template.title,
-      category : template.category,
-      estimated_minutes : template.estimated_minutes || template.estimatedMinutes || 30,
-      description : template.description || '',
-      // Include original template data for reference
-      templateId : template.id || template._id,
-      ...template
-    } ) )
-
-    // Append to existing tasks
-    form.tasks.push( ...newTasks )
-
-    // Show success message
-    ElMessage.success(
-      `${selectedTemplates.length} task template${selectedTemplates.length > 1 ? 's' : ''} added successfully`
-    )
-
-    // Close the dialog
-    closeAddTaskDialog()
+  if ( !selectedTemplates || selectedTemplates.length === 0 ) {
+    return
   }
+
+  const newTasks = selectedTemplates.map( template => buildDisplayTaskFromTemplate( template ) )
+  form.tasks.push( ...newTasks )
+  decorateTasksCategories( newTasks )
+  syncTaskPayloads()
+
+  ElMessage.success(
+    `${selectedTemplates.length} task template${selectedTemplates.length > 1 ? 's' : ''} added successfully`
+  )
+
+  closeAddTaskDialog()
 }
 
 const handleDeleteAllTasks = () => {
@@ -473,6 +480,7 @@ const handleDeleteAllTasks = () => {
   )
     .then( () => {
       form.tasks = []
+      syncTaskPayloads()
       ElMessage.success( 'All task selections cleared' )
     } )
     .catch( () => {
@@ -481,35 +489,36 @@ const handleDeleteAllTasks = () => {
 }
 
 const onAddStandards = selectedStandards => {
-  console.log( 'Adding standards:', selectedStandards )
-
-  if ( selectedStandards && selectedStandards.length > 0 ) {
-    // Get the highest existing ID to generate new unique IDs
-    const maxId = form.standards.length > 0 ? Math.max( ...form.standards.map( standard => standard.id ) ) : 0
-
-    // Transform standard data to match work order format
-    const newStandards = selectedStandards.map( ( standard, index ) => ( {
-      id : maxId + index + 1,
-      name : standard.name || standard.title,
-      category : standard.category,
-      estimated_minutes : standard.estimated_minutes || standard.estimatedMinutes || 15,
-      description : standard.description || '',
-      // Include original standard data for reference
-      standardId : standard.id || standard._id,
-      ...standard
-    } ) )
-
-    // Append to existing standards
-    form.standards.push( ...newStandards )
-
-    // Show success message
-    ElMessage.success(
-      `${selectedStandards.length} standard${selectedStandards.length > 1 ? 's' : ''} added successfully`
-    )
-
-    // Close the dialog
-    closeAddStandardDialog()
+  if ( !selectedStandards || selectedStandards.length === 0 ) {
+    return
   }
+
+  // Get the highest existing ID to generate new unique IDs
+  const maxId = form.standards.length > 0 ? Math.max( ...form.standards.map( standard => standard.id ) ) : 0
+
+  // Transform standard data to match work order format
+  const newStandards = selectedStandards.map( ( standard, index ) => ( {
+    id : maxId + index + 1,
+    name : standard.name || standard.title,
+    category : standard.category,
+    estimated_minutes : standard.estimated_minutes || standard.estimatedMinutes || 15,
+    description : standard.description || '',
+    // Include original standard data for reference
+    standardId : standard.id || standard._id,
+    ...standard
+  } ) )
+
+  // Append to existing standards
+  form.standards.push( ...newStandards )
+  syncStandardCodes()
+
+  // Show success message
+  ElMessage.success(
+    `${selectedStandards.length} standard${selectedStandards.length > 1 ? 's' : ''} added successfully`
+  )
+
+  // Close the dialog
+  closeAddStandardDialog()
 }
 
 const handleDeleteAllStandards = () => {
@@ -529,6 +538,7 @@ const handleDeleteAllStandards = () => {
   )
     .then( () => {
       form.standards = []
+      syncStandardCodes()
       ElMessage.success( 'All standard selections cleared' )
     } )
     .catch( () => {
@@ -545,26 +555,49 @@ const handleEditTask = async taskData => {
     loading.value = true
 
     // Check if we have the original template ID
-    const originalTemplateId = taskData.templateId || taskData.template_id || taskData.id
+    const originalTemplateId = taskData.templateId || taskData.template_id
+    const taskId = taskData.id
 
-    if ( !originalTemplateId ) {
-      throw new Error( 'No template ID found for this task. Cannot edit template.' )
+    // Check if this is a standalone task (starts with 'work-order-task-')
+    const isStandaloneTask = taskId && taskId.startsWith('work-order-task-')
+
+    if ( !originalTemplateId && !isStandaloneTask ) {
+      ElMessage.warning( 'This task was created specifically for this work order and cannot be edited as a template.' )
+      return
     }
 
     ElMessage.info( 'Opening template editor...' )
 
-    // Navigate directly to edit the original template with work order context
-    await router.push( {
-      name : 'TaskDesignerEdit',
-      params : { id : originalTemplateId },
-      query : {
-        fromWorkOrder : 'true',
-        workOrderId : form.name || 'New Work Order', // Use work order name as identifier
-        workOrderName : form.name || 'New Work Order',
-        taskId : taskData.id,
-        originalTemplateId // Keep track of the original template
-      }
-    } )
+    workOrderDraftStore.setReturnRoute( currentRoute.fullPath )
+
+    if ( isStandaloneTask ) {
+      // For standalone tasks, pass the task data directly via query parameters
+      await router.push( {
+        name : 'TaskDesignerEdit',
+        params : { id : 'standalone' }, // Use 'standalone' as a special identifier
+        query : {
+          fromWorkOrder : 'true',
+          workOrderId : form.name || 'New Work Order',
+          workOrderName : form.name || 'New Work Order',
+          taskId : taskData.id,
+          standalone : 'true',
+          taskData : JSON.stringify( taskData ) // Pass the full task data
+        }
+      } )
+    } else {
+      // Navigate directly to edit the original template with work order context
+      await router.push( {
+        name : 'TaskDesignerEdit',
+        params : { id : originalTemplateId },
+        query : {
+          fromWorkOrder : 'true',
+          workOrderId : form.name || 'New Work Order',
+          workOrderName : form.name || 'New Work Order',
+          taskId : taskData.id,
+          originalTemplateId
+        }
+      } )
+    }
   } catch ( error ) {
     console.error( 'Failed to open template editor:', error )
     const errorMessage = error.response?.data?.message || error.message || 'Failed to open task editor'
@@ -579,7 +612,9 @@ const emit = defineEmits( ['back-to-detail', 'work-order-created'] )
 
 const { t } = useI18n()
 const router = useRouter()
+const currentRoute = useRoute()
 const taskLibraryStore = useTaskLibraryStore()
+const workOrderDraftStore = useWorkOrderDraftStore()
 
 // Template update listener for refreshing tasks when templates are updated
 const handleTemplateUpdate = updatedTemplate => {
@@ -588,18 +623,22 @@ const handleTemplateUpdate = updatedTemplate => {
 
   // Update tasks that match this template
   form.tasks.forEach( ( task, index ) => {
-    if ( task.templateId === templateId || task.template_id === templateId ) {
-      // Update task with latest template data while preserving work order specific fields
+    if ( task.source === 'template' && ( task.templateId === templateId || task.template_id === templateId ) ) {
+      const refreshedTask = buildDisplayTaskFromTemplate( updatedTemplate )
       form.tasks[index] = {
-        ...task, // Keep work order specific fields like id, etc.
-        name : updatedTemplate.name,
-        description : updatedTemplate.description,
-        category : updatedTemplate.category,
-        estimated_minutes : updatedTemplate.estimated_minutes,
-        steps : updatedTemplate.steps || []
+        ...task,
+        ...refreshedTask,
+        id : task.id,
+        payload : {
+          ...( task.payload || {} ),
+          ...refreshedTask.payload
+        }
       }
+      decorateTaskCategory( form.tasks[index] )
     }
   } )
+
+  syncTaskPayloads()
 
   // Show notification that tasks were refreshed
   if ( form.tasks.some( task => task.templateId === templateId || task.template_id === templateId ) ) {
@@ -609,6 +648,7 @@ const handleTemplateUpdate = updatedTemplate => {
 
 // Component mounted
 onMounted( () => {
+  hydrateFormFromDraft()
   loadFormData()
 
   // Register template update listener
@@ -621,33 +661,158 @@ onBeforeUnmount( () => {
 } )
 
 // Form data - matching API requirements
-const form = reactive( {
-  name : '',
-  description : '',
-  category_ids : [],
-  priority_id : null,
-  state_id : 1,
-  work_type_id : null,
-  equipment_node_ids : [],
-  vendor_ids : [],
-  assignee_ids : [],
-  approved_by_id : null,
-  time_zone : Intl.DateTimeFormat().resolvedOptions().timeZone,
-  start_date : null,
-  due_date : null,
-  recurrence_type_id : null,
-  recurrence_type : null,
-  recurrence_setting : {},
-  recurrence_setting_request : {
-    start_date_time : null
+const form = reactive( createEmptyWorkOrderForm() )
+
+let isHydratingForm = false
+
+const clonePayload = payload => JSON.parse( JSON.stringify( payload || {} ) )
+
+const getStandardCode = standard => standard?.code || standard?.standard_code || standard?.identifier || null
+
+const syncTaskPayloads = () => {
+  form.task_add_list = form.tasks
+    .map( task => clonePayload( task.payload ) )
+    .filter( payload => payload && Array.isArray( payload.steps ) && payload.steps.length > 0 )
+}
+
+const syncStandardCodes = () => {
+  const codes = new Set()
+  form.standards.forEach( standard => {
+    const code = getStandardCode( standard )
+    if ( code ) {
+      codes.add( code )
+    }
+  } )
+  form.standard_list = Array.from( codes )
+}
+
+const resolveCategoryMeta = categoryValue => {
+  if ( categoryValue && typeof categoryValue === 'object' ) {
+    if ( Object.prototype.hasOwnProperty.call( categoryValue, 'name' ) ) {
+      return {
+        id : categoryValue.id ?? categoryValue.value ?? null,
+        name : categoryValue.name ?? categoryValue.label ?? ''
+      }
+    }
+    if ( Object.prototype.hasOwnProperty.call( categoryValue, 'label' ) ) {
+      return {
+        id : categoryValue.value ?? null,
+        name : categoryValue.label ?? ''
+      }
+    }
+  }
+
+  const categoryId = typeof categoryValue === 'number' ? categoryValue : Number.parseInt( categoryValue, 10 )
+  if ( Number.isNaN( categoryId ) ) {
+    return null
+  }
+
+  const match = categoryOptions.value.find( category => category.id === categoryId )
+  if ( match ) {
+    return {
+      id : match.id,
+      name : match.name
+    }
+  }
+  return null
+}
+
+const decorateTaskCategory = task => {
+  if ( !task ) return false
+
+  const payloadCategoryId = task.payload?.category_id ?? task.payload?.categoryId ?? null
+  const meta = resolveCategoryMeta( task.category ?? payloadCategoryId )
+  let changed = false
+
+  if ( meta ) {
+    const needsCategoryUpdate =
+      !task.category || task.category.id !== meta.id || task.category.name !== meta.name
+    if ( needsCategoryUpdate ) {
+      task.category = { id : meta.id, name : meta.name }
+      changed = true
+    }
+
+    if ( task.category_name !== meta.name ) {
+      task.category_name = meta.name
+      changed = true
+    }
+
+    if ( task.payload && task.payload.category_id !== meta.id ) {
+      task.payload.category_id = meta.id ?? null
+      changed = true
+    }
+  } else if ( typeof task.category === 'string' ) {
+    if ( task.category_name !== task.category ) {
+      task.category_name = task.category
+      changed = true
+    }
+  }
+
+  if ( task.category && !task.category_name ) {
+    const inferred = task.category.name ?? task.category.label ?? ''
+    if ( task.category_name !== inferred ) {
+      task.category_name = inferred
+      changed = true
+    }
+  }
+
+  return changed
+}
+
+const decorateTasksCategories = tasks => {
+  if ( !Array.isArray( tasks ) ) return false
+  let mutated = false
+  tasks.forEach( task => {
+    mutated = decorateTaskCategory( task ) || mutated
+  } )
+  return mutated
+}
+
+
+const hydrateFormFromDraft = () => {
+  isHydratingForm = true
+  const source = workOrderDraftStore.hasDraft
+    ? cloneWorkOrderForm( workOrderDraftStore.draftForm )
+    : createEmptyWorkOrderForm()
+
+  Object.assign( form, source )
+  decorateTasksCategories( form.tasks )
+  syncTaskPayloads()
+  syncStandardCodes()
+
+  nextTick( () => {
+    isHydratingForm = false
+    workOrderDraftStore.saveDraft( form )
+  } )
+}
+
+watch(
+  () => form.tasks,
+  () => {
+    if ( isHydratingForm ) return
+    decorateTasksCategories( form.tasks )
+    syncTaskPayloads()
   },
-  task_add_list : [],
-  image_list : [],
-  file_list : [],
-  standard_list : [],
-  tasks : [],
-  standards : []
-} )
+  { deep : true }
+)
+
+watch(
+  () => form.standards,
+  () => {
+    if ( isHydratingForm ) return
+    syncStandardCodes()
+  },
+  { deep : true }
+)
+
+watch(
+  form,
+  () => {
+    if ( isHydratingForm ) return
+    workOrderDraftStore.saveDraft( form )
+  },
+  { deep : true }
+)
 
 // Custom validation functions
 const validateStartDate = ( rule, value, callback ) => {
@@ -800,12 +965,6 @@ const supervisorOptions = ref( [
 ] )
 const formRef = ref( null )
 
-// Initialize form data with empty arrays
-const initializeFormData = () => {
-  form.tasks = []
-  form.standards = []
-}
-
 // Load data from APIs
 const loadFormData = async() => {
   try {
@@ -838,6 +997,8 @@ const loadFormData = async() => {
     if ( equipmentRes.data ) {
       assetTreeData.value = equipmentRes.data
     }
+
+    decorateTasksCategories( form.tasks )
   } catch ( error ) {
     console.error( 'WorkOrderCreate: Failed to load form data:', error )
     // Show specific error message if available
@@ -898,6 +1059,100 @@ const uploadFilesToServer = async() => {
   }
 }
 
+// Helper function to check if the form has meaningful changes
+const hasFormChanges = () => {
+  return (
+    (form.name && form.name.trim() !== '') ||
+    (form.description && form.description.trim() !== '') ||
+    form.tasks.length > 0 ||
+    form.standards.length > 0 ||
+    (form.category_ids && form.category_ids.length > 0) ||
+    (form.equipment_node_ids && form.equipment_node_ids.length > 0) ||
+    (form.assignee_ids && form.assignee_ids.length > 0) ||
+    (form.approved_by_id && form.approved_by_id !== null) ||
+    (form.work_type_id && form.work_type_id !== null) ||
+    (form.priority_id && form.priority_id !== null) ||
+    (form.state_id && form.state_id !== 1) || // 1 is default state
+    (form.start_date && form.start_date !== null) ||
+    (form.due_date && form.due_date !== null) ||
+    (form.vendor_ids && form.vendor_ids.length > 0) ||
+    (form.image_list && form.image_list.length > 0) ||
+    (form.file_list && form.file_list.length > 0)
+  )
+}
+
+const handleBackToDetail = () => {
+  if (!hasFormChanges()) {
+    // No meaningful changes, just close without confirmation
+    emit( 'back-to-detail' )
+    return
+  }
+
+  ElMessageBox.confirm( 'Are you sure you want to leave the form? All unsaved changes will be lost.', 'Confirm Leave', {
+    confirmButtonText : 'Leave',
+    cancelButtonText : 'Cancel',
+    type : 'warning'
+  } )
+    .then( () => {
+      // Clear the form
+      if ( formRef.value ) {
+        formRef.value.resetFields()
+      }
+
+      isHydratingForm = true
+      Object.assign( form, createEmptyWorkOrderForm() )
+      syncTaskPayloads()
+      syncStandardCodes()
+      workOrderDraftStore.clearDraft()
+
+      nextTick( () => {
+        isHydratingForm = false
+      } )
+
+      // Close the dialog
+      emit( 'back-to-detail' )
+    } )
+    .catch( () => {
+      // User cancelled - no action needed
+    } )
+}
+
+const handleCancel = () => {
+  if (!hasFormChanges()) {
+    // No meaningful changes, just close without confirmation
+    emit( 'back-to-detail' )
+    return
+  }
+
+  ElMessageBox.confirm( 'Are you sure you want to leave the form? All unsaved changes will be lost.', 'Confirm Leave', {
+    confirmButtonText : 'Leave',
+    cancelButtonText : 'Cancel',
+    type : 'warning'
+  } )
+    .then( () => {
+      // Clear the form
+      if ( formRef.value ) {
+        formRef.value.resetFields()
+      }
+
+      isHydratingForm = true
+      Object.assign( form, createEmptyWorkOrderForm() )
+      syncTaskPayloads()
+      syncStandardCodes()
+      workOrderDraftStore.clearDraft()
+
+      nextTick( () => {
+        isHydratingForm = false
+      } )
+
+      // Close the dialog
+      emit( 'back-to-detail' )
+    } )
+    .catch( () => {
+      // User cancelled - no action needed
+    } )
+}
+
 const resetForm = () => {
   ElMessageBox.confirm( 'Are you sure you want to reset the form? All unsaved changes will be lost.', 'Confirm Reset', {
     confirmButtonText : 'Reset',
@@ -909,33 +1164,14 @@ const resetForm = () => {
         formRef.value.resetFields()
       }
 
-      // Reset form to initial values
-      Object.assign( form, {
-        name : '',
-        description : '',
-        category_ids : [],
-        priority_id : null,
-        state_id : 1,
-        work_type_id : null,
-        equipment_node_ids : [],
-        vendor_ids : [],
-        assignee_ids : [],
-        approved_by_id : null,
-        time_zone : Intl.DateTimeFormat().resolvedOptions().timeZone,
-        start_date : null,
-        due_date : null,
-        recurrence_type_id : null,
-        recurrence_type : null,
-        recurrence_setting : {},
-        recurrence_setting_request : {
-          start_date_time : null
-        },
-        task_add_list : [],
-        image_list : [],
-        file_list : [],
-        standard_list : [],
-        tasks : [],
-        standards : []
+      isHydratingForm = true
+      Object.assign( form, createEmptyWorkOrderForm() )
+      syncTaskPayloads()
+      syncStandardCodes()
+      workOrderDraftStore.clearDraft()
+
+      nextTick( () => {
+        isHydratingForm = false
       } )
 
       ElMessage.success( t( 'workOrder.messages.formReset' ) )
@@ -944,6 +1180,74 @@ const resetForm = () => {
       // User cancelled - no action needed
     } )
 }
+
+// Debounce for logs button to prevent rapid clicking
+let logButtonTimeout = null
+const isLoggingInProgress = ref( false )
+
+const logCurrentPayload = () => {
+  // Prevent rapid clicking
+  if ( isLoggingInProgress.value ) {
+    return
+  }
+  
+  isLoggingInProgress.value = true
+  
+  // Clear any existing timeout
+  if ( logButtonTimeout ) {
+    clearTimeout( logButtonTimeout )
+  }
+  
+  // Reset the flag after a delay
+  logButtonTimeout = setTimeout( () => {
+    isLoggingInProgress.value = false
+  }, 500 )
+  
+  // Format dates the same way as in the submit function
+  const formattedDueDate = toUtcIso( form.due_date )
+  const formattedStartDate = toUtcIso( form.start_date )
+
+  // Mirror the exact backend API payload structure (WorkOrderRequest schema)
+  const payload = clonePayload( {
+    // Required fields (per API docs)
+    name : form.name,
+    category_ids : form.category_ids,
+    priority_id : form.priority_id,
+    state_id : form.state_id,
+    work_type_id : form.work_type_id,
+    start_date : formattedStartDate,
+    due_date : formattedDueDate,
+    recurrence_setting_request : form.recurrence_setting_request,
+    task_add_list : form.task_add_list,
+    time_zone : form.time_zone,
+    equipment_node_ids : form.equipment_node_ids,
+    
+    // Optional fields (per API docs)
+    description : form.description,
+    location_id : form.location_id,
+    recurrence_uuid : form.recurrence_uuid,
+    halt_type : form.halt_type,
+    recurrence_type_id : form.recurrence_type || form.recurrence_type_id || 1,
+    approved_by_id : form.approved_by_id,
+    image_list : form.image_list,
+    file_list : form.file_list,
+    standard_list : Array.from( new Set( form.standard_list || [] ) ),
+    request_id : form.request_id,
+    parent_work_order_id : form.parent_work_order_id,
+    vendor_ids : form.vendor_ids,
+    assignee_ids : form.assignee_ids
+  } )
+
+  console.log( '[Work Order Complete Payload]', payload )
+  console.log( '[Work Order Form Fields Count]', Object.keys( payload ).length )
+  
+  // Update the drawer content and show it with a small delay to prevent conflicts
+  setTimeout( () => {
+    currentPayload.value = payload
+    showJsonDisplayer.value = true
+  }, 50 )
+}
+
 
 // Date picker constraints and helpers for main work order dates
 const disabledStartDates = date => {
@@ -1095,33 +1399,35 @@ const submitForm = async() => {
     // Ensure we have a valid recurrence_type (default to 1 if not set)
     const recurrenceType = form.recurrence_type || form.recurrence_type_id || 1
 
-    // Convert tasks to task_add_list format (ensure we always have an array)
-    const taskAddList =
-      form.tasks && form.tasks.length > 0
-        ? form.tasks.map( task => ( {
-          name : task.name,
-          description : task.description || '',
-          time_estimate_sec : ( task.estimated_minutes || 0 ) * 60,
-          steps : [], // Temporarily empty as per requirements
-          work_order_id : 0,
-          attachments : [],
-          assignee_ids : [],
-          equipment_node_id : null,
-          category_id : null
-        } ) )
-        : [
-          {
-            name : 'Default Task',
-            description : 'Auto-generated default task',
-            time_estimate_sec : 300, // 5 minutes default
-            steps : [],
-            work_order_id : 0,
-            attachments : [],
-            assignee_ids : [],
-            equipment_node_id : null,
-            category_id : null
-          }
-        ]
+    // Ensure derived lists are up to date
+    syncTaskPayloads()
+    syncStandardCodes()
+
+    // Ensure tasks exist before submitting
+    const taskAddList = Array.isArray( form.task_add_list ) ? form.task_add_list : []
+
+    if ( taskAddList.length === 0 ) {
+      ElMessage.error( 'Please add at least one task before creating the work order.' )
+      loading.value = false
+      return
+    }
+
+    const normalizedTaskAddList = taskAddList.map( task => {
+      const payload = clonePayload( task )
+      payload.work_order_id = payload.work_order_id ?? 0
+      payload.state = payload.state ?? DEFAULT_TASK_STATE
+      payload.time_estimate_sec = payload.time_estimate_sec && payload.time_estimate_sec > 0
+        ? payload.time_estimate_sec
+        : 1800
+      payload.steps = Array.isArray( payload.steps ) ? payload.steps : []
+      return payload
+    } )
+
+    if ( normalizedTaskAddList.some( task => !Array.isArray( task.steps ) || task.steps.length === 0 ) ) {
+      ElMessage.error( 'Each task must include at least one step.' )
+      loading.value = false
+      return
+    }
 
     // Prepare payload according to API specification
     const payload = {
@@ -1141,10 +1447,10 @@ const submitForm = async() => {
       recurrence_type : recurrenceType,
       recurrence_type_id : recurrenceType,
       recurrence_setting_request : form.recurrence_setting_request,
-      task_add_list : taskAddList,
+      task_add_list : normalizedTaskAddList,
       image_list : form.image_list, // Already URLs after MinIO upload
       file_list : form.file_list, // Already URLs after MinIO upload
-      standard_list : form.standard_list
+      standard_list : Array.from( new Set( form.standard_list || [] ) )
     }
 
     // Remove null/undefined values but keep required fields
@@ -1164,8 +1470,6 @@ const submitForm = async() => {
         }
       }
     } )
-
-    console.log( 'Sending payload:', payload )
 
     // Call backend API
     const response = await createWorkOrder( payload )
@@ -1557,4 +1861,5 @@ defineOptions( {
     }
   }
 }
+
 </style>

@@ -408,7 +408,7 @@ export default {
       procedurePlaceholder : 'Create or attach task procedure for workers',
       addProcedure : 'Add Procedure',
       assignTo : 'Assign to',
-      assigneePlaceholder : 'Type name, email or phone number',
+      assigneePlaceholder : 'Type name',
       estimatedTime : 'Estimated Time',
       hours : 'Hours',
       minutes : 'Minutes',

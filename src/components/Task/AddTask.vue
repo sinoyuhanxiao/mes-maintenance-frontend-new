@@ -112,9 +112,15 @@ import CardTable from '../Tables/CardTable.vue'
 import StepsPreview from '@/components/TaskLibrary/StepsPreview.vue'
 import { searchTaskTemplates } from '@/api/task-library'
 import { debounce } from 'lodash-es'
+import { useRouter, useRoute } from 'vue-router'
+import { useWorkOrderDraftStore } from '@/store/modules/workOrderDraft'
 
 // Define emits
 const emit = defineEmits( ['close', 'addTemplates'] )
+
+const router = useRouter()
+const route = useRoute()
+const workOrderDraftStore = useWorkOrderDraftStore()
 
 // Reactive state
 const taskTemplates = ref( [] )
@@ -246,8 +252,18 @@ const getPreviewTemplateTitle = () => {
 }
 
 const handleNewTask = () => {
-  // Navigate to task template designer
-  window.open( '#/maintenance-library/designer', '_blank' )
+  const returnPath = route.fullPath || '/work-order/table'
+  workOrderDraftStore.setReturnRoute( returnPath )
+  workOrderDraftStore.setShouldOpenCreatePanel( true )
+
+  router.push( {
+    name : 'TaskDesigner',
+    query : {
+      fromWorkOrder : 'true',
+      returnRoute : returnPath
+    }
+  } )
+
   emit( 'close' )
 }
 

@@ -8,7 +8,7 @@
         </el-button>
         <div class="header-title">
           <div class="title-with-help">
-            <h1>{{ isEditing ? 'Edit Task' : 'Create New Task' }}</h1>
+            <h1>{{ isStandaloneTask ? 'Edit Standalone Task' : isEditing ? 'Edit Task' : 'Create New Task' }}</h1>
             <el-tooltip content="Show guided tour" placement="bottom" effect="dark">
               <el-button type="text" size="default" @click="startTour" class="help-button" :icon="QuestionFilled" />
             </el-tooltip>
@@ -49,7 +49,7 @@
             style="font-weight: 550"
           >
             <el-icon><Check /></el-icon>
-            {{ isEditing ? 'Save Changes' : 'Save Task' }}
+            {{ isStandaloneTask ? 'Update Task' : isEditing ? 'Save Changes' : 'Save Task' }}
           </el-button>
         </el-tooltip>
       </div>
@@ -502,7 +502,8 @@ import { getTaskTemplateById } from '@/api/task-library'
 import { useDesignerStateCache } from '@/composables/designer/useDesignerStateCache'
 import { useDesignerTour } from '@/composables/designer/useDesignerTour'
 import { useAppStore, useSettingsStore, useTagsViewStore } from '@/store'
-import { useTaskLibraryStore } from '@/store/modules/taskLibrary'
+import { useWorkOrderDraftStore } from '@/store/modules/workOrderDraft'
+import { buildDisplayTaskFromTemplate, buildDisplayTaskFromDesigner } from '@/components/WorkOrder/TodoView/taskPayloadHelpers'
 import { getEquipmentTree } from '@/api/equipment.js'
 import { getAllCategories } from '@/api/common.js'
 import VueDraggable from 'vuedraggable'
@@ -518,6 +519,13 @@ import { getDefaultStepConfig, transformApiStepToDesignerStep, formatLimitsText 
 
 const route = useRoute()
 const router = useRouter()
+const workOrderDraftStore = useWorkOrderDraftStore()
+
+const fromWorkOrder = computed( () => route.query.fromWorkOrder === 'true' )
+const workOrderReturnRoute = computed( () => {
+  const queryRoute = typeof route.query.returnRoute === 'string' ? route.query.returnRoute : null
+  return queryRoute || workOrderDraftStore.returnRoute || '/work-order/table'
+} )
 
 const { loadTemplates, createTemplate, updateTemplate, validateTemplate } = useTaskLibrary()
 
@@ -678,29 +686,22 @@ const showWorkOrderSaveConfirmation = ( workOrderId, workOrderName ) => {
     cancelButtonText : 'Save Locally (Work Order Only)',
     confirmButtonText : 'Alter Template',
     type : 'question',
+    distinguishCancelAndClose : true,
     customClass : 'work-order-save-confirmation'
   } )
     .then( () => {
       // User chose "Alter Template"
-      performSave()
+      return performSave( { mode : 'template', fromWorkOrderContext : true } )
     } )
-    .catch( () => {
-      // User chose "Save Locally" or cancelled
-      ElMessage.info( 'Local save option will be implemented in future updates' )
-
-      // For now, emit a template update event so other work order forms can refresh
-      // This ensures consistency across all open work order tabs
-      const updatedTemplate = templateForm.value
-      const store = useTaskLibraryStore()
-      store.emitTemplateUpdate( {
-        template_id : route.params.id,
-        id : route.params.id,
-        name : updatedTemplate.name,
-        description : updatedTemplate.description,
-        category : updatedTemplate.category,
-        estimated_minutes : updatedTemplate.estimated_minutes,
-        steps : updatedTemplate.steps || []
-      } )
+    .catch( async action => {
+      if ( action === 'cancel' ) {
+        const matchedCategory = Array.isArray( categoriesForDropdown.value )
+          ? categoriesForDropdown.value.find( category => category.value === templateForm.value.category )
+          : null
+        const adhocTask = buildDisplayTaskFromDesigner( templateForm.value, matchedCategory )
+        workOrderDraftStore.appendTask( adhocTask )
+        await navigateBackToWorkOrder( 'Task added to the work order.' )
+      }
     } )
 }
 
@@ -831,7 +832,8 @@ const containerHeight = computed( () => {
 const showPreviewDialog = ref( false )
 
 // Computed properties
-const isEditing = computed( () => !!route.params.id )
+const isEditing = computed( () => !!route.params.id && route.params.id !== 'standalone' )
+const isStandaloneTask = computed( () => route.params.id === 'standalone' && route.query.standalone === 'true' )
 const validationErrors = computed( () => validateTemplate( templateForm.value ) )
 
 // Local detail loading to avoid mutating global store currentTemplate
@@ -919,10 +921,18 @@ const isFormValid = computed( () => {
   // Check basic metadata fields
   const hasValidName =
     templateForm.value.name && typeof templateForm.value.name === 'string' && templateForm.value.name.trim().length > 0
-  const hasValidCategory =
-    templateForm.value.category &&
-    ( ( typeof templateForm.value.category === 'number' && templateForm.value.category > 0 ) ||
-      ( typeof templateForm.value.category === 'string' && templateForm.value.category.trim().length > 0 ) )
+  const categoryValue = templateForm.value.category
+  let hasValidCategory = false
+
+  if ( typeof categoryValue === 'number' ) {
+    hasValidCategory = categoryValue > 0
+  } else if ( typeof categoryValue === 'string' ) {
+    hasValidCategory = categoryValue.trim().length > 0
+  } else if ( categoryValue && typeof categoryValue === 'object' ) {
+    const resolvedId = categoryValue.id ?? categoryValue.value ?? null
+    const resolvedLabel = categoryValue.name ?? categoryValue.label ?? ''
+    hasValidCategory = Boolean( ( resolvedId && resolvedId > 0 ) || ( resolvedLabel && resolvedLabel.trim().length > 0 ) )
+  }
   const hasValidTime = templateForm.value.estimated_minutes > 0
 
   // Check comprehensive template validation (including steps validation)
@@ -1015,19 +1025,55 @@ const handleBack = () => {
   }
 }
 
+const navigateBackToWorkOrder = async message => {
+  const target = workOrderReturnRoute.value || '/work-order/table'
+  const hasShowCreate = target.includes( 'showCreate=' )
+  const separator = target.includes( '?' ) ? '&' : '?'
+  const fullRoute = hasShowCreate ? target : `${target}${separator}showCreate=1`
+
+  if ( message ) {
+    ElMessage.success( message )
+  }
+
+  if ( settingsStore.tagsView ) {
+    await tagsViewStore.DEL_VIEW( route )
+  }
+
+  workOrderDraftStore.setShouldOpenCreatePanel( true )
+  workOrderDraftStore.clearReturnRoute()
+
+  await router.push( fullRoute )
+}
+
+const promptWorkOrderSaveMode = async() => {
+  try {
+    await ElMessageBox.confirm(
+      'Do you want to save this as a template or only for this work order?',
+      'Save Task',
+      {
+        confirmButtonText : 'Save as Template',
+        cancelButtonText : 'Save Only for Work Order',
+        distinguishCancelAndClose : true,
+        type : 'info'
+      }
+    )
+
+    await performSave( { mode : 'template', fromWorkOrderContext : true } )
+  } catch ( action ) {
+    if ( action === 'cancel' ) {
+      await performSave( { mode : 'adhoc', fromWorkOrderContext : true } )
+    }
+  }
+}
+
 const handleSave = async() => {
   try {
     await metadataFormRef.value.validate()
 
-    // Check if we're editing from a work order context
-    // eslint-disable-next-line no-unused-vars
-    const fromWorkOrder = route.query.fromWorkOrder === 'true'
-    // eslint-disable-next-line no-unused-vars
-    const workOrderName = route.query.workOrderName
-    // eslint-disable-next-line no-unused-vars
-    const workOrderId = route.query.workOrderId
-
-    if ( isEditing.value && originalTemplate.value ) {
+    if ( isStandaloneTask.value ) {
+      // For standalone tasks, update the task in the work order draft store
+      await performStandaloneSave()
+    } else if ( isEditing.value && originalTemplate.value ) {
       // For editing mode (both regular and work order context), show change summary dialog first
       const referenceData = {
         categories : categoriesForDropdown.value,
@@ -1039,8 +1085,11 @@ const handleSave = async() => {
       // Always show dialog in edit mode, even if no changes detected
       openChangeSummaryDialog( changes )
     } else {
-      // For create mode, save directly
-      await performSave()
+      if ( fromWorkOrder.value ) {
+        await promptWorkOrderSaveMode()
+      } else {
+        await performSave( { mode : 'template', fromWorkOrderContext : false } )
+      }
     }
   } catch ( error ) {
     console.error( 'Validation error:', error )
@@ -1052,7 +1101,7 @@ const handleSave = async() => {
   }
 }
 
-const performSave = async() => {
+const performSave = async( { mode = 'template', fromWorkOrderContext = false } = {} ) => {
   try {
     saving.value = true
 
@@ -1063,7 +1112,6 @@ const performSave = async() => {
         throw new Error( 'Template ID is required for editing' )
       }
 
-      // eslint-disable-next-line no-unused-vars
       const updatedTemplate = await updateTemplate( templateId, templateForm.value )
       hasUnsavedChanges.value = false
 
@@ -1072,6 +1120,13 @@ const performSave = async() => {
 
       // Update original template for future comparisons
       originalTemplate.value = JSON.parse( JSON.stringify( templateForm.value ) )
+
+      if ( fromWorkOrderContext ) {
+        workOrderDraftStore.updateTasksWithTemplate( updatedTemplate )
+        workOrderDraftStore.setShouldOpenCreatePanel( true )
+        await navigateBackToWorkOrder( 'Template updated and task refreshed.' )
+        return
+      }
 
       // Handle navigation based on tagViews mode
       if ( settingsStore.tagsView ) {
@@ -1094,12 +1149,18 @@ const performSave = async() => {
           query : { focusTemplate : templateId, refresh : true }
         } )
       }
-    } else {
+    } else if ( mode === 'template' ) {
       const newTemplate = await createTemplate( templateForm.value )
       hasUnsavedChanges.value = false
 
       // Clear cached state after successful save
       clearStateByKey( stableCacheKey.value )
+
+      if ( fromWorkOrderContext ) {
+        workOrderDraftStore.appendTask( buildDisplayTaskFromTemplate( newTemplate ) )
+        await navigateBackToWorkOrder( 'Template saved and added to the work order.' )
+        return
+      }
 
       // Handle navigation based on tagViews mode
       const templateId = newTemplate.id || newTemplate.template_id
@@ -1121,6 +1182,15 @@ const performSave = async() => {
           query : { focusTemplate : templateId, refresh : true }
         } )
       }
+    } else if ( mode === 'adhoc' ) {
+      const matchedCategory = Array.isArray( categoriesForDropdown.value )
+        ? categoriesForDropdown.value.find( category => category.value === templateForm.value.category )
+        : null
+      const adhocTask = buildDisplayTaskFromDesigner( templateForm.value, matchedCategory )
+      workOrderDraftStore.appendTask( adhocTask )
+      hasUnsavedChanges.value = false
+      clearStateByKey( stableCacheKey.value )
+      await navigateBackToWorkOrder( 'Task added to the work order.' )
     }
   } catch ( error ) {
     console.error( 'Save error:', error )
@@ -1133,6 +1203,48 @@ const performSave = async() => {
       ElMessage.error( `Save failed: ${error.message}` )
     } else {
       ElMessage.error( 'Failed to save task. Please check your data and try again.' )
+    }
+  } finally {
+    saving.value = false
+  }
+}
+
+const performStandaloneSave = async() => {
+  try {
+    saving.value = true
+    
+    // Get the original task ID from route query
+    const originalTaskId = route.query.taskId
+    if ( !originalTaskId ) {
+      throw new Error( 'Original task ID not found' )
+    }
+
+    // Transform the updated template form data back to task structure
+    const updatedTaskData = {
+      id : originalTaskId,
+      name : templateForm.value.name,
+      description : templateForm.value.description,
+      category : templateForm.value.category,
+      estimated_minutes : templateForm.value.estimated_minutes,
+      equipment_node_id : templateForm.value.applicable_assets,
+      steps : templateForm.value.steps || []
+    }
+
+    // Update the task in the work order draft store
+    workOrderDraftStore.updateTask( originalTaskId, updatedTaskData )
+    
+    hasUnsavedChanges.value = false
+    clearStateByKey( stableCacheKey.value )
+    
+    // Navigate back to work order
+    await navigateBackToWorkOrder( 'Standalone task updated successfully.' )
+  } catch ( error ) {
+    console.error( 'Standalone save error:', error )
+    
+    if ( error.message ) {
+      ElMessage.error( `Update failed: ${error.message}` )
+    } else {
+      ElMessage.error( 'Failed to update standalone task. Please try again.' )
     }
   } finally {
     saving.value = false
@@ -1155,8 +1267,8 @@ const handleReset = async() => {
       }
     )
 
-    if ( isEditing.value ) {
-      // Edit mode: restore to original loaded state
+    if ( isStandaloneTask.value || isEditing.value ) {
+      // Edit mode or standalone mode: restore to original loaded state
       if ( originalTemplate.value ) {
         // Deep clone original template to avoid reference issues
         const originalData = JSON.parse( JSON.stringify( originalTemplate.value ) )
@@ -1175,12 +1287,13 @@ const handleReset = async() => {
         // Clear unsaved changes flag
         hasUnsavedChanges.value = false
 
-        ElMessage.success( 'Template restored to original state' )
+        const messageText = isStandaloneTask.value ? 'Standalone task restored to original state' : 'Template restored to original state'
+        ElMessage.success( messageText )
 
         // Clear cached state after reset
         clearStateByKey( stableCacheKey.value )
       } else {
-        ElMessage.error( 'No original template data available' )
+        ElMessage.error( 'No original task data available' )
       }
     } else {
       // Create mode: reset to initial empty state
@@ -1969,7 +2082,57 @@ const fetchTemplateByIdLocal = async id => {
 
 // Initialize template data
 const initializeTemplate = async() => {
-  if ( isEditing.value ) {
+  if ( isStandaloneTask.value ) {
+    // Handle standalone task editing
+    try {
+      const taskDataString = route.query.taskData
+      if ( !taskDataString ) {
+        throw new Error( 'No task data provided for standalone task' )
+      }
+      
+      const taskData = JSON.parse( taskDataString )
+      
+      // Transform standalone task data to match the designer form structure
+      templateForm.value = {
+        name : taskData.name || '',
+        description : taskData.description || '',
+        category : taskData.category || '',
+        estimated_minutes : taskData.estimated_minutes || 30,
+        applicable_assets : taskData.equipment_node_id || null,
+        steps : Array.isArray( taskData.steps ) ? taskData.steps.map( transformApiStepToDesignerStep ) : []
+      }
+
+      // Create a mock template object for standalone tasks
+      currentTemplate.value = {
+        id : taskData.id,
+        name : taskData.name,
+        description : taskData.description,
+        steps : taskData.steps || [],
+        isStandalone : true
+      }
+      
+      // Store original template for change detection
+      originalTemplate.value = JSON.parse( JSON.stringify( templateForm.value ) )
+
+      // Mark that we have loaded data but no changes made yet
+      hasUnsavedChanges.value = false
+
+      // Update tag title for tagViews mode
+      if ( settingsStore.tagsView ) {
+        const newTitle = `Edit Standalone Task - ${taskData.name || taskData.id}`
+        tagsViewStore.UPDATE_VISITED_VIEW_TITLE( route.path, newTitle )
+      }
+
+      // Initial validation check
+      nextTick( () => {
+        validateElementForm()
+      } )
+    } catch ( error ) {
+      console.error( 'Standalone task load failed:', error )
+      ElMessage.error( 'Failed to load standalone task data' )
+      router.push( { name : 'TaskLibrary' } )
+    }
+  } else if ( isEditing.value ) {
     try {
       const template = await fetchTemplateByIdLocal( route.params.id )
       if ( !template ) {
@@ -2251,12 +2414,11 @@ const handleChangeSummaryConfirm = async() => {
   setChangeSummaryLoading( true )
 
   // Check if we're coming from a work order context
-  const fromWorkOrder = route.query.fromWorkOrder === 'true'
   const workOrderName = route.query.workOrderName
   const workOrderId = route.query.workOrderId
 
   try {
-    if ( fromWorkOrder ) {
+    if ( fromWorkOrder.value ) {
       // Close change summary dialog first
       closeChangeSummaryDialog()
 
@@ -2264,7 +2426,7 @@ const handleChangeSummaryConfirm = async() => {
       showWorkOrderSaveConfirmation( workOrderId, workOrderName )
     } else {
       // Regular flow - save directly
-      await performSave()
+      await performSave( { mode : 'template', fromWorkOrderContext : false } )
       closeChangeSummaryDialog()
     }
   } catch ( error ) {

@@ -4,9 +4,15 @@
     <div class="card-content">
       <!-- Row 1: Title + Kebab Menu -->
       <div class="row-1">
-        <el-text class="card-title" :title="template.name" truncated>
-          {{ template.name }}
-        </el-text>
+        <div class="title-with-badges">
+          <el-text class="card-title" :title="template.name" truncated>
+            {{ template.name }}
+          </el-text>
+
+          <el-tag v-if="isAdhoc" size="small" type="info" effect="plain" class="adhoc-tag">
+            Work Order Only
+          </el-tag>
+        </div>
 
         <!-- Kebab Dropdown -->
         <el-dropdown class="kebab-dropdown" @click.stop>
@@ -63,9 +69,16 @@ const stepsCount = computed( () => props.template?.steps?.length || 0 )
 const categoryLabel = computed( () => {
   const category = props.template?.category
   if ( !category ) return ''
-  // Handle both string and object formats
-  return typeof category === 'object' ? category.name : category
+  if ( typeof category === 'object' ) {
+    return category.name || category.label || ''
+  }
+  if ( typeof category === 'number' ) {
+    return props.template?.category_name || props.template?.categoryLabel || ''
+  }
+  return category
 } )
+
+const isAdhoc = computed( () => props.template?.source === 'adhoc' )
 
 const assetLabel = computed( () => {
   const a = props.template?.applicable_assets
@@ -133,6 +146,14 @@ const handleDelete = () => {
   gap: 12px;
 }
 
+.title-with-badges {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
 .card-title {
   margin: 0;
   overflow: hidden;
@@ -142,6 +163,10 @@ const handleDelete = () => {
 }
 
 .kebab-dropdown {
+  flex-shrink: 0;
+}
+
+.adhoc-tag {
   flex-shrink: 0;
 }
 

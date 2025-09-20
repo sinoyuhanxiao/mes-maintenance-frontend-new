@@ -475,6 +475,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useTaskLibrary } from '@/composables/designer/useTaskLibrary'
 import { getEquipmentTree } from '@/api/equipment.js'
 import { getAllCategories } from '@/api/common.js'
+import { useWorkOrderDraftStore } from '@/store/modules/workOrderDraft'
+import { buildDisplayTaskFromTemplate } from '@/components/WorkOrder/TodoView/taskPayloadHelpers'
 import TemplateCard from '../components/Library/TemplateCard.vue'
 // Preview components reused from Procedure Designer
 import InspectionStepPreview from '../components/Designer/StepCards/InspectionStepPreview.vue'
@@ -488,6 +490,7 @@ import { transformLimitsFromBackend } from '../utils/stepTransforms'
 const router = useRouter()
 const route = useRoute()
 const settingsStore = useSettingsStore()
+const workOrderDraftStore = useWorkOrderDraftStore()
 const {
   loading,
   templateDetailLoading,
@@ -1076,9 +1079,59 @@ const createNewTemplate = () => {
   router.push( { name : 'TaskDesigner' } )
 }
 
-const createNewWorkOrder = () => {
-  // TODO: Implement work order creation functionality
-  ElMessage.success( 'Thanks for clicking! Work Order Creation will come soon!' )
+const createNewWorkOrder = async () => {
+  if ( !selectedTemplate.value ) {
+    ElMessage.error( 'No template selected. Please select a template first.' )
+    return
+  }
+
+  try {
+    // Check if there's already an unfinished work order
+    if ( workOrderDraftStore.hasDraft ) {
+      // Show confirmation dialog
+      const result = await ElMessageBox.confirm(
+        'You have an unfinished work order. Add this task there?',
+        'Unfinished Work Order',
+        {
+          confirmButtonText: 'Yes',
+          cancelButtonText: 'Cancel',
+          type: 'warning',
+          customClass: 'work-order-confirmation-dialog'
+        }
+      )
+
+      if ( result === 'cancel' ) {
+        // User chose to discard the existing draft
+        workOrderDraftStore.clearDraft()
+      }
+      // If user chose "Add Here", we continue with the existing logic below
+    }
+
+    // Convert the selected template to a task format
+    const taskFromTemplate = buildDisplayTaskFromTemplate( selectedTemplate.value )
+
+    // Add the task to the work order draft
+    workOrderDraftStore.appendTask( taskFromTemplate )
+
+    // Set flag to automatically open the create panel
+    workOrderDraftStore.setShouldOpenCreatePanel( true )
+
+    // Navigate to work order view in todo mode
+    router.push( {
+      path : '/work-order',
+      query : { view : 'todo' }
+    } )
+
+    ElMessage.success( `Template "${selectedTemplate.value.name}" added to work order creation` )
+  } catch ( error ) {
+    // Handle user cancellation (when clicking X or pressing Esc)
+    if ( error === 'cancel' || error === 'close' ) {
+      return // User cancelled, no error message needed
+    }
+
+    console.error( 'Failed to create work order from template:', error )
+    ElMessage.error( 'Failed to add template to work order. Please try again.' )
+  }
 }
 
 const navigateToStepsTab = () => {
