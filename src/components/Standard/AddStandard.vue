@@ -414,13 +414,15 @@ defineOptions( {
   min-height: 0;
 
   .search-container {
+    display: flex;
+    justify-content: space-between;
     margin-bottom: 10px;
     display: flex;
     gap: 12px;
     align-items: center;
 
     .search-input {
-      flex: 1;
+      width: 50%;
     }
 
     .new-standard-link {

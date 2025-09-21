@@ -9,7 +9,7 @@
             {{ template.name }}
           </el-text>
 
-          <el-tag v-if="isAdhoc" size="small" type="info" effect="plain" class="adhoc-tag"> Work Order Only </el-tag>
+          <el-tag v-if="isAdhoc" size="small" type="primary" effect="plain" class="adhoc-tag"> Work Order Only </el-tag>
         </div>
 
         <!-- Action Icons -->

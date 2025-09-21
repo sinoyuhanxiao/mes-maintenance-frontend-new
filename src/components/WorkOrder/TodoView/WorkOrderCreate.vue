@@ -265,6 +265,7 @@
         <RecurrenceEditor
           v-model:recurrence-setting="form.recurrence_setting"
           :work-order-start-date="form.start_date"
+          :work-order-due-date="form.due_date"
         />
       </div>
 
@@ -412,7 +413,7 @@
                           <span class="info-value highlight">{{ previewStandardData.items?.length || 0 }} rules</span>
                         </el-descriptions-item>
                         <el-descriptions-item width="50%" label="Type">
-                          <el-tag type="info" size="small">Work Order Only</el-tag>
+                          <el-tag type="primary" size="small">Work Order Only</el-tag>
                         </el-descriptions-item>
                       </el-descriptions>
                     </div>
@@ -766,10 +767,9 @@ const handleEditTask = async taskData => {
 
     // Check if we have the original template ID
     const originalTemplateId = taskData.templateId || taskData.template_id
-    const taskId = taskData.id
 
-    // Check if this is a standalone task (starts with 'work-order-task-')
-    const isStandaloneTask = taskId && taskId.startsWith( 'work-order-task-' )
+    // Check if this is a standalone task (adhoc source, no template ID)
+    const isStandaloneTask = taskData.source === 'adhoc' && !originalTemplateId
 
     if ( !originalTemplateId && !isStandaloneTask ) {
       ElMessage.warning( 'This task was created specifically for this work order and cannot be edited as a template.' )
@@ -1111,14 +1111,6 @@ const validateRecurrenceEndTime = ( rule, value, callback ) => {
     return
   }
 
-  // Check if the duration is reasonable (not more than 24 hours)
-  const diffMs = endTime - startTime
-  const diffHours = diffMs / ( 1000 * 60 * 60 )
-  if ( diffHours > 24 ) {
-    callback( new Error( 'Single work order duration cannot exceed 24 hours' ) )
-    return
-  }
-
   callback()
 }
 
@@ -1359,6 +1351,24 @@ const handleCancel = () => {
     } )
 }
 
+// Silent form reset (used after successful creation)
+const resetFormSilent = () => {
+  if ( formRef.value ) {
+    formRef.value.resetFields()
+  }
+
+  isHydratingForm = true
+  Object.assign( form, createEmptyWorkOrderForm() )
+  syncTaskPayloads()
+  syncStandards()
+  workOrderDraftStore.clearDraft()
+
+  nextTick( () => {
+    isHydratingForm = false
+  } )
+}
+
+// User-initiated form reset (shows confirmation dialog)
 const resetForm = () => {
   ElMessageBox.confirm( 'Are you sure you want to reset the form? All unsaved changes will be lost.', 'Confirm Reset', {
     confirmButtonText : 'Reset',
@@ -1366,20 +1376,7 @@ const resetForm = () => {
     type : 'warning'
   } )
     .then( () => {
-      if ( formRef.value ) {
-        formRef.value.resetFields()
-      }
-
-      isHydratingForm = true
-      Object.assign( form, createEmptyWorkOrderForm() )
-      syncTaskPayloads()
-      syncStandards()
-      workOrderDraftStore.clearDraft()
-
-      nextTick( () => {
-        isHydratingForm = false
-      } )
-
+      resetFormSilent()
       ElMessage.success( t( 'workOrder.messages.formReset' ) )
     } )
     .catch( () => {
@@ -1443,9 +1440,6 @@ const logCurrentPayload = () => {
     vendor_ids : form.vendor_ids,
     assignee_ids : form.assignee_ids
   } )
-
-  console.log( '[Work Order Complete Payload]', payload )
-  console.log( '[Work Order Form Fields Count]', Object.keys( payload ).length )
 
   // Update the drawer content and show it with a small delay to prevent conflicts
   setTimeout( () => {
@@ -1549,6 +1543,10 @@ watch(
     nextTick( () => {
       if ( formRef.value && form.start_date ) {
         formRef.value.validateField( 'start_date' )
+      }
+      // Also re-validate recurrence end time when due date changes
+      if ( formRef.value && form.recurrence_setting && form.recurrence_setting.end_date_time ) {
+        formRef.value.validateField( 'recurrence_setting.end_date_time' )
       }
     } )
   }
@@ -1689,7 +1687,7 @@ const submitForm = async() => {
     } )
 
     // Reset form after successful creation
-    resetForm()
+    resetFormSilent()
   } catch ( error ) {
     console.error( 'Failed to create work order:', error )
     const errorMessage = error.response?.data?.message || error.message || t( 'workOrder.messages.createFailed' )
@@ -2013,6 +2011,50 @@ defineOptions( {
   margin-bottom: 18px !important;
 }
 
+// Preview Dialog Styles
+:deep(.el-dialog.preview-dialog) {
+  height: 90vh !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.preview-dialog-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: -16px;
+  justify-content: space-evenly;
+}
+
+.back-button {
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background-color: var(--el-color-primary-light-9);
+    color: var(--el-color-primary);
+  }
+
+  .el-icon {
+    font-size: 16px;
+    margin-right: 0;
+  }
+}
+
+.dialog-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+  flex: 1;
+}
+
 // Responsive adjustments
 @media (max-width: 768px) {
   .work-order-create-enhanced {
@@ -2049,6 +2091,223 @@ defineOptions( {
         min-width: 100px;
       }
     }
+  }
+
+  .preview-dialog {
+    :deep(.el-dialog) {
+      width: 95% !important;
+      margin: 0 auto;
+    }
+  }
+}
+
+// Standalone Standard Preview Styles (matching StandardsPreview component)
+.standalone-standard-preview {
+  padding: 0;
+  overflow: visible;
+
+  .standard-details {
+    padding: 24px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .fixed-header-section {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: #fff;
+  }
+
+  .scrollable-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .scrollable-content::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollable-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+
+  .scrollable-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+  }
+
+  .scrollable-content::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
+
+  .details-tabs {
+    height: 100%;
+  }
+
+  // Card Components - matching StandardsPreview exactly
+  .overview-card,
+  .description-card {
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 24px;
+  }
+
+  .card-header {
+    padding: 8px 24px 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .card-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #303133;
+    margin: 0;
+  }
+
+  .card-content {
+    padding: 12px 24px 12px 24px;
+  }
+
+  .info-value {
+    color: #606266;
+    font-weight: 200;
+    font-size: 14px;
+    text-align: right;
+    margin-right: 20px;
+  }
+
+  .info-value.highlight {
+    color: #409eff;
+    font-weight: 600;
+  }
+
+  // Description Card
+  .description-text {
+    color: #303133;
+    line-height: 1.7;
+    font-size: 14px;
+    padding: 16px 16px 16px 0px;
+    border-radius: 6px;
+    max-height: 32vh;
+    overflow-y: auto;
+  }
+
+  // Rules List - matching StandardsPreview exactly
+  .rules-list {
+    margin-bottom: 24px;
+  }
+
+  .rules-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 24px 24px 24px;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  .rule-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid #e4e7ed;
+    border-radius: 8px;
+    background: #fafafa;
+    transition: all 0.3s ease;
+  }
+
+  .rule-item:hover {
+    border-color: #409eff;
+    background: #f0f7ff;
+  }
+
+  .rule-number {
+    width: 23px;
+    height: 23px;
+    background: #409eff;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    margin-right: 16px;
+    flex-shrink: 0;
+  }
+
+  .rule-content {
+    flex: 1;
+    margin-right: 12px;
+  }
+
+  .rule-text {
+    color: #303133;
+    line-height: 1.6;
+    font-size: 14px;
+  }
+
+  .empty-rules {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 300px;
+  }
+
+  // Tab styling matching StandardsPreview
+  :deep(.el-tabs__item.is-top) {
+    font-size: 16px;
+    width: 50%;
+  }
+
+  :deep(.el-tabs__nav.is-top) {
+    width: 100%;
+  }
+
+  // Custom scrollbar for rules container only
+  .rules-container::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .rules-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+
+  .rules-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+  }
+
+  .rules-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
+
+  // Custom scrollbar for description text
+  .description-text::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .description-text::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+
+  .description-text::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+  }
+
+  .description-text::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
   }
 }
 </style>

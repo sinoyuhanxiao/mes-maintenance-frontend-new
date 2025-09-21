@@ -192,6 +192,10 @@ const props = defineProps( {
   workOrderStartDate : {
     type : String,
     default : null
+  },
+  workOrderDueDate : {
+    type : String,
+    default : null
   }
 } )
 
@@ -296,7 +300,23 @@ const disabledEndDate = date => {
   const twoYearsFromNow = new Date()
   twoYearsFromNow.setFullYear( twoYearsFromNow.getFullYear() + 2 )
 
-  return date <= start || date > twoYearsFromNow
+  // Check if date is before start date or beyond 2 years
+  if ( date < start || date > twoYearsFromNow ) {
+    return true
+  }
+
+  // Check if date exceeds the work order due date
+  if ( props.workOrderDueDate ) {
+    const dueDate = new Date( props.workOrderDueDate )
+    dueDate.setHours( 23, 59, 59, 999 ) // Allow end times up to end of due date
+
+    const compareDate = new Date( date )
+    compareDate.setHours( 0, 0, 0, 0 )
+
+    return compareDate > dueDate
+  }
+
+  return false
 }
 
 const disabledStartHours = () => {
@@ -340,17 +360,26 @@ const disabledEndHours = () => {
 
   const start = new Date( startDate.value )
   const end = new Date( endDate.value )
+  const disabledHours = []
 
-  // If same day, disable hours before start hour
+  // If same day as start, disable hours before start hour
   if ( start.toDateString() === end.toDateString() ) {
-    const disabledHours = []
     for ( let i = 0; i < start.getHours(); i++ ) {
       disabledHours.push( i )
     }
-    return disabledHours
   }
 
-  return []
+  // If same day as due date, disable hours after due date hour
+  if ( props.workOrderDueDate ) {
+    const dueDate = new Date( props.workOrderDueDate )
+    if ( dueDate.toDateString() === end.toDateString() ) {
+      for ( let i = dueDate.getHours() + 1; i <= 23; i++ ) {
+        disabledHours.push( i )
+      }
+    }
+  }
+
+  return disabledHours
 }
 
 const disabledEndMinutes = hour => {
@@ -358,17 +387,26 @@ const disabledEndMinutes = hour => {
 
   const start = new Date( startDate.value )
   const end = new Date( endDate.value )
+  const disabledMinutes = []
 
-  // If same day and same hour, disable minutes before start minute
+  // If same day and same hour as start, disable minutes before start minute
   if ( start.toDateString() === end.toDateString() && hour === start.getHours() ) {
-    const disabledMinutes = []
     for ( let i = 0; i <= start.getMinutes(); i++ ) {
       disabledMinutes.push( i )
     }
-    return disabledMinutes
   }
 
-  return []
+  // If same day and same hour as due date, disable minutes after due date minute
+  if ( props.workOrderDueDate ) {
+    const dueDate = new Date( props.workOrderDueDate )
+    if ( dueDate.toDateString() === end.toDateString() && hour === dueDate.getHours() ) {
+      for ( let i = dueDate.getMinutes() + 1; i <= 59; i++ ) {
+        disabledMinutes.push( i )
+      }
+    }
+  }
+
+  return disabledMinutes
 }
 
 // Duration helpers
@@ -395,7 +433,7 @@ const formatDuration = minutes => {
 
 const showDurationWarning = computed( () => {
   const duration = calculateDuration()
-  return duration > 0 && ( duration < 15 || duration > 480 ) // Less than 15min or more than 8 hours
+  return duration > 0 && duration <= 1440 // Show for any duration within one day (1440 minutes = 24 hours)
 } )
 
 const showRecurrenceStartWarning = computed( () => {

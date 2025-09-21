@@ -1069,9 +1069,17 @@ const handleSave = async() => {
   try {
     await metadataFormRef.value.validate()
 
-    if ( isStandaloneTask.value ) {
-      // For standalone tasks, update the task in the work order draft store
-      await performStandaloneSave()
+    if ( isStandaloneTask.value && originalTemplate.value ) {
+      // For standalone tasks, show change summary dialog first
+      const referenceData = {
+        categories : categoriesForDropdown.value,
+        equipmentTree : equipmentTreeData.value
+      }
+
+      const changes = generateChangesSummary( originalTemplate.value, templateForm.value, referenceData )
+
+      // Always show dialog for standalone tasks, even if no changes detected
+      openChangeSummaryDialog( changes )
     } else if ( isEditing.value && originalTemplate.value ) {
       // For editing mode (both regular and work order context), show change summary dialog first
       const referenceData = {
@@ -2081,6 +2089,51 @@ const fetchTemplateByIdLocal = async id => {
   }
 }
 
+// Helper function to transform standalone task steps to designer format
+const transformStandaloneStepToDesigner = ( step, index ) => {
+  // Check if step is already in designer format (has step_id, type, config properties)
+  if ( step.step_id && step.type && step.config ) {
+    return step
+  }
+
+  // If step has the backend API format (with value.type structure), use the standard transformer
+  if ( step.value && step.value.type ) {
+    return transformApiStepToDesignerStep( step, index )
+  }
+
+  // If step is in a different format, try to transform it manually
+  // This handles the case where standalone tasks have steps in backend payload format
+  const stepType = step.type || 'text'
+  
+  // Map backend step types to designer types
+  const typeMapping = {
+    'template' : 'text',
+    'numeric' : 'number',
+    'boolean' : 'checkbox',
+    'file' : 'attachments',
+    'checkbox' : 'checkbox',
+    'text' : 'text',
+    'inspection' : 'inspection',
+    'number' : 'number',
+    'attachments' : 'attachments'
+  }
+  
+  const mappedType = typeMapping[stepType] || 'text'
+
+  return {
+    step_id : step.id || step._id || `step-${Date.now()}-${index}`,
+    order : index + 1,
+    type : mappedType,
+    label : step.name || `Step ${index + 1}`,
+    description : step.description || '',
+    required : Boolean( step.required ),
+    required_image : Boolean( step.value?.require_image ),
+    relevant_tools : step.tools || [],
+    relevant_resources : step.relevant_resources || [],
+    config : getDefaultStepConfig( mappedType )
+  }
+}
+
 // Initialize template data
 const initializeTemplate = async() => {
   if ( isStandaloneTask.value ) {
@@ -2100,7 +2153,7 @@ const initializeTemplate = async() => {
         category : taskData.category || '',
         estimated_minutes : taskData.estimated_minutes || 30,
         applicable_assets : taskData.equipment_node_id || null,
-        steps : Array.isArray( taskData.steps ) ? taskData.steps.map( transformApiStepToDesignerStep ) : []
+        steps : Array.isArray( taskData.steps ) ? taskData.steps.map( transformStandaloneStepToDesigner ) : []
       }
 
       // Create a mock template object for standalone tasks
@@ -2419,7 +2472,11 @@ const handleChangeSummaryConfirm = async() => {
   const workOrderId = route.query.workOrderId
 
   try {
-    if ( fromWorkOrder.value ) {
+    if ( isStandaloneTask.value ) {
+      // For standalone tasks, update the task in the work order draft store
+      await performStandaloneSave()
+      closeChangeSummaryDialog()
+    } else if ( fromWorkOrder.value ) {
       // Close change summary dialog first
       closeChangeSummaryDialog()
 

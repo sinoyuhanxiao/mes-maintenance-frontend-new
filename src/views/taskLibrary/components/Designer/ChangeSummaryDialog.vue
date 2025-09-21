@@ -178,10 +178,6 @@ style="font-size: 14px"
           <el-icon><Check /></el-icon>
           Save Changes
         </el-button>
-        <el-button v-else type="primary" @click="handleCancel">
-          <el-icon><Close /></el-icon>
-          Close
-        </el-button>
       </div>
     </template>
   </el-dialog>

@@ -9,7 +9,7 @@
             {{ template.name }}
           </el-text>
 
-          <el-tag v-if="isStandalone" size="small" type="info" effect="plain" class="standalone-tag">
+          <el-tag v-if="isStandalone" size="small" type="primary" effect="plain" class="standalone-tag">
             Work Order Only
           </el-tag>
         </div>

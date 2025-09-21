@@ -389,6 +389,7 @@ defineOptions( {
   font-size: 16px;
   font-weight: 600;
   margin-bottom: -16px;
+  justify-content: space-evenly;
 }
 
 .back-button {
