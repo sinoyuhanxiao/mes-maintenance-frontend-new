@@ -2260,9 +2260,9 @@ onMounted( async() => {
   // Compute stable cache key once per instance
   stableCacheKey.value = route.params?.id ? `designer-edit-${route.params.id}` : 'designer-create'
 
-  // Store original sidebar state and collapse it
+  // Store original sidebar state and collapse it only on small viewports
   originalSidebarState.value = appStore.sidebar.opened
-  if ( appStore.sidebar.opened ) {
+  if ( appStore.sidebar.opened && window.innerWidth < 1600 ) {
     appStore.CLOSE_SIDEBAR( false )
   }
 

@@ -30,5 +30,8 @@ docs/*
 src/components/WorkOrder/TodoView/JsonDebugDrawer.vue
 src/components/WorkOrder/TodoView/JsonTreeItem.vue
 
+# Centralized logging utilities (development only)
+src/utils/logs/
+
 #package-lock.json
 #yarn.lock

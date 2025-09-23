@@ -516,7 +516,7 @@ import MaintenanceSelectedStandardsCard from '../../Tables/Cards/MaintenanceSele
 import AddTask from '../../Task/AddTask.vue'
 import AddStandard from '../../Standard/AddStandard.vue'
 import FileUploadMultiple from '@/components/FileUpload/FileUploadMultiple.vue'
-import JsonDebugDrawer from './JsonDebugDrawer.vue'
+import { JsonDebugDrawer, usePayloadLogger, clonePayload, transformPayload } from '@/utils/logs'
 import EditStandardDialog from '@/components/TaskLibrary/EditStandardDialog.vue'
 import StepsPreview from '@/components/TaskLibrary/StepsPreview.vue'
 import StandardsPreview from '@/components/TaskLibrary/StandardsPreview.vue'
@@ -537,8 +537,8 @@ import { DEFAULT_TASK_STATE, buildDisplayTaskFromTemplate } from './taskPayloadH
 
 const showAddTaskDialog = ref( false )
 const showAddStandardDialog = ref( false )
-const showEditStandardDialog = ref(false)
-const editingStandard = ref(null)
+const showEditStandardDialog = ref( false )
+const editingStandard = ref( null )
 
 // Preview dialog state
 const showTaskPreviewDialog = ref( false )
@@ -549,9 +549,13 @@ const previewStandardData = ref( null )
 const isTaskInteractive = ref( false )
 const standalonePreviewTab = ref( 'general' )
 
-// JSON Displayer state
-const showJsonDisplayer = ref( false )
-const currentPayload = ref( null )
+// Centralized payload logging
+const {
+  currentPayload,
+  showJsonDisplayer,
+  logPayload,
+  closeDebugDrawer
+} = usePayloadLogger()
 
 const handleAddStandard = () => {
   showAddStandardDialog.value = true
@@ -596,10 +600,10 @@ const handleStandardAction = ( { id, action, data } ) => {
   }
 }
 
-const onStandardUpdate = (updatedStandard) => {
-  const index = form.standards.findIndex(s => s.id === updatedStandard.id)
-  if (index !== -1) {
-    form.standards.splice(index, 1, updatedStandard)
+const onStandardUpdate = ( updatedStandard ) => {
+  const index = form.standards.findIndex( s => s.id === updatedStandard.id )
+  if ( index !== -1 ) {
+    form.standards.splice( index, 1, updatedStandard )
     syncStandards()
   }
 }
@@ -875,8 +879,6 @@ const form = reactive( createEmptyWorkOrderForm() )
 
 let isHydratingForm = false
 
-const clonePayload = payload => JSON.parse( JSON.stringify( payload || {} ) )
-
 const syncTaskPayloads = () => {
   form.task_add_list = form.tasks
     .map( task => clonePayload( task.payload ) )
@@ -884,14 +886,14 @@ const syncTaskPayloads = () => {
 }
 
 const syncStandards = () => {
-  form.standard_list = form.standards.map(s => {
+  form.standard_list = form.standards.map( s => {
     const { id, standardId, ...rest } = s
-    if (s.isStandalone) {
+    if ( s.isStandalone ) {
       return rest
     } else {
-      return { ...rest, standard_id: standardId }
+      return { ...rest, standard_id : standardId }
     }
-  })
+  } )
 }
 
 const resolveCategoryMeta = categoryValue => {
@@ -1406,12 +1408,24 @@ const logCurrentPayload = () => {
     isLoggingInProgress.value = false
   }, 500 )
 
+  // Create payload using centralized payload manager
+  const rawPayload = createWorkOrderPayload()
+
+  // Use centralized logging
+  logPayload( rawPayload, 'workOrder', {
+    delay : 50,
+    showMessage : true
+  } )
+}
+
+// Create work order payload using centralized utilities
+const createWorkOrderPayload = () => {
   // Format dates the same way as in the submit function
   const formattedDueDate = toUtcIso( form.due_date )
   const formattedStartDate = toUtcIso( form.start_date )
 
-  // Mirror the exact backend API payload structure (WorkOrderRequest schema)
-  const payload = clonePayload( {
+  // Create base payload
+  const basePayload = {
     // Required fields (per API docs)
     name : form.name,
     category_ids : form.category_ids,
@@ -1439,13 +1453,10 @@ const logCurrentPayload = () => {
     parent_work_order_id : form.parent_work_order_id,
     vendor_ids : form.vendor_ids,
     assignee_ids : form.assignee_ids
-  } )
+  }
 
-  // Update the drawer content and show it with a small delay to prevent conflicts
-  setTimeout( () => {
-    currentPayload.value = payload
-    showJsonDisplayer.value = true
-  }, 50 )
+  // Transform and clean payload using centralized utilities
+  return transformPayload( basePayload, 'workOrderCreate' )
 }
 
 // Date picker constraints and helpers for main work order dates
@@ -1631,50 +1642,20 @@ const submitForm = async() => {
       return
     }
 
-    // Prepare payload according to API specification
+    // Create payload using centralized utilities and include normalized task list
+    const basePayload = createWorkOrderPayload()
     const payload = {
-      name : form.name,
-      description : form.description,
-      category_ids : form.category_ids,
-      priority_id : form.priority_id,
-      state_id : form.state_id,
-      work_type_id : form.work_type_id,
-      equipment_node_ids : form.equipment_node_ids,
-      vendor_ids : form.vendor_ids,
-      assignee_ids : form.assignee_ids,
-      approved_by_id : form.approved_by_id,
-      time_zone : form.time_zone,
-      start_date : formattedStartDate,
-      due_date : formattedDueDate,
-      recurrence_type : recurrenceType,
-      recurrence_type_id : recurrenceType,
-      recurrence_setting_request : form.recurrence_setting_request,
+      ...basePayload,
       task_add_list : normalizedTaskAddList,
-      image_list : form.image_list, // Already URLs after MinIO upload
-      file_list : form.file_list, // Already URLs after MinIO upload
-      standard_list : form.standard_list || []
+      recurrence_type : recurrenceType,
+      recurrence_type_id : recurrenceType
     }
 
-    // Remove null/undefined values but keep required fields
-    Object.keys( payload ).forEach( key => {
-      if ( payload[key] === null || payload[key] === undefined ) {
-        // Don't delete required fields, set defaults instead
-        if ( ['category_ids', 'equipment_node_ids', 'task_add_list', 'recurrence_setting_request'].includes( key ) ) {
-          if ( key === 'category_ids' || key === 'equipment_node_ids' ) {
-            payload[key] = []
-          } else if ( key === 'task_add_list' ) {
-            // Already handled above
-          } else if ( key === 'recurrence_setting_request' ) {
-            payload[key] = { start_date_time : formattedStartDate }
-          }
-        } else {
-          delete payload[key]
-        }
-      }
-    } )
+    // Apply final transformation and cleaning
+    const finalPayload = transformPayload( payload, 'workOrderCreate' )
 
     // Call backend API
-    const response = await createWorkOrder( payload )
+    const response = await createWorkOrder( finalPayload )
 
     // Show success message
     ElMessage.success( 'Work order created successfully!' )

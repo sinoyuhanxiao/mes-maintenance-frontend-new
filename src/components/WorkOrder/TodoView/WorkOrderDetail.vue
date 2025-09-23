@@ -198,8 +198,8 @@
     <!-- Work Order Progress Section -->
     <div class="detail-section" v-if="workOrderProgress">
       <el-divider />
-      <h3 class="section-title">Task Progress</h3>
-      <div class="progress-section">
+      <div class="progress-header">
+        <h3 class="section-title">Task Progress</h3>
         <div class="progress-stats">
           <div class="stat-item">
             <span class="stat-label">Total Tasks:</span>
@@ -218,6 +218,8 @@
             <span class="stat-value">{{ workOrderProgress.remaining }}</span>
           </div>
         </div>
+      </div>
+      <div class="progress-section">
         <div class="progress-bar-container">
           <el-progress
             :percentage="workOrderProgress.percentage"
@@ -1529,11 +1531,22 @@ defineOptions( {
 }
 
 // Work Order Progress Styles
-.progress-section {
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 16px;
+
+  .section-title {
+    margin: 0;
+    flex-shrink: 0;
+  }
+
   .progress-stats {
     display: flex;
     gap: 24px;
-    margin-bottom: 16px;
     flex-wrap: wrap;
 
     .stat-item {
@@ -1563,7 +1576,9 @@ defineOptions( {
       }
     }
   }
+}
 
+.progress-section {
   .progress-bar-container {
     .progress-text {
       text-align: center;
@@ -1839,6 +1854,22 @@ defineOptions( {
 
   .details-grid {
     grid-template-columns: 1fr;
+  }
+
+  .progress-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+
+    .progress-stats {
+      align-self: stretch;
+      justify-content: space-between;
+      gap: 16px;
+
+      .stat-item {
+        min-width: 60px;
+      }
+    }
   }
 }
 
