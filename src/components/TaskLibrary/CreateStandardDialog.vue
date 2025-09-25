@@ -159,21 +159,20 @@ const resetFormData = () => {
 watch(
   () => props.visible,
   newValue => {
-    if (newValue) {
+    if ( newValue ) {
       // Reset form data when dialog opens
       resetFormData()
       editingRuleIndex.value = null
       editingRuleText.value = ''
 
       // Reset validation on open for new forms
-      nextTick(() => {
+      nextTick( () => {
         standardForm.value?.clearValidate()
-      })
+      } )
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
-
 
 // Watch for form changes to validate
 watch(

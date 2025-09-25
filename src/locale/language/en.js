@@ -16,7 +16,7 @@ export default {
       name : 'Work Order Name',
       id : 'ID',
       code : 'Work Order Code',
-      dueDate : 'Due Date',
+      dueDate : 'Due Date Time',
       preview : 'Preview Image',
       priority : 'Priority',
       workType : 'Work Type',
@@ -143,6 +143,8 @@ export default {
       month : 'th month',
       startDateTime : 'Start Date Time',
       endDateTime : 'End Date Time',
+      startTime : 'Start Time',
+      endTime : 'End Time',
       selectStartTime : 'Select start time',
       selectEndTime : 'Select end time'
     },
@@ -175,7 +177,10 @@ export default {
       noData : 'No data available',
       formReset : 'Form has been reset',
       validationFailed : 'Please fix validation errors',
-      statusChanged : 'Status Changed'
+      statusChanged : 'Status Changed',
+      recurrenceViewEnabled : 'Viewing all work orders for this recurrence',
+      recurrenceViewDisabled : 'Returned to normal view',
+      loadingFailed : 'Failed to load work orders'
     },
 
     // Validation messages
@@ -201,6 +206,12 @@ export default {
       calendar : 'Calendar View'
     },
 
+    // Recurrence view
+    recurrenceView : {
+      title : 'Viewing recurring work orders for',
+      exitView : 'Back to All Work Orders'
+    },
+
     // Filters
     filters : {
       assignedToMe : 'Assigned to Me',
@@ -212,6 +223,7 @@ export default {
       custom : 'Custom',
       highPriority : 'High Priority',
       addFilter : 'Add Filter',
+      filterSetting : 'Filter Setting',
       dueDate : 'Due Date',
       location : 'Location',
       priority : 'Priority',
@@ -321,7 +333,10 @@ export default {
       avgTimeConsumed : 'Avg. Time Consumed',
       duration : 'Duration',
       assignees : 'Assignees',
-      overdue : 'Overdue'
+      overdue : 'Overdue',
+      taskCount : 'Task Count',
+      tasks : 'Tasks',
+      current : 'Current'
     },
 
     // Activity Panel
@@ -413,6 +428,7 @@ export default {
       hours : 'Hours',
       minutes : 'Minutes',
       dueDate : 'Due Date',
+      dueDateTime : 'Due Date Time',
       dueDatePlaceholder : 'mm/dd/yyyy',
       startDate : 'Start Date',
       startDatePlaceholder : 'mm/dd/yyyy',

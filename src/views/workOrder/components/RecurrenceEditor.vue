@@ -120,62 +120,114 @@
     </el-form-item>
   </div>
 
-  <!-- Start Date Time Selection (Always Displayed) -->
-  <el-form-item
-    :label="$t('workOrder.recurrence.startDateTime')"
-    prop="recurrence_setting.start_date_time"
-    required
-    :show-message="false"
-  >
-    <el-date-picker
-      v-model="startDate"
-      type="datetime"
-      :placeholder="$t('workOrder.recurrence.selectStartTime')"
-      format="YYYY-MM-DD HH:mm"
-      value-format="YYYY-MM-DD HH:mm:ss"
-      style="width: 500px"
-      :disabled-date="disabledStartDate"
-      :disabled-hours="disabledStartHours"
-      :disabled-minutes="disabledStartMinutes"
-    />
-    <div v-if="showRecurrenceStartWarning" class="recurrence-warning">
-      <el-text type="warning" size="small">
-        <el-icon><Warning /></el-icon>
-        Recurrence start time should not be before work order start time
-      </el-text>
-    </div>
-  </el-form-item>
+  <!-- For 'none' recurrence, use date-time fields -->
+  <template v-if="recurrence === 'none'">
+    <!-- Start Date Time Selection -->
+    <el-form-item
+      :label="$t('workOrder.recurrence.startDateTime')"
+      prop="recurrence_setting.start_date_time"
+      required
+      :show-message="false"
+    >
+      <el-date-picker
+        v-model="startDate"
+        type="datetime"
+        :placeholder="$t('workOrder.recurrence.selectStartTime')"
+        format="YYYY-MM-DD HH:mm"
+        value-format="YYYY-MM-DD HH:mm:ss"
+        style="width: 500px"
+        :disabled-date="disabledStartDate"
+        :disabled-hours="disabledStartHours"
+        :disabled-minutes="disabledStartMinutes"
+      />
+      <div v-if="showRecurrenceStartWarning" class="recurrence-warning">
+        <el-text type="warning" size="small">
+          <el-icon><Warning /></el-icon>
+          Recurrence start time should not be before work order start time
+        </el-text>
+      </div>
+    </el-form-item>
 
-  <!-- End Date Time Selection (Displayed if recurrence is not 'daily') -->
-  <el-form-item
-    :label="$t('workOrder.recurrence.endDateTime')"
-    prop="recurrence_setting.end_date_time"
-    required
-    :show-message="false"
-  >
-    <el-date-picker
-      v-model="endDate"
-      type="datetime"
-      :placeholder="$t('workOrder.recurrence.selectEndTime')"
-      format="YYYY-MM-DD HH:mm"
-      value-format="YYYY-MM-DD HH:mm:ss"
-      style="width: 500px"
-      :disabled-date="disabledEndDate"
-      :disabled-hours="disabledEndHours"
-      :disabled-minutes="disabledEndMinutes"
-    />
-    <div v-if="showDurationWarning" class="duration-warning">
-      <el-text type="warning" size="small">
-        <el-icon><Warning /></el-icon>
-        Duration: {{ formatDuration(calculateDuration()) }}
-      </el-text>
-    </div>
-  </el-form-item>
+    <!-- End Date Time Selection -->
+    <el-form-item
+      :label="$t('workOrder.recurrence.endDateTime')"
+      prop="recurrence_setting.end_date_time"
+      required
+      :show-message="false"
+    >
+      <el-date-picker
+        v-model="endDate"
+        type="datetime"
+        :placeholder="$t('workOrder.recurrence.selectEndTime')"
+        format="YYYY-MM-DD HH:mm"
+        value-format="YYYY-MM-DD HH:mm:ss"
+        style="width: 500px"
+        :disabled-date="disabledEndDate"
+        :disabled-hours="disabledEndHours"
+        :disabled-minutes="disabledEndMinutes"
+      />
+      <div v-if="showDurationWarning" class="duration-warning">
+        <el-text type="warning" size="small">
+          <el-icon><Warning /></el-icon>
+          Duration: {{ formatDuration(calculateDuration()) }}
+        </el-text>
+      </div>
+    </el-form-item>
+  </template>
+
+  <!-- For recurring types, use only time fields -->
+  <template v-else-if="['daily', 'weekly', 'monthlyByDate', 'yearly'].includes(recurrence)">
+    <!-- Start Time Selection -->
+    <el-form-item
+      :label="$t('workOrder.recurrence.startTime')"
+      prop="recurrence_setting.start_time"
+      required
+      :show-message="false"
+    >
+      <el-time-picker
+        v-model="startTime"
+        :placeholder="$t('workOrder.recurrence.selectStartTime')"
+        format="HH:mm"
+        value-format="HH:mm:ss"
+        style="width: 500px"
+      />
+    </el-form-item>
+
+    <!-- End Time Selection -->
+    <el-form-item
+      :label="$t('workOrder.recurrence.endTime')"
+      prop="recurrence_setting.end_time"
+      required
+      :show-message="false"
+    >
+      <el-time-picker
+        v-model="endTime"
+        :placeholder="$t('workOrder.recurrence.selectEndTime')"
+        format="HH:mm"
+        value-format="HH:mm:ss"
+        style="width: 500px"
+        :disabled-hours="disabledEndTimeHours"
+        :disabled-minutes="disabledEndTimeMinutes"
+      />
+      <div v-if="showTimeDurationInfo" class="duration-info">
+        <el-text type="info" size="small">
+          <el-icon><Clock /></el-icon>
+          Duration: {{ formatDuration(calculateTimeDuration()) }}
+        </el-text>
+      </div>
+      <div v-if="showTimeValidationError" class="time-validation-error">
+        <el-text type="danger" size="small">
+          <el-icon><Warning /></el-icon>
+          End time must be after start time
+        </el-text>
+      </div>
+    </el-form-item>
+  </template>
 </template>
 
 <script setup>
 import { ref, watch, computed, onMounted } from 'vue'
-import { Warning } from '@element-plus/icons-vue'
+import { Warning, Clock } from '@element-plus/icons-vue'
 import { getAllRecurrenceTypes } from '@/api/work-order'
 
 const startDate = ref( null )
@@ -188,6 +240,10 @@ const monthlyDate = ref( 1 ) // Control for which date to repeat
 const yearlyRepeatInterval = ref( 1 ) // Control for how many years to repeat
 const yearlyMonth = ref( 1 ) // default to January
 const yearlyDay = ref( 1 ) // default to 1st
+
+// New fields for recurring time only
+const startTime = ref( null )
+const endTime = ref( null )
 const props = defineProps( {
   workOrderStartDate : {
     type : String,
@@ -409,6 +465,45 @@ const disabledEndMinutes = hour => {
   return disabledMinutes
 }
 
+// Helper function to get work order date part
+const getWorkOrderDate = () => {
+  if ( !props.workOrderStartDate ) return null
+
+  // Extract date part from work order start date (e.g., "2025-09-29T07:00:00.000Z" -> "2025-09-29")
+  const date = new Date( props.workOrderStartDate )
+  return date.toISOString().split( 'T' )[0]
+}
+
+const disabledEndTimeHours = () => {
+  if ( !startTime.value ) return []
+
+  const [startHour] = startTime.value.split( ':' ).map( Number )
+  const disabledHours = []
+
+  // Disable hours before start time hour
+  for ( let i = 0; i < startHour; i++ ) {
+    disabledHours.push( i )
+  }
+
+  return disabledHours
+}
+
+const disabledEndTimeMinutes = hour => {
+  if ( !startTime.value ) return []
+
+  const [startHour, startMinute] = startTime.value.split( ':' ).map( Number )
+  const disabledMinutes = []
+
+  // If same hour as start time, disable minutes before or equal to start minute
+  if ( hour === startHour ) {
+    for ( let i = 0; i <= startMinute; i++ ) {
+      disabledMinutes.push( i )
+    }
+  }
+
+  return disabledMinutes
+}
+
 // Duration helpers
 const calculateDuration = () => {
   if ( !startDate.value || !endDate.value ) return 0
@@ -431,39 +526,97 @@ const formatDuration = minutes => {
   return `${hours}h ${remainingMinutes}m`
 }
 
+// New duration calculation for time-only fields
+const calculateTimeDuration = () => {
+  if ( !startTime.value || !endTime.value ) return 0
+
+  const [startHour, startMinute] = startTime.value.split( ':' ).map( Number )
+  const [endHour, endMinute] = endTime.value.split( ':' ).map( Number )
+
+  const startTotalMinutes = startHour * 60 + startMinute
+  const endTotalMinutes = endHour * 60 + endMinute
+
+  // Handle case where end time is after start time (same day)
+  if ( endTotalMinutes > startTotalMinutes ) {
+    return endTotalMinutes - startTotalMinutes
+  }
+
+  return 0
+}
+
 const showDurationWarning = computed( () => {
   const duration = calculateDuration()
   return duration > 0 && duration <= 1440 // Show for any duration within one day (1440 minutes = 24 hours)
 } )
 
 const showRecurrenceStartWarning = computed( () => {
-  if ( !props.workOrderStartDate || !startDate.value ) return false
+  // For 'none' recurrence type, check startDate
+  if ( recurrence.value === 'none' ) {
+    if ( !props.workOrderStartDate || !startDate.value ) return false
 
-  const workOrderStart = new Date( props.workOrderStartDate )
-  const recurrenceStart = new Date( startDate.value )
+    const workOrderStart = new Date( props.workOrderStartDate )
+    const recurrenceStart = new Date( startDate.value )
 
-  return recurrenceStart < workOrderStart
+    return recurrenceStart < workOrderStart
+  }
+
+  // For recurring types, no warning needed since we use work order date
+  return false
+} )
+
+// New computed properties for time-based validation
+const showTimeDurationInfo = computed( () => {
+  const duration = calculateTimeDuration()
+  return duration > 0
+} )
+
+const showTimeValidationError = computed( () => {
+  if ( !startTime.value || !endTime.value ) return false
+  return calculateTimeDuration() === 0
 } )
 
 const recurrenceSetting = computed( () => {
   const setting = {}
-  if ( startDate.value ) {
-    setting.start_date_time = new Date( startDate.value ).toISOString()
+
+  // Handle different recurrence types
+  if ( recurrence.value === 'none' ) {
+    // For 'none' recurrence, use the original date-time fields
+    if ( startDate.value ) {
+      setting.start_date_time = new Date( startDate.value ).toISOString()
+    }
+    if ( endDate.value ) {
+      setting.end_date_time = new Date( endDate.value ).toISOString()
+    }
+    // Calculate duration_minutes based on date difference
+    if ( startDate.value && endDate.value ) {
+      const start = new Date( startDate.value )
+      const end = new Date( endDate.value )
+      const diffMs = end - start
+      const minutes = Math.ceil( diffMs / ( 1000 * 60 ) )
+      setting.duration_minutes = minutes > 0 ? minutes : 0
+    } else {
+      setting.duration_minutes = 0
+    }
+  } else if ( ['daily', 'weekly', 'monthlyByDate', 'yearly'].includes( recurrence.value ) ) {
+    // For recurring types, use work order date with specified times
+    const workOrderDate = getWorkOrderDate()
+    if ( workOrderDate && startTime.value ) {
+      const startDateTime = new Date( `${workOrderDate}T${startTime.value}` )
+      setting.start_date_time = startDateTime.toISOString()
+    }
+    if ( workOrderDate && endTime.value ) {
+      const endDateTime = new Date( `${workOrderDate}T${endTime.value}` )
+      setting.end_date_time = endDateTime.toISOString()
+    }
+    // Also set individual time fields for validation
+    setting.start_time = startTime.value
+    setting.end_time = endTime.value
+    // Calculate duration from time difference (auto-calculated)
+    setting.duration_minutes = calculateTimeDuration()
   }
-  if ( endDate.value ) {
-    setting.end_date_time = new Date( endDate.value ).toISOString()
-  }
-  // Calculate duration_minutes based on date difference
-  if ( startDate.value && endDate.value ) {
-    const start = new Date( startDate.value )
-    const end = new Date( endDate.value )
-    const diffMs = end - start
-    const minutes = Math.ceil( diffMs / ( 1000 * 60 ) )
-    setting.duration_minutes = minutes > 0 ? minutes : 0
-  } else {
-    setting.duration_minutes = 0
-  }
+
   setting.recurrence_type = recurrenceTypeMap.value[recurrence.value] || 1
+
   if ( recurrence.value === 'daily' ) {
     setting.interval = 1
   } else if ( recurrence.value === 'weekly' ) {
@@ -545,6 +698,26 @@ watch(
 }
 
 .recurrence-warning {
+  margin-top: 8px;
+
+  .el-text {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+}
+
+.duration-info {
+  margin-top: 8px;
+
+  .el-text {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+}
+
+.time-validation-error {
   margin-top: 8px;
 
   .el-text {

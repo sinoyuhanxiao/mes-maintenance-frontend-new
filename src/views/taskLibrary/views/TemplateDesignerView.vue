@@ -1226,15 +1226,25 @@ const performStandaloneSave = async() => {
       throw new Error( 'Original task ID not found' )
     }
 
-    // Transform the updated template form data back to task structure
+    // Find the category option for proper transformation
+    const categoryOption = Array.isArray( categoriesForDropdown.value )
+      ? categoriesForDropdown.value.find( category => category.value === templateForm.value.category )
+      : null
+
+    // Use the same transformation logic as new task creation
+    const transformedTask = buildDisplayTaskFromDesigner( templateForm.value, categoryOption )
+
+    // Create the updated task data with proper payload structure
     const updatedTaskData = {
       id : originalTaskId,
-      name : templateForm.value.name,
-      description : templateForm.value.description,
-      category : templateForm.value.category,
-      estimated_minutes : templateForm.value.estimated_minutes,
-      equipment_node_id : templateForm.value.applicable_assets,
-      steps : templateForm.value.steps || []
+      name : transformedTask.name,
+      description : transformedTask.description,
+      category : transformedTask.category,
+      category_name : transformedTask.category_name,
+      estimated_minutes : transformedTask.estimated_minutes,
+      steps : transformedTask.steps,
+      source : 'adhoc',
+      payload : transformedTask.payload // This is crucial - includes the backend-ready payload
     }
 
     // Update the task in the work order draft store
@@ -2104,20 +2114,20 @@ const transformStandaloneStepToDesigner = ( step, index ) => {
   // If step is in a different format, try to transform it manually
   // This handles the case where standalone tasks have steps in backend payload format
   const stepType = step.type || 'text'
-  
+
   // Map backend step types to designer types
   const typeMapping = {
-    'template' : 'text',
-    'numeric' : 'number',
-    'boolean' : 'checkbox',
-    'file' : 'attachments',
-    'checkbox' : 'checkbox',
-    'text' : 'text',
-    'inspection' : 'inspection',
-    'number' : 'number',
-    'attachments' : 'attachments'
+    template : 'text',
+    numeric : 'number',
+    boolean : 'checkbox',
+    file : 'attachments',
+    checkbox : 'checkbox',
+    text : 'text',
+    inspection : 'inspection',
+    number : 'number',
+    attachments : 'attachments'
   }
-  
+
   const mappedType = typeMapping[stepType] || 'text'
 
   return {

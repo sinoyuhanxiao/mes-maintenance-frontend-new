@@ -39,16 +39,33 @@
     <template #body>
       <!-- Table View -->
       <div v-if="currentView === 'table'" class="table-view">
+        <!-- Recurrence View Banner -->
+        <div v-if="recurrenceViewMode" class="recurrence-view-banner">
+          <div class="banner-content">
+            <el-icon class="banner-icon"><View /></el-icon>
+            <span class="banner-text">
+              {{ $t('workOrder.recurrenceView.title') }}
+              <strong>{{ currentRecurrenceId }}</strong>
+            </span>
+          </div>
+          <el-button type="primary" size="small" @click="handleExitRecurrenceView" class="exit-button">
+            <el-icon><Back /></el-icon>
+            {{ $t('workOrder.recurrenceView.exitView') }}
+          </el-button>
+        </div>
+
         <WorkOrderTable
           :data="list"
           :loading="listLoading"
           :expanded-rows="expandedRows"
           :load-children="loadChildren"
+          :recurrence-view-mode="recurrenceViewMode"
           class="work-order-table"
           @expand-change="toggleRowHighlight"
           @view="handleView"
           @edit="handleUpdate"
           @delete="handleDelete"
+          @view-recurrence="handleViewRecurrence"
         />
       </div>
 
@@ -107,7 +124,7 @@
 import { ref, onMounted, nextTick, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { Calendar, Grid, List } from '@element-plus/icons-vue'
+import { Calendar, Grid, List, View, Back } from '@element-plus/icons-vue'
 import MesLayout from 'src/components/MesLayout'
 import UnifiedWorkOrderFilters from '@/components/WorkOrder/UnifiedWorkOrderFilters.vue'
 import WorkOrderTable from '@/components/WorkOrder/WorkOrderTable.vue'
@@ -132,7 +149,11 @@ const {
   total,
   listQuery,
   expandedRows,
+  recurrenceViewMode,
+  currentRecurrenceId,
   fetchWorkOrders,
+  fetchRecurringWorkOrders,
+  exitRecurrenceView,
   loadChildren,
   handleFilter,
   updateFilters,
@@ -151,6 +172,7 @@ const todoViewRef = ref( null )
 
 const clearShowCreateFlag = () => {
   if ( route.query.showCreate === undefined ) return
+  // eslint-disable-next-line no-unused-vars
   const { showCreate, ...rest } = route.query
   router.replace( { path : route.path, query : { ...rest }} )
 }
@@ -203,6 +225,8 @@ const handleDelete = async( row, index ) => {
   try {
     await deleteWorkOrder( row, index )
     showSuccess( t( 'workOrder.messages.deleteSuccess' ) )
+    // Refresh the work order list to reflect the deletion
+    await fetchWorkOrders()
   } catch ( error ) {
     console.error( 'Delete failed:', error )
   }
@@ -334,6 +358,22 @@ const handleTabChange = async( { tab, statusFilter } ) => {
   updateFilters( { status : statusFilter } )
 }
 
+// Recurrence view handlers
+const handleViewRecurrence = async recurrenceId => {
+  if ( !recurrenceId ) return
+  try {
+    await fetchRecurringWorkOrders( recurrenceId )
+    showSuccess( t( 'workOrder.messages.recurrenceViewEnabled' ) )
+  } catch ( error ) {
+    console.error( 'Failed to load recurring work orders:', error )
+  }
+}
+
+const handleExitRecurrenceView = () => {
+  exitRecurrenceView()
+  showSuccess( t( 'workOrder.messages.recurrenceViewDisabled' ) )
+}
+
 // Lifecycle
 onMounted( async() => {
   try {
@@ -415,6 +455,50 @@ defineOptions( {
 .work-order-filters {
   :deep(.filter-container) {
     margin-bottom: 0;
+  }
+}
+
+// Recurrence View Banner
+.recurrence-view-banner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  background: linear-gradient(135deg, var(--el-color-primary-light-9), var(--el-color-primary-light-8));
+  border: 1px solid var(--el-color-primary-light-6);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+
+  .banner-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .banner-icon {
+      font-size: 18px;
+      color: var(--el-color-primary);
+    }
+
+    .banner-text {
+      font-size: 14px;
+      color: var(--el-text-color-primary);
+      font-weight: 500;
+
+      strong {
+        color: var(--el-color-primary);
+        font-weight: 600;
+      }
+    }
+  }
+
+  .exit-button {
+    font-size: 13px;
+    font-weight: 500;
+
+    .el-icon {
+      margin-right: 6px;
+    }
   }
 }
 </style>

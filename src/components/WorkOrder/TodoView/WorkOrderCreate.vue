@@ -61,6 +61,7 @@
             check-strictly
             :render-after-expand="false"
             multiple
+            filterable
             style="width: 100%"
           />
         </el-form-item>
@@ -550,12 +551,7 @@ const isTaskInteractive = ref( false )
 const standalonePreviewTab = ref( 'general' )
 
 // Centralized payload logging
-const {
-  currentPayload,
-  showJsonDisplayer,
-  logPayload,
-  closeDebugDrawer
-} = usePayloadLogger()
+const { currentPayload, showJsonDisplayer, logPayload, closeDebugDrawer } = usePayloadLogger()
 
 const handleAddStandard = () => {
   showAddStandardDialog.value = true
@@ -600,7 +596,7 @@ const handleStandardAction = ( { id, action, data } ) => {
   }
 }
 
-const onStandardUpdate = ( updatedStandard ) => {
+const onStandardUpdate = updatedStandard => {
   const index = form.standards.findIndex( s => s.id === updatedStandard.id )
   if ( index !== -1 ) {
     form.standards.splice( index, 1, updatedStandard )
@@ -880,7 +876,7 @@ const form = reactive( createEmptyWorkOrderForm() )
 let isHydratingForm = false
 
 const syncTaskPayloads = () => {
-  form.task_add_list = form.tasks
+  form.task_list = form.tasks
     .map( task => clonePayload( task.payload ) )
     .filter( payload => payload && Array.isArray( payload.steps ) && payload.steps.length > 0 )
 }
@@ -889,9 +885,9 @@ const syncStandards = () => {
   form.standard_list = form.standards.map( s => {
     const { id, standardId, ...rest } = s
     if ( s.isStandalone ) {
-      return rest
+      return { ...rest, module : 200 }
     } else {
-      return { ...rest, standard_id : standardId }
+      return { ...rest, standard_id : standardId, module : 200 }
     }
   } )
 }
@@ -1116,6 +1112,52 @@ const validateRecurrenceEndTime = ( rule, value, callback ) => {
   callback()
 }
 
+const validateRecurrenceStartTimeOnly = ( rule, value, callback ) => {
+  if ( !value ) {
+    callback( new Error( 'Start time is required for recurring work orders' ) )
+    return
+  }
+  callback()
+}
+
+const validateRecurrenceEndTimeOnly = ( rule, value, callback ) => {
+  if ( !value ) {
+    callback( new Error( 'End time is required for recurring work orders' ) )
+    return
+  }
+
+  const recurrenceSetting = form.recurrence_setting
+  if ( !recurrenceSetting || !recurrenceSetting.start_time ) {
+    callback()
+    return
+  }
+
+  // Parse time strings (format: "HH:mm:ss")
+  const startTimeStr = recurrenceSetting.start_time
+  const endTimeStr = value
+
+  if ( !startTimeStr || !endTimeStr ) {
+    callback()
+    return
+  }
+
+  // Convert time strings to minutes for comparison
+  const parseTimeToMinutes = timeStr => {
+    const [hours, minutes] = timeStr.split( ':' ).map( Number )
+    return hours * 60 + minutes
+  }
+
+  const startMinutes = parseTimeToMinutes( startTimeStr )
+  const endMinutes = parseTimeToMinutes( endTimeStr )
+
+  if ( endMinutes <= startMinutes ) {
+    callback( new Error( 'End time must be after start time' ) )
+    return
+  }
+
+  callback()
+}
+
 // Validation rules
 const rules = reactive( {
   name : [{ required : true, message : t( 'workOrder.validation.taskTitleRequired' ), trigger : 'blur' }],
@@ -1132,7 +1174,9 @@ const rules = reactive( {
     { validator : validateDueDate, trigger : 'change' }
   ],
   'recurrence_setting.start_date_time' : [{ validator : validateRecurrenceStartTime, trigger : 'change' }],
-  'recurrence_setting.end_date_time' : [{ validator : validateRecurrenceEndTime, trigger : 'change' }]
+  'recurrence_setting.end_date_time' : [{ validator : validateRecurrenceEndTime, trigger : 'change' }],
+  'recurrence_setting.start_time' : [{ validator : validateRecurrenceStartTimeOnly, trigger : 'change' }],
+  'recurrence_setting.end_time' : [{ validator : validateRecurrenceEndTimeOnly, trigger : 'change' }]
 } )
 
 // Tree props for tree selects
@@ -1435,7 +1479,7 @@ const createWorkOrderPayload = () => {
     start_date : formattedStartDate,
     due_date : formattedDueDate,
     recurrence_setting_request : form.recurrence_setting_request,
-    task_add_list : form.task_add_list,
+    task_list : form.task_list,
     time_zone : form.time_zone,
     equipment_node_ids : form.equipment_node_ids,
 
@@ -1618,7 +1662,7 @@ const submitForm = async() => {
     syncStandards()
 
     // Ensure tasks exist before submitting
-    const taskAddList = Array.isArray( form.task_add_list ) ? form.task_add_list : []
+    const taskAddList = Array.isArray( form.task_list ) ? form.task_list : []
 
     if ( taskAddList.length === 0 ) {
       ElMessage.error( 'Please add at least one task before creating the work order.' )
@@ -1646,7 +1690,7 @@ const submitForm = async() => {
     const basePayload = createWorkOrderPayload()
     const payload = {
       ...basePayload,
-      task_add_list : normalizedTaskAddList,
+      task_list : normalizedTaskAddList,
       recurrence_type : recurrenceType,
       recurrence_type_id : recurrenceType
     }

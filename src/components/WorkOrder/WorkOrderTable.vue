@@ -77,7 +77,14 @@
         width="150"
       >
         <template #default="{ row }">
-          <RecurrenceTag :recurrence-type="row.recurrence_type" />
+          <div
+            :class="{
+              'recurrence-clickable': !recurrenceViewMode && row.recurrence_uuid && row.recurrence_type?.id !== 1,
+            }"
+            @click="handleRecurrenceClick(row)"
+          >
+            <RecurrenceTag :recurrence-type="row.recurrence_type" />
+          </div>
         </template>
       </el-table-column>
 
@@ -183,11 +190,15 @@ const props = defineProps( {
   loadChildren : {
     type : Function,
     required : true
+  },
+  recurrenceViewMode : {
+    type : Boolean,
+    default : false
   }
 } )
 
 // Emits
-const emit = defineEmits( ['expand-change', 'view', 'edit', 'delete'] )
+const emit = defineEmits( ['expand-change', 'view', 'edit', 'delete', 'view-recurrence'] )
 
 // State
 const tableHeight = ref( 300 )
@@ -243,6 +254,13 @@ const formatDateTime = dateString => {
 
 const isOverdue = dueDate => {
   return dueDate && new Date( dueDate ) < new Date()
+}
+
+const handleRecurrenceClick = row => {
+  if ( props.recurrenceViewMode || !row.recurrence_uuid || row.recurrence_type?.id === 1 ) {
+    return
+  }
+  emit( 'view-recurrence', row.recurrence_uuid )
 }
 
 // Lifecycle
@@ -320,6 +338,20 @@ defineOptions( {
   &::v-deep(.el-table__fixed-left .el-table__row.expanded-highlight td),
   &::v-deep(.el-table__fixed-right .el-table__row.expanded-highlight td) {
     background-color: #e0f3ff !important;
+  }
+}
+
+// Clickable recurrence type styling
+.recurrence-clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  padding: 2px 4px;
+
+  &:hover {
+    background-color: var(--el-color-primary-light-9);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 }
 </style>

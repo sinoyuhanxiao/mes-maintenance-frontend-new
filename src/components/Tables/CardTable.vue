@@ -22,6 +22,7 @@
             v-if="props.module === 5"
             :template="sp"
             :focused="props.focusedCardId === sp.id"
+            :selected="props.selectedItems?.has?.(sp.id) || false"
             @selection="handleSelection"
           />
           <MaintenanceSelectedStandardsCard v-if="props.module === 6" :template="sp" @selection="handleSelection" />
@@ -29,6 +30,7 @@
             v-if="props.module === 7"
             :template="sp"
             :focused="props.focusedCardId === sp.id"
+            :selected="props.selectedItems?.has?.(sp.id) || false"
             @selection="handleSelection"
           />
         </el-col>

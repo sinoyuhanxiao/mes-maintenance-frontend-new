@@ -178,6 +178,45 @@ const mapValueTypeToPreviewType = valueType => {
   return normalized || 'text'
 }
 
+// Enhanced step type detection for different data formats
+const detectStepType = step => {
+  // Handle designer format (step.type directly)
+  if ( step.type ) {
+    return mapValueTypeToPreviewType( step.type )
+  }
+
+  // Handle backend format (step.value.type)
+  if ( step.value && step.value.type ) {
+    return mapValueTypeToPreviewType( step.value.type )
+  }
+
+  // Handle step config format (step.config.kind)
+  if ( step.config && step.config.kind ) {
+    return mapValueTypeToPreviewType( step.config.kind )
+  }
+
+  // Handle legacy format lookups by checking step structure patterns
+  if ( step.value ) {
+    // Numeric field detection
+    if ( typeof step.value.value === 'number' || step.value.has_upper_limit || step.value.has_lower_limit ) {
+      return 'number'
+    }
+
+    // Boolean field detection
+    if ( typeof step.value.value === 'boolean' ) {
+      return 'checkbox'
+    }
+
+    // File field detection
+    if ( step.value.files || step.value.file_attachments ) {
+      return 'attachments'
+    }
+  }
+
+  // Fallback to text type
+  return 'text'
+}
+
 // Transform backend steps to preview-ready steps
 const sourceSteps = computed( () => {
   if ( Array.isArray( props.steps ) && props.steps.length > 0 ) {
@@ -188,43 +227,140 @@ const sourceSteps = computed( () => {
   return Array.isArray( tmpl?.steps ) ? tmpl.steps : []
 } )
 
-const previewSteps = computed( () => {
-  return sourceSteps.value.map( ( s, idx ) => {
-    const v = s.value || {}
-    const type = mapValueTypeToPreviewType( v.type )
-    const tools = Array.isArray( s.tools ) && s.tools.length > 0 ? s.tools : s.relevant_tools || []
-    const numericBounds = v.numeric_limit_bounds || v.numericLimitBounds || {}
-    const base = {
-      step_id : s.id || s.step_id || `step-${idx}`,
+// Process template-based steps (original logic preserved)
+const processTemplateStep = ( s, idx ) => {
+  if ( !s || typeof s !== 'object' ) {
+    return {
+      step_id : `step-${idx}`,
       order : idx + 1,
-      type,
-      label : s.name || s.label || `Step ${idx + 1}`,
-      description : s.description || '',
-      required : Boolean( s.required ),
-      required_image : Boolean( v.require_image ),
-      relevant_tools : tools.map( t => ( {
-        tool_id : t.id || t.tool_id,
-        name : t.name || t.tool_name || 'Unnamed Tool'
-      } ) ),
+      type : 'text',
+      label : `Step ${idx + 1}`,
+      description : '',
+      required : false,
+      required_image : false,
+      relevant_tools : [],
       config : {}
     }
+  }
 
-    if ( type === 'number' ) {
-      base.config = {
-        default_value : typeof v.value === 'number' ? v.value : undefined,
-        limits : transformLimitsFromBackend( numericBounds ),
-        required_image : base.required_image
-      }
-    } else if ( type === 'checkbox' ) {
-      base.config = { default : Boolean( v.value ), required_image : base.required_image }
-    } else if ( type === 'text' ) {
-      base.config = { default_value : v.value ?? '', required_image : base.required_image }
-    } else if ( type === 'inspection' ) {
-      base.config = { default : 'pass', required_image : base.required_image }
-    } else if ( type === 'attachments' ) {
-      base.config = { upload_style : { list_type : 'picture-card' }, required_image : base.required_image }
+  // Original template processing logic
+  const v = s.value || {}
+  const type = mapValueTypeToPreviewType( v.type )
+  const tools = Array.isArray( s.tools ) && s.tools.length > 0 ? s.tools : s.relevant_tools || []
+  const numericBounds = v.numeric_limit_bounds || v.numericLimitBounds || {}
+
+  const base = {
+    step_id : s.id || s.step_id || `step-${idx}`,
+    order : idx + 1,
+    type,
+    label : s.name || s.label || `Step ${idx + 1}`,
+    description : s.description || '',
+    required : Boolean( s.required ),
+    required_image : Boolean( v.require_image ),
+    relevant_tools : tools.filter( t => t && ( t.id || t.tool_id ) ).map( t => ( {
+      tool_id : t.id || t.tool_id,
+      name : t.name || t.tool_name || 'Unnamed Tool'
+    } ) ),
+    config : {}
+  }
+
+  // Original config building logic
+  if ( type === 'number' ) {
+    base.config = {
+      default_value : typeof v.value === 'number' ? v.value : undefined,
+      limits : transformLimitsFromBackend( numericBounds ),
+      required_image : base.required_image
     }
-    return base
+  } else if ( type === 'checkbox' ) {
+    base.config = { default : Boolean( v.value ), required_image : base.required_image }
+  } else if ( type === 'text' ) {
+    base.config = { default_value : v.value ?? '', required_image : base.required_image }
+  } else if ( type === 'inspection' ) {
+    base.config = { default : 'pass', required_image : base.required_image }
+  } else if ( type === 'attachments' ) {
+    base.config = { upload_style : { list_type : 'picture-card' }, required_image : base.required_image }
+  }
+  return base
+}
+
+// Process standalone steps (enhanced logic for multiple formats)
+const processStandaloneStep = ( s, idx ) => {
+  if ( !s || typeof s !== 'object' ) {
+    return {
+      step_id : `step-${idx}`,
+      order : idx + 1,
+      type : 'text',
+      label : `Step ${idx + 1}`,
+      description : '',
+      required : false,
+      required_image : false,
+      relevant_tools : [],
+      config : {}
+    }
+  }
+
+  // Enhanced type detection for different data formats
+  const type = detectStepType( s )
+
+  // Extract value data from different possible structures
+  const v = s.value || s.config || {}
+  const tools = Array.isArray( s.tools ) && s.tools.length > 0 ? s.tools : s.relevant_tools || []
+
+  // Handle numeric bounds from different structures
+  const numericBounds = v.numeric_limit_bounds || v.numericLimitBounds || v.limits || {}
+
+  // Determine required image from different structures
+  const requiredImage = Boolean( v.require_image || v.required_image || s.required_image )
+
+  const base = {
+    step_id : s.id || s.step_id || `step-${idx}`,
+    order : idx + 1,
+    type,
+    label : s.name || s.label || `Step ${idx + 1}`,
+    description : s.description || '',
+    required : Boolean( s.required ),
+    required_image : requiredImage,
+    relevant_tools : tools.filter( t => t && ( t.id || t.tool_id ) ).map( t => ( {
+      tool_id : t.id || t.tool_id,
+      name : t.name || t.tool_name || 'Unnamed Tool'
+    } ) ),
+    config : {}
+  }
+
+  // Enhanced config building based on detected type
+  if ( type === 'number' ) {
+    base.config = {
+      default_value : typeof v.value === 'number' ? v.value : ( typeof v.default_value === 'number' ? v.default_value : undefined ),
+      limits : transformLimitsFromBackend( numericBounds ),
+      required_image : base.required_image
+    }
+  } else if ( type === 'checkbox' ) {
+    const defaultVal = v.value !== undefined ? Boolean( v.value ) : ( v.default !== undefined ? Boolean( v.default ) : false )
+    base.config = { default : defaultVal, required_image : base.required_image }
+  } else if ( type === 'text' ) {
+    const defaultVal = v.value ?? v.default_value ?? ''
+    base.config = { default_value : defaultVal, required_image : base.required_image }
+  } else if ( type === 'inspection' ) {
+    const defaultVal = v.value || v.default || 'pass'
+    base.config = { default : defaultVal, required_image : base.required_image }
+  } else if ( type === 'attachments' ) {
+    base.config = { upload_style : { list_type : 'picture-card' }, required_image : base.required_image }
+  }
+  return base
+}
+
+const previewSteps = computed( () => {
+  return sourceSteps.value.map( ( s, idx ) => {
+    // Detect data format based on step structure, not prop source
+    const hasBackendFormat = s && s.value && s.value.type
+
+    if ( hasBackendFormat ) {
+      // Use original logic for backend-formatted data (templates and transformed standalone tasks)
+      return processTemplateStep( s, idx )
+    } else {
+      // Use enhanced logic for designer/raw format data
+      return processStandaloneStep( s, idx )
+    }
   } )
 } )
 
@@ -250,16 +386,30 @@ const getStepComponent = stepType => {
   return components[stepType] || 'div'
 }
 
-const getStepWithNumber = ( step, index ) => ( {
-  ...step,
-  label : `${index + 1}. ${step.label || 'Step'}`
-} )
+const getStepWithNumber = ( step, index ) => {
+  if ( !step || typeof step !== 'object' ) {
+    return {
+      step_id : `step-${index}`,
+      type : 'text',
+      label : `${index + 1}. Step`,
+      description : '',
+      required : false,
+      config : {}
+    }
+  }
+  return {
+    ...step,
+    label : `${index + 1}. ${step.label || 'Step'}`
+  }
+}
 
 const toggleStepTools = stepId => {
+  if ( !stepId ) return
   stepToolsVisible[stepId] = !stepToolsVisible[stepId]
 }
 
 const getStepToolsVisible = stepId => {
+  if ( !stepId ) return false
   return Boolean( stepToolsVisible[stepId] )
 }
 
@@ -376,6 +526,7 @@ watch(
 .step-search-bar {
   padding: 0px 0px 4px 0px;
   flex-shrink: 0;
+  width: 98.5%;
 }
 
 .procedure-preview {

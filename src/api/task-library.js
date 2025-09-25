@@ -159,14 +159,14 @@ export const createStandard = async data => {
  */
 export const updateStandard = async( id, data ) => {
   try {
-    const response = await http.request({
-      method: 'put',
-      url: '/library/standard',
-      data: { _id: id, ...data },
-    })
-    return { data: response.data }
-  } catch (error) {
-    console.error('Failed to update standard:', error)
+    const response = await http.request( {
+      method : 'put',
+      url : '/library/standard',
+      data : { standard_id : id, ...data }
+    } )
+    return { data : response.data }
+  } catch ( error ) {
+    console.error( 'Failed to update standard:', error )
     throw error
   }
 }

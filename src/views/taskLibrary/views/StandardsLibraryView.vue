@@ -564,14 +564,24 @@ const handleFormSubmit = async submittedFormData => {
   try {
     const payload = { ...submittedFormData, module : 200 }
     if ( isEditMode.value ) {
-      await updateStandard( selectedstandardId.value, payload )
+      // Validate ID before update
+      const currentId = selectedstandardId.value
+      if ( !currentId ) {
+        ElMessage.error( 'Standard ID is missing. Please refresh and try again.' )
+        return
+      }
+      await updateStandard( currentId, payload )
       ElMessage.success( 'Standard updated successfully' )
+
+      // Preserve selection after reload
+      await loadstandards()
+      selectedstandardId.value = currentId
     } else {
       await createStandard( payload )
       ElMessage.success( 'Standard created successfully' )
+      await loadstandards()
     }
     formDialogVisible.value = false
-    await loadstandards()
   } catch ( error ) {
     ElMessage.error( isEditMode.value ? 'Failed to update standard' : 'Failed to create standard' )
   } finally {
@@ -622,8 +632,18 @@ const saveRule = async index => {
       items.splice( index, 1 )
       const payload = { ...selectedstandard.value, items, module : 200 }
 
-      await updateStandard( selectedstandardId.value, payload )
+      // Validate ID before update
+      const currentId = selectedstandardId.value
+      if ( !currentId ) {
+        ElMessage.error( 'Standard ID is missing. Please refresh and try again.' )
+        return
+      }
+
+      await updateStandard( currentId, payload )
+
+      // Preserve selection after reload
       await loadstandards()
+      selectedstandardId.value = currentId
     } catch ( error ) {
       ElMessage.error( 'Failed to remove empty rule' )
     }
@@ -638,8 +658,18 @@ const saveRule = async index => {
     items[index] = editingRuleText.value.trim()
     const payload = { ...selectedstandard.value, items, module : 200 }
 
-    await updateStandard( selectedstandardId.value, payload )
+    // Validate that we have a valid ID before attempting update
+    const currentId = selectedstandardId.value
+    if ( !currentId ) {
+      ElMessage.error( 'Standard ID is missing. Please refresh and try again.' )
+      return
+    }
+
+    await updateStandard( currentId, payload )
+
+    // Preserve selection after reload
     await loadstandards()
+    selectedstandardId.value = currentId
 
     editingRuleIndex.value = null
     editingRuleText.value = ''
@@ -662,8 +692,19 @@ const deleteRule = async index => {
     items.splice( index, 1 )
     const payload = { ...selectedstandard.value, items, module : 200 }
 
-    await updateStandard( selectedstandardId.value, payload )
+    // Validate ID before update
+    const currentId = selectedstandardId.value
+    if ( !currentId ) {
+      ElMessage.error( 'Standard ID is missing. Please refresh and try again.' )
+      return
+    }
+
+    await updateStandard( currentId, payload )
+
+    // Preserve selection after reload
     await loadstandards()
+    selectedstandardId.value = currentId
+
     ElMessage.success( 'Rule deleted successfully' )
   } catch ( error ) {
     if ( error !== 'cancel' ) {

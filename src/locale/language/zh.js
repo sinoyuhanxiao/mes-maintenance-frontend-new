@@ -16,7 +16,7 @@ export default {
       name : '工单名称',
       id : 'ID',
       code : '工单号',
-      dueDate : '截止日期',
+      dueDate : '截止日',
       preview : '工单预览图',
       priority : '优先级',
       workType : '维护类型',
@@ -141,6 +141,8 @@ export default {
       month : '月',
       startDateTime : '开始时间',
       endDateTime : '结束时间',
+      startTime : '开始时间',
+      endTime : '结束时间',
       selectStartTime : '选择开始时间',
       selectEndTime : '选择结束时间'
     },
@@ -173,7 +175,10 @@ export default {
       noData : '暂无数据',
       formReset : '表单已重置',
       validationFailed : '请修正验证错误',
-      statusChanged : '状态已更改'
+      statusChanged : '状态已更改',
+      recurrenceViewEnabled : '正在查看此重复设置的所有工单',
+      recurrenceViewDisabled : '已返回到正常视图',
+      loadingFailed : '加载工单失败'
     },
 
     // Create form specific
@@ -193,7 +198,8 @@ export default {
       estimatedTime : '预估时间',
       hours : '小时',
       minutes : '分钟',
-      dueDate : '截止日期',
+      dueDate : '截止日',
+      dueDateTime : '截止日期',
       dueDatePlaceholder : 'mm/dd/yyyy',
       startDate : '开始日期',
       startDatePlaceholder : 'mm/dd/yyyy',
@@ -239,6 +245,12 @@ export default {
       calendar : '计划视图'
     },
 
+    // Recurrence view
+    recurrenceView : {
+      title : '正在查看重复工单组',
+      exitView : '返回所有工单'
+    },
+
     // Filters
     filters : {
       assignedToMe : '分配给我',
@@ -250,6 +262,7 @@ export default {
       custom : '自定义',
       highPriority : '高优先级',
       addFilter : '添加筛选',
+      filterSetting : '筛选设置',
       dueDate : '截止日期',
       location : '位置',
       priority : '优先级',
@@ -356,7 +369,10 @@ export default {
       avgTimeConsumed : '平均耗时',
       duration : '持续时间',
       assignees : '分配人员',
-      overdue : '逾期'
+      overdue : '逾期',
+      taskCount : '任务数量',
+      tasks : '任务',
+      current : '当前'
     },
 
     // Activity Panel

@@ -54,7 +54,7 @@ export const useWorkOrderDraftStore = defineStore( 'workOrderDraft', {
         safeTask.category_name = safeTask.category_name || safeTask.category.name || safeTask.category.label
       }
       draft.tasks.push( safeTask )
-      draft.task_add_list = draft.tasks
+      draft.task_list = draft.tasks
         .map( item => clone( item.payload || {} ) )
         .filter( payload => Object.keys( payload ).length > 0 )
     },
@@ -87,7 +87,7 @@ export const useWorkOrderDraftStore = defineStore( 'workOrderDraft', {
         return task
       } )
 
-      draft.task_add_list = draft.tasks
+      draft.task_list = draft.tasks
         .map( item => clone( item.payload || {} ) )
         .filter( payload => Object.keys( payload ).length > 0 )
     },
@@ -108,8 +108,12 @@ export const useWorkOrderDraftStore = defineStore( 'workOrderDraft', {
             id : taskId // Preserve the original ID
           }
 
-          // Update the payload if it exists
-          if ( task.payload ) {
+          // Handle payload - either update existing or use new payload from updatedTaskData
+          if ( updatedTaskData.payload ) {
+            // If updatedTaskData provides a complete payload, use it
+            updatedTask.payload = updatedTaskData.payload
+          } else if ( task.payload ) {
+            // Otherwise, update existing payload
             updatedTask.payload = {
               ...task.payload,
               name : updatedTaskData.name || task.payload.name,
@@ -126,8 +130,8 @@ export const useWorkOrderDraftStore = defineStore( 'workOrderDraft', {
         return task
       } )
 
-      // Update task_add_list as well
-      draft.task_add_list = draft.tasks
+      // Update task_list as well
+      draft.task_list = draft.tasks
         .map( item => clone( item.payload || {} ) )
         .filter( payload => Object.keys( payload ).length > 0 )
     }

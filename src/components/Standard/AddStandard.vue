@@ -55,6 +55,7 @@
             :showSearch="false"
             :loading="loading"
             :focusedCardId="focusedCardId"
+            :selectedItems="selectedStandards"
             @selection="handleStandardAction"
             @page-change="handlePageChange"
           />

@@ -234,13 +234,9 @@
             </el-button>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="toggleFilters">
-                  <el-icon><View /></el-icon>
-                  {{ $t('workOrder.filters.toggleVisibility') }}
-                </el-dropdown-item>
                 <el-dropdown-item command="addFilter">
-                  <el-icon><Plus /></el-icon>
-                  {{ $t('workOrder.filters.addFilter') }}
+                  <el-icon><Setting /></el-icon>
+                  {{ $t('workOrder.filters.filterSetting') }}
                 </el-dropdown-item>
                 <el-dropdown-item divided command="savePreset">
                   <el-icon><Star /></el-icon>
@@ -739,9 +735,6 @@ const handleCustomizationCommand = command => {
   switch ( command ) {
     case 'addFilter':
       drawerVisible.value = true
-      break
-    case 'toggleFilters':
-      // Toggle all visible filters
       break
     case 'savePreset':
       // Save current filter configuration as preset

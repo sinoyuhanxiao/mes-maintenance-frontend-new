@@ -85,6 +85,33 @@ export const createWorkOrder = data => {
 }
 
 /**
+ * Update an individual work order by its ID.
+ * @param {number} id - The ID of the work order to update.
+ * @param {Object} data - The request payload containing updated work order info.
+ * @returns {Promise} API response from the server.
+ */
+export const updateWorkOrder = ( id, data ) => {
+  return http.request( {
+    method : 'patch',
+    url : `/work-order/${id}`,
+    data
+  } )
+}
+
+/**
+ * Update all work orders associated with a recurrence UUID.
+ * @param {Object} data - The request payload containing updated work order info and recurrence_uuid.
+ * @returns {Promise} API response from the server.
+ */
+export const updateRecurrenceWorkOrders = data => {
+  return http.request( {
+    method : 'patch',
+    url : '/work-order/recurrence',
+    data
+  } )
+}
+
+/**
  * Fetch a work order by its ID.
  * @param {string} id - The ID of the work order to fetch.
  * @returns {Promise} API response containing the work order data.

@@ -18,7 +18,7 @@ export const createEmptyWorkOrderForm = () => ( {
   recurrence_setting_request : {
     start_date_time : null
   },
-  task_add_list : [],
+  task_list : [],
   image_list : [],
   file_list : [],
   standard_list : [],

@@ -165,7 +165,7 @@
               </div>
             </div>
           </template>
-          <div class="equipment-card">
+          <div class="equipment-card" @click="handleEquipmentClick(equipment)">
             <div class="equipment-image">
               <el-image
                 v-if="equipment.image_list?.length"
@@ -318,16 +318,19 @@
         <!-- Tasks Tab -->
         <el-tab-pane label="Tasks" name="tasks">
           <div class="tab-content">
-            <div v-if="taskEntries.length" class="tasks-list">
-              <WorkOrderTaskCard
-                v-for="(task, index) in taskEntries"
-                :key="task.id || index"
-                :task="task"
-                @preview="handleTaskPreview"
-              />
-            </div>
-            <div v-else class="no-data-placeholder">
-              <el-empty description="No Tasks" :image-size="120" />
+            <div class="tasks-container" :class="{ 'no-tasks': !taskEntries.length }">
+              <div v-if="taskEntries.length" class="tasks-list">
+                <WorkOrderTaskCard
+                  v-for="(task, index) in taskEntries"
+                  :key="task.id || index"
+                  :task="task"
+                  @preview="handleTaskPreview"
+                  class="task-card"
+                />
+              </div>
+              <div v-else class="no-data-placeholder">
+                <el-empty description="No Tasks" :image-size="120" />
+              </div>
             </div>
           </div>
         </el-tab-pane>
@@ -335,17 +338,27 @@
         <!-- Standards Tab -->
         <el-tab-pane label="Standards" name="standards">
           <div class="tab-content">
-            <div v-if="workOrder.standards?.length" class="standards-list">
-              <div v-for="standard in workOrder.standards" :key="standard.id" class="standard-item">
-                <div class="standard-header">
-                  <span class="standard-name">{{ standard.name }}</span>
-                  <span class="standard-code">{{ standard.code }}</span>
+            <div class="standards-container" :class="{ 'no-standards': !workOrder.standards?.length }">
+              <div v-if="workOrder.standards?.length" class="standards-list">
+                <div v-for="standard in workOrder.standards" :key="standard.id" class="standard-item standard-card" @click="handleStandardPreview(standard)">
+                  <div class="standard-header">
+                    <span class="standard-name">{{ standard.name }}</span>
+                    <span class="standard-code">{{ standard.code }}</span>
+                  </div>
+<!--                  <div v-if="standard.description" class="standard-description">{{ standard.description }}</div>-->
+                  <div class="standard-tags">
+                    <el-tag v-if="standard.category" size="small" class="tag-item">
+                      {{ formatCategoryName(standard.category) }}
+                    </el-tag>
+                    <el-tag v-if="standard.library_instance == false" size="small" type="success" class="tag-item">
+                      Work Order Only
+                    </el-tag>
+                  </div>
                 </div>
-                <div class="standard-description">{{ standard.description }}</div>
               </div>
-            </div>
-            <div v-else class="no-data-placeholder">
-              <el-empty description="No Standards" :image-size="120" />
+              <div v-else class="no-data-placeholder">
+                <el-empty description="No Standards" :image-size="120" />
+              </div>
             </div>
           </div>
         </el-tab-pane>
@@ -365,18 +378,39 @@
     <el-dialog
       v-model="timelineModalVisible"
       :title="$t('workOrder.timeline.title')"
-      width="900px"
+      width="850px"
       :before-close="handleTimelineModalClose"
+      top="10vh"
       class="timeline-modal"
     >
-      <Timeline :timeline-events="timelineEvents" />
+      <div v-if="timelineLoading" class="timeline-loading">
+        <el-skeleton :rows="3" animated />
+      </div>
+      <div v-else-if="!isRecurring" class="timeline-empty">
+        <el-empty description="This work order does not have recurring instances" :image-size="80" />
+      </div>
+      <div v-else-if="timelineEvents.length === 0" class="timeline-empty">
+        <el-empty description="No recurring work orders found" :image-size="80" />
+      </div>
+      <Timeline v-else :timeline-events="timelineEvents" :current-work-order-id="workOrder.id" />
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="timelineModalVisible = false">{{ $t('workOrder.actions.cancel') }}</el-button>
-          <el-button type="primary" @click="exportTimeline">
-            <el-icon><Download /></el-icon>
-            {{ $t('workOrder.timeline.export') }}
-          </el-button>
+          <el-button @click="timelineModalVisible = false" style="margin-right: 12px">{{ $t('workOrder.actions.cancel') }}</el-button>
+          <el-dropdown @command="handleExportFormat" :disabled="timelineEvents.length === 0">
+            <el-button type="primary" :disabled="timelineEvents.length === 0">
+              <el-icon style="margin-right: 8px"><Download /></el-icon>
+              {{ $t('workOrder.timeline.export') }}
+              <el-icon class="el-icon--right"><ArrowDown /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="csv">
+                  <el-icon><DocumentCopy /></el-icon>
+                  Export as CSV
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </span>
       </template>
     </el-dialog>
@@ -442,6 +476,93 @@
     </template>
   </el-dialog>
 
+  <!-- Standard Preview Dialog -->
+  <el-dialog
+    v-model="showStandardPreviewDialog"
+    :title="`Preview: ${previewStandardData?.name || 'Standard'}`"
+    width="700px"
+    top="5vh"
+    class="preview-dialog"
+  >
+    <StandardsPreview
+      v-if="showStandardPreviewDialog && previewStandardData && !previewStandardData.isStandalone"
+      :standard-id="previewStandardData.standardId || previewStandardData.id"
+    />
+    <!-- Standalone Standard Preview -->
+    <div
+      v-else-if="showStandardPreviewDialog && previewStandardData && previewStandardData.isStandalone"
+      class="standalone-standard-preview"
+    >
+      <div class="standard-details">
+        <!-- Fixed Header Section -->
+        <div class="fixed-header-section">
+          <div class="standard-tabs-header">
+            <el-tabs v-model="standalonePreviewTab" class="details-tabs">
+              <el-tab-pane label="General" name="general"></el-tab-pane>
+              <el-tab-pane label="Standard Rules" name="rules"></el-tab-pane>
+            </el-tabs>
+          </div>
+        </div>
+
+        <!-- Scrollable Content Area -->
+        <div class="scrollable-content">
+          <div class="tab-content-wrapper">
+            <!-- General Tab Content -->
+            <div v-if="standalonePreviewTab === 'general'" class="tab-pane-content">
+              <div class="overview-card">
+                <div class="card-content">
+                  <el-descriptions :column="2" direction="vertical">
+                    <el-descriptions-item width="50%" label="Category">
+                      {{ previewStandardData.category || 'Uncategorized' }}
+                    </el-descriptions-item>
+                    <el-descriptions-item width="50%" label="Total Rules">
+                      <span class="info-value highlight">{{ previewStandardData.items?.length || 0 }} rules</span>
+                    </el-descriptions-item>
+                    <el-descriptions-item width="50%" label="Type">
+                      <el-tag type="primary" size="small">Work Order Only</el-tag>
+                    </el-descriptions-item>
+                  </el-descriptions>
+                </div>
+              </div>
+
+              <div class="description-card" v-if="previewStandardData.description">
+                <div class="card-header">
+                  <h3 class="card-title">Description</h3>
+                </div>
+                <div class="card-content">
+                  <div class="description-text">
+                    {{ previewStandardData.description }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Standard Rules Tab Content -->
+            <div v-if="standalonePreviewTab === 'rules'" class="tab-pane-content">
+              <div v-if="previewStandardData.items && previewStandardData.items.length > 0" class="rules-list">
+                <div class="card-header">
+                  <h3 class="card-title">Standard Rules</h3>
+                  <el-tag type="warning" size="small">Read Only</el-tag>
+                </div>
+                <div class="rules-container">
+                  <div v-for="(rule, index) in previewStandardData.items" :key="index" class="rule-item">
+                    <div class="rule-number">{{ index + 1 }}</div>
+                    <div class="rule-content">
+                      <div class="rule-text">{{ rule }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="empty-rules">
+                <el-empty description="No standard rules defined yet" :image-size="60" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </el-dialog>
+
   <!-- Empty State -->
   <div v-if="!workOrder" class="empty-detail">
     <el-empty :description="$t('workOrder.selectWorkOrder')" :image-size="120" />
@@ -450,6 +571,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   Edit,
   Share,
@@ -463,11 +585,14 @@ import {
   Document,
   DocumentDelete,
   VideoCamera,
-  Microphone
+  Microphone,
+  ArrowDown,
+  DocumentCopy
 } from '@element-plus/icons-vue'
 import { convertToLocalTime } from '@/utils/datetime'
+import { exportTimeline as exportTimelineData, generateTimestampedFilename } from '@/utils/timelineExport'
 import { getEquipmentById } from '@/api/equipment'
-import { deleteIndividualWorkOrder, deleteRecurrenceWorkOrders } from '@/api/work-order'
+import { deleteIndividualWorkOrder, deleteRecurrenceWorkOrders, getWorkOrdersByRecurrence } from '@/api/work-order'
 import { getTaskEntryById } from '@/api/task-entry'
 import PriorityTag from '../PriorityTag.vue'
 import WorkTypeTag from '../WorkTypeTag.vue'
@@ -475,7 +600,11 @@ import CategoryTag from '../CategoryTag.vue'
 import Timeline from '../Timeline/Timeline.vue'
 import WorkOrderTaskCard from './WorkOrderTaskCard.vue'
 import StepsPreview from '@/components/TaskLibrary/StepsPreview.vue'
+import StandardsPreview from '@/components/TaskLibrary/StandardsPreview.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+
+// Router
+const router = useRouter()
 
 // Props
 const props = defineProps( {
@@ -514,8 +643,14 @@ const taskEntries = ref( [] )
 const taskPreviewLoading = ref( false )
 const selectedTaskTemplateId = ref( '' )
 const selectedTaskSteps = ref( [] )
+const timelineLoading = ref( false )
 
-// Timeline events data - Empty for now
+// Standard preview state
+const showStandardPreviewDialog = ref( false )
+const previewStandardData = ref( null )
+const standalonePreviewTab = ref( 'general' )
+
+// Timeline events data - Populated from recurring work orders
 const timelineEvents = ref( [] )
 
 // Computed
@@ -660,6 +795,7 @@ const normalizeTaskList = taskList => {
       if ( existing ) {
         return {
           ...existing,
+          ...item, // Preserve all original task data
           id : lookupKey,
           label,
           taskListText : label,
@@ -669,6 +805,7 @@ const normalizeTaskList = taskList => {
       }
 
       return {
+        ...item, // Preserve all original task data including category, equipment_node, time_estimate_sec, etc.
         id : lookupKey,
         label,
         taskListText : label,
@@ -776,7 +913,27 @@ watch(
 )
 
 // Methods
-const formatDate = dateString => {
+const formatDate = ( dateString, use25HourFormat = false ) => {
+  if ( !dateString ) return '-'
+
+  if ( use25HourFormat ) {
+    // 25-hour format (00:00 - 24:59)
+    const date = new Date( dateString )
+    const year = date.getFullYear()
+    const month = String( date.getMonth() + 1 ).padStart( 2, '0' )
+    const day = String( date.getDate() ).padStart( 2, '0' )
+    let hours = date.getHours()
+    const minutes = String( date.getMinutes() ).padStart( 2, '0' )
+
+    // Convert to 25-hour format where 24:xx represents the next day's midnight hour
+    if ( hours === 0 && date.getDate() !== new Date( dateString ).getDate() ) {
+      hours = 24
+    }
+
+    const formattedHours = String( hours ).padStart( 2, '0' )
+    return `${year}-${month}-${day} ${formattedHours}:${minutes}`
+  }
+
   return convertToLocalTime( dateString )
 }
 
@@ -868,17 +1025,106 @@ const handleDeleteConfirmation = async type => {
 }
 
 // Timeline modal methods
-const openTimelineModal = () => {
+const openTimelineModal = async() => {
   timelineModalVisible.value = true
+
+  // Only fetch timeline data if this is a recurring work order
+  if ( !isRecurring.value || !props.workOrder?.recurrence_uuid ) {
+    timelineEvents.value = []
+    return
+  }
+
+  try {
+    timelineLoading.value = true
+    const response = await getWorkOrdersByRecurrence( props.workOrder.recurrence_uuid, 1, 50 )
+    const workOrders = response.data.content || []
+
+    // Transform work orders into timeline events
+    timelineEvents.value = transformWorkOrdersToTimeline( workOrders )
+  } catch ( error ) {
+    console.error( 'Failed to load recurring work orders for timeline:', error )
+    ElMessage.error( 'Failed to load timeline data' )
+    timelineEvents.value = []
+  } finally {
+    timelineLoading.value = false
+  }
 }
 
 const handleTimelineModalClose = () => {
   timelineModalVisible.value = false
 }
 
-const exportTimeline = () => {
-  ElMessage.success( 'Timeline export will be implemented by Yellow Guy' )
-  timelineModalVisible.value = false
+const handleExportFormat = async( format ) => {
+  try {
+    if ( !timelineEvents.value || timelineEvents.value.length === 0 ) {
+      ElMessage.warning( 'No timeline data available to export' )
+      return
+    }
+
+    // Generate timestamped filename
+    const filename = generateTimestampedFilename( `work-order-${props.workOrder.id}-timeline` )
+
+    // Export with selected format and current work order highlighting
+    const result = exportTimelineData(
+      timelineEvents.value,
+      format,
+      filename,
+      {
+        currentWorkOrderId : props.workOrder.id,
+        sheetName : `Work Order ${props.workOrder.id} Timeline`,
+        includeMetadata : true
+      }
+    )
+
+    if ( result.success ) {
+      ElMessage.success( `${result.message} (${result.recordCount} records)` )
+      timelineModalVisible.value = false
+    } else {
+      ElMessage.error( result.message )
+    }
+  } catch ( error ) {
+    console.error( 'Timeline export failed:', error )
+    ElMessage.error( 'Failed to export timeline data' )
+  }
+}
+
+// Transform work orders into timeline events
+const transformWorkOrdersToTimeline = workOrders => {
+  if ( !Array.isArray( workOrders ) ) return []
+
+  return workOrders
+    .sort( ( a, b ) => new Date( a.start_date || a.created_at ) - new Date( b.start_date || b.created_at ) )
+    .map( ( workOrder, index ) => {
+      const isCompleted = workOrder.state?.name?.toLowerCase() === 'completed'
+      const isInProgress = workOrder.state?.name?.toLowerCase() === 'in progress'
+      const isOverdue = workOrder.due_date && new Date( workOrder.due_date ) < new Date() && !isCompleted
+      const taskCount = Array.isArray( workOrder.task_list ) ? workOrder.task_list.length : 0
+
+      return {
+        id : workOrder.id,
+        title : workOrder.name || `Work Order #${workOrder.id}`,
+        description : workOrder.description || 'No description provided',
+        timestamp : formatDate( workOrder.start_date || workOrder.created_at, true ), // 25-hour format
+        type : isOverdue ? 'danger' : isCompleted ? 'success' : isInProgress ? 'primary' : 'info',
+        color : isOverdue ? '#f56c6c' : isCompleted ? '#67c23a' : isInProgress ? '#409eff' : '#909399',
+        icon : 'DocumentChecked',
+        hollow : !isCompleted,
+        status : workOrder.state?.name || 'Pending',
+        isOverdue,
+        dueDate : workOrder.due_date,
+        category : workOrder.category || workOrder.categories,
+        priority : workOrder.priority,
+        taskCount,
+        duration : workOrder.estimated_minutes ? `${workOrder.estimated_minutes}m` : null,
+        plannedEnd : workOrder.due_date,
+        actualEnd : workOrder.finished_at,
+        assignees : workOrder.created_by ? [{
+          id : 1,
+          name : String( workOrder.created_by ).trim() || 'Unknown',
+          avatar : ''
+        }] : []
+      }
+    } )
 }
 
 // Task preview handlers
@@ -966,6 +1212,22 @@ const handleTaskPreviewClose = () => {
   selectedTaskTemplateId.value = ''
   taskPreviewLoading.value = false
   selectedTaskSteps.value = []
+}
+
+// Standard preview handlers
+const handleStandardPreview = standardData => {
+  previewStandardData.value = standardData
+  showStandardPreviewDialog.value = true
+}
+
+// Utility function to format category names
+const formatCategoryName = category => {
+  if ( !category ) return ''
+  // Convert kebab-case or snake_case to Title Case
+  return category
+    .split( /[-_]/ )
+    .map( word => word.charAt( 0 ).toUpperCase() + word.slice( 1 ).toLowerCase() )
+    .join( ' ' )
 }
 
 const navigateToLinkedOrder = () => {
@@ -1076,6 +1338,19 @@ const scrollToScheduleSection = () => {
       console.warn( 'Schedule section not found for scrolling' )
     }
   }
+}
+
+const handleEquipmentClick = equipment => {
+  if ( !equipment?.id ) {
+    ElMessage.warning( 'Equipment information is not available' )
+    return
+  }
+
+  // Navigate to maintenance equipment page with equipment ID as query parameter
+  router.push( {
+    path : '/maintenance/equipment',
+    query : { equipmentId : equipment.id }
+  } )
 }
 
 defineOptions( {
@@ -1424,6 +1699,12 @@ defineOptions( {
   :deep(.el-dialog__body) {
     padding: 0;
   }
+
+  .timeline-loading,
+  .timeline-empty {
+    padding: 40px 20px;
+    text-align: center;
+  }
 }
 
 // Time & Cost Tracking Card
@@ -1604,10 +1885,12 @@ defineOptions( {
     border-radius: 8px;
     background: var(--el-bg-color);
     transition: all 0.2s ease;
+    cursor: pointer;
 
     &:hover {
       border-color: var(--el-color-primary);
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      transform: translateY(-1px);
     }
 
     .equipment-image,
@@ -1743,11 +2026,11 @@ defineOptions( {
 .tasks-list {
   .standard-item,
   .task-item {
-    padding: 12px;
     border: 1px solid var(--el-border-color-light);
     border-radius: 6px;
     margin-bottom: 8px;
     background: var(--el-bg-color);
+    padding: 12px;
   }
 }
 
@@ -1757,7 +2040,8 @@ defineOptions( {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 8px;
+      margin-bottom: 20px;
+      margin-left: 4px;
 
       .standard-name {
         font-size: 14px;
@@ -1778,6 +2062,16 @@ defineOptions( {
       font-size: 13px;
       color: var(--el-text-color-secondary);
       line-height: 1.4;
+      margin-bottom: 8px;
+    }
+
+    .standard-tags {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+      margin-left: 4px;
     }
   }
 }
@@ -2102,11 +2396,250 @@ defineOptions( {
   }
 }
 
-// Enhanced Tasks List Styling
-.tasks-list {
+// Enhanced Tasks List Styling matching WorkOrderCreate target styles
+.tasks-container {
+  min-height: 120px;
+  flex: 1;
+}
+
+.standards-container {
+  width: 97.5%;
+  min-height: 120px;
+  flex: 1;
+}
+
+.tasks-list,
+.standards-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  min-height: 160px;
+}
+
+.task-card,
+.standard-card {
+  width: 99%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.standard-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tasks-container.no-tasks,
+.standards-container.no-standards {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+// Standalone Standard Preview Styles (matching WorkOrderCreate component)
+.standalone-standard-preview {
+  padding: 0;
+  overflow: visible;
+
+  .standard-details {
+    padding: 24px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .fixed-header-section {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: #fff;
+  }
+
+  .scrollable-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .scrollable-content::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollable-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+
+  .scrollable-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+  }
+
+  .scrollable-content::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
+
+  .details-tabs {
+    height: 100%;
+  }
+
+  // Card Components - matching StandardsPreview exactly
+  .overview-card,
+  .description-card {
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 24px;
+  }
+
+  .card-header {
+    padding: 8px 24px 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .card-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #303133;
+    margin: 0;
+  }
+
+  .card-content {
+    padding: 12px 24px 12px 24px;
+  }
+
+  .info-value {
+    color: #606266;
+    font-weight: 200;
+    font-size: 14px;
+    text-align: right;
+    margin-right: 20px;
+  }
+
+  .info-value.highlight {
+    color: #409eff;
+    font-weight: 600;
+  }
+
+  // Description Card
+  .description-text {
+    color: #303133;
+    line-height: 1.7;
+    font-size: 14px;
+    padding: 16px 16px 16px 0px;
+    border-radius: 6px;
+    max-height: 32vh;
+    overflow-y: auto;
+  }
+
+  // Rules List - matching StandardsPreview exactly
+  .rules-list {
+    margin-bottom: 24px;
+  }
+
+  .rules-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 24px 24px 24px;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  .rule-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid #e4e7ed;
+    border-radius: 8px;
+    background: #fafafa;
+    transition: all 0.3s ease;
+  }
+
+  .rule-item:hover {
+    border-color: #409eff;
+    background: #f0f7ff;
+  }
+
+  .rule-number {
+    width: 23px;
+    height: 23px;
+    background: #409eff;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    margin-right: 16px;
+    flex-shrink: 0;
+  }
+
+  .rule-content {
+    flex: 1;
+    margin-right: 12px;
+  }
+
+  .rule-text {
+    color: #303133;
+    line-height: 1.6;
+    font-size: 14px;
+  }
+
+  .empty-rules {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 300px;
+  }
+
+  // Tab styling matching StandardsPreview
+  :deep(.el-tabs__item.is-top) {
+    font-size: 16px;
+    width: 50%;
+  }
+
+  :deep(.el-tabs__nav.is-top) {
+    width: 100%;
+  }
+
+  // Custom scrollbar for rules container only
+  .rules-container::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .rules-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+
+  .rules-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+  }
+
+  .rules-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
+
+  // Custom scrollbar for description text
+  .description-text::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .description-text::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+
+  .description-text::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+  }
+
+  .description-text::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
 }
 </style>

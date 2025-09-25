@@ -55,6 +55,7 @@
             :showSearch="false"
             :loading="loading"
             :focusedCardId="focusedCardId"
+            :selectedItems="selectedTemplates"
             @selection="handleTaskAction"
             @page-change="handlePageChange"
           />
