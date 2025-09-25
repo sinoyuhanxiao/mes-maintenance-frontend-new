@@ -1,12 +1,7 @@
 <template>
   <MesLayout title="Vendors & Locations" view-mode="todo">
     <template #head>
-      <UnifiedVendorLocationFilters
-        :key="activeTab"
-        :active-tab="activeTab"
-        @create="handleCreate"
-        @refresh="handleRefresh"
-      />
+      <UnifiedVendorLocationFilters :key="activeTab" :active-tab="activeTab" @create="handleCreate" />
     </template>
 
     <template #body>
@@ -32,11 +27,5 @@ const splitViewRef = ref( null )
 
 const handleCreate = () => {
   showCreateDialog.value = true
-}
-
-const handleRefresh = () => {
-  if ( activeTab.value === 'vendors' ) {
-    splitViewRef.value?.refreshVendors?.()
-  }
 }
 </script>

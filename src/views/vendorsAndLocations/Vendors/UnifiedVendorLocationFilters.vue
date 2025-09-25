@@ -6,16 +6,13 @@
           {{ createButtonText }}
         </el-button>
       </div>
-      <div class="filter-item">
-        <el-button size="default" type="default" :icon="Refresh" @click="$emit('refresh')"> Refresh </el-button>
-      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
-import { Plus, Refresh } from '@element-plus/icons-vue'
+import { Plus } from '@element-plus/icons-vue'
 
 const props = defineProps( {
   activeTab : {

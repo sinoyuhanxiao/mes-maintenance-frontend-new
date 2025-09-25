@@ -7,24 +7,26 @@
       </div>
 
       <div class="header-actions">
-        <el-button-group class="ml-4">
-          <el-tooltip content="Add Child Location" placement="top" effect="light" :hide-after="0">
-            <el-button :icon="Plus" @click="emit('add-child', { id: location.id })" />
-          </el-tooltip>
+        <el-dropdown trigger="click" placement="bottom-end" class="kebab-dropdown">
+          <span class="kebab-trigger" role="button" aria-label="More actions">
+            <el-icon class="kebab-icon">
+              <MoreFilled />
+            </el-icon>
+          </span>
 
-          <el-tooltip content="Edit" placement="top" effect="light" :hide-after="0">
-            <el-button :icon="Edit" @click="enterEditMode" />
-          </el-tooltip>
-
-          <el-tooltip content="Delete" placement="top" effect="light" :hide-after="0">
-            <el-button :icon="Delete" :loading="deleteLoading" @click="handleDelete" />
-          </el-tooltip>
-        </el-button-group>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item @click="enterEditMode">Edit</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
       </div>
     </div>
 
+    <!-- Body -->
     <div class="detail-body">
       <div class="descriptions-container">
+        <!-- General Info -->
         <el-descriptions class="two-col" :column="2" direction="vertical">
           <el-descriptions-item label="Name">{{ location.name || '--' }}</el-descriptions-item>
           <el-descriptions-item label="Code">{{ location.code || '--' }}</el-descriptions-item>
@@ -32,66 +34,100 @@
           <el-descriptions-item label="Capacity">{{ location.capacity || '--' }}</el-descriptions-item>
         </el-descriptions>
 
+        <!-- Address -->
         <el-descriptions v-if="location?.address?.length" :column="1" direction="vertical">
           <el-descriptions-item label="Address">{{ location.address || '--' }}</el-descriptions-item>
         </el-descriptions>
 
+        <!-- Description -->
         <el-descriptions v-if="location?.description?.length" :column="1" direction="vertical">
           <el-descriptions-item label="Description">{{ location.description || '--' }}</el-descriptions-item>
         </el-descriptions>
 
         <!-- Images -->
-        <el-divider v-if="validImageUrls.length" />
-        <div v-if="validImageUrls.length">
-          <el-descriptions title="Images" />
-          <div class="image-grid">
-            <button
-              v-for="(u, i) in validImageUrls"
-              :key="u + '_' + i"
-              class="thumb"
-              type="button"
-              @click="openPreview(u)"
-              @keydown.enter.prevent="openPreview(u)"
-              aria-label="Preview image"
-            >
-              <img :src="u" alt="" />
-            </button>
-          </div>
+        <el-divider />
+        <div v-if="isImagesLoading">
+          <el-descriptions :column="1" direction="horizontal" class="section">
+            <el-descriptions-item label="Images">
+              <div class="image-grid">
+                <el-skeleton v-for="n in 1" :key="n" animated style="width: 100%">
+                  <template #template>
+                    <el-skeleton-item variant="image" style="width: 100%; height: 160px; border-radius: 6px" />
+                  </template>
+                </el-skeleton>
+              </div>
+            </el-descriptions-item>
+          </el-descriptions>
+        </div>
+
+        <div v-else-if="validImageUrls.length">
+          <el-descriptions :column="1" direction="horizontal" class="section">
+            <el-descriptions-item label="Images">
+              <div class="image-grid">
+                <button
+                  v-for="(u, i) in validImageUrls"
+                  :key="u + '_' + i"
+                  class="thumb"
+                  type="button"
+                  @click="openPreview(u)"
+                  @keydown.enter.prevent="openPreview(u)"
+                  aria-label="Preview image"
+                >
+                  <img :src="u" alt="" />
+                </button>
+              </div>
+            </el-descriptions-item>
+          </el-descriptions>
+        </div>
+
+        <div v-else>
+          <el-descriptions :column="1" direction="horizontal" class="section">
+            <el-descriptions-item label="Images">
+              <div class="no-images"><el-text>No location images available</el-text></div>
+            </el-descriptions-item>
+          </el-descriptions>
         </div>
 
         <!-- Related Equipment -->
         <div v-if="showEquipSection" style="margin-bottom: 48px">
           <el-divider />
-          <el-descriptions title="Related Equipment" />
-          <SearchTable
-            :key="`loc-equip-${location?.id}`"
-            :data="equipmentList"
-            :columns="[
-              { label: 'Name', prop: 'name' },
-              { label: 'Code', prop: 'code' },
-              { label: 'Group', prop: 'equipment_group' },
-            ]"
-            :total="equipmentTotal"
-            :page="equipmentPage"
-            :page-size="equipmentPageSize"
-            :enable-search="true"
-            v-model:search="equipmentSearch"
-            empty-text="No match found"
-            @update:page="onEquipmentPageChange"
-          />
+          <el-descriptions :column="1" direction="horizontal" class="section">
+            <el-descriptions-item label="Related Equipment">
+              <SearchTable
+                :key="`loc-equip-${location?.id}`"
+                :data="equipmentList"
+                :columns="[
+                  { label: 'Name', prop: 'name' },
+                  { label: 'Code', prop: 'code' },
+                  { label: 'Group', prop: 'equipment_group' },
+                ]"
+                :total="equipmentTotal"
+                :page="equipmentPage"
+                :page-size="equipmentPageSize"
+                :enable-search="true"
+                v-model:search="equipmentSearch"
+                empty-text="No match found"
+                @update:page="onEquipmentPageChange"
+              />
+            </el-descriptions-item>
+          </el-descriptions>
         </div>
 
+        <!-- Related Parts Batches -->
         <el-divider v-if="sparePartsBatchList?.length" />
         <div v-if="sparePartsBatchList?.length">
-          <el-descriptions title="Related Parts Batches" />
-          <SearchTable
-            :data="sparePartsBatchList"
-            :columns="[
-              { label: 'Name', prop: 'name' },
-              { label: 'Part Code', prop: 'code' },
-              { label: 'Quantity', prop: 'quantity' },
-            ]"
-          />
+          <el-descriptions :column="1" direction="horizontal" class="section">
+            <el-descriptions-item label="Related Parts Batches">
+              <SearchTable
+                :data="sparePartsBatchList"
+                :columns="[
+                  { label: 'Name', prop: 'name' },
+                  { label: 'Part Code', prop: 'code' },
+                  { label: 'Quantity', prop: 'quantity' },
+                ]"
+              />
+            </el-descriptions-item>
+          </el-descriptions>
         </div>
       </div>
     </div>
@@ -109,7 +145,6 @@
     modal-class="ld-edit-overlay"
     transition="ld-fade"
   >
-    <!-- Keep your existing form -->
     <LocationForm v-model="editForm" :location-types="props.locationTypes" ref="editFormRef" />
 
     <template #footer>
@@ -129,12 +164,12 @@
 <script setup>
 import { ref, watch, computed } from 'vue'
 import axios from 'axios'
-import { Plus, Delete, Edit } from '@element-plus/icons-vue'
+import { MoreFilled } from '@element-plus/icons-vue'
 import SearchTable from '@/views/vendorsAndLocations/Locations/SearchTable.vue'
 import LocationForm from './LocationForm.vue'
 import { useErrorHandler } from '@/composables/useErrorHandler'
 import { ElMessage } from 'element-plus'
-import { updateLocationById, deactivateLocation } from '@/api/location'
+import { updateLocationById } from '@/api/location'
 import { getEquipmentNodes } from '@/api/equipment.js'
 import { uploadMultipleToMinio, deleteObjectList } from '@/api/minio'
 
@@ -155,20 +190,29 @@ const imageUrls = computed( () => {
 } )
 
 const validImageUrls = ref( [] )
+const isImagesLoading = ref( false )
+let imgReqSeq = 0
 
 /** check each URL with a HEAD request (cheap, no download) */
 const checkImageUrls = async() => {
-  const checks = await Promise.all(
-    imageUrls.value.map( async u => {
-      try {
-        const res = await fetch( u, { method : 'HEAD' } )
-        return res.ok ? u : null
-      } catch {
-        return null
-      }
-    } )
-  )
-  validImageUrls.value = checks.filter( Boolean )
+  const seq = ++imgReqSeq
+  isImagesLoading.value = true
+  try {
+    const checks = await Promise.all(
+      imageUrls.value.map( async u => {
+        try {
+          const res = await fetch( u, { method : 'HEAD' } )
+          return res.ok ? u : null
+        } catch {
+          return null
+        }
+      } )
+    )
+    if ( seq !== imgReqSeq ) return // newer run started; ignore
+    validImageUrls.value = checks.filter( Boolean )
+  } finally {
+    if ( seq === imgReqSeq ) isImagesLoading.value = false
+  }
 }
 
 // re-check whenever imageUrls changes
@@ -178,7 +222,9 @@ watch(
     if ( imageUrls.value.length ) {
       checkImageUrls()
     } else {
+      imgReqSeq++ // cancel in-flight
       validImageUrls.value = []
+      isImagesLoading.value = false
     }
   },
   { immediate : true }
@@ -210,7 +256,7 @@ let equipDataReqSeq = 0
 /** Spare parts */
 const sparePartsBatchList = ref( [] )
 
-const { confirmAction, showSuccess } = useErrorHandler()
+const { showSuccess } = useErrorHandler()
 
 // ========== Watch location change ==========
 watch(
@@ -434,34 +480,6 @@ const saveEdit = async() => {
     if ( showed ) saving.value = false
   }
 }
-
-// ========== Delete ==========
-const deleteLoading = ref( false )
-const handleDelete = async() => {
-  const confirmed = await confirmAction( {
-    title : 'Confirm',
-    message : `Are you sure you want to delete "${props.location?.name}"?`,
-    confirmButtonText : 'Delete',
-    cancelButtonText : 'Cancel',
-    type : 'warning'
-  } )
-  if ( !confirmed ) return
-
-  const id = Number( props.location?.id )
-  if ( !Number.isFinite( id ) ) return
-
-  deleteLoading.value = true
-  try {
-    await deactivateLocation( id )
-    showSuccess( 'Location deleted successfully' )
-    emit( 'deleted', props.location.id )
-  } catch ( err ) {
-    ElMessage.error( 'Failed to delete location' )
-    console.error( err )
-  } finally {
-    deleteLoading.value = false
-  }
-}
 </script>
 
 <style scoped lang="scss">
@@ -632,6 +650,31 @@ const handleDelete = async() => {
   }
   to {
     opacity: 1;
+  }
+}
+.kebab-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+}
+
+.kebab-icon {
+  transform: rotate(90deg);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  font-size: 24px;
+  color: #409eff;
+}
+
+.section {
+  :deep(.el-descriptions__label) {
+    font-weight: 600;
+    color: var(--el-text-color-primary);
   }
 }
 </style>

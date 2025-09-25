@@ -81,6 +81,7 @@
               ref="locationTreeRef"
               :tree-data="locationTreeData"
               :default-props="{ children: 'children', label: 'name' }"
+              @add-child="openAddChildDialog"
               @node-click="handleLocationClick"
             />
           </el-scrollbar>

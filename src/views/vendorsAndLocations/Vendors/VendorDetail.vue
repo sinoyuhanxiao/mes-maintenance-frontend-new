@@ -1,33 +1,41 @@
 <!-- VendorDetail -->
 <template>
   <div class="vendor-detail" v-if="vendor">
-    <!-- Detail Header (mimic WorkOrderDetail) -->
+    <!-- Detail Header -->
     <div class="detail-header">
       <div class="header-main">
         <h2 class="detail-title">{{ vendor.name }}</h2>
       </div>
 
       <div class="header-actions">
-        <el-button-group class="ml-4">
-          <el-tooltip content="Edit" placement="top" effect="light" :hide-after="0">
-            <el-button :icon="Edit" @click="enterEditMode" />
-          </el-tooltip>
+        <el-dropdown trigger="click" placement="bottom-end" class="kebab-dropdown">
+          <span class="kebab-trigger" role="button" aria-label="More actions">
+            <el-icon class="kebab-icon">
+              <MoreFilled />
+            </el-icon>
+          </span>
 
-          <el-tooltip content="Delete" placement="top" effect="light" :hide-after="0">
-            <el-button :icon="Delete" :loading="deleteLoading" @click="handleDelete" />
-          </el-tooltip>
-        </el-button-group>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item @click="enterEditMode">Edit</el-dropdown-item>
+              <el-dropdown-item @click="handleDelete" :disabled="deleteLoading">Delete</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
       </div>
     </div>
 
+    <!-- Body -->
     <div class="detail-body">
       <div class="descriptions-container">
+        <!-- General Info -->
         <el-descriptions class="two-col" :column="2" direction="vertical">
           <el-descriptions-item label="Name">{{ vendor.name || '--' }}</el-descriptions-item>
           <el-descriptions-item label="Code">{{ vendor.code || '--' }}</el-descriptions-item>
           <el-descriptions-item label="Phone Number">{{ vendor.phone_number || '--' }}</el-descriptions-item>
           <el-descriptions-item label="Email">{{ vendor.email || '--' }}</el-descriptions-item>
         </el-descriptions>
+
         <el-descriptions v-if="vendor.website?.length" :column="1" direction="vertical">
           <el-descriptions-item label="Website">{{ vendor.website || '--' }}</el-descriptions-item>
         </el-descriptions>
@@ -40,86 +48,139 @@
           <el-descriptions-item label="Description">{{ vendor.description || '--' }}</el-descriptions-item>
         </el-descriptions>
 
-        <el-divider v-if="validImageUrls.length" />
-        <div v-if="validImageUrls.length">
-          <el-descriptions title="Images">
-            <el-descriptions-item />
+        <!-- Images -->
+        <el-divider />
+        <div v-if="isImagesLoading">
+          <el-descriptions :column="1" direction="horizontal" class="section">
+            <el-descriptions-item label="Images">
+              <div class="image-grid">
+                <el-skeleton v-for="n in 1" :key="n" animated style="width: 100%">
+                  <template #template>
+                    <el-skeleton-item variant="image" style="width: 100%; height: 160px; border-radius: 6px" />
+                  </template>
+                </el-skeleton>
+              </div>
+            </el-descriptions-item>
           </el-descriptions>
-          <div class="image-grid">
-            <button
-              v-for="(u, i) in validImageUrls"
-              :key="u + '_' + i"
-              class="thumb"
-              type="button"
-              @click="openPreview(u)"
-              @keydown.enter.prevent="openPreview(u)"
-              aria-label="Preview image"
-            >
-              <img :src="u" alt="" />
-            </button>
-          </div>
+        </div>
+
+        <div v-else-if="validImageUrls.length">
+          <el-descriptions :column="1" direction="horizontal" class="section">
+            <el-descriptions-item label="Images">
+              <div class="image-grid">
+                <button
+                  v-for="(u, i) in validImageUrls"
+                  :key="u + '_' + i"
+                  class="thumb"
+                  type="button"
+                  @click="openPreview(u)"
+                  @keydown.enter.prevent="openPreview(u)"
+                  aria-label="Preview image"
+                >
+                  <img :src="u" alt="" />
+                </button>
+              </div>
+            </el-descriptions-item>
+          </el-descriptions>
+        </div>
+
+        <div v-else>
+          <el-descriptions :column="1" direction="horizontal" class="section">
+            <el-descriptions-item label="Images">
+              <div class="no-images">
+                <el-text>No vendor images available</el-text>
+              </div>
+            </el-descriptions-item>
+          </el-descriptions>
         </div>
 
         <!-- Files -->
         <el-divider v-if="parsedFiles.length" />
         <div v-if="parsedFiles.length">
-          <el-descriptions title="Files"><el-descriptions-item /></el-descriptions>
-          <div class="vd-file-list">
-            <div v-for="f in parsedFiles" :key="f.id || f.name" class="vd-file-item">
-              <el-link
-                :href="f.url"
-                target="_blank"
-                rel="noopener noreferrer"
-                :icon="getFileIcon(f.type)"
-                class="vd-file-link"
-              >
-                {{ f.name }}
-              </el-link>
-            </div>
-          </div>
+          <el-descriptions :column="1" direction="horizontal" class="section">
+            <el-descriptions-item label="Files">
+              <div class="vd-file-list">
+                <div v-for="f in parsedFiles" :key="f.id || f.name" class="vd-file-item">
+                  <el-link
+                    :href="f.url"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    :icon="getFileIcon(f.type)"
+                    class="vd-file-link"
+                  >
+                    {{ f.name }}
+                  </el-link>
+                </div>
+              </div>
+            </el-descriptions-item>
+          </el-descriptions>
         </div>
 
-        <!-- Related Equipment (shows only if vendor actually has equipment at all) -->
+        <!-- (Optional) Files empty-state if you want it shown even when 0 -->
+        <!--
+        <div v-else>
+          <el-descriptions :column="1" direction="horizontal" class="section">
+            <el-descriptions-item label="Files">
+              <el-text>No files available</el-text>
+            </el-descriptions-item>
+          </el-descriptions>
+        </div>
+        -->
+
+        <!-- Related Equipment -->
         <div v-if="showEquipSection" style="margin-bottom: 48px">
           <el-divider />
-          <el-descriptions title="Related Equipment">
-            <el-descriptions-item />
+          <el-descriptions :column="1" direction="horizontal" class="section">
+            <el-descriptions-item label="Related Equipment">
+              <SearchTable
+                :key="`equip-${vendor?.id}`"
+                :data="equipmentList"
+                :columns="[
+                  { label: 'Name', prop: 'name' },
+                  { label: 'Code', prop: 'code' },
+                  { label: 'Group', prop: 'equipment_group' },
+                ]"
+                :total="equipmentTotal"
+                :page="equipmentPage"
+                :page-size="equipmentPageSize"
+                :enable-search="true"
+                v-model:search="equipmentSearch"
+                empty-text="No match found"
+                @update:page="onEquipmentPageChange"
+              />
+            </el-descriptions-item>
           </el-descriptions>
-          <SearchTable
-            :key="`equip-${vendor?.id}`"
-            :data="equipmentList"
-            :columns="[
-              { label: 'Name', prop: 'name' },
-              { label: 'Code', prop: 'code' },
-              { label: 'Group', prop: 'equipment_group' },
-            ]"
-            :total="equipmentTotal"
-            :page="equipmentPage"
-            :page-size="equipmentPageSize"
-            :enable-search="true"
-            v-model:search="equipmentSearch"
-            empty-text="No match found"
-            @update:page="onEquipmentPageChange"
-          />
         </div>
 
-        <el-divider v-if="sparePartsBatchList?.length" />
-        <div v-if="sparePartsBatchList?.length">
-          <el-descriptions title="Related Parts Batches" />
-          <SearchTable
-            :data="sparePartsBatchList"
-            :columns="[
-              { label: 'Name', prop: 'name' },
-              { label: 'Part Code', prop: 'code' },
-              { label: 'Quantity', prop: 'quantity' },
-            ]"
-          />
+        <!-- Related Parts Batches -->
+        <el-divider v-if="showSparePartsSection" />
+        <div v-if="showSparePartsSection" style="margin-bottom: 48px">
+          <el-descriptions :column="1" direction="horizontal" class="section">
+            <el-descriptions-item label="Related Parts Batches">
+              <SearchTable
+                :key="`sp-${vendor?.id}`"
+                :data="sparePartsBatchList"
+                :columns="[
+                  { label: 'Name', prop: 'name' },
+                  { label: 'Part Code', prop: 'code' },
+                  { label: 'Current Stock', prop: 'current_stock' },
+                ]"
+                :total="sparePartsTotal"
+                :page="sparePartsPage"
+                :page-size="sparePartsPageSize"
+                :enable-search="true"
+                v-model:search="sparePartsSearch"
+                empty-text="No match found"
+                @update:page="onSparePartsPageChange"
+              />
+            </el-descriptions-item>
+          </el-descriptions>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Edit Dialog (mirror LocationDetail dialog props/UX) -->
+  <!-- Edit Dialog -->
   <el-dialog
     v-model="editVendor"
     title="Edit Vendor"
@@ -148,15 +209,15 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue'
-import axios from 'axios'
 import SearchTable from '@/views/vendorsAndLocations/Locations/SearchTable.vue'
 import VendorForm from './VendorForm.vue'
 import { useErrorHandler } from '@/composables/useErrorHandler'
 import { ElMessage } from 'element-plus'
 import { deactivateVendor, updateVendor, getVendorById } from '@/api/vendor.js'
+import { searchSpareParts } from '@/api/resources.js'
 import { getEquipmentNodes } from '@/api/equipment.js'
 import { uploadMultipleToMinio, deleteObjectList } from '@/api/minio'
-import { Delete, Edit, Document, Picture, VideoCamera, Microphone, Download } from '@element-plus/icons-vue'
+import { Document, Picture, VideoCamera, Microphone, Download, MoreFilled } from '@element-plus/icons-vue'
 
 const props = defineProps( { vendor : Object } )
 const emit = defineEmits( ['deleted', 'updated'] )
@@ -176,7 +237,20 @@ const equipmentSearch = ref( '' )
 const equipmentBaseTotal = ref( 0 )
 const showEquipSection = ref( false )
 
+// ----- Spare parts state (mirror equipment) -----
 const sparePartsBatchList = ref( [] )
+const sparePartsTotal = ref( 0 )
+const sparePartsPage = ref( 1 )
+const sparePartsPageSize = ref( 5 )
+const sparePartsSearch = ref( '' )
+
+// Sticky visibility based on unfiltered total
+const sparePartsBaseTotal = ref( 0 )
+const showSparePartsSection = ref( false )
+
+// request sequence guards
+let sparePartsBaseReqSeq = 0
+let sparePartsDataReqSeq = 0
 
 const { confirmAction, showSuccess } = useErrorHandler()
 
@@ -296,25 +370,40 @@ const imageUrls = computed( () => {
 } )
 
 const validImageUrls = ref( [] )
+const isImagesLoading = ref( false )
+let imgReqSeq = 0
+
 const checkImageUrls = async() => {
-  const checks = await Promise.all(
-    imageUrls.value.map( async u => {
-      try {
-        const res = await fetch( u, { method : 'HEAD' } )
-        return res.ok ? u : null
-      } catch {
-        return null
-      }
-    } )
-  )
-  validImageUrls.value = checks.filter( Boolean )
+  const seq = ++imgReqSeq
+  isImagesLoading.value = true
+  try {
+    const checks = await Promise.all(
+      imageUrls.value.map( async u => {
+        try {
+          const res = await fetch( u, { method : 'HEAD' } )
+          return res.ok ? u : null
+        } catch {
+          return null
+        }
+      } )
+    )
+    if ( seq !== imgReqSeq ) return // a newer run started; ignore this result
+    validImageUrls.value = checks.filter( Boolean )
+  } finally {
+    if ( seq === imgReqSeq ) isImagesLoading.value = false
+  }
 }
 
 watch(
   imageUrls,
   () => {
-    if ( imageUrls.value.length ) checkImageUrls()
-    else validImageUrls.value = []
+    if ( imageUrls.value.length ) {
+      checkImageUrls()
+    } else {
+      imgReqSeq++ // cancel any in-flight check
+      validImageUrls.value = []
+      isImagesLoading.value = false
+    }
   },
   { immediate : true }
 )
@@ -339,7 +428,38 @@ watch(
     if ( id ) {
       fetchEquipmentBase( id )
       fetchEquipmentData( id )
-      fetchSparePartsBatch( id )
+      fetchSparePartsBase( id )
+      fetchSparePartsData( id )
+    }
+  },
+  { immediate : true }
+)
+
+watch(
+  () => props.vendor?.id,
+  id => {
+    // equipment reset...
+    equipmentSearch.value = ''
+    equipmentPage.value = 1
+    equipmentList.value = []
+    equipmentTotal.value = 0
+    equipmentBaseTotal.value = 0
+    showEquipSection.value = false
+
+    // spare parts reset...
+    sparePartsSearch.value = ''
+    sparePartsPage.value = 1
+    sparePartsBatchList.value = []
+    sparePartsTotal.value = 0
+    sparePartsBaseTotal.value = 0
+    showSparePartsSection.value = false
+
+    if ( id ) {
+      fetchEquipmentBase( id )
+      fetchEquipmentData( id )
+
+      fetchSparePartsBase( id )
+      fetchSparePartsData( id )
     }
   },
   { immediate : true }
@@ -362,6 +482,25 @@ watch( equipmentSearch, val => {
 const onEquipmentPageChange = p => {
   equipmentPage.value = p
   fetchEquipmentData()
+}
+
+let spareSearchTimer = null
+watch( sparePartsSearch, val => {
+  sparePartsPage.value = 1
+  clearTimeout( spareSearchTimer )
+
+  if ( !val?.trim() ) {
+    // recalc base + reload first page when clearing
+    fetchSparePartsBase()
+    fetchSparePartsData()
+  } else {
+    spareSearchTimer = setTimeout( () => fetchSparePartsData(), 250 )
+  }
+} )
+
+const onSparePartsPageChange = p => {
+  sparePartsPage.value = p
+  fetchSparePartsData()
 }
 
 /* -------- Equipment base (unfiltered) -> visibility -------- */
@@ -424,14 +563,64 @@ const fetchEquipmentData = async( id = props.vendor?.id ) => {
   }
 }
 
-/* -------- Spare parts batches -------- */
-const fetchSparePartsBatch = async id => {
+// Base total for visibility
+const fetchSparePartsBase = async( id = props.vendor?.id ) => {
+  const vendorId = Number( id )
+  if ( !Number.isFinite( vendorId ) ) {
+    sparePartsBaseTotal.value = 0
+    showSparePartsSection.value = false
+    return
+  }
+
+  const seq = ++sparePartsBaseReqSeq
   try {
-    const res = await axios.get( `http://10.10.12.12:8095/api/vendor/correlative-spare-part/${id}` )
-    sparePartsBatchList.value = res.data?.data || []
-  } catch ( err ) {
-    console.error( 'Failed to fetch spare parts batch:', err )
+    // page=1 size=1 just to get totals quickly
+    const res = await searchSpareParts( 1, 1, 'name', 'ASC', { vendor_ids : [vendorId] } )
+    if ( seq !== sparePartsBaseReqSeq ) return
+
+    const payload = res?.data ?? res
+    const page = payload?.data ?? payload
+    const total = Number( page?.totalElements ?? page?.total ?? ( Array.isArray( page?.content ) ? page.content.length : 0 ) )
+
+    sparePartsBaseTotal.value = total
+    showSparePartsSection.value = total > 0
+  } catch ( e ) {
+    if ( seq !== sparePartsBaseReqSeq ) return
+    console.error( 'fetchSparePartsBase failed:', e )
+    sparePartsBaseTotal.value = 0
+    showSparePartsSection.value = false
+  }
+}
+
+// Paged + searchable data loader
+const fetchSparePartsData = async( id = props.vendor?.id ) => {
+  const vendorId = Number( id )
+  if ( !Number.isFinite( vendorId ) ) {
     sparePartsBatchList.value = []
+    sparePartsTotal.value = 0
+    return
+  }
+
+  const seq = ++sparePartsDataReqSeq
+  try {
+    const term = sparePartsSearch.value?.trim()
+    const body = { vendor_ids : [vendorId] }
+    if ( term ) body.keyword = term // <= use search term when present
+
+    const res = await searchSpareParts( sparePartsPage.value, sparePartsPageSize.value, 'name', 'ASC', body )
+    if ( seq !== sparePartsDataReqSeq ) return
+
+    const payload = res?.data ?? res
+    const page = payload?.data ?? payload
+    const list = Array.isArray( page?.content ) ? page.content : Array.isArray( page ) ? page : []
+
+    sparePartsBatchList.value = list.map( p => ( { ...p, id : Number( p.id ) } ) )
+    sparePartsTotal.value = Number( page?.totalElements ?? page?.total ?? list.length )
+  } catch ( e ) {
+    if ( seq !== sparePartsDataReqSeq ) return
+    console.error( 'fetchSparePartsData failed:', e )
+    sparePartsBatchList.value = []
+    sparePartsTotal.value = 0
   }
 }
 
@@ -798,5 +987,19 @@ const handleDelete = async() => {
   font-weight: 500;
   white-space: normal;
   word-break: break-all; /* ensures long names don’t get cut off */
+}
+.kebab-icon {
+  transform: rotate(90deg);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+  font-size: 24px;
+  color: #409eff;
+}
+:deep(.el-descriptions__label) {
+  font-weight: 600;
+  text-transform: none; /* or uppercase if you want section headers */
+  color: var(--el-text-color-primary);
 }
 </style>
