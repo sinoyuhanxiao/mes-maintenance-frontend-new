@@ -15,6 +15,7 @@
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item @click="openEditDialog">Edit Tier 4</el-dropdown-item>
+              <el-dropdown-item @click="openAddTier5Dialog">Add Tier 5</el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
@@ -26,7 +27,7 @@
           <SubEquipmentDetailsTab :equipmentId="props.node.id" :key="`details-${refreshKey}`" />
         </el-tab-pane>
         <el-tab-pane label="Sub Items" name="subItems">
-          <SubItemsTab :key="`subitems-${refreshKey}`" />
+          <SubItemsTab :tier4Id="props.node.id" :key="`subitems-${refreshKey}`" />
         </el-tab-pane>
         <el-tab-pane label="Maintenance History" name="maintenanceHistory">
           <MaintenanceHistory :key="`maintenance-${refreshKey}`" />
@@ -57,6 +58,16 @@
         :equipmentId="props.node.id"
       />
     </el-dialog>
+
+    <el-dialog v-model="showAddTier5Dialog" title="Add Tier 5" width="720px" :before-close="handleCloseDialog">
+      <AddTier5Form
+        v-if="showAddTier5Dialog"
+        :tier4-id="props.node.id"
+        :parent-id="parentId"
+        @close="closeAddTier5Dialog"
+        @success="handleTier5Created"
+      />
+    </el-dialog>
   </div>
 </template>
 
@@ -69,6 +80,7 @@ import MaintenanceHistory from './MaintenanceHistory.vue'
 import AddSubEquipment from './components/AddSubEquipment.vue'
 import EditSubEquipment from './components/EditSubEquipment.vue'
 import DeactivateNode from '../common/DeactivateNode.vue'
+import AddTier5Form from './components/AddTier5Form.vue'
 
 const props = defineProps( {
   node : {
@@ -99,8 +111,16 @@ const activeTab = ref( 'details' )
 const showAddDialog = ref( false )
 const showEditDialog = ref( false )
 const showDeactivateDialog = ref( false )
+const showAddTier5Dialog = ref( false )
 const refreshKey = ref( 0 )
 const editDialogKey = ref( 0 )
+
+const openAddTier5Dialog = () => {
+  showAddTier5Dialog.value = true
+}
+const closeAddTier5Dialog = () => {
+  showAddTier5Dialog.value = false
+}
 
 const closeAddDialog = () => {
   showAddDialog.value = false
@@ -125,6 +145,16 @@ const closeDeactivateDialog = () => {
 
 const handleCloseDialog = done => {
   done()
+}
+
+const handleTier5Created = () => {
+  // ⬅️ new
+  closeAddTier5Dialog()
+  // Refresh the sub items tab (Tier-5 list usually shows there)
+  emit( 'refresh-tree' )
+  setTimeout( () => {
+    refreshViewData()
+  }, 120 )
 }
 
 const handleAddSuccess = newEquipment => {

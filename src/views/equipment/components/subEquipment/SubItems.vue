@@ -1,199 +1,431 @@
 <template>
   <div class="sub-items">
-    <div class="image-container">
-      <el-image
-        :src="props.imageUrl"
-        :alt="props.imageAlt"
-        fit="contain"
-        :preview-src-list="[props.imageUrl]"
-        class="equipment-image"
-      >
-      </el-image>
-    </div>
-    <div class="spare-parts-table">
-      <MaintenanceCardTable
-        :items="sparePartsData"
-        :pageSize="4"
-        :module="5"
-        @requestData="handleRequestData"
-        :height="'400px'"
-        :totalItems="sparePartsData.length"
-        :handleCurrentChange="handleCurrentChange"
-        :currentPage="listQuery.page"
-      />
-    </div>
+    <!-- Loading overlay -->
+    <div v-if="loading" class="loading-state" v-loading="loading" />
+
+    <!-- Content once loading is done -->
+    <template v-else>
+      <el-descriptions v-if="showImage" :column="1" direction="vertical" class="top-desc">
+        <el-descriptions-item label="Tier 4 Image" />
+      </el-descriptions>
+
+      <div class="image-container" v-if="showImage">
+        <el-image
+          :key="(imageSrc || '') + '-' + previewImages.length"
+          :src="imageSrc"
+          :alt="props.imageAlt"
+          fit="contain"
+          :preview-src-list="previewImages"
+          preview-teleported
+          :z-index="4000"
+          class="equipment-image"
+          title="T4 Image"
+          show-progress
+        >
+          <template #error>
+            <div class="image-slot t4-slot image-viewer-slot">
+              <el-icon><IconPicture /></el-icon>
+            </div>
+          </template>
+          <template #viewer-error="{ activeIndex, src }">
+            <div class="image-slot viewer-error">
+              <el-icon><IconPicture /></el-icon>
+              <span> image not available (index: {{ activeIndex }}) • {{ src }} </span>
+            </div>
+          </template>
+        </el-image>
+      </div>
+
+      <el-divider v-if="showImage" />
+      <div class="spare-parts-table">
+        <el-descriptions :column="1" direction="vertical" class="top-desc">
+          <el-descriptions-item v-if="sparePartsData.length > 0" label="Tier 5 Spare Parts"> </el-descriptions-item>
+
+          <el-descriptions-item v-else label="Tier 5 Spare Parts">
+            No tier 5 spare parts available.
+          </el-descriptions-item>
+        </el-descriptions>
+
+        <template v-if="sparePartsData.length > 0">
+          <!-- Cards list (always 1 per row) -->
+          <div class="card-list" v-if="pagedRows.length > 0">
+            <SparePartCard v-for="it in pagedRows" :key="it.id" :item="it" @edit="onEdit" @delete="onDelete" />
+          </div>
+
+          <div class="pagination-wrapper">
+            <el-pagination
+              background
+              layout="prev, pager, next"
+              :current-page="listQuery.page"
+              :page-size="listQuery.limit"
+              :total="filteredRows.length"
+              :pager-count="5"
+              @current-change="handleCurrentChange"
+            />
+          </div>
+        </template>
+
+        <el-dialog v-model="editDialog.visible" title="Edit Tier 5 Spare Part" width="720px" destroy-on-close>
+          <AddTier5Form
+            v-if="editDialog.visible"
+            :key="'t5-edit-' + (editDialog.initial?.id ?? 0)"
+            :tier4-id="resolveTier4Id()"
+            :parent-id="resolveTier4Id()"
+            mode="edit"
+            :initial="editDialog.initial"
+            @success="onEditSuccess"
+            @close="editDialog.visible = false"
+          />
+        </el-dialog>
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
-import MaintenanceCardTable from '../../../../components/Tables/MaintenanceCardTable.vue'
+import { ref, reactive, onMounted, onBeforeUnmount, watch, useAttrs, computed, nextTick } from 'vue'
+import defaultImageUrl from '@/assets/imgs/default-image.png'
+import { getEquipmentById, getEquipmentSubtree, deactivateEquipmentNode } from '@/api/equipment'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import AddTier5Form from './components/AddTier5Form.vue'
+import { getSparePartById } from '@/api/resources'
+import { Picture as IconPicture } from '@element-plus/icons-vue'
+import SparePartCard from './components/CardTable/SparePartCard.vue'
 
 const props = defineProps( {
-  imageUrl : {
-    type : String,
-    default : 'https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg'
-  },
-  imageAlt : {
-    type : String,
-    default : 'Equipment image'
-  }
+  imageUrl : { type : String, default : defaultImageUrl },
+  imageAlt : { type : String, default : 'Equipment image' }
 } )
 
-const selectedData = ref( null )
+const emit = defineEmits( ['edit-tier5', 'delete-tier5', 'tier5-deleted'] )
 
-// Spare Parts data (for module 5) - converted from your task data
-const sparePartsData = ref( [
-  {
-    id : 1,
-    title : 'HYDRAULIC PUMP SEAL KIT',
-    partNumber : 'HP001',
-    deviceTag : 'HP001',
-    deviceTagPositionCode : '1',
-    deviceQuantity : '1',
-    suggestedServiceDays : '2 Days',
-    estimatedServiceDays : '1 Day',
-    autoTriggerCycle : 'No',
-    imageUrl : 'https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg'
-  },
-  {
-    id : 2,
-    title : 'ROLLER BEARING 6203-2RS',
-    partNumber : 'RB002',
-    deviceTag : 'RB002',
-    deviceTagPositionCode : '3',
-    deviceQuantity : '2',
-    suggestedServiceDays : '3 Days',
-    estimatedServiceDays : '2 Days',
-    autoTriggerCycle : 'Yes',
-    imageUrl : null
-  },
-  {
-    id : 3,
-    title : 'DRIVE CHAIN 40SS-316L',
-    partNumber : 'DC003',
-    deviceTag : 'DC003',
-    deviceTagPositionCode : '2',
-    deviceQuantity : '1',
-    suggestedServiceDays : '5 Days',
-    estimatedServiceDays : '3 Days',
-    autoTriggerCycle : 'No',
-    imageUrl : 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcjpeg.jpeg'
-  },
-  {
-    id : 4,
-    title : 'PNEUMATIC CYLINDER SEAL',
-    partNumber : 'PC004',
-    deviceTag : 'PC004',
-    deviceTagPositionCode : '4',
-    deviceQuantity : '1',
-    suggestedServiceDays : '1 Day',
-    estimatedServiceDays : '1 Day',
-    autoTriggerCycle : 'No',
-    imageUrl : null
-  },
-  {
-    id : 5,
-    title : 'MOTOR COUPLING ASSEMBLY',
-    partNumber : 'MC005',
-    deviceTag : 'MC005',
-    deviceTagPositionCode : '5',
-    deviceQuantity : '1',
-    suggestedServiceDays : '4 Days',
-    estimatedServiceDays : '3 Days',
-    autoTriggerCycle : 'Yes',
-    imageUrl : 'https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg'
-  },
-  {
-    id : 6,
-    title : 'CONVEYOR BELT SECTION',
-    partNumber : 'CB006',
-    deviceTag : 'CB006',
-    deviceTagPositionCode : '6',
-    deviceQuantity : '1',
-    suggestedServiceDays : '7 Days',
-    estimatedServiceDays : '5 Days',
-    autoTriggerCycle : 'No',
-    imageUrl : null
-  },
-  {
-    id : 7,
-    title : 'LIMIT SWITCH ASSEMBLY',
-    partNumber : 'LS007',
-    deviceTag : 'LS007',
-    deviceTagPositionCode : '7',
-    deviceQuantity : '2',
-    suggestedServiceDays : '2 Days',
-    estimatedServiceDays : '1 Day',
-    autoTriggerCycle : 'Yes',
-    imageUrl : 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcjpeg.jpeg'
-  },
-  {
-    id : 8,
-    title : 'PRESSURE RELIEF VALVE',
-    partNumber : 'PRV008',
-    deviceTag : 'PRV008',
-    deviceTagPositionCode : '8',
-    deviceQuantity : '1',
-    suggestedServiceDays : '3 Days',
-    estimatedServiceDays : '2 Days',
-    autoTriggerCycle : 'No',
-    imageUrl : null
-  },
-  {
-    id : 9,
-    title : 'GEARBOX OIL SEAL',
-    partNumber : 'GOS009',
-    deviceTag : 'GOS009',
-    deviceTagPositionCode : '9',
-    deviceQuantity : '1',
-    suggestedServiceDays : '6 Days',
-    estimatedServiceDays : '4 Days',
-    autoTriggerCycle : 'Yes',
-    imageUrl : 'https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg'
-  },
-  {
-    id : 10,
-    title : 'TEMPERATURE SENSOR PROBE',
-    partNumber : 'TSP010',
-    deviceTag : 'TSP010',
-    deviceTagPositionCode : '10',
-    deviceQuantity : '1',
-    suggestedServiceDays : '1 Day',
-    estimatedServiceDays : '1 Day',
-    autoTriggerCycle : 'No',
-    imageUrl : null
-  }
-] )
+const loading = ref( false )
 
-// Pagination configuration
-const listQuery = reactive( {
-  page : 1,
-  limit : 4
-} )
+const imageSrc = ref( '' )
+const previewImages = ref( [] )
+const showImage = ref( false )
 
-// Event handlers
-function handleRequestData( data ) {
-  selectedData.value = data
-  console.log( 'Selected spare part:', selectedData.value )
+const sparePartsData = ref( [] )
+
+const searchText = ref( '' )
+const listQuery = reactive( { page : 1, limit : 5 } )
+const editDialog = ref( { visible : false, initial : null } )
+
+// cache spare-parts so we don't refetch for every row
+const spCache = new Map()
+async function getSparePartCached( id ) {
+  if ( !id ) return null
+  if ( spCache.has( id ) ) return spCache.get( id )
+  const resp = await getSparePartById( Number( id ) )
+  const sp = resp?.data?.data ?? resp?.data ?? resp ?? {}
+  spCache.set( id, sp )
+  return sp
 }
 
+const filteredRows = computed( () => {
+  const q = ( searchText.value || '' ).toLowerCase().trim()
+  if ( !q ) return sparePartsData.value
+  return sparePartsData.value.filter( r => {
+    const a = ( r.title || '' ).toLowerCase()
+    const b = ( r.partNumber || '' ).toLowerCase()
+    return a.includes( q ) || b.includes( q )
+  } )
+} )
+const pagedRows = computed( () => {
+  const start = ( listQuery.page - 1 ) * listQuery.limit
+  return filteredRows.value.slice( start, start + listQuery.limit )
+} )
 function handleCurrentChange( page ) {
   listQuery.page = page
-  console.log( 'Spare parts current page changed to:', page )
-  // Here you would typically fetch new spare parts data based on the page
-  // fetchSparePartsData(page)
 }
 
-// Optional: Method to fetch spare parts data (if needed)
-// async function fetchSparePartsData(page) {
-//   try {
-//     const response = await api.getSparePartsItems({ page, limit: 4 })
-//     sparePartsData.value = response.data
-//   } catch (error) {
-//     console.error('Failed to fetch spare parts data:', error)
-//   }
-// }
+const isWide = ref( false )
+function updateIsWide() {
+  isWide.value = typeof window !== 'undefined' && window.innerWidth >= 1440
+}
+onMounted( () => {
+  updateIsWide()
+  window.addEventListener( 'resize', updateIsWide )
+} )
+onBeforeUnmount( () => {
+  window.removeEventListener( 'resize', updateIsWide )
+} )
+
+const attrs = useAttrs()
+function resolveTier4Id() {
+  const a = attrs.tier4Id ?? attrs['tier4-id']
+  if ( a == null || a === '' || Number.isNaN( Number( a ) ) ) return null
+  return Number( a )
+}
+
+function validateImage( url ) {
+  return new Promise( resolve => {
+    const img = new Image()
+    img.onload = () => resolve( true )
+    img.onerror = () => resolve( false )
+    img.src = url
+  } )
+}
+async function filterReachableImages( urls ) {
+  const results = await Promise.all( urls.map( validateImage ) )
+  return urls.filter( ( u, i ) => results[i] )
+}
+
+/** Load Tier 4 image */
+async function loadNodeImage( id ) {
+  if ( id == null ) {
+    showImage.value = false
+    imageSrc.value = ''
+    previewImages.value = []
+    return
+  }
+  try {
+    const resp = await getEquipmentById( id )
+    const node = resp?.data?.data ?? resp?.data ?? resp
+
+    const list = Array.isArray( node?.image_list ) ? node.image_list.filter( Boolean ) : []
+    const exploded = node?.exploded_view_drawing || null
+    const candidates = [...list, exploded].filter( Boolean )
+
+    const valid = await filterReachableImages( candidates )
+    if ( valid.length ) {
+      imageSrc.value = valid[0]
+      previewImages.value = valid
+      showImage.value = true
+    } else {
+      showImage.value = false
+      imageSrc.value = ''
+      previewImages.value = []
+    }
+  } catch ( err ) {
+    console.error( 'loadNodeImage failed:', err )
+    showImage.value = false
+    imageSrc.value = ''
+    previewImages.value = []
+  }
+}
+
+/** STRICT detail mapper — always show name/code from spare-part
+ *  and use node image, falling back to spare-part image. */
+async function fetchTier5Detail( t5id, fallbackIndex = 0 ) {
+  const res = await getEquipmentById( Number( t5id ) )
+  const d = res?.data?.data ?? res?.data ?? res ?? {}
+
+  // spare part id on node
+  const spId = d.spare_part_id ?? d.spare_part_definition_id ?? d.sparePartId ?? d.sparePartDefinitionId ?? null
+
+  // read spare-part (for name/code and image fallback)
+  let sp = null
+  if ( spId ) {
+    try {
+      sp = await getSparePartCached( spId )
+    } catch ( e ) {
+      console.warn( 'getSparePartById failed for', spId, e )
+    }
+  }
+
+  // ALWAYS take name/code from spare-part (your rule)
+  const spName = sp?.name ?? ''
+  const spCode = sp?.code ?? ''
+
+  // Prefer node image; if missing, fall back to spare-part image
+  const nodeImgs = Array.isArray( d.image_list ) ? d.image_list.filter( Boolean ) : []
+  const spImgs = Array.isArray( sp?.image_list ) ? sp.image_list.filter( Boolean ) : []
+  const imageUrl = nodeImgs[0] || spImgs[0] || null || null
+
+  const seqRaw = d.sequence_order ?? d.sequenceOrder
+  const seq = seqRaw == null ? fallbackIndex + 1 : seqRaw
+
+  const qty = d.spare_part_quantity ?? d.device_quantity ?? 1
+  const autoTrig = d.is_auto_trigger === true ? 'Yes' : d.is_auto_trigger === false ? 'No' : ''
+  const last = d.last_maintenance_date ?? d.installation_date ?? null
+
+  return {
+    id : d.id ?? Number( t5id ),
+
+    // table display (from spare-part)
+    title : spName || '',
+    partNumber : spCode || '',
+
+    // other fields (from node)
+    sparePartId : spId ?? null,
+    deviceTagPositionCode : seq != null ? String( seq ) : '',
+    deviceQuantity : String( qty ),
+    suggestedServiceDays : d.suggested_maintenance_interval_days ?? null,
+    estimatedServiceDays : d.estimated_maintenance_interval_days ?? null,
+    autoTriggerCycle : autoTrig,
+    lastInstallmentTime : last,
+    imageUrl
+  }
+}
+
+/** Batch fetch — ensures only objects go into the table */
+async function fetchTier5DetailsInChunks( ids, chunkSize = 8 ) {
+  const out = []
+  for ( let i = 0; i < ids.length; i += chunkSize ) {
+    const slice = ids.slice( i, i + chunkSize )
+    const rows = await Promise.allSettled( slice.map( ( id, idxInSlice ) => fetchTier5Detail( id, i + idxInSlice ) ) )
+    for ( const s of rows ) {
+      if ( s.status === 'fulfilled' && s.value && typeof s.value === 'object' ) {
+        out.push( s.value )
+      } else {
+        // fallback to a minimal object; never push a number
+        const id = typeof s?.reason?.id === 'number' ? s.reason.id : null
+        if ( id != null ) out.push( { id, title : `Part ${id}`, partNumber : `P-${id}` } )
+      }
+    }
+  }
+  return out
+}
+
+/** Subtree -> IDs -> details -> table rows */
+async function loadSubtree( id ) {
+  if ( id == null ) return
+  try {
+    const resp = await getEquipmentSubtree( id )
+    const json = resp?.data ?? resp
+
+    const children = Array.isArray( json?.data?.children )
+      ? json.data.children
+      : Array.isArray( json?.children )
+        ? json.children
+        : []
+
+    const sorted = [...children].sort( ( a, b ) => {
+      const sa = a.sequenceOrder ?? a.sequence_order ?? Number.MAX_SAFE_INTEGER
+      const sb = b.sequenceOrder ?? b.sequence_order ?? Number.MAX_SAFE_INTEGER
+      if ( sa !== sb ) return sa - sb
+      return ( a.id || 0 ) - ( b.id || 0 )
+    } )
+
+    const ids = sorted.map( c => c.id ).filter( Boolean )
+
+    let rows = []
+    if ( ids.length ) rows = await fetchTier5DetailsInChunks( ids, 8 )
+
+    // final guard: coerce any stray primitive
+    rows = rows.map( r => ( r && typeof r === 'object' ? r : { id : r, title : `Part ${r}`, partNumber : `P-${r}` } ) )
+
+    sparePartsData.value = rows
+  } catch ( err ) {
+    console.error( 'loadSubtree failed:', err )
+    sparePartsData.value = []
+  }
+}
+
+function mapRowToInitial( row ) {
+  return {
+    id : row.id,
+    sparePart : {
+      id : row.spare_part_definition?.id ?? row.sparePartId ?? null,
+      title : row.title ?? row.name ?? '',
+      partNumber : row.partNumber ?? row.code ?? '',
+      raw : row.spare_part_definition ?? null
+    },
+    partNumber : row.partNumber ?? row.code ?? '',
+    deviceTagPositionCode : row.deviceTagPositionCode ?? '',
+    deviceQuantity : Number( row.spare_part_quantity ?? row.deviceQuantity ?? row.device_quantity ?? 1 ),
+    suggestedServiceDays : Number( row.suggestedServiceDays ?? 0 ),
+    estimatedServiceDays : Number( row.estimatedServiceDays ?? 0 ),
+    autoTriggerCycle : row.autoTriggerCycle === true || row.autoTriggerCycle === 'Yes' ? 'Yes' : 'No',
+    lastInstallmentTime : row.lastInstallmentTime ? new Date( row.lastInstallmentTime ) : null
+  }
+}
+
+async function refreshRowById( id ) {
+  try {
+    const fresh = await fetchTier5Detail( id )
+    const i = sparePartsData.value.findIndex( r => Number( r.id ) === Number( id ) )
+    if ( i !== -1 ) {
+      sparePartsData.value.splice( i, 1, fresh )
+    } else {
+      sparePartsData.value.unshift( fresh )
+    }
+    resortByPos() // optional: keep table order if position changed
+  } catch ( e ) {
+    console.error( 'refreshRowById failed', e )
+    await refreshAll()
+  }
+}
+
+function resortByPos() {
+  sparePartsData.value.sort( ( a, b ) => {
+    const sa = Number( a.deviceTagPositionCode ?? a.sequence_order ?? 1e9 )
+    const sb = Number( b.deviceTagPositionCode ?? b.sequence_order ?? 1e9 )
+    if ( sa !== sb ) return sa - sb
+    return Number( a.id ) - Number( b.id )
+  } )
+}
+
+async function onEditSuccess( payload ) {
+  editDialog.value.visible = false
+  const id = payload?.id ?? payload?.data?.id ?? editDialog.value.initial?.id ?? null
+  if ( !id ) return refreshAll()
+  await refreshRowById( id )
+}
+
+function onEdit( row ) {
+  editDialog.value.initial = mapRowToInitial( row )
+  editDialog.value.visible = true
+}
+
+function adjustPagerAfterDelete() {
+  // after sparePartsData changes, recompute pagination & keep user on a valid page
+  nextTick( () => {
+    const total = filteredRows.value.length
+    const totalPages = Math.max( 1, Math.ceil( total / listQuery.limit ) )
+    if ( listQuery.page > totalPages ) listQuery.page = totalPages
+  } )
+}
+
+function removeRowById( id ) {
+  const n = Number( id )
+  sparePartsData.value = sparePartsData.value.filter( r => Number( r.id ) !== n )
+  adjustPagerAfterDelete()
+}
+
+async function onDelete( row ) {
+  try {
+    await ElMessageBox.confirm(
+      `Delete tier 5 spare part "${
+        row.title || row.name || row.partNumber || row.code || row.id
+      }"? This cannot be undone.`,
+      'Delete Confirmation',
+      { type : 'warning', confirmButtonText : 'Delete', cancelButtonText : 'Cancel' }
+    )
+
+    const id = row.id
+
+    removeRowById( id ) // optimistic UI
+    await deactivateEquipmentNode( id )
+
+    emit( 'tier5-deleted', { parentId : resolveTier4Id(), deletedId : id } )
+    ElMessage.success( 'Deleted' )
+  } catch ( e ) {
+    if ( e === 'cancel' || e === 'close' ) return
+    console.error( e )
+    ElMessage.error( e?.message || 'Delete failed' )
+    await refreshAll() // fallback
+  }
+}
+
+async function refreshAll() {
+  const id = resolveTier4Id()
+  loading.value = true
+  try {
+    await Promise.allSettled( [loadNodeImage( id ), loadSubtree( id )] )
+  } finally {
+    loading.value = false
+  }
+}
+onMounted( refreshAll )
+watch(
+  () => [attrs.tier4Id, attrs['tier4-id']],
+  () => {
+    listQuery.page = 1
+    refreshAll()
+  }
+)
 </script>
 
 <style scoped>
@@ -203,22 +435,86 @@ function handleCurrentChange( page ) {
   flex-direction: column;
 }
 
+/* Loading area height so spinner doesn’t collapse */
+.loading-state {
+  width: 100%;
+  height: 320px;
+}
+
+/* T4 image */
 .image-container {
   height: 300px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #ddd;
-  border-radius: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 30px;
 }
-
 .equipment-image {
   width: 100%;
   height: 100%;
 }
 
+/* table area */
 .spare-parts-table {
-  flex: 0 0 400px;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.top-desc {
+  margin-bottom: 8px;
+}
+.search-bar {
+  display: flex;
+  flex-direction: column;
+}
+.table-search {
+  max-width: 520px;
+}
+
+.schedule-table {
+  width: 100%;
+}
+
+.pagination-wrapper {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+}
+
+/* unified icon fallback */
+.image-slot {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  font-size: 16px;
+  width: 100%;
+  height: 100%;
+  background: var(--el-fill-color-light);
+  color: var(--el-text-color-secondary);
+  border-radius: 6px;
+}
+.image-slot .el-icon {
+  font-size: 24px;
+}
+
+/* a bit tighter for 64x64 thumbs */
+.thumb-slot {
+  width: 64px;
+  height: 64px;
+}
+
+.viewer-error {
+  color: var(--el-text-color-primary);
+}
+
+:deep(.el-image-viewer__wrapper) {
+  z-index: 4000;
+}
+.card-list {
+  display: grid;
+  grid-template-columns: 1fr; /* always one card per row */
+  gap: 12px;
 }
 </style>

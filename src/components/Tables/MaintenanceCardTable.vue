@@ -33,6 +33,7 @@ round
             @requestData="handleRequestData"
           />
           <MaintenanceRequestCard v-if="module === 3" :wo="wo" @requestData="handleRequestData" />
+          <MaintenanceSparePartCard v-else-if="module === 5" :item="wo" />
         </el-col>
       </el-row>
     </div>
@@ -54,6 +55,7 @@ round
 import { ref, computed, watch } from 'vue'
 import MaintenanceWorkOrderCard from './Cards/MaintenanceWorkOrderCard.vue'
 import MaintenanceRequestCard from './Cards/MaintenanceRequestCard.vue'
+import MaintenanceSparePartCard from './Cards/MaintenanceSparePartCard.vue'
 import { Search, Close } from '@element-plus/icons-vue'
 
 const props = defineProps( {

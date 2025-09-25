@@ -2,48 +2,81 @@
   <div class="card-item">
     <div class="card-flex">
       <div class="image-section">
-        <el-image :src="item.imageUrl || defaultImageUrl" :alt="item.title" fit="cover" class="part-image">
-          <template #error>
-            <div class="image-slot">
-              <el-icon><Picture /></el-icon>
-              <span>No Image</span>
-            </div>
-          </template>
-        </el-image>
-        <div class="image-text">
-          <el-descriptions :column="1" direction="vertical">
-            <el-descriptions-item label="Last Installment Time" align="center">
-              <el-text>June 1, 2025</el-text>
-            </el-descriptions-item>
-          </el-descriptions>
-        </div>
+        <template v-if="item.imageUrl">
+          <el-image
+            :key="item.imageUrl + '-' + item.id"
+            :src="item.imageUrl"
+            :preview-src-list="[item.imageUrl]"
+            fit="cover"
+            class="part-image"
+            preview-teleported
+            :z-index="4000"
+          >
+            <!-- use the same fallback while loading -->
+            <template #placeholder>
+              <div class="image-slot image-viewer-slot">
+                <el-icon><Picture /></el-icon>
+              </div>
+            </template>
+
+            <!-- error: same fallback -->
+            <template #error>
+              <div class="image-slot image-viewer-slot">
+                <el-icon><Picture /></el-icon>
+              </div>
+            </template>
+
+            <!-- viewer modal error -->
+            <template #viewer-error="{ activeIndex, src }">
+              <div class="image-slot viewer-error">
+                <el-icon><Picture /></el-icon>
+                <span>Can’t preview ({{ activeIndex }}): {{ src }}</span>
+              </div>
+            </template>
+          </el-image>
+        </template>
+
+        <!-- no URL: same fallback -->
+        <template v-else>
+          <div class="image-slot image-viewer-slot part-image">
+            <el-icon><Picture /></el-icon>
+          </div>
+        </template>
       </div>
+
       <div class="info-section">
         <div class="info-section-header">
-          <el-text tag="b" size="large">ROLLER CHAIN 35S-SS304</el-text>
-          <el-text>(B583010)</el-text>
+          <el-text tag="b" size="large">{{ item.title || '—' }}</el-text>
+          <el-text>({{ item.partNumber || '—' }})</el-text>
           <div class="spacer"></div>
-          <el-tooltip content="Device Tag Logs" placement="top">
-            <el-button type="text" :icon="Document" />
-          </el-tooltip>
-          <el-tooltip content="Part Details" placement="top">
-            <el-button type="text" :icon="View" />
-          </el-tooltip>
+
           <el-tooltip content="Edit" placement="top">
-            <el-button type="text" :icon="Edit" />
+            <el-button type="text" :icon="Edit" @click="$emit('edit', item)" />
           </el-tooltip>
           <el-tooltip content="Delete" placement="top">
-            <el-button type="text" :icon="Delete" />
+            <el-button type="text" :icon="Delete" @click="$emit('delete', item)" />
           </el-tooltip>
         </div>
+
         <el-divider />
+
         <el-descriptions :column="3" direction="vertical">
-          <el-descriptions-item label="Device Tag">B583010</el-descriptions-item>
-          <el-descriptions-item label="Device Tag Position Code">4</el-descriptions-item>
-          <el-descriptions-item label="Device Quantity">1</el-descriptions-item>
-          <el-descriptions-item label="Suggested Service Days">1 Day</el-descriptions-item>
-          <el-descriptions-item label="Estimated Service Days">1 Day</el-descriptions-item>
-          <el-descriptions-item label="Auto Trigger Cycle">No</el-descriptions-item>
+          <el-descriptions-item label="Position Code">{{ item.deviceTagPositionCode || '—' }}</el-descriptions-item>
+          <el-descriptions-item label="Quantity">{{ item.deviceQuantity || '—' }}</el-descriptions-item>
+          <el-descriptions-item label="Vendor Suggested Service Days">{{
+            formatDays(item.suggestedServiceDays)
+          }}</el-descriptions-item>
+          <el-descriptions-item label="Estimated Service Days">{{
+            formatDays(item.estimatedServiceDays)
+          }}</el-descriptions-item>
+          <el-descriptions-item label="Installation Date">
+            <el-text>{{ formatDate(item.lastInstallmentTime) }}</el-text>
+          </el-descriptions-item>
+          <el-descriptions-item label="Is Auto Trigger">
+            <el-tag size="small" :type="item.autoTriggerCycle === 'Yes' ? 'success' : 'info'">
+              {{ item.autoTriggerCycle === 'Yes' ? 'Yes' : 'No' }}
+            </el-tag>
+          </el-descriptions-item>
         </el-descriptions>
       </div>
     </div>
@@ -51,72 +84,73 @@
 </template>
 
 <script setup>
-import { Picture, Document, View, Edit, Delete } from '@element-plus/icons-vue'
+import { Picture, Edit, Delete } from '@element-plus/icons-vue'
+defineProps( { item : { type : Object, required : true }} )
 
-defineProps( {
-  item : {
-    type : Object,
-    required : true
-  }
-} )
-
-const defaultImageUrl = 'https://cube.elemecdn.com/6/94/4d3ea53c084bad6931a56d5158a48jpeg.jpeg'
+function formatDays( n ) {
+  if ( n == null || Number.isNaN( Number( n ) ) ) return '—'
+  const v = Number( n )
+  return v === 1 ? '1 Day' : `${v} Days`
+}
+function formatDate( iso ) {
+  if ( !iso ) return '—'
+  const d = new Date( iso )
+  return Number.isNaN( d.getTime() ) ? '—' : d.toISOString().slice( 0, 10 )
+}
 </script>
 
 <style scoped>
 .card-item {
   width: 100%;
-  flex: 1;
   padding: 10px;
   border: 1px solid #ebeef5;
   border-radius: 8px;
-  transition: box-shadow 0.3s ease, transform 0.2s ease;
-  margin-bottom: 10px;
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12), 0 0 6px rgba(0, 0, 0, 0.04);
+  background: #fff;
 }
-
 .card-item:hover {
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
 }
 
 .card-flex {
-  flex: 1;
   display: flex;
-  flex-direction: row;
+  gap: 12px;
+  align-items: center;
 }
-
 .image-section {
-  flex: 0 0 150px;
-  padding-right: 10px;
+  width: 150px;
   display: flex;
   flex-direction: column;
 }
+.part-image { width: 150px; height: 150px; border-radius: 8px; overflow: hidden; }
 
-.image-text {
-  padding-top: 20px;
-  text-align: center;
+/* unified fallback */
+.image-slot {
+  width: 150px; height: 150px;
+  display: flex; align-items: center; justify-content: center; flex-direction: column;
+  color: var(--el-text-color-secondary);
+  border-radius: 8px; gap: 6px;
+}
+.image-slot .el-icon { font-size: 24px; }
+.image-viewer-slot { background: var(--el-fill-color-light); }
+
+.viewer-error {
+  color: var(--el-text-color-primary);
 }
 
 .info-section {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding-right: 10px;
 }
-
 .info-section-header {
-  flex: 1;
   display: flex;
-  flex-direction: row;
   align-items: center;
+  gap: 8px;
 }
-
 .spacer {
-  flex: 1 0 0px;
-}
-
-.el-text {
-  padding-right: 10px;
+  flex: 1;
 }
 </style>

@@ -41,6 +41,14 @@ export const getAllSparePartClasses = () => {
   } )
 }
 
+// Fetch one spare part by ID (returns axios response)
+export const getSparePartById = id => {
+  return http.request( {
+    method : 'get',
+    url : `/resource/spare-part/${id}`
+  } )
+}
+
 /**
  * Create spare part
  * @param {string} name - Name of part
