@@ -5,7 +5,7 @@
       <el-row justify="space-between" align="top" :gutter="16">
         <el-col :span="18">
           <div class="header-main">
-            <h2 class="edit-title">{{ $t('workOrder.editWorkOrder') }}</h2>
+            <h2 class="edit-title">{{ editHeaderTitle }}</h2>
             <div class="header-meta" v-if="workOrder">
               <div class="edit-info">
                 <el-icon><Edit /></el-icon>
@@ -13,7 +13,7 @@
               </div>
               <div class="edit-info">
                 <el-icon><Calendar /></el-icon>
-                <span>{{ $t('workOrder.form.created') }}: {{ formatDate(workOrder.created_at) }}</span>
+                <span>Created On: {{ formatDate(workOrder.created_at) }}</span>
               </div>
             </div>
           </div>
@@ -130,7 +130,7 @@
               <div class="empty-content">
                 <el-icon class="empty-icon"><DocumentAdd /></el-icon>
                 <h4>No Tasks Added</h4>
-                <p>Add your first task to start building the work order</p>
+                <p>Add the task to start building the work order</p>
                 <el-button type="primary" @click="handleAddTask">
                   <el-icon><Plus /></el-icon>
                   Add Task
@@ -176,7 +176,7 @@
               <div class="empty-content">
                 <el-icon class="empty-icon"><Document /></el-icon>
                 <h4>No Standards Added</h4>
-                <p>Add your first standard to ensure work order compliance</p>
+                <p>Add the standard to ensure work order compliance</p>
                 <el-button type="primary" @click="handleAddStandard">
                   <el-icon><Plus /></el-icon>
                   Add Standard
@@ -227,6 +227,21 @@
             format="MM/DD/YYYY HH:mm"
             value-format="YYYY-MM-DDTHH:mm:ss"
             :disabled-date="disabledStartDates"
+          />
+        </el-form-item>
+      </div>
+
+      <!-- End Date -->
+      <div class="form-section">
+        <el-form-item label="End Date" prop="end_date">
+          <el-date-picker
+            v-model="form.end_date"
+            type="datetime"
+            placeholder="Select end date"
+            style="width: 100%"
+            format="MM/DD/YYYY HH:mm"
+            value-format="YYYY-MM-DDTHH:mm:ss"
+            :disabled-date="disabledDueDates"
           />
         </el-form-item>
       </div>
@@ -345,7 +360,13 @@
       :before-close="handleCloseAddTaskDialog"
       top="5vh"
     >
-      <AddTask v-if="showAddTaskDialog" @close="closeAddTaskDialog" @add-templates="onAddTaskTemplates" />
+      <AddTask
+        v-if="showAddTaskDialog"
+        origin-panel="edit"
+        :origin-work-order-id="workOrder?.id"
+        @close="closeAddTaskDialog"
+        @add-templates="onAddTaskTemplates"
+      />
     </el-dialog>
 
     <!-- Add Standard Dialog -->
@@ -585,6 +606,243 @@ let logButtonTimeout = null
 const form = reactive( createEmptyWorkOrderForm() )
 let isHydratingForm = false
 
+const editHeaderTitle = computed( () => {
+  const base = t( 'workOrder.editWorkOrder' )
+  const name = form.name || props.workOrder?.name
+  return name ? `${base} - ${name}` : base
+} )
+
+const createFallbackStep = () => ( {
+  name : 'Checklist',
+  description : 'Auto-generated step',
+  type : 'template',
+  required : false,
+  remarks : '',
+  value : {
+    type : 'checkbox',
+    value : false,
+    require_image : false,
+    image : []
+  },
+  tools : []
+} )
+
+const cloneArray = value => ( Array.isArray( value ) ? clonePayload( value ) : [] )
+
+const formatDateTimeForPicker = value => {
+  if ( !value ) return null
+  const date = new Date( value )
+  if ( Number.isNaN( date.getTime() ) ) {
+    return null
+  }
+
+  const pad = num => String( num ).padStart( 2, '0' )
+  const year = date.getFullYear()
+  const month = pad( date.getMonth() + 1 )
+  const day = pad( date.getDate() )
+  const hours = pad( date.getHours() )
+  const minutes = pad( date.getMinutes() )
+  const seconds = pad( date.getSeconds() )
+
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+}
+
+const pickRandomOptionId = options => {
+  if ( !Array.isArray( options ) || options.length === 0 ) return null
+  const randomOption = options[Math.floor( Math.random() * options.length )]
+  return randomOption?.id ?? randomOption?.value ?? null
+}
+
+const buildExistingTaskId = ( task, index ) => {
+  const candidates = [
+    task.id,
+    task.local_id,
+    task.task_id,
+    task.taskId,
+    task.reference_id,
+    task.template_task_id,
+    task.template_id,
+    task.templateId
+  ]
+
+  const rawId = candidates.find( candidate => {
+    if ( candidate === undefined || candidate === null ) return false
+    const str = String( candidate ).trim()
+    return str.length > 0
+  } )
+
+  if ( !rawId ) {
+    return `existing-task-${index}`
+  }
+
+  const base = String( rawId ).trim()
+  return base.length > 0 ? base : `existing-task-${index}`
+}
+
+const decorateTaskCategory = task => {
+  if ( !task || typeof task !== 'object' ) {
+    return false
+  }
+
+  let changed = false
+
+  if ( task.category && typeof task.category === 'object' ) {
+    const fallbackName = task.category.name ?? task.category.label ?? task.category_name ?? ''
+    if ( task.category_name !== fallbackName ) {
+      task.category_name = fallbackName
+      changed = true
+    }
+  } else if ( typeof task.category === 'string' ) {
+    if ( task.category_name !== task.category ) {
+      task.category_name = task.category
+      changed = true
+    }
+  }
+
+  if ( task.category && !task.category_name ) {
+    const inferred = task.category.name ?? task.category.label ?? ''
+    if ( task.category_name !== inferred ) {
+      task.category_name = inferred
+      changed = true
+    }
+  }
+
+  return changed
+}
+
+const decorateTasksCategories = tasks => {
+  if ( !Array.isArray( tasks ) ) return false
+  let mutated = false
+  tasks.forEach( task => {
+    mutated = decorateTaskCategory( task ) || mutated
+  } )
+  return mutated
+}
+
+const buildPayloadFromExistingTask = ( task, workOrderId ) => {
+  if ( task && typeof task === 'object' && task.payload && typeof task.payload === 'object' ) {
+    const payload = clonePayload( task.payload )
+
+    payload.work_order_id = payload.work_order_id ?? task.work_order_id ?? workOrderId ?? 0
+    payload.state = payload.state ?? task.state ?? DEFAULT_TASK_STATE
+
+    if ( !Array.isArray( payload.steps ) || payload.steps.length === 0 ) {
+      payload.steps = [createFallbackStep()]
+    }
+
+    if ( !payload.time_estimate_sec || payload.time_estimate_sec <= 0 ) {
+      const minutes = task.estimated_minutes ?? task.estimatedMinutes ?? 0
+      payload.time_estimate_sec = task.time_estimate_sec ?? task.timeEstimateSec ?? minutes * 60
+    }
+
+    if ( payload.template_id == null ) {
+      payload.template_id = task.template_id ?? task.templateId ?? null
+    }
+
+    if ( payload.category_id == null ) {
+      payload.category_id = task.category_id ?? task.category?.id ?? null
+    }
+
+    if ( payload.category_name == null ) {
+      payload.category_name = task.category?.name ?? task.category_name ?? ''
+    }
+
+    payload.attachments = cloneArray( payload.attachments || task.attachments || task.file_list )
+
+    return payload
+  }
+
+  const steps = Array.isArray( task?.steps ) ? cloneArray( task.steps ) : []
+  if ( steps.length === 0 ) {
+    steps.push( createFallbackStep() )
+  }
+
+  const minutesEstimate = task?.estimated_minutes || task?.estimatedMinutes || 0
+  const timeEstimate = task?.time_estimate_sec || task?.timeEstimateSec || minutesEstimate * 60
+
+  return {
+    name : task?.name || task?.task_name || task?.task_list_text || `Task`,
+    description : task?.description || '',
+    time_estimate_sec : timeEstimate,
+    steps,
+    attachments : cloneArray( task?.attachments || task?.file_list ),
+    assignee_ids : cloneArray( task?.assignee_ids ),
+    equipment_node_id : task?.equipment_node_id || task?.equipment_node?.id || null,
+    location_id : task?.location_id ?? null,
+    category_id : task?.category_id ?? task?.category?.id ?? null,
+    category_name : task?.category?.name ?? task?.category_name ?? '',
+    work_order_id : task?.work_order_id ?? workOrderId ?? 0,
+    state : task?.state ?? DEFAULT_TASK_STATE,
+    template_id : task?.template_id ?? task?.templateId ?? null
+  }
+}
+
+const normalizeExistingTasks = ( taskList, workOrderId ) => {
+  if ( !Array.isArray( taskList ) ) return []
+
+  return taskList.map( ( rawTask, index ) => {
+    if ( rawTask && typeof rawTask === 'object' ) {
+      const taskClone = clonePayload( rawTask )
+      const payload = buildPayloadFromExistingTask( taskClone, workOrderId )
+
+      const category = taskClone.category
+        ? clonePayload( taskClone.category )
+        : payload.category_name
+          ? {
+              id : payload.category_id ?? null,
+              name : payload.category_name
+            }
+          : null
+
+      const estimatedMinutes = (taskClone.estimated_minutes ?? taskClone.estimatedMinutes ?? Math.round((payload.time_estimate_sec || 0) / 60)) || 0
+
+      const displayTask = {
+        id : buildExistingTaskId( taskClone, index ),
+        name : payload.name || `Task ${index + 1}`,
+        description : payload.description || '',
+        category,
+        category_name : category?.name || taskClone.category_name || payload.category_name || '',
+        estimated_minutes : estimatedMinutes,
+        templateId : payload.template_id,
+        template_id : payload.template_id,
+        steps : Array.isArray( payload.steps ) ? payload.steps : [],
+        source : taskClone.source || ( payload.template_id ? 'template' : 'adhoc' ),
+        payload,
+        rawTemplate : taskClone.rawTemplate || taskClone.template || null,
+        total_steps : taskClone.total_steps ?? payload.steps?.length ?? 0,
+        applicable_assets : Array.isArray( taskClone.applicable_assets )
+          ? cloneArray( taskClone.applicable_assets )
+          : taskClone.applicable_assets
+            ? [String( taskClone.applicable_assets )]
+            : []
+      }
+
+      decorateTaskCategory( displayTask )
+      return displayTask
+    }
+
+    const fallbackName = typeof rawTask === 'string' ? rawTask : `Task ${index + 1}`
+    const payload = buildPayloadFromExistingTask( { name : fallbackName }, workOrderId )
+
+    return {
+      id : `existing-task-${index}`,
+      name : fallbackName,
+      description : '',
+      category : null,
+      category_name : '',
+      estimated_minutes : Math.round( ( payload.time_estimate_sec || 0 ) / 60 ) || 0,
+      templateId : null,
+      template_id : null,
+      steps : payload.steps,
+      source : 'adhoc',
+      payload,
+      rawTemplate : null,
+      total_steps : payload.steps.length,
+      applicable_assets : []
+    }
+  } )
+}
+
 // Existing file tracking for edit mode
 const existingImages = ref( [] )
 const existingFiles = ref( [] )
@@ -660,6 +918,7 @@ watch(
   () => form.tasks,
   () => {
     if ( !isHydratingForm ) {
+      decorateTasksCategories( form.tasks )
       syncFormData()
     }
   },
@@ -758,6 +1017,15 @@ const rules = {
   ],
   start_date : [
     { required : true, message : 'Start date is required', trigger : 'change' }
+  ],
+  end_date : [
+    { required : false, validator : ( _, value, callback ) => {
+      if ( value && form.start_date && new Date( value ) < new Date( form.start_date ) ) {
+        callback( new Error( 'End date must be after start date' ) )
+      } else {
+        callback()
+      }
+    }, trigger : 'change' }
   ]
 }
 
@@ -787,46 +1055,142 @@ const onAddTaskTemplates = ( selectedTemplates ) => {
   closeAddTaskDialog()
 }
 
-const handleTaskAction = ( action ) => {
-  const { type, template } = action
-
-  switch ( type ) {
-    case 'remove':
-      handleRemoveTask( template )
-      break
+const handleTaskAction = ( { action, data } ) => {
+  switch ( action ) {
     case 'preview':
-      handlePreviewTask( template )
+      handlePreviewTask( data )
       break
     case 'edit':
-      handleEditTask( template )
+      handleEditTask( data )
+      break
+    case 'delete':
+      if ( handleRemoveTask( data ) ) {
+        ElMessage.success( `Task "${data?.name || 'Task'}" removed` )
+      }
       break
     default:
-      console.warn( 'Unknown task action:', type )
+      console.warn( 'Unknown task action:', action )
   }
 }
 
-const handleRemoveTask = ( task ) => {
+const handleRemoveTask = task => {
   const index = form.tasks.findIndex( t => t.id === task.id )
   if ( index !== -1 ) {
     form.tasks.splice( index, 1 )
     syncFormData()
+    return true
   }
+  return false
 }
 
-const handlePreviewTask = ( task ) => {
-  if ( task.id && !task.isStandalone ) {
-    previewTaskTemplateId.value = task.id
-    previewTaskData.value = null
-  } else {
-    previewTaskData.value = task
-    previewTaskTemplateId.value = null
+const handlePreviewTask = taskData => {
+  if ( !taskData ) {
+    ElMessage.warning( 'Unable to preview this task.' )
+    return
   }
+
+  const templateId =
+    taskData.templateId ||
+    taskData.template_id ||
+    taskData.payload?.template_id ||
+    taskData.rawTemplate?.template_id ||
+    taskData.rawTemplate?.id ||
+    null
+
+  const isAdhocTask = taskData.source === 'adhoc' || !templateId
+
+  if ( isAdhocTask ) {
+    const steps = Array.isArray( taskData.steps ) && taskData.steps.length > 0
+      ? taskData.steps
+      : Array.isArray( taskData.payload?.steps )
+        ? taskData.payload.steps
+        : []
+
+    previewTaskData.value = {
+      ...taskData,
+      steps
+    }
+    previewTaskTemplateId.value = null
+    showTaskPreviewDialog.value = true
+    return
+  }
+
+  previewTaskTemplateId.value = templateId
+  previewTaskData.value = null
   showTaskPreviewDialog.value = true
 }
 
-const handleEditTask = ( task ) => {
-  // Task editing logic would go here
-  console.log( 'Edit task:', task )
+const handleEditTask = async taskData => {
+  if ( !taskData ) {
+    ElMessage.warning( 'Unable to edit this task.' )
+    return
+  }
+
+  try {
+    loading.value = true
+
+    const originalTemplateId =
+      taskData.templateId ||
+      taskData.template_id ||
+      taskData.payload?.template_id ||
+      taskData.rawTemplate?.template_id ||
+      taskData.rawTemplate?.id ||
+      null
+
+    const isStandaloneTask = taskData.source === 'adhoc' || !originalTemplateId
+
+    if ( !originalTemplateId && !isStandaloneTask ) {
+      ElMessage.warning( 'This task does not have an associated template to edit.' )
+      return
+    }
+
+    const workOrderLabel = form.name || props.workOrder?.name || 'Work Order'
+    const workOrderId = props.workOrder?.id ?? workOrderLabel
+
+    workOrderDraftStore.setReturnRoute( route.fullPath )
+    workOrderDraftStore.setReturnPanel( 'edit' )
+    workOrderDraftStore.setReturnWorkOrderId( props.workOrder?.id ?? null )
+    workOrderDraftStore.setShouldOpenCreatePanel( false )
+
+    const baseQuery = {
+      fromWorkOrder : 'true',
+      workOrderId : String( workOrderId ),
+      workOrderName : workOrderLabel,
+      taskId : taskData.id,
+      returnPanel : 'edit'
+    }
+
+    if ( props.workOrder?.id ) {
+      baseQuery.returnWorkOrderId = String( props.workOrder.id )
+    }
+
+    if ( isStandaloneTask ) {
+      await router.push( {
+        name : 'TaskDesignerEdit',
+        params : { id : 'standalone' },
+        query : {
+          ...baseQuery,
+          standalone : 'true',
+          taskData : JSON.stringify( taskData )
+        }
+      } )
+    } else {
+      await router.push( {
+        name : 'TaskDesignerEdit',
+        params : { id : originalTemplateId },
+        query : {
+          ...baseQuery,
+          originalTemplateId
+        }
+      } )
+    }
+  } catch ( error ) {
+    console.error( 'Failed to open task editor:', error )
+    const errorMessage = error.response?.data?.message || error.message || 'Failed to open task editor'
+    ElMessage.error( errorMessage )
+  } finally {
+    loading.value = false
+  }
 }
 
 const handleDeleteAllTasks = () => {
@@ -862,10 +1226,19 @@ const getPreviewTaskTitle = () => {
   if ( previewTaskData.value ) {
     return previewTaskData.value.name || 'Unnamed Task'
   }
+
   if ( previewTaskTemplateId.value ) {
-    const task = form.tasks.find( t => t.id === previewTaskTemplateId.value )
+    const templateId = previewTaskTemplateId.value
+    const task = form.tasks.find( t =>
+      t.templateId === templateId ||
+      t.template_id === templateId ||
+      t.payload?.template_id === templateId ||
+      t.id === templateId
+    )
+
     return task?.name || 'Task Preview'
   }
+
   return 'Task Preview'
 }
 
@@ -894,30 +1267,32 @@ const onAddStandards = ( selectedStandards ) => {
   closeAddStandardDialog()
 }
 
-const handleStandardAction = ( action ) => {
-  const { type, template } = action
-
-  switch ( type ) {
-    case 'remove':
-      handleRemoveStandard( template )
-      break
+const handleStandardAction = ( { action, data } ) => {
+  switch ( action ) {
     case 'preview':
-      handlePreviewStandard( template )
+      handlePreviewStandard( data )
       break
     case 'edit':
-      handleEditStandard( template )
+      handleEditStandard( data )
+      break
+    case 'delete':
+      if ( handleRemoveStandard( data ) ) {
+        ElMessage.success( `Standard "${data?.name || 'Standard'}" removed` )
+      }
       break
     default:
-      console.warn( 'Unknown standard action:', type )
+      console.warn( 'Unknown standard action:', action )
   }
 }
 
-const handleRemoveStandard = ( standard ) => {
+const handleRemoveStandard = standard => {
   const index = form.standards.findIndex( s => s.id === standard.id )
   if ( index !== -1 ) {
     form.standards.splice( index, 1 )
     syncFormData()
+    return true
   }
+  return false
 }
 
 const handlePreviewStandard = ( standard ) => {
@@ -1042,49 +1417,96 @@ const populateFormFromWorkOrder = ( workOrder ) => {
 
   isHydratingForm = true
 
-  // Basic information
-  form.name = workOrder.name || ''
-  form.description = workOrder.description || ''
+  try {
+    form.name = workOrder.name || ''
+    form.description = workOrder.description || ''
 
-  // Dates
-  form.start_date = workOrder.start_date || null
-  form.due_date = workOrder.due_date || null
+    const startDateSource = workOrder.start_date || workOrder.start_date_time || workOrder.expected_start_date
+    const dueDateSource = workOrder.due_date || workOrder.due_date_time || workOrder.expected_due_date
+    const endDateSource = workOrder.end_date || workOrder.end_date_time || workOrder.expected_end_date || dueDateSource
 
-  // IDs and arrays
-  form.category_ids = Array.isArray( workOrder.categories )
-    ? workOrder.categories.map( c => c.id )
-    : workOrder.category_ids || []
+    form.start_date = formatDateTimeForPicker( startDateSource )
+    form.due_date = formatDateTimeForPicker( dueDateSource )
+    form.end_date = formatDateTimeForPicker( endDateSource )
 
-  form.equipment_node_ids = Array.isArray( workOrder.equipment_nodes )
-    ? workOrder.equipment_nodes.map( e => e.id )
-    : workOrder.equipment_node_ids || []
+    form.category_ids = Array.isArray( workOrder.categories )
+      ? workOrder.categories.map( c => c.id )
+      : cloneArray( workOrder.category_ids )
 
-  form.assignee_ids = Array.isArray( workOrder.assignees )
-    ? workOrder.assignees.map( a => a.id )
-    : workOrder.assignee_ids || []
+    form.equipment_node_ids = Array.isArray( workOrder.equipment_nodes )
+      ? workOrder.equipment_nodes.map( e => e.id )
+      : cloneArray( workOrder.equipment_node_ids )
 
-  form.priority_id = workOrder.priority?.id || workOrder.priority_id || null
-  form.state_id = workOrder.state?.id || workOrder.state_id || 1
-  form.work_type_id = workOrder.work_type?.id || workOrder.work_type_id || null
-  form.approved_by_id = workOrder.approved_by?.id || workOrder.approved_by_id || null
+    form.assignee_ids = Array.isArray( workOrder.assignees )
+      ? workOrder.assignees.map( a => a.id )
+      : cloneArray( workOrder.assignee_ids )
 
-  // Tasks and standards
-  form.tasks = workOrder.tasks || []
-  form.standards = workOrder.standards || []
+    form.vendor_ids = cloneArray( workOrder.vendor_ids )
 
-  // Files
-  form.image_list = workOrder.image_list || []
-  form.file_list = workOrder.file_list || []
-  existingImages.value = workOrder.image_list || []
-  existingFiles.value = workOrder.file_list || []
+    form.priority_id = workOrder.priority?.id || workOrder.priority_id || null
+    form.state_id = workOrder.state?.id || workOrder.state_id || 1
+    form.work_type_id = workOrder.work_type?.id || workOrder.work_type_id || null
+    form.approved_by_id = workOrder.approved_by?.id || workOrder.approved_by_id || null
 
-  // Recurrence settings
-  form.recurrence_setting = workOrder.recurrence_setting || {}
-  form.recurrence_setting_request = workOrder.recurrence_setting_request || {
-    start_date_time : null
+    if ( (!Array.isArray( form.assignee_ids ) || form.assignee_ids.length === 0) && assigneeOptions.value.length > 0 ) {
+      const randomAssignee = pickRandomOptionId( assigneeOptions.value )
+      form.assignee_ids = randomAssignee ? [randomAssignee] : []
+    }
+
+    if ( (form.approved_by_id == null || form.approved_by_id === '') && supervisorOptions.value.length > 0 ) {
+      const randomSupervisor = pickRandomOptionId( supervisorOptions.value )
+      if ( randomSupervisor != null ) {
+        form.approved_by_id = randomSupervisor
+      }
+    }
+
+    if ( (!Array.isArray( form.category_ids ) || form.category_ids.length === 0) && categoryOptions.value.length > 0 ) {
+      const randomCategory = pickRandomOptionId( categoryOptions.value )
+      form.category_ids = randomCategory != null ? [randomCategory] : []
+    }
+
+    const sourceTasks = Array.isArray( workOrder.tasks ) && workOrder.tasks.length > 0
+      ? workOrder.tasks
+      : Array.isArray( workOrder.task_list )
+        ? workOrder.task_list
+        : []
+
+    form.tasks = normalizeExistingTasks( sourceTasks, workOrder.id )
+
+    const sourceStandards = Array.isArray( workOrder.standards ) && workOrder.standards.length > 0
+      ? workOrder.standards
+      : Array.isArray( workOrder.standard_list )
+        ? workOrder.standard_list
+        : []
+
+    const standardsClone = clonePayload( sourceStandards )
+    form.standards = Array.isArray( standardsClone ) ? standardsClone : []
+
+    form.image_list = cloneArray( workOrder.image_list )
+    form.file_list = cloneArray( workOrder.file_list )
+    existingImages.value = cloneArray( workOrder.image_list )
+    existingFiles.value = cloneArray( workOrder.file_list )
+
+    form.recurrence_setting = clonePayload( workOrder.recurrence_setting || {} )
+    form.recurrence_setting_request = clonePayload( workOrder.recurrence_setting_request || {
+      start_date_time : startDateSource ? formatDateTimeForPicker( startDateSource ) : null,
+      end_date_time : endDateSource ? formatDateTimeForPicker( endDateSource ) : null
+    } )
+
+    if ( !form.recurrence_setting_request.start_date_time && startDateSource ) {
+      form.recurrence_setting_request.start_date_time = formatDateTimeForPicker( startDateSource )
+    }
+    if ( !form.recurrence_setting_request.end_date_time && endDateSource ) {
+      form.recurrence_setting_request.end_date_time = formatDateTimeForPicker( endDateSource )
+    }
+
+    decorateTasksCategories( form.tasks )
+    syncTaskPayloads()
+    syncStandards()
+  } finally {
+    isHydratingForm = false
   }
 
-  // Sync derived data
   syncFormData()
 }
 
@@ -1143,6 +1565,7 @@ const loadFormData = async() => {
 const createWorkOrderPayload = () => {
   const formattedDueDate = toUtcIso( form.due_date )
   const formattedStartDate = toUtcIso( form.start_date )
+  const formattedEndDate = toUtcIso( form.end_date )
 
   const basePayload = {
     name : form.name,
@@ -1152,6 +1575,7 @@ const createWorkOrderPayload = () => {
     work_type_id : form.work_type_id,
     start_date : formattedStartDate,
     due_date : formattedDueDate,
+    end_date : formattedEndDate,
     recurrence_setting_request : form.recurrence_setting_request,
     description : form.description || '',
     equipment_node_ids : form.equipment_node_ids,
@@ -1210,10 +1634,14 @@ const submitForm = async() => {
     // Prepare dates for backend
     const formattedDueDate = toUtcIso( form.due_date )
     const formattedStartDate = toUtcIso( form.start_date )
+    const formattedEndDate = toUtcIso( form.end_date )
 
     // Ensure start_date_time is set for recurrence
     if ( !form.recurrence_setting_request.start_date_time && formattedStartDate ) {
       form.recurrence_setting_request.start_date_time = formattedStartDate
+    }
+    if ( !form.recurrence_setting_request.end_date_time && formattedEndDate ) {
+      form.recurrence_setting_request.end_date_time = formattedEndDate
     }
 
     // Ensure derived lists are up to date
@@ -1393,7 +1821,7 @@ watch(
     align-items: center;
     gap: 8px;
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--el-text-color-primary);
 
     .section-icon {
@@ -1411,7 +1839,7 @@ watch(
 
   .task-actions, .standards-actions {
     display: flex;
-    gap: 8px;
+    gap: 5px;
   }
 }
 
@@ -1426,30 +1854,29 @@ watch(
       justify-content: center;
       align-items: center;
       min-height: 200px;
-      background: var(--el-fill-color-light);
-      border: 2px dashed var(--el-border-color-light);
       border-radius: 8px;
 
       .empty-content {
         text-align: center;
+        color: #909399;
 
         .empty-icon {
-          font-size: 48px;
-          color: var(--el-text-color-placeholder);
+          font-size: 64px;
+          color: #c0c4cc;
           margin-bottom: 16px;
         }
 
         h4 {
+          margin: 0 0 0 0;
           font-size: 16px;
-          font-weight: 600;
-          color: var(--el-text-color-primary);
-          margin: 0 0 8px 0;
+          font-weight: 500;
+          color: var(--el-text-color-regular);
         }
 
         p {
+          margin: -8px 0 6px 0;
           font-size: 14px;
-          color: var(--el-text-color-regular);
-          margin: 0 0 20px 0;
+          color: var(--el-text-color-secondary);
         }
       }
     }
@@ -1459,16 +1886,10 @@ watch(
 .tasks-list, .standards-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
 }
 
 .task-card, .standard-card {
-  transition: all 0.2s ease;
-
-  &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
+  width: 100%;
 }
 
 // Work order duration display

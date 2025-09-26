@@ -106,6 +106,7 @@
         @add-costs="handleAddCosts"
         @view-procedure="handleViewProcedure"
         @add-comment="handleAddComment"
+        @start-work-order="handleStartWorkOrder"
       />
 
       <!-- Work Order Create View -->
@@ -124,7 +125,22 @@
         @back-to-detail="showDetailView"
         @work-order-updated="handleWorkOrderUpdated"
       />
+
+      <WorkOrderExecution
+        v-else-if="currentRightPanelView === 'execution'"
+        :key="workOrderInExecution?.id || 'execution'"
+        :work-order="workOrderInExecution"
+        @close="handleExecutionClose"
+      />
     </div>
+
+    <StandardsConfirmDialog
+      v-model="showStandardsDialog"
+      :work-order-name="pendingExecutionWorkOrder?.name || ''"
+      :standards="executionStandards"
+      @confirm="confirmStartExecution"
+      @cancel="cancelStartExecution"
+    />
 
     <!-- PDF Preview Modal -->
     <PdfPreviewModal v-model:visible="showPdfPreview" :work-order="pdfPreviewData" @close="handlePdfPreviewClose" />
@@ -133,6 +149,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getWorkOrderById } from '@/api/work-order'
@@ -141,6 +158,8 @@ import WorkOrderDetail from './WorkOrderDetail.vue'
 import WorkOrderCreate from './WorkOrderCreate.vue'
 import WorkOrderEdit from './WorkOrderEdit.vue'
 import PdfPreviewModal from '../PdfPreview/PdfPreviewModal.vue'
+import WorkOrderExecution from '@/components/WorkOrder/WorkOrderExecution.vue'
+import StandardsConfirmDialog from '@/components/WorkOrder/StandardsConfirmDialog.vue'
 import { useWorkOrderDraftStore } from '@/store/modules/workOrderDraft'
 
 // Props
@@ -190,7 +209,7 @@ const { t } = useI18n()
 const selectedWorkOrder = ref( null )
 const activeTab = ref( 'todo' )
 const sortBy = ref( 'priority-desc' )
-const currentRightPanelView = ref( 'detail' ) // 'detail', 'create', or 'edit'
+const currentRightPanelView = ref( 'detail' ) // 'detail', 'create', 'edit', or 'execution'
 const workOrderToEdit = ref( null )
 const isLoadingWorkOrder = ref( false )
 
@@ -204,6 +223,9 @@ const pdfPreviewData = ref( null )
 // WorkOrderCreate component ref
 const workOrderCreateRef = ref( null )
 
+const router = useRouter()
+const route = useRoute()
+
 // Use pagination from props instead of local state
 const internalCurrentPage = ref( props.currentPage )
 const internalPageSize = ref( props.pageSize )
@@ -211,9 +233,19 @@ const internalPageSize = ref( props.pageSize )
 const workOrderDraftStore = useWorkOrderDraftStore()
 const createPanelKey = ref( 'work-order-create' )
 const createPanelRefreshCounter = ref( 0 )
+const showStandardsDialog = ref( false )
+const pendingExecutionWorkOrder = ref( null )
+const workOrderInExecution = ref( null )
 
 // Computed key that changes when we need to refresh from template designer
 const computedCreatePanelKey = computed( () => `${createPanelKey.value}-${createPanelRefreshCounter.value}` )
+const executionStandards = computed( () => {
+  const standardsSource = pendingExecutionWorkOrder.value?.standards || pendingExecutionWorkOrder.value?.standard_list
+  if ( Array.isArray( standardsSource ) ) {
+    return standardsSource
+  }
+  return []
+} )
 
 // Function to scroll to tasks section after template designer return
 const scrollToTasksSection = () => {
@@ -362,21 +394,142 @@ const handleCardAction = ( { action, workOrder } ) => {
     case 'delete':
       handleDelete( workOrder )
       break
+    case 'start':
+      handleStartWorkOrder( workOrder )
+      break
     default:
       console.warn( `Unhandled action: ${action}`, workOrder )
   }
 }
 
-const handleEdit = workOrder => {
-  // Show edit view in right panel instead of emitting to parent
-  workOrderToEdit.value = workOrder
+const handleEdit = async workOrder => {
+  const canProceed = await checkUnsavedChanges()
+  if ( !canProceed ) {
+    return
+  }
+
   currentRightPanelView.value = 'edit'
-  selectedWorkOrder.value = workOrder
+  isLoadingWorkOrder.value = true
+
+  try {
+    const response = await getWorkOrderById( workOrder.id )
+    const workOrderData = response?.data || workOrder
+
+    workOrderToEdit.value = workOrderData
+    selectedWorkOrder.value = workOrderData
+  } catch ( error ) {
+    console.error( 'Failed to load work order for edit:', error )
+    ElMessage.error( 'Failed to load the latest work order details. Showing cached data.' )
+    workOrderToEdit.value = workOrder
+    selectedWorkOrder.value = workOrder
+  } finally {
+    isLoadingWorkOrder.value = false
+  }
 }
 
 const handleDelete = workOrder => {
   emit( 'delete', workOrder )
 }
+
+const handleStartWorkOrder = async workOrder => {
+  const canProceed = await checkUnsavedChanges()
+  if ( !canProceed ) {
+    return
+  }
+  selectedWorkOrder.value = workOrder
+  pendingExecutionWorkOrder.value = workOrder
+  showStandardsDialog.value = true
+}
+
+const confirmStartExecution = () => {
+  showStandardsDialog.value = false
+  if ( !pendingExecutionWorkOrder.value ) return
+  workOrderInExecution.value = pendingExecutionWorkOrder.value
+  currentRightPanelView.value = 'execution'
+  selectedWorkOrder.value = pendingExecutionWorkOrder.value
+}
+
+const cancelStartExecution = () => {
+  showStandardsDialog.value = false
+  pendingExecutionWorkOrder.value = null
+}
+
+const handleExecutionClose = () => {
+  currentRightPanelView.value = 'detail'
+  workOrderInExecution.value = null
+  pendingExecutionWorkOrder.value = null
+}
+
+const isProcessingReturnContext = ref( false )
+
+const processReturnPanel = async( panel, workOrderId ) => {
+  if ( !panel || isProcessingReturnContext.value ) return
+
+  isProcessingReturnContext.value = true
+  try {
+    if ( panel === 'create' ) {
+      showCreateForm( { fromTemplateDesigner : true } )
+    } else if ( panel === 'edit' ) {
+      const targetId = workOrderId ? Number( workOrderId ) || workOrderId : null
+      if ( !targetId ) {
+        console.warn( 'Missing workOrderId for edit return context.' )
+        return
+      }
+
+      const existing = displayedWorkOrders.value.find( wo => wo.id === targetId )
+      await handleEdit( existing || { id : targetId } )
+    }
+  } finally {
+    isProcessingReturnContext.value = false
+  }
+}
+
+const cleanupReturnQuery = async() => {
+  const query = { ...route.query }
+  delete query.panel
+  delete query.workOrderId
+  try {
+    await router.replace( { path : route.path, query } )
+  } catch ( error ) {
+    if ( error?.name !== 'NavigationDuplicated' ) {
+      console.warn( 'Failed to cleanup return query:', error )
+    }
+  }
+}
+
+watch(
+  () => route.query.panel,
+  async panelValue => {
+    const panel = Array.isArray( panelValue ) ? panelValue[0] : panelValue
+    if ( !panel ) return
+
+    let workOrderIdValue = Array.isArray( route.query.workOrderId )
+      ? route.query.workOrderId[0]
+      : route.query.workOrderId
+
+    if ( !workOrderIdValue && workOrderDraftStore.returnWorkOrderId ) {
+      workOrderIdValue = workOrderDraftStore.returnWorkOrderId
+    }
+
+    await processReturnPanel( panel, workOrderIdValue )
+    await cleanupReturnQuery()
+    workOrderDraftStore.clearReturnContext()
+  },
+  { immediate : true }
+)
+
+watch(
+  () => workOrderDraftStore.returnPanel,
+  async panel => {
+    if ( !panel || route.query.panel ) {
+      return
+    }
+
+    await processReturnPanel( panel, workOrderDraftStore.returnWorkOrderId )
+    workOrderDraftStore.clearReturnContext()
+  },
+  { immediate : true }
+)
 
 const handleShare = _workOrder => {
   ElMessage.success( t( 'workOrder.messages.shareSuccess' ) )

@@ -779,6 +779,9 @@ const handleEditTask = async taskData => {
     ElMessage.info( 'Opening template editor...' )
 
     workOrderDraftStore.setReturnRoute( currentRoute.fullPath )
+    workOrderDraftStore.setReturnPanel( 'create' )
+    workOrderDraftStore.setReturnWorkOrderId( null )
+    workOrderDraftStore.setShouldOpenCreatePanel( true )
 
     if ( isStandaloneTask ) {
       // For standalone tasks, pass the task data directly via query parameters
@@ -791,7 +794,8 @@ const handleEditTask = async taskData => {
           workOrderName : form.name || 'New Work Order',
           taskId : taskData.id,
           standalone : 'true',
-          taskData : JSON.stringify( taskData ) // Pass the full task data
+          taskData : JSON.stringify( taskData ), // Pass the full task data
+          returnPanel : 'create'
         }
       } )
     } else {
@@ -804,7 +808,8 @@ const handleEditTask = async taskData => {
           workOrderId : form.name || 'New Work Order',
           workOrderName : form.name || 'New Work Order',
           taskId : taskData.id,
-          originalTemplateId
+          originalTemplateId,
+          returnPanel : 'create'
         }
       } )
     }

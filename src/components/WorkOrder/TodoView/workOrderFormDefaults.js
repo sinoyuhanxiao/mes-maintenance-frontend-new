@@ -12,6 +12,7 @@ export const createEmptyWorkOrderForm = () => ( {
   time_zone : Intl.DateTimeFormat().resolvedOptions().timeZone,
   start_date : null,
   due_date : null,
+  end_date : null,
   recurrence_type_id : null,
   recurrence_type : null,
   recurrence_setting : {},

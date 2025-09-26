@@ -8,6 +8,8 @@ export const useWorkOrderDraftStore = defineStore( 'workOrderDraft', {
   state : () => ( {
     draftForm : null,
     returnRoute : null,
+    returnPanel : null,
+    returnWorkOrderId : null,
     shouldOpenCreatePanel : false
   } ),
 
@@ -37,6 +39,29 @@ export const useWorkOrderDraftStore = defineStore( 'workOrderDraft', {
 
     clearReturnRoute() {
       this.returnRoute = null
+    },
+
+    setReturnPanel( panel ) {
+      this.returnPanel = panel || null
+    },
+
+    clearReturnPanel() {
+      this.returnPanel = null
+    },
+
+    setReturnWorkOrderId( workOrderId ) {
+      this.returnWorkOrderId = workOrderId ?? null
+    },
+
+    clearReturnWorkOrderId() {
+      this.returnWorkOrderId = null
+    },
+
+    clearReturnContext() {
+      this.returnRoute = null
+      this.returnPanel = null
+      this.returnWorkOrderId = null
+      this.shouldOpenCreatePanel = false
     },
 
     setShouldOpenCreatePanel( flag ) {

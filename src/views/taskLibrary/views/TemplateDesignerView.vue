@@ -530,6 +530,20 @@ const workOrderReturnRoute = computed( () => {
   return queryRoute || workOrderDraftStore.returnRoute || '/work-order/table'
 } )
 
+const workOrderReturnPanel = computed( () => {
+  const queryPanel = typeof route.query.returnPanel === 'string' ? route.query.returnPanel : null
+  return queryPanel || workOrderDraftStore.returnPanel || null
+} )
+
+const workOrderReturnWorkOrderId = computed( () => {
+  const queryId = typeof route.query.returnWorkOrderId === 'string' ? route.query.returnWorkOrderId : null
+  if ( queryId ) return queryId
+  if ( workOrderDraftStore.returnWorkOrderId != null ) {
+    return String( workOrderDraftStore.returnWorkOrderId )
+  }
+  return null
+} )
+
 const { loadTemplates, createTemplate, updateTemplate, validateTemplate } = useTaskLibrary()
 
 // Tour functionality
@@ -1029,10 +1043,34 @@ const handleBack = () => {
 }
 
 const navigateBackToWorkOrder = async message => {
-  const target = workOrderReturnRoute.value || '/work-order/table'
-  const hasShowCreate = target.includes( 'showCreate=' )
-  const separator = target.includes( '?' ) ? '&' : '?'
-  const fullRoute = hasShowCreate ? target : `${target}${separator}showCreate=1`
+  const rawTarget = workOrderReturnRoute.value || '/work-order/table'
+  const panel = workOrderReturnPanel.value
+  const returnWorkOrderId = workOrderReturnWorkOrderId.value
+
+  const targetUrl = new URL( rawTarget, window.location.origin )
+  let basePath = targetUrl.pathname || '/work-order/table'
+  if ( basePath === '/' && targetUrl.hash && targetUrl.hash.startsWith( '#/' ) ) {
+    basePath = targetUrl.hash.slice( 1 )
+  }
+  const baseQueryEntries = Object.fromEntries( targetUrl.searchParams.entries() )
+
+  const finalQuery = { ...baseQueryEntries }
+
+  const shouldOpenCreate = panel === 'create' || (!panel && workOrderDraftStore.shouldOpenCreatePanel)
+
+  if ( shouldOpenCreate ) {
+    finalQuery.panel = 'create'
+    if ( !('showCreate' in finalQuery) ) {
+      finalQuery.showCreate = '1'
+    }
+  } else if ( panel === 'edit' ) {
+    finalQuery.panel = 'edit'
+    if ( returnWorkOrderId ) {
+      finalQuery.workOrderId = returnWorkOrderId
+    }
+  }
+
+  workOrderDraftStore.setShouldOpenCreatePanel( shouldOpenCreate )
 
   if ( message ) {
     ElMessage.success( message )
@@ -1042,10 +1080,7 @@ const navigateBackToWorkOrder = async message => {
     await tagsViewStore.DEL_VIEW( route )
   }
 
-  workOrderDraftStore.setShouldOpenCreatePanel( true )
-  workOrderDraftStore.clearReturnRoute()
-
-  await router.push( fullRoute )
+  await router.push( { path : basePath, query : finalQuery } )
 }
 
 const promptWorkOrderSaveMode = async() => {
