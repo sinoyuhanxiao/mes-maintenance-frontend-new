@@ -69,7 +69,12 @@
         <el-button :type="focusedCardId ? 'success' : ''" :disabled="!focusedCardId" @click="handlePreview">
           Preview
         </el-button>
-        <el-button type="primary" :disabled="selectedTemplates.size === 0" @click="handleAddTemplates">
+        <el-button
+          type="primary"
+          :disabled="selectedTemplates.size === 0 || isAddingTemplates"
+          :loading="isAddingTemplates"
+          @click="handleAddTemplates"
+        >
           Add Templates ({{ selectedTemplates.size }})
         </el-button>
       </div>
@@ -111,7 +116,7 @@ import { Search, ArrowLeft } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import CardTable from '../Tables/CardTable.vue'
 import StepsPreview from '@/components/TaskLibrary/StepsPreview.vue'
-import { searchTaskTemplates } from '@/api/task-library'
+import { searchTaskTemplates, getTaskTemplateById } from '@/api/task-library'
 import { debounce } from 'lodash-es'
 import { useRouter, useRoute } from 'vue-router'
 import { useWorkOrderDraftStore } from '@/store/modules/workOrderDraft'
@@ -144,6 +149,7 @@ const pageSize = ref( 20 )
 
 // Track selected templates
 const selectedTemplates = ref( new Set() )
+const isAddingTemplates = ref( false )
 
 // Track focused card for preview functionality
 const focusedCardId = ref( null )
@@ -229,11 +235,61 @@ const handleTaskAction = selectionData => {
   }
 }
 
-const handleAddTemplates = () => {
-  if ( selectedTemplates.value.size > 0 ) {
-    emit( 'addTemplates', selectedTemplatesList.value )
+const mergeTemplateData = ( baseTemplate, detailedTemplate ) => {
+  return {
+    ...baseTemplate,
+    ...detailedTemplate,
+    steps : Array.isArray( detailedTemplate?.steps ) && detailedTemplate.steps.length > 0
+      ? detailedTemplate.steps
+      : baseTemplate?.steps || []
+  }
+}
+
+const ensureTemplateSteps = async template => {
+  if ( Array.isArray( template?.steps ) && template.steps.length > 0 ) {
+    return template
+  }
+
+  try {
+    const templateId = template.id || template._id || template.template_id
+    if ( !templateId ) {
+      throw new Error( 'Template is missing an identifier' )
+    }
+
+    const response = await getTaskTemplateById( templateId )
+    const detailedTemplate = response?.data ?? response
+    if ( !detailedTemplate ) {
+      throw new Error( 'Missing template detail payload' )
+    }
+    return mergeTemplateData( template, detailedTemplate )
+  } catch ( error ) {
+    console.error( 'Failed to fetch template details:', error )
+    ElMessage.error( `Unable to load steps for template "${template?.name || 'Unnamed Template'}"` )
+    return null
+  }
+}
+
+const handleAddTemplates = async() => {
+  if ( selectedTemplates.value.size === 0 || isAddingTemplates.value ) {
+    return
+  }
+
+  isAddingTemplates.value = true
+  try {
+    const templatesToAdd = await Promise.all(
+      selectedTemplatesList.value.map( template => ensureTemplateSteps( template ) )
+    )
+
+    const validTemplates = templatesToAdd.filter( Boolean )
+    if ( validTemplates.length === 0 ) {
+      return
+    }
+
+    emit( 'addTemplates', validTemplates )
     selectedTemplates.value.clear()
     emit( 'close' )
+  } finally {
+    isAddingTemplates.value = false
   }
 }
 
