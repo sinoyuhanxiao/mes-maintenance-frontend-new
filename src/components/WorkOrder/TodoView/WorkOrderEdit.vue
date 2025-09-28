@@ -637,7 +637,7 @@ import {
 import { useRouter, useRoute } from 'vue-router'
 import { useTaskLibraryStore } from '@/store/modules/taskLibrary'
 import { useWorkOrderDraftStore } from '@/store/modules/workOrderDraft'
-import { createEmptyWorkOrderForm, cloneWorkOrderForm } from './workOrderFormDefaults'
+import { createEmptyWorkOrderForm } from './workOrderFormDefaults'
 import { DEFAULT_TASK_STATE, buildDisplayTaskFromTemplate } from './taskPayloadHelpers'
 
 // Props
@@ -678,7 +678,7 @@ const router = useRouter()
 const route = useRoute()
 const taskLibraryStore = useTaskLibraryStore()
 const workOrderDraftStore = useWorkOrderDraftStore()
-const { currentPayload, showJsonDisplayer, logPayload, closeDebugDrawer } = usePayloadLogger()
+const { currentPayload, showJsonDisplayer, logPayload } = usePayloadLogger()
 
 // Form refs and loading
 const formRef = ref( null )
@@ -1359,7 +1359,6 @@ const getMostCurrentTaskData = taskData => {
   const updatedTask = taskChanges.updated.find( task => getTaskIdentifier( task ) === taskId )
 
   if ( updatedTask ) {
-    console.log( 'WorkOrderEdit: Found task in task_update_list:', updatedTask )
     // Convert update payload back to display format
     return {
       ...taskData,
@@ -1370,7 +1369,6 @@ const getMostCurrentTaskData = taskData => {
   }
 
   // Otherwise return the original task data with steps properly extracted
-  console.log( 'WorkOrderEdit: Using original task data from form.tasks' )
   return {
     ...taskData,
     steps : taskData.steps || taskData.payload?.steps || []
@@ -1385,16 +1383,6 @@ const handleEditTask = async taskData => {
 
   // Get the most current version of the task data
   const currentTaskData = getMostCurrentTaskData( taskData )
-
-  console.log( 'WorkOrderEdit: handleEditTask received data:', {
-    originalTaskData : taskData,
-    currentTaskData,
-    hasSteps : !!currentTaskData.steps,
-    hasPayloadSteps : !!( currentTaskData.payload && currentTaskData.payload.steps ),
-    stepsLength : currentTaskData.steps?.length || 0,
-    payloadStepsLength : currentTaskData.payload?.steps?.length || 0,
-    source : currentTaskData.source
-  } )
 
   try {
     loading.value = true
@@ -1451,22 +1439,6 @@ const handleEditTask = async taskData => {
         // Ensure steps are available at the top level for the editor
         steps : currentTaskData.steps || currentTaskData.payload?.steps || taskData.steps || []
       }
-
-      console.log( 'WorkOrderEdit: Preparing standalone task data:', {
-        originalTaskData : taskData,
-        currentTaskData,
-        originalSteps : currentTaskData.steps?.length || 0,
-        payloadSteps : currentTaskData.payload?.steps?.length || 0,
-        originalTaskSteps : taskData.steps?.length || 0,
-        finalSteps : standaloneTaskData.steps?.length || 0,
-        hasRequiredFields : {
-          name : !!standaloneTaskData.name,
-          description : !!standaloneTaskData.description,
-          category : !!standaloneTaskData.category,
-          estimated_minutes : !!standaloneTaskData.estimated_minutes
-        },
-        standaloneTaskData
-      } )
 
       // Validate that essential data is present before navigation
       if ( !standaloneTaskData.name ) {
@@ -1729,12 +1701,6 @@ const populateFormFromWorkOrder = workOrder => {
 
   isHydratingForm = true
 
-  console.log( 'WorkOrderEdit: populateFormFromWorkOrder called', {
-    workOrderId : workOrder.id,
-    hasTaskList : Array.isArray( workOrder.task_list ) && workOrder.task_list.length > 0,
-    currentFormTasksCount : form.tasks.length
-  } )
-
   try {
     form.name = workOrder.name || ''
     form.description = workOrder.description || ''
@@ -1750,24 +1716,15 @@ const populateFormFromWorkOrder = workOrder => {
     // Handle categories using the same fallback pattern as WorkOrderDetail.vue
     if ( Array.isArray( workOrder.categories ) && workOrder.categories.length ) {
       form.category_ids = workOrder.categories.map( c => c.id )
-      console.log( '🏷️ WorkOrderEdit: Using workOrder.categories', workOrder.categories, '→', form.category_ids )
     } else if ( Array.isArray( workOrder.category_list ) && workOrder.category_list.length ) {
       form.category_ids = workOrder.category_list.map( c => c.id )
-      console.log( '🏷️ WorkOrderEdit: Using workOrder.category_list', workOrder.category_list, '→', form.category_ids )
     } else if ( workOrder.category ) {
       // Single category case - convert to array
       const categoryId = typeof workOrder.category === 'object' ? workOrder.category.id : workOrder.category
       form.category_ids = categoryId ? [categoryId] : []
-      console.log( '🏷️ WorkOrderEdit: Using workOrder.category', workOrder.category, '→', form.category_ids )
     } else {
       // Fallback to direct category_ids
       form.category_ids = cloneArray( workOrder.category_ids ) || []
-      console.log(
-        '🏷️ WorkOrderEdit: Using workOrder.category_ids fallback',
-        workOrder.category_ids,
-        '→',
-        form.category_ids
-      )
     }
 
     form.equipment_node_ids = Array.isArray( workOrder.equipment_nodes )
@@ -1809,20 +1766,7 @@ const populateFormFromWorkOrder = workOrder => {
           ? workOrder.task_list
           : []
 
-    console.log( 'WorkOrderEdit: Populating tasks', {
-      hasWorkOrderTasks : Array.isArray( workOrder.tasks ) && workOrder.tasks.length > 0,
-      hasTaskList : Array.isArray( workOrder.task_list ) && workOrder.task_list.length > 0,
-      sourceTasksCount : sourceTasks.length,
-      workOrderId : workOrder.id
-    } )
-
     form.tasks = normalizeExistingTasks( sourceTasks, workOrder.id )
-
-    console.log( 'WorkOrderEdit: Tasks normalized', {
-      normalizedTasksCount : form.tasks.length,
-      firstTaskName : form.tasks[0]?.name,
-      isHydratingForm
-    } )
 
     const sourceStandards =
       Array.isArray( workOrder.standards ) && workOrder.standards.length > 0
@@ -2160,15 +2104,9 @@ const submitForm = async() => {
 
     if ( isRecurrenceWorkOrder ) {
       // Update all work orders in this recurrence
-      console.log( 'Updating recurrence work orders with UUID:', props.workOrder.recurrence_uuid )
       response = await updateRecurrenceWorkOrders( finalPayload )
     } else {
       // Update individual work order (includes "Does not repeat" cases)
-      console.log(
-        'Updating individual work order ID:',
-        props.workOrder.id,
-        isDoesNotRepeat ? '(Does not repeat)' : '(No recurrence)'
-      )
       response = await updateWorkOrder( props.workOrder.id, finalPayload )
     }
 
@@ -2266,22 +2204,12 @@ const submitForm = async() => {
 
 // Handle hydrating form from draft store - Enhanced for better context handling
 const hydrateFormFromDraft = () => {
-  console.log( 'WorkOrderEdit: Attempting to hydrate from draft', {
-    hasDraft : workOrderDraftStore.hasDraft,
-    isEditMode : workOrderDraftStore.isEditMode,
-    currentContext : workOrderDraftStore.currentContext,
-    draftTasks : workOrderDraftStore.draftForm?.tasks?.length || 0,
-    currentFormTasks : form.tasks.length
-  } )
-
   if ( !workOrderDraftStore.hasDraft ) {
-    console.log( 'WorkOrderEdit: No draft available, skipping hydration' )
     return
   }
 
   // Be more permissive about context - if we have a draft and we're in WorkOrderEdit, use it
   if ( !workOrderDraftStore.isEditMode && workOrderDraftStore.currentContext !== null ) {
-    console.warn( 'WorkOrderEdit: Draft store is not in edit mode but has context, attempting to set edit mode' )
     workOrderDraftStore.setContext( 'edit' )
   }
 
@@ -2394,13 +2322,6 @@ const hydrateFormFromDraft = () => {
       form.standards.splice( 0, form.standards.length, ...updatedStandards )
     }
 
-    console.log( 'WorkOrderEdit: Hydration completed', {
-      addedTasks : addedCount,
-      updatedTasks : updatedCount,
-      totalTasks : form.tasks.length,
-      hasStandards : draftStandards.length > 0
-    } )
-
     // Force a full form reactivity update by triggering the watch
     syncFormData()
 
@@ -2458,15 +2379,6 @@ watch(
       const hasDraftData = workOrderDraftStore.hasDraft
       const hasRecentlyHydrated = hasHydratedFromDraft.value
 
-      console.log( 'WorkOrderEdit: workOrder watch triggered', {
-        hasRecentlyHydrated,
-        workOrderChanged,
-        hasDraftData,
-        newWorkOrderId : newWorkOrder.id,
-        currentFormWorkOrderId : form.workOrderId,
-        currentTasksCount : form.tasks.length
-      } )
-
       // Only populate from work order if:
       // 1. Work order actually changed, OR
       // 2. We haven't recently hydrated from draft AND there's no draft data
@@ -2487,7 +2399,6 @@ watch(
   () => workOrderDraftStore.hasDraft,
   hasDraft => {
     if ( hasDraft && workOrderDraftStore.isEditMode ) {
-      console.log( 'WorkOrderEdit: Draft detected, rehydrating form' )
       hydrateFormFromDraft()
     }
   }
@@ -2500,7 +2411,6 @@ watch(
     if ( taskDataJSON ) {
       try {
         const returnedTaskData = JSON.parse( taskDataJSON )
-        console.log( 'WorkOrderEdit: Processing returned task data:', returnedTaskData )
 
         // Find the task to update by ID or templateId
         const taskIndex = form.tasks.findIndex(
@@ -2543,11 +2453,8 @@ watch(
 
 // Handle keep-alive component reactivation
 onActivated( () => {
-  console.log( 'WorkOrderEdit: Component reactivated' )
-
   // Re-hydrate if there's a draft available
   if ( workOrderDraftStore.hasDraft && workOrderDraftStore.isEditMode ) {
-    console.log( 'WorkOrderEdit: Rehydrating from draft on reactivation' )
     hydrateFormFromDraft()
   }
 
