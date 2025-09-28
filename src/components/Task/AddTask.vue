@@ -116,7 +116,18 @@ import { debounce } from 'lodash-es'
 import { useRouter, useRoute } from 'vue-router'
 import { useWorkOrderDraftStore } from '@/store/modules/workOrderDraft'
 
-// Define emits
+// Define props and emits
+const props = defineProps( {
+  originPanel : {
+    type : String,
+    default : 'create'
+  },
+  originWorkOrderId : {
+    type : [Number, String],
+    default : null
+  }
+} )
+
 const emit = defineEmits( ['close', 'addTemplates'] )
 
 const router = useRouter()
@@ -255,14 +266,33 @@ const getPreviewTemplateTitle = () => {
 const handleNewTask = () => {
   const returnPath = route.fullPath || '/work-order/table'
   workOrderDraftStore.setReturnRoute( returnPath )
-  workOrderDraftStore.setShouldOpenCreatePanel( true )
+
+  const panel = props.originPanel === 'edit' ? 'edit' : 'create'
+  workOrderDraftStore.setReturnPanel( panel )
+
+  if ( panel === 'edit' ) {
+    workOrderDraftStore.setReturnWorkOrderId( props.originWorkOrderId ?? null )
+    workOrderDraftStore.setShouldOpenCreatePanel( false )
+    // Note: For edit mode, the current work order form should already be synced to draft
+    // This happens in the parent component (WorkOrderEdit) before opening this dialog
+  } else {
+    workOrderDraftStore.setReturnWorkOrderId( null )
+    workOrderDraftStore.setShouldOpenCreatePanel( true )
+  }
+
+  const query = {
+    fromWorkOrder : 'true',
+    returnRoute : returnPath,
+    returnPanel : panel
+  }
+
+  if ( panel === 'edit' && props.originWorkOrderId ) {
+    query.returnWorkOrderId = String( props.originWorkOrderId )
+  }
 
   router.push( {
     name : 'TaskDesigner',
-    query : {
-      fromWorkOrder : 'true',
-      returnRoute : returnPath
-    }
+    query
   } )
 
   emit( 'close' )

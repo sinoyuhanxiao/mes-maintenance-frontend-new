@@ -24,10 +24,7 @@ import { downloadByData } from '@/utils/files'
  * @returns {Array} Formatted data array
  */
 export function formatTimelineData( timelineEvents, options = {} ) {
-  const {
-    includeHeaders = true,
-    dateFormat = 'YYYY-MM-DD HH:mm:ss'
-  } = options
+  const { includeHeaders = true, dateFormat = 'YYYY-MM-DD HH:mm:ss' } = options
 
   if ( !Array.isArray( timelineEvents ) || timelineEvents.length === 0 ) {
     return []
@@ -101,11 +98,7 @@ export function exportTimelineToCSV( timelineEvents, filename = 'timeline-export
     const csvWithBOM = BOM + csvContent
 
     // Download the file
-    downloadByData(
-      csvWithBOM,
-      `${filename}.csv`,
-      'text/csv;charset=utf-8'
-    )
+    downloadByData( csvWithBOM, `${filename}.csv`, 'text/csv;charset=utf-8' )
 
     return {
       success : true,
@@ -130,10 +123,7 @@ export function exportTimelineToCSV( timelineEvents, filename = 'timeline-export
  */
 export function exportTimelineToExcel( timelineEvents, filename = 'timeline-export', options = {} ) {
   try {
-    const {
-      sheetName = 'Timeline Data',
-      includeMetadata = true
-    } = options
+    const { sheetName = 'Timeline Data', includeMetadata = true } = options
 
     const formattedData = formatTimelineData( timelineEvents, options )
 
@@ -235,21 +225,20 @@ export function exportTimelineToExcel( timelineEvents, filename = 'timeline-expo
  */
 export function exportTimelineToJSON( timelineEvents, filename = 'timeline-export', options = {} ) {
   try {
-    const {
-      includeMetadata = true,
-      prettyPrint = true
-    } = options
+    const { includeMetadata = true, prettyPrint = true } = options
 
     if ( !Array.isArray( timelineEvents ) || timelineEvents.length === 0 ) {
       throw new Error( 'No data to export' )
     }
 
     const exportData = {
-      exportInfo : includeMetadata ? {
-        generatedAt : new Date().toISOString(),
-        totalRecords : timelineEvents.length,
-        fileFormat : 'JSON'
-      } : undefined,
+      exportInfo : includeMetadata
+        ? {
+          generatedAt : new Date().toISOString(),
+          totalRecords : timelineEvents.length,
+          fileFormat : 'JSON'
+        }
+        : undefined,
       timelineEvents
     }
 
@@ -258,15 +247,9 @@ export function exportTimelineToJSON( timelineEvents, filename = 'timeline-expor
       delete exportData.exportInfo
     }
 
-    const jsonContent = prettyPrint
-      ? JSON.stringify( exportData, null, 2 )
-      : JSON.stringify( exportData )
+    const jsonContent = prettyPrint ? JSON.stringify( exportData, null, 2 ) : JSON.stringify( exportData )
 
-    downloadByData(
-      jsonContent,
-      `${filename}.json`,
-      'application/json;charset=utf-8'
-    )
+    downloadByData( jsonContent, `${filename}.json`, 'application/json;charset=utf-8' )
 
     return {
       success : true,
@@ -322,10 +305,7 @@ export function exportTimeline( timelineEvents, format = 'excel', filename = 'ti
  * @returns {String} Generated filename
  */
 export function generateTimestampedFilename( prefix = 'timeline-export', format = 'excel' ) {
-  const timestamp = new Date()
-    .toISOString()
-    .replace( /[:.]/g, '-' )
-    .slice( 0, 19 ) // Remove milliseconds and timezone
+  const timestamp = new Date().toISOString().replace( /[:.]/g, '-' ).slice( 0, 19 ) // Remove milliseconds and timezone
 
   return `${prefix}-${timestamp}`
 }

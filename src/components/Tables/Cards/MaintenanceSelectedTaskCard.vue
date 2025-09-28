@@ -24,6 +24,7 @@
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item @click="handleEdit">Edit</el-dropdown-item>
+                <el-dropdown-item @click="openAssigneeDialog">Assign</el-dropdown-item>
                 <el-dropdown-item divided @click="handleDelete">Delete</el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -49,23 +50,50 @@
 
         <div class="steps-count">{{ stepsCount }} steps</div>
       </div>
+
+      <!-- Row 3: Assignees Section (only show when there are assignees) -->
+      <div v-if="hasAssignees" class="row-3">
+        <div class="assignees-section">
+          <div class="assignees-header">
+            <el-icon class="assignee-icon"><User /></el-icon>
+            <span class="assignees-label">Assigned to:</span>
+            <div class="assigned-users">
+              <el-tag
+                v-for="user in assignedUsers"
+                :key="user.id"
+                size="small"
+                closable
+                @close="removeAssignee(user.id)"
+                type="primary"
+                effect="plain"
+              >
+                {{ user.name }}
+              </el-tag>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { ElMessageBox } from 'element-plus'
-import { MoreFilled, View } from '@element-plus/icons-vue'
+import { MoreFilled, View, User } from '@element-plus/icons-vue'
 
 const props = defineProps( {
   template : {
     type : Object,
     required : true
+  },
+  assigneeOptions : {
+    type : Array,
+    default : () => []
   }
 } )
 
-const emit = defineEmits( ['selection'] )
+const emit = defineEmits( ['selection', 'assignee-update', 'open-assignee-dialog'] )
 
 const stepsCount = computed( () => {
   // Use new backend format total_steps if available, fallback to old format
@@ -91,6 +119,45 @@ const assetLabel = computed( () => {
   if ( !a || a.length === 0 ) return ''
   return a.length === 1 ? a[0] : `${a.length} assets`
 } )
+
+// Assignee-related computed properties
+const taskAssigneeIds = computed( () => {
+  return props.template?.payload?.assignee_ids || props.template?.assignee_ids || []
+} )
+
+const assignedUsers = computed( () => {
+  return props.assigneeOptions.filter( user => taskAssigneeIds.value.includes( user.id ) )
+} )
+
+const hasAssignees = computed( () => {
+  return assignedUsers.value.length > 0
+} )
+
+const availableUsers = computed( () => {
+  return props.assigneeOptions || []
+} )
+
+// Assignee management methods
+const removeAssignee = userId => {
+  const updatedAssigneeIds = taskAssigneeIds.value.filter( id => id !== userId )
+  updateTaskAssignees( updatedAssigneeIds )
+}
+
+const openAssigneeDialog = () => {
+  emit( 'open-assignee-dialog', {
+    taskId : props.template.id,
+    taskData : props.template,
+    currentAssigneeIds : taskAssigneeIds.value
+  } )
+}
+
+const updateTaskAssignees = newAssigneeIds => {
+  emit( 'assignee-update', {
+    taskId : props.template.id,
+    assigneeIds : newAssigneeIds,
+    taskData : props.template
+  } )
+}
 
 const handleEdit = () => {
   emit( 'selection', {
@@ -248,5 +315,43 @@ const handleDelete = () => {
 
 .tag-item {
   --el-tag-border-color: #e4e7ed;
+}
+
+/* Assignee Section Styles */
+.row-3 {
+  margin-top: 8px;
+  border-top: 1px solid var(--el-border-color-extra-light);
+  padding-top: 8px;
+}
+
+.assignees-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.assignees-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.assignee-icon {
+  font-size: 14px;
+  color: var(--el-color-primary);
+}
+
+.assignees-label {
+  font-size: 13px;
+  color: var(--el-text-color-regular);
+  font-weight: 500;
+}
+
+.assigned-users {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex: 1;
 }
 </style>

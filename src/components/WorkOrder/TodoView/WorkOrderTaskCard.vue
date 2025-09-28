@@ -16,9 +16,9 @@
           {{ categoryLabel }}
         </el-tag>
 
-<!--        <el-tag v-if="equipmentLabel" size="small" type="info" class="tag-item">-->
-<!--          {{ equipmentLabel }}-->
-<!--        </el-tag>-->
+        <!--        <el-tag v-if="equipmentLabel" size="small" type="info" class="tag-item">-->
+        <!--          {{ equipmentLabel }}-->
+        <!--        </el-tag>-->
 
         <el-tag v-if="timeEstimate" size="small" type="warning" class="tag-item">
           {{ timeEstimate }}

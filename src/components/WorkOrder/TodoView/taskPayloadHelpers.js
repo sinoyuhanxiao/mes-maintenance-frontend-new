@@ -170,6 +170,7 @@ export const buildDisplayTaskFromTemplate = template => {
     template_id : payload.template_id,
     steps : template.steps || payload.steps,
     source : 'template',
+    assignee_ids : payload.assignee_ids || [],
     payload,
     rawTemplate : template
   }
@@ -206,6 +207,7 @@ export const buildDisplayTaskFromDesigner = ( templateForm, categoryOption = nul
     estimated_minutes : estimatedMinutes,
     steps : backendPayload.steps,
     source : 'adhoc',
+    assignee_ids : backendPayload.assignee_ids || [],
     payload : backendPayload
   }
 }

@@ -257,10 +257,12 @@ const processTemplateStep = ( s, idx ) => {
     description : s.description || '',
     required : Boolean( s.required ),
     required_image : Boolean( v.require_image ),
-    relevant_tools : tools.filter( t => t && ( t.id || t.tool_id ) ).map( t => ( {
-      tool_id : t.id || t.tool_id,
-      name : t.name || t.tool_name || 'Unnamed Tool'
-    } ) ),
+    relevant_tools : tools
+      .filter( t => t && ( t.id || t.tool_id ) )
+      .map( t => ( {
+        tool_id : t.id || t.tool_id,
+        name : t.name || t.tool_name || 'Unnamed Tool'
+      } ) ),
     config : {}
   }
 
@@ -320,22 +322,25 @@ const processStandaloneStep = ( s, idx ) => {
     description : s.description || '',
     required : Boolean( s.required ),
     required_image : requiredImage,
-    relevant_tools : tools.filter( t => t && ( t.id || t.tool_id ) ).map( t => ( {
-      tool_id : t.id || t.tool_id,
-      name : t.name || t.tool_name || 'Unnamed Tool'
-    } ) ),
+    relevant_tools : tools
+      .filter( t => t && ( t.id || t.tool_id ) )
+      .map( t => ( {
+        tool_id : t.id || t.tool_id,
+        name : t.name || t.tool_name || 'Unnamed Tool'
+      } ) ),
     config : {}
   }
 
   // Enhanced config building based on detected type
   if ( type === 'number' ) {
     base.config = {
-      default_value : typeof v.value === 'number' ? v.value : ( typeof v.default_value === 'number' ? v.default_value : undefined ),
+      default_value :
+        typeof v.value === 'number' ? v.value : typeof v.default_value === 'number' ? v.default_value : undefined,
       limits : transformLimitsFromBackend( numericBounds ),
       required_image : base.required_image
     }
   } else if ( type === 'checkbox' ) {
-    const defaultVal = v.value !== undefined ? Boolean( v.value ) : ( v.default !== undefined ? Boolean( v.default ) : false )
+    const defaultVal = v.value !== undefined ? Boolean( v.value ) : v.default !== undefined ? Boolean( v.default ) : false
     base.config = { default : defaultVal, required_image : base.required_image }
   } else if ( type === 'text' ) {
     const defaultVal = v.value ?? v.default_value ?? ''

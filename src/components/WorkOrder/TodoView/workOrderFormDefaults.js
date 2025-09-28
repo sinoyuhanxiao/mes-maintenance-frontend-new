@@ -7,11 +7,12 @@ export const createEmptyWorkOrderForm = () => ( {
   work_type_id : null,
   equipment_node_ids : [],
   vendor_ids : [],
-  assignee_ids : [],
+  // assignee_ids removed - now handled per-task
   approved_by_id : null,
   time_zone : Intl.DateTimeFormat().resolvedOptions().timeZone,
   start_date : null,
   due_date : null,
+  end_date : null,
   recurrence_type_id : null,
   recurrence_type : null,
   recurrence_setting : {},

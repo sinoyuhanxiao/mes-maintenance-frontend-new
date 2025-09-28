@@ -5,7 +5,7 @@
       <el-row justify="space-between" align="top" :gutter="16">
         <el-col :span="18">
           <div class="header-main">
-            <h2 class="edit-title">{{ $t('workOrder.editWorkOrder') }}</h2>
+            <h2 class="edit-title">{{ editHeaderTitle }}</h2>
             <div class="header-meta" v-if="workOrder">
               <div class="edit-info">
                 <el-icon><Edit /></el-icon>
@@ -13,7 +13,7 @@
               </div>
               <div class="edit-info">
                 <el-icon><Calendar /></el-icon>
-                <span>{{ $t('workOrder.form.created') }}: {{ formatDate(workOrder.created_at) }}</span>
+                <span>Created On: {{ formatDate(workOrder.created_at) }}</span>
               </div>
             </div>
           </div>
@@ -130,7 +130,7 @@
               <div class="empty-content">
                 <el-icon class="empty-icon"><DocumentAdd /></el-icon>
                 <h4>No Tasks Added</h4>
-                <p>Add your first task to start building the work order</p>
+                <p>Add the task to start building the work order</p>
                 <el-button type="primary" @click="handleAddTask">
                   <el-icon><Plus /></el-icon>
                   Add Task
@@ -144,7 +144,10 @@
                 v-for="task in form.tasks"
                 :key="task.id"
                 :template="task"
+                :assignee-options="assigneeOptions"
                 @selection="handleTaskAction"
+                @assignee-update="handleTaskAssigneeUpdate"
+                @open-assignee-dialog="handleOpenAssigneeDialog"
                 class="task-card"
               />
             </div>
@@ -176,7 +179,7 @@
               <div class="empty-content">
                 <el-icon class="empty-icon"><Document /></el-icon>
                 <h4>No Standards Added</h4>
-                <p>Add your first standard to ensure work order compliance</p>
+                <p>Add the standard to ensure work order compliance</p>
                 <el-button type="primary" @click="handleAddStandard">
                   <el-icon><Plus /></el-icon>
                   Add Standard
@@ -231,6 +234,21 @@
         </el-form-item>
       </div>
 
+      <!-- End Date -->
+      <div class="form-section">
+        <el-form-item label="End Date" prop="end_date">
+          <el-date-picker
+            v-model="form.end_date"
+            type="datetime"
+            placeholder="Select end date"
+            style="width: 100%"
+            format="MM/DD/YYYY HH:mm"
+            value-format="YYYY-MM-DDTHH:mm:ss"
+            :disabled-date="disabledDueDates"
+          />
+        </el-form-item>
+      </div>
+
       <!-- Work Type, Priority, and State -->
       <div class="form-section">
         <el-row :gutter="16">
@@ -277,6 +295,7 @@
           v-model:recurrence-setting="form.recurrence_setting"
           :work-order-start-date="form.start_date"
           :work-order-due-date="form.due_date"
+          :recurrence-setting="form.recurrence_setting"
         />
       </div>
 
@@ -345,7 +364,13 @@
       :before-close="handleCloseAddTaskDialog"
       top="5vh"
     >
-      <AddTask v-if="showAddTaskDialog" @close="closeAddTaskDialog" @add-templates="onAddTaskTemplates" />
+      <AddTask
+        v-if="showAddTaskDialog"
+        origin-panel="edit"
+        :origin-work-order-id="workOrder?.id"
+        @close="closeAddTaskDialog"
+        @add-templates="onAddTaskTemplates"
+      />
     </el-dialog>
 
     <!-- Add Standard Dialog -->
@@ -489,6 +514,79 @@
       </div>
     </el-dialog>
 
+    <!-- Task Assignee Management Dialog -->
+    <el-dialog
+      v-model="showTaskAssigneeDialog"
+      title="Select Workers"
+      width="600px"
+      @close="resetTaskAssigneeDialog"
+      top="8vh"
+    >
+      <div class="assignee-picker">
+        <!-- Search -->
+        <div class="search-section">
+          <el-input v-model="userSearchQuery" placeholder="Search users..." clearable>
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+        </div>
+
+        <!-- Available Workers -->
+        <div class="available-section">
+          <h4>Available Workers</h4>
+          <div v-if="filteredAssigneeOptions.length === 0" class="empty-users">
+            <el-empty description="No users found" :image-size="60" />
+          </div>
+          <div v-else class="users-list">
+            <div
+              v-for="user in filteredAssigneeOptions"
+              :key="user.id"
+              class="user-item"
+              :class="{ selected: isUserSelected(user.id) }"
+              @click="toggleUser(user)"
+            >
+              <div class="user-info">
+                <div class="user-name">{{ user.name }}</div>
+                <div v-if="user.email" class="user-email">{{ user.email }}</div>
+              </div>
+              <div class="user-actions">
+                <el-checkbox :model-value="isUserSelected(user.id)" @click.stop @change="toggleUser(user)" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selected Workers -->
+        <div v-if="localSelectedTaskAssignees.length > 0" class="selected-section">
+          <div class="selected-section-header">
+            <h4>Selected Workers ({{ localSelectedTaskAssignees.length }})</h4>
+            <el-button type="text" size="small" @click="clearAllAssignees" class="clear-all-btn"> Clear All </el-button>
+          </div>
+          <div class="selected-users">
+            <el-tag
+              v-for="user in getSelectedUserObjects()"
+              :key="user.id"
+              closable
+              @close="removeSelectedUser(user.id)"
+              class="selected-user-tag"
+            >
+              {{ user.name }}
+            </el-tag>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="resetTaskAssigneeDialog">Cancel</el-button>
+          <el-button type="primary" @click="saveTaskAssignees">
+            Save Selection ({{ localSelectedTaskAssignees.length }})
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
+
     <!-- JSON Debug Drawer -->
     <JsonDebugDrawer
       v-model="showJsonDisplayer"
@@ -500,7 +598,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onBeforeUnmount, watch, nextTick, computed } from 'vue'
+import { ref, reactive, onMounted, onActivated, onBeforeUnmount, watch, nextTick, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   ArrowLeft,
@@ -512,7 +610,8 @@ import {
   List,
   DocumentChecked,
   Edit,
-  Calendar
+  Calendar,
+  Search
 } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import RecurrenceEditor from '@/views/workOrder/components/RecurrenceEditor.vue'
@@ -550,7 +649,7 @@ const props = defineProps( {
 } )
 
 // Emits
-const emit = defineEmits( ['back-to-detail', 'work-order-updated'] )
+const emit = defineEmits( ['back-to-detail', 'work-order-updated', 'work-order-not-found'] )
 
 // Dialog state
 const showAddTaskDialog = ref( false )
@@ -565,6 +664,12 @@ const previewTaskTemplateId = ref( null )
 const previewTaskData = ref( null )
 const previewStandardData = ref( null )
 const isTaskInteractive = ref( false )
+
+// Task assignee dialog state
+const showTaskAssigneeDialog = ref( false )
+const currentEditingTask = ref( null )
+const userSearchQuery = ref( '' )
+const localSelectedTaskAssignees = ref( [] )
 const standalonePreviewTab = ref( 'general' )
 
 // Stores and utilities
@@ -583,15 +688,401 @@ let logButtonTimeout = null
 
 // Form data - matching API requirements and using same structure as create
 const form = reactive( createEmptyWorkOrderForm() )
+// Add workOrderId field to track current work order for change detection
+form.workOrderId = null
 let isHydratingForm = false
+const hasHydratedFromDraft = ref( false )
+
+// Task and Standard change tracking for proper API integration
+const originalTasks = ref( [] )
+const originalStandards = ref( [] )
+const taskChanges = reactive( {
+  added : [],
+  updated : [],
+  deleted : []
+} )
+const standardChanges = reactive( {
+  added : [],
+  updated : [],
+  deleted : []
+} )
+
+const editHeaderTitle = computed( () => {
+  const base = t( 'workOrder.editWorkOrder' )
+  const name = form.name || props.workOrder?.name
+  return name ? `${base} - ${name}` : base
+} )
+
+const createFallbackStep = () => ( {
+  name : 'Checklist',
+  description : 'Auto-generated step',
+  type : 'template',
+  required : false,
+  remarks : '',
+  value : {
+    type : 'checkbox',
+    value : false,
+    require_image : false,
+    image : []
+  },
+  tools : []
+} )
+
+const cloneArray = value => ( Array.isArray( value ) ? clonePayload( value ) : [] )
+
+const formatDateTimeForPicker = value => {
+  if ( !value ) return null
+  const date = new Date( value )
+  if ( Number.isNaN( date.getTime() ) ) {
+    return null
+  }
+
+  const pad = num => String( num ).padStart( 2, '0' )
+  const year = date.getFullYear()
+  const month = pad( date.getMonth() + 1 )
+  const day = pad( date.getDate() )
+  const hours = pad( date.getHours() )
+  const minutes = pad( date.getMinutes() )
+  const seconds = pad( date.getSeconds() )
+
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+}
+
+const pickRandomOptionId = options => {
+  if ( !Array.isArray( options ) || options.length === 0 ) return null
+  const randomOption = options[Math.floor( Math.random() * options.length )]
+  return randomOption?.id ?? randomOption?.value ?? null
+}
+
+// Task change tracking utilities
+
+const getTaskIdentifier = task => {
+  return task.id || task.task_id || task.template_id || task.templateId || `temp-${Math.random()}`
+}
+
+const findOriginalTask = taskId => {
+  return originalTasks.value.find( task => getTaskIdentifier( task ) === taskId )
+}
+
+const isTaskModified = ( currentTask, originalTask ) => {
+  if ( !originalTask ) return false
+
+  // Compare key properties that indicate a task has been modified
+  const compareProps = ['name', 'description', 'estimated_minutes', 'category_id']
+  return (
+    compareProps.some( prop => currentTask[prop] !== originalTask[prop] ) ||
+    JSON.stringify( currentTask.steps || [] ) !== JSON.stringify( originalTask.steps || [] )
+  )
+}
+
+const calculateTaskChanges = () => {
+  // Clear previous changes
+  taskChanges.added.length = 0
+  taskChanges.updated.length = 0
+  taskChanges.deleted.length = 0
+
+  // Find added and updated tasks
+  form.tasks.forEach( currentTask => {
+    const taskId = getTaskIdentifier( currentTask )
+    const originalTask = findOriginalTask( taskId )
+
+    if ( !originalTask ) {
+      // New task - add to added list
+      taskChanges.added.push( currentTask.payload || currentTask )
+    } else if ( isTaskModified( currentTask, originalTask ) ) {
+      // Modified task - add to updated list
+      const updatePayload = {
+        ...( currentTask.payload || currentTask ),
+        id : originalTask.id || originalTask.task_id // Ensure we have the original ID for updates
+      }
+      taskChanges.updated.push( updatePayload )
+    }
+  } )
+
+  // Find deleted tasks
+  originalTasks.value.forEach( originalTask => {
+    const taskId = getTaskIdentifier( originalTask )
+    const currentTask = form.tasks.find( task => getTaskIdentifier( task ) === taskId )
+
+    if ( !currentTask ) {
+      // Task was deleted
+      taskChanges.deleted.push( originalTask.id || originalTask.task_id || originalTask.template_id || originalTask.templateId )
+    }
+  } )
+}
+
+// Standard change tracking utilities
+const getStandardIdentifier = standard => {
+  return standard.id || standard.standard_id || standard.standardId || `temp-${Math.random()}`
+}
+
+const findOriginalStandard = standardId => {
+  return originalStandards.value.find( standard => getStandardIdentifier( standard ) === standardId )
+}
+
+const isStandardModified = ( currentStandard, originalStandard ) => {
+  if ( !originalStandard ) return false
+
+  // Compare key properties
+  const compareProps = ['name', 'description', 'category']
+  return (
+    compareProps.some( prop => currentStandard[prop] !== originalStandard[prop] ) ||
+    JSON.stringify( currentStandard.items || [] ) !== JSON.stringify( originalStandard.items || [] )
+  )
+}
+
+const calculateStandardChanges = () => {
+  // Clear previous changes
+  standardChanges.added.length = 0
+  standardChanges.updated.length = 0
+  standardChanges.deleted.length = 0
+
+  // Find added and updated standards
+  form.standards.forEach( currentStandard => {
+    const standardId = getStandardIdentifier( currentStandard )
+    const originalStandard = findOriginalStandard( standardId )
+
+    if ( !originalStandard ) {
+      // New standard - add to added list
+      standardChanges.added.push( {
+        ...currentStandard,
+        module : 200 // Standard module for work orders
+      } )
+    } else if ( isStandardModified( currentStandard, originalStandard ) ) {
+      // Modified standard - add to updated list
+      standardChanges.updated.push( {
+        ...currentStandard,
+        id : originalStandard.id || originalStandard.standard_id,
+        module : 200
+      } )
+    }
+  } )
+
+  // Find deleted standards
+  originalStandards.value.forEach( originalStandard => {
+    const standardId = getStandardIdentifier( originalStandard )
+    const currentStandard = form.standards.find( standard => getStandardIdentifier( standard ) === standardId )
+
+    if ( !currentStandard ) {
+      // Standard was deleted
+      standardChanges.deleted.push( originalStandard.id || originalStandard.standard_id || originalStandard.standardId )
+    }
+  } )
+}
+
+const buildExistingTaskId = ( task, index ) => {
+  const candidates = [
+    task.id,
+    task.local_id,
+    task.task_id,
+    task.taskId,
+    task.reference_id,
+    task.template_task_id,
+    task.template_id,
+    task.templateId
+  ]
+
+  const rawId = candidates.find( candidate => {
+    if ( candidate === undefined || candidate === null ) return false
+    const str = String( candidate ).trim()
+    return str.length > 0
+  } )
+
+  if ( !rawId ) {
+    return `existing-task-${index}`
+  }
+
+  const base = String( rawId ).trim()
+  return base.length > 0 ? base : `existing-task-${index}`
+}
+
+const decorateTaskCategory = task => {
+  if ( !task || typeof task !== 'object' ) {
+    return false
+  }
+
+  let changed = false
+
+  if ( task.category && typeof task.category === 'object' ) {
+    const fallbackName = task.category.name ?? task.category.label ?? task.category_name ?? ''
+    if ( task.category_name !== fallbackName ) {
+      task.category_name = fallbackName
+      changed = true
+    }
+  } else if ( typeof task.category === 'string' ) {
+    if ( task.category_name !== task.category ) {
+      task.category_name = task.category
+      changed = true
+    }
+  }
+
+  if ( task.category && !task.category_name ) {
+    const inferred = task.category.name ?? task.category.label ?? ''
+    if ( task.category_name !== inferred ) {
+      task.category_name = inferred
+      changed = true
+    }
+  }
+
+  return changed
+}
+
+const decorateTasksCategories = tasks => {
+  if ( !Array.isArray( tasks ) ) return false
+  let mutated = false
+  tasks.forEach( task => {
+    mutated = decorateTaskCategory( task ) || mutated
+  } )
+  return mutated
+}
+
+const buildPayloadFromExistingTask = ( task, workOrderId ) => {
+  if ( task && typeof task === 'object' && task.payload && typeof task.payload === 'object' ) {
+    const payload = clonePayload( task.payload )
+
+    payload.work_order_id = payload.work_order_id ?? task.work_order_id ?? workOrderId ?? 0
+    payload.state = payload.state ?? task.state ?? DEFAULT_TASK_STATE
+
+    if ( !Array.isArray( payload.steps ) || payload.steps.length === 0 ) {
+      payload.steps = [createFallbackStep()]
+    }
+
+    if ( !payload.time_estimate_sec || payload.time_estimate_sec <= 0 ) {
+      const minutes = task.estimated_minutes ?? task.estimatedMinutes ?? 0
+      payload.time_estimate_sec = task.time_estimate_sec ?? task.timeEstimateSec ?? minutes * 60
+    }
+
+    if ( payload.template_id == null ) {
+      payload.template_id = task.template_id ?? task.templateId ?? null
+    }
+
+    if ( payload.category_id == null ) {
+      payload.category_id = task.category_id ?? task.category?.id ?? null
+    }
+
+    if ( payload.category_name == null ) {
+      payload.category_name = task.category?.name ?? task.category_name ?? ''
+    }
+
+    payload.attachments = cloneArray( payload.attachments || task.attachments || task.file_list )
+
+    return payload
+  }
+
+  const steps = Array.isArray( task?.steps ) ? cloneArray( task.steps ) : []
+  if ( steps.length === 0 ) {
+    steps.push( createFallbackStep() )
+  }
+
+  const minutesEstimate = task?.estimated_minutes || task?.estimatedMinutes || 0
+  const timeEstimate = task?.time_estimate_sec || task?.timeEstimateSec || minutesEstimate * 60
+
+  return {
+    name : task?.name || task?.task_name || task?.task_list_text || `Task`,
+    description : task?.description || '',
+    time_estimate_sec : timeEstimate,
+    steps,
+    attachments : cloneArray( task?.attachments || task?.file_list ),
+    assignee_ids : cloneArray( task?.assignee_ids ),
+    equipment_node_id : task?.equipment_node_id || task?.equipment_node?.id || null,
+    location_id : task?.location_id ?? null,
+    category_id : task?.category_id ?? task?.category?.id ?? null,
+    category_name : task?.category?.name ?? task?.category_name ?? '',
+    work_order_id : task?.work_order_id ?? workOrderId ?? 0,
+    state : task?.state ?? DEFAULT_TASK_STATE,
+    template_id : task?.template_id ?? task?.templateId ?? null
+  }
+}
+
+const normalizeExistingTasks = ( taskList, workOrderId ) => {
+  if ( !Array.isArray( taskList ) ) return []
+
+  return taskList.map( ( rawTask, index ) => {
+    if ( rawTask && typeof rawTask === 'object' ) {
+      const taskClone = clonePayload( rawTask )
+      const payload = buildPayloadFromExistingTask( taskClone, workOrderId )
+
+      const category = taskClone.category
+        ? clonePayload( taskClone.category )
+        : payload.category_name
+          ? {
+            id : payload.category_id ?? null,
+            name : payload.category_name
+          }
+          : null
+
+      const estimatedMinutes =
+        ( taskClone.estimated_minutes ??
+          taskClone.estimatedMinutes ??
+          Math.round( ( payload.time_estimate_sec || 0 ) / 60 ) ) ||
+        0
+
+      const displayTask = {
+        id : buildExistingTaskId( taskClone, index ),
+        name : payload.name || `Task ${index + 1}`,
+        description : payload.description || '',
+        category,
+        category_name : category?.name || taskClone.category_name || payload.category_name || '',
+        estimated_minutes : estimatedMinutes,
+        templateId : payload.template_id,
+        template_id : payload.template_id,
+        steps : Array.isArray( payload.steps ) ? payload.steps : [],
+        source : taskClone.source || ( payload.template_id ? 'template' : 'adhoc' ),
+        payload,
+        rawTemplate : taskClone.rawTemplate || taskClone.template || null,
+        total_steps : taskClone.total_steps ?? payload.steps?.length ?? 0,
+        applicable_assets : Array.isArray( taskClone.applicable_assets )
+          ? cloneArray( taskClone.applicable_assets )
+          : taskClone.applicable_assets
+            ? [String( taskClone.applicable_assets )]
+            : []
+      }
+
+      decorateTaskCategory( displayTask )
+      return displayTask
+    }
+
+    const fallbackName = typeof rawTask === 'string' ? rawTask : `Task ${index + 1}`
+    const payload = buildPayloadFromExistingTask( { name : fallbackName }, workOrderId )
+
+    return {
+      id : `existing-task-${index}`,
+      name : fallbackName,
+      description : '',
+      category : null,
+      category_name : '',
+      estimated_minutes : Math.round( ( payload.time_estimate_sec || 0 ) / 60 ) || 0,
+      templateId : null,
+      template_id : null,
+      steps : payload.steps,
+      source : 'adhoc',
+      payload,
+      rawTemplate : null,
+      total_steps : payload.steps.length,
+      applicable_assets : []
+    }
+  } )
+}
 
 // Existing file tracking for edit mode
 const existingImages = ref( [] )
 const existingFiles = ref( [] )
 
 // Options data
-const assigneeOptions = ref( [] )
-const supervisorOptions = ref( [] )
+const assigneeOptions = ref( [
+  { id : 84, name : 'System' },
+  { id : 37, name : 'Erik Yu' },
+  { id : 43, name : 'Chang Shi' },
+  { id : 45, name : 'Maxwell Wang' },
+  { id : 46, name : 'Justin Li' },
+  { id : 47, name : 'Justin Tung' },
+  { id : 48, name : 'Eric Huang' }
+] )
+
+const supervisorOptions = ref( [
+  { id : 36, name : 'Yao Li' },
+  { id : 41, name : 'John Li' }
+] )
 const workTypeOptions = ref( [] )
 const priorityOptions = ref( [] )
 const categoryOptions = ref( [] )
@@ -605,17 +1096,31 @@ const treeProps = {
   value : 'id'
 }
 
-// Template update listener
-const handleTemplateUpdate = ( updatedTemplate ) => {
-  const taskIndex = form.tasks.findIndex( task => task.id === updatedTemplate.id )
-  if ( taskIndex !== -1 ) {
-    const originalPayload = form.tasks[taskIndex].payload
-    const updatedTask = buildDisplayTaskFromTemplate( updatedTemplate )
-    updatedTask.payload = { ...originalPayload, ...updatedTask.payload }
-    form.tasks.splice( taskIndex, 1, updatedTask )
-    nextTick( () => {
-      syncTaskPayloads()
-    } )
+// Template update listener - matches WorkOrderCreate pattern
+const handleTemplateUpdate = updatedTemplate => {
+  // Find tasks that use this template and update them
+  const templateId = updatedTemplate.template_id || updatedTemplate.id
+
+  // Update tasks that match this template
+  form.tasks.forEach( ( task, index ) => {
+    if ( task.source === 'template' && ( task.templateId === templateId || task.template_id === templateId ) ) {
+      const refreshedTask = buildDisplayTaskFromTemplate( updatedTemplate )
+      form.tasks[index] = {
+        ...task,
+        ...refreshedTask,
+        id : task.id,
+        payload : {
+          ...( task.payload || {} ),
+          ...refreshedTask.payload
+        }
+      }
+      decorateTaskCategory( form.tasks[index] )
+    }
+  } )
+
+  // Show notification that tasks were refreshed
+  if ( form.tasks.some( task => task.templateId === templateId || task.template_id === templateId ) ) {
+    ElMessage.success( `Tasks updated with latest template changes: ${updatedTemplate.name}` )
   }
 }
 
@@ -629,30 +1134,13 @@ onBeforeUnmount( () => {
 } )
 
 // Form synchronization functions (copied from WorkOrderCreate)
-const syncTaskPayloads = () => {
-  form.task_list = form.tasks
-    .map( task => clonePayload( task.payload ) )
-    .filter( payload => payload && Array.isArray( payload.steps ) && payload.steps.length > 0 )
-}
-
-const syncStandards = () => {
-  form.standard_list = form.standards.map( standard => ( {
-    id : standard.id,
-    name : standard.name,
-    category : standard.category,
-    description : standard.description || '',
-    items : Array.isArray( standard.items ) ? [...standard.items] : []
-  } ) )
-}
-
-// Sync form data when tasks or standards change
+// Form data synchronization for draft saving - Enhanced for edit context
 const syncFormData = () => {
   if ( isHydratingForm ) return
-  syncTaskPayloads()
-  syncStandards()
   nextTick( () => {
     isHydratingForm = false
-    workOrderDraftStore.saveDraft( form )
+    // Use context-aware draft saving for edit mode
+    workOrderDraftStore.saveContextAwareDraft( form, 'edit' )
   } )
 }
 
@@ -660,6 +1148,7 @@ watch(
   () => form.tasks,
   () => {
     if ( !isHydratingForm ) {
+      decorateTasksCategories( form.tasks )
       syncFormData()
     }
   },
@@ -676,23 +1165,23 @@ watch(
   { deep : true }
 )
 
-// Deep watch for form changes to save draft
+// Deep watch for form changes to save draft - Enhanced for edit context
 watch(
   form,
   () => {
     if ( isHydratingForm ) return
-    workOrderDraftStore.saveDraft( form )
+    workOrderDraftStore.saveContextAwareDraft( form, 'edit' )
   },
   { deep : true }
 )
 
 // Date validation functions (copied from WorkOrderCreate)
-const disabledDueDates = ( time ) => {
+const disabledDueDates = time => {
   if ( !form.start_date ) return false
   return time.getTime() < new Date( form.start_date ).getTime()
 }
 
-const disabledStartDates = ( time ) => {
+const disabledStartDates = time => {
   const now = new Date()
   now.setHours( 0, 0, 0, 0 )
   return time.getTime() < now.getTime()
@@ -720,7 +1209,7 @@ const formatWorkOrderDuration = () => {
 }
 
 // Date formatting utility
-const formatDate = ( dateString ) => {
+const formatDate = dateString => {
   if ( !dateString ) return 'N/A'
   try {
     return new Date( dateString ).toLocaleDateString()
@@ -730,7 +1219,7 @@ const formatDate = ( dateString ) => {
 }
 
 // UTC date conversion utility (copied from WorkOrderCreate)
-const toUtcIso = ( dateValue ) => {
+const toUtcIso = dateValue => {
   if ( !dateValue ) return null
   try {
     const date = new Date( dateValue )
@@ -747,22 +1236,30 @@ const rules = {
     { required : true, message : 'Work order name is required', trigger : 'blur' },
     { min : 3, max : 200, message : 'Name must be between 3 and 200 characters', trigger : 'blur' }
   ],
-  equipment_node_ids : [
-    { required : true, message : 'Please select at least one asset', trigger : 'change' }
-  ],
-  assignee_ids : [
-    { required : true, message : 'Please assign at least one person', trigger : 'change' }
-  ],
-  due_date : [
-    { required : true, message : 'Due date is required', trigger : 'change' }
-  ],
-  start_date : [
-    { required : true, message : 'Start date is required', trigger : 'change' }
+  equipment_node_ids : [{ required : true, message : 'Please select at least one asset', trigger : 'change' }],
+  assignee_ids : [{ required : true, message : 'Please assign at least one person', trigger : 'change' }],
+  due_date : [{ required : true, message : 'Due date is required', trigger : 'change' }],
+  start_date : [{ required : true, message : 'Start date is required', trigger : 'change' }],
+  end_date : [
+    {
+      required : false,
+      validator : ( _, value, callback ) => {
+        if ( value && form.start_date && new Date( value ) < new Date( form.start_date ) ) {
+          callback( new Error( 'End date must be after start date' ) )
+        } else {
+          callback()
+        }
+      },
+      trigger : 'change'
+    }
   ]
 }
 
 // Task management methods (copied from WorkOrderCreate)
 const handleAddTask = () => {
+  // Sync current form to draft store before opening task dialog
+  // This ensures the designer has access to current work order state
+  workOrderDraftStore.saveContextAwareDraft( form, 'edit' )
   showAddTaskDialog.value = true
 }
 
@@ -774,7 +1271,7 @@ const handleCloseAddTaskDialog = () => {
   closeAddTaskDialog()
 }
 
-const onAddTaskTemplates = ( selectedTemplates ) => {
+const onAddTaskTemplates = selectedTemplates => {
   if ( !Array.isArray( selectedTemplates ) ) return
 
   isHydratingForm = true
@@ -787,64 +1284,249 @@ const onAddTaskTemplates = ( selectedTemplates ) => {
   closeAddTaskDialog()
 }
 
-const handleTaskAction = ( action ) => {
-  const { type, template } = action
-
-  switch ( type ) {
-    case 'remove':
-      handleRemoveTask( template )
-      break
+const handleTaskAction = ( { action, data } ) => {
+  switch ( action ) {
     case 'preview':
-      handlePreviewTask( template )
+      handlePreviewTask( data )
       break
     case 'edit':
-      handleEditTask( template )
+      handleEditTask( data )
+      break
+    case 'delete':
+      if ( handleRemoveTask( data ) ) {
+        ElMessage.success( `Task "${data?.name || 'Task'}" removed` )
+      }
       break
     default:
-      console.warn( 'Unknown task action:', type )
+      console.warn( 'Unknown task action:', action )
   }
 }
 
-const handleRemoveTask = ( task ) => {
+const handleRemoveTask = task => {
   const index = form.tasks.findIndex( t => t.id === task.id )
   if ( index !== -1 ) {
     form.tasks.splice( index, 1 )
     syncFormData()
+    return true
   }
+  return false
 }
 
-const handlePreviewTask = ( task ) => {
-  if ( task.id && !task.isStandalone ) {
-    previewTaskTemplateId.value = task.id
-    previewTaskData.value = null
-  } else {
-    previewTaskData.value = task
-    previewTaskTemplateId.value = null
+const handlePreviewTask = taskData => {
+  if ( !taskData ) {
+    ElMessage.warning( 'Unable to preview this task.' )
+    return
   }
+
+  const templateId =
+    taskData.templateId ||
+    taskData.template_id ||
+    taskData.payload?.template_id ||
+    taskData.rawTemplate?.template_id ||
+    taskData.rawTemplate?.id ||
+    null
+
+  const isAdhocTask = taskData.source === 'adhoc' || !templateId
+
+  if ( isAdhocTask ) {
+    const steps =
+      Array.isArray( taskData.steps ) && taskData.steps.length > 0
+        ? taskData.steps
+        : Array.isArray( taskData.payload?.steps )
+          ? taskData.payload.steps
+          : []
+
+    previewTaskData.value = {
+      ...taskData,
+      steps
+    }
+    previewTaskTemplateId.value = null
+    showTaskPreviewDialog.value = true
+    return
+  }
+
+  previewTaskTemplateId.value = templateId
+  previewTaskData.value = null
   showTaskPreviewDialog.value = true
 }
 
-const handleEditTask = ( task ) => {
-  // Task editing logic would go here
-  console.log( 'Edit task:', task )
+const getMostCurrentTaskData = taskData => {
+  // First, calculate current task changes to ensure task_update_list is up to date
+  calculateTaskChanges()
+
+  // Look for the task in task_update_list first (most current version)
+  const taskId = getTaskIdentifier( taskData )
+  const updatedTask = taskChanges.updated.find( task => getTaskIdentifier( task ) === taskId )
+
+  if ( updatedTask ) {
+    console.log( 'WorkOrderEdit: Found task in task_update_list:', updatedTask )
+    // Convert update payload back to display format
+    return {
+      ...taskData,
+      ...updatedTask,
+      steps : updatedTask.steps || updatedTask.payload?.steps || taskData.steps || [],
+      payload : updatedTask
+    }
+  }
+
+  // Otherwise return the original task data with steps properly extracted
+  console.log( 'WorkOrderEdit: Using original task data from form.tasks' )
+  return {
+    ...taskData,
+    steps : taskData.steps || taskData.payload?.steps || []
+  }
+}
+
+const handleEditTask = async taskData => {
+  if ( !taskData ) {
+    ElMessage.warning( 'Unable to edit this task.' )
+    return
+  }
+
+  // Get the most current version of the task data
+  const currentTaskData = getMostCurrentTaskData( taskData )
+
+  console.log( 'WorkOrderEdit: handleEditTask received data:', {
+    originalTaskData : taskData,
+    currentTaskData,
+    hasSteps : !!currentTaskData.steps,
+    hasPayloadSteps : !!( currentTaskData.payload && currentTaskData.payload.steps ),
+    stepsLength : currentTaskData.steps?.length || 0,
+    payloadStepsLength : currentTaskData.payload?.steps?.length || 0,
+    source : currentTaskData.source
+  } )
+
+  try {
+    loading.value = true
+
+    const originalTemplateId =
+      currentTaskData.templateId ||
+      currentTaskData.template_id ||
+      currentTaskData.payload?.template_id ||
+      currentTaskData.rawTemplate?.template_id ||
+      currentTaskData.rawTemplate?.id ||
+      null
+
+    const isStandaloneTask = currentTaskData.source === 'adhoc' && !originalTemplateId
+
+    if ( !originalTemplateId && !isStandaloneTask ) {
+      ElMessage.warning( 'This task does not have an associated template to edit.' )
+      return
+    }
+
+    const workOrderLabel = form.name || props.workOrder?.name || 'Work Order'
+    const workOrderId = props.workOrder?.id ?? workOrderLabel
+
+    // Sync current form to draft store before navigation with edit context
+    workOrderDraftStore.saveContextAwareDraft( form, 'edit' )
+    workOrderDraftStore.setReturnRoute( route.fullPath )
+    workOrderDraftStore.setReturnPanel( 'edit' )
+    workOrderDraftStore.setReturnWorkOrderId( props.workOrder?.id ?? null )
+    workOrderDraftStore.setShouldOpenCreatePanel( false )
+
+    const baseQuery = {
+      fromWorkOrder : 'true',
+      workOrderId : String( workOrderId ),
+      workOrderName : workOrderLabel,
+      taskId : currentTaskData.id,
+      returnPanel : 'edit'
+    }
+
+    if ( props.workOrder?.id ) {
+      baseQuery.returnWorkOrderId = String( props.workOrder.id )
+    }
+
+    if ( isStandaloneTask ) {
+      // Ensure steps are available at the top level for the editor
+      // Preserve original task data structure and only overlay necessary updates
+      const standaloneTaskData = {
+        ...taskData, // Start with original task data to preserve all properties
+        ...currentTaskData, // Overlay with any updates from getMostCurrentTaskData
+        // Ensure essential properties are preserved
+        name : currentTaskData.name || taskData.name,
+        description : currentTaskData.description || taskData.description,
+        category : currentTaskData.category || taskData.category,
+        estimated_minutes : currentTaskData.estimated_minutes || taskData.estimated_minutes,
+        equipment_node_id : currentTaskData.equipment_node_id || taskData.equipment_node_id,
+        // Ensure steps are available at the top level for the editor
+        steps : currentTaskData.steps || currentTaskData.payload?.steps || taskData.steps || []
+      }
+
+      console.log( 'WorkOrderEdit: Preparing standalone task data:', {
+        originalTaskData : taskData,
+        currentTaskData,
+        originalSteps : currentTaskData.steps?.length || 0,
+        payloadSteps : currentTaskData.payload?.steps?.length || 0,
+        originalTaskSteps : taskData.steps?.length || 0,
+        finalSteps : standaloneTaskData.steps?.length || 0,
+        hasRequiredFields : {
+          name : !!standaloneTaskData.name,
+          description : !!standaloneTaskData.description,
+          category : !!standaloneTaskData.category,
+          estimated_minutes : !!standaloneTaskData.estimated_minutes
+        },
+        standaloneTaskData
+      } )
+
+      // Validate that essential data is present before navigation
+      if ( !standaloneTaskData.name ) {
+        console.error( 'WorkOrderEdit: Missing required field "name" in standalone task data' )
+        ElMessage.error( 'Unable to edit task: missing task name. Please try refreshing and editing again.' )
+        return
+      }
+
+      if ( !standaloneTaskData.id ) {
+        console.error( 'WorkOrderEdit: Missing required field "id" in standalone task data' )
+        ElMessage.error( 'Unable to edit task: missing task ID. Please try refreshing and editing again.' )
+        return
+      }
+
+      // Store task data in sessionStorage to avoid URL length limits
+      const storageKey = `standalone-task-${standaloneTaskData.id}-${Date.now()}`
+      sessionStorage.setItem( storageKey, JSON.stringify( standaloneTaskData ) )
+
+      await router.push( {
+        name : 'TaskDesignerEdit',
+        params : { id : 'standalone' },
+        query : {
+          ...baseQuery,
+          standalone : 'true',
+          taskDataKey : storageKey
+        }
+      } )
+    } else {
+      await router.push( {
+        name : 'TaskDesignerEdit',
+        params : { id : originalTemplateId },
+        query : {
+          ...baseQuery,
+          originalTemplateId
+        }
+      } )
+    }
+  } catch ( error ) {
+    console.error( 'Failed to open task editor:', error )
+    const errorMessage = error.response?.data?.message || error.message || 'Failed to open task editor'
+    ElMessage.error( errorMessage )
+  } finally {
+    loading.value = false
+  }
 }
 
 const handleDeleteAllTasks = () => {
-  ElMessageBox.confirm(
-    'Are you sure you want to remove all tasks?',
-    'Confirm Remove All Tasks',
-    {
-      confirmButtonText : 'Remove All',
-      cancelButtonText : 'Cancel',
-      type : 'warning'
-    }
-  ).then( () => {
-    form.tasks.splice( 0 )
-    syncFormData()
-    ElMessage.success( 'All tasks removed successfully' )
-  } ).catch( () => {
-    // User cancelled
+  ElMessageBox.confirm( 'Are you sure you want to remove all tasks?', 'Confirm Remove All Tasks', {
+    confirmButtonText : 'Remove All',
+    cancelButtonText : 'Cancel',
+    type : 'warning'
   } )
+    .then( () => {
+      form.tasks.splice( 0 )
+      syncFormData()
+      ElMessage.success( 'All tasks removed successfully' )
+    } )
+    .catch( () => {
+      // User cancelled
+    } )
 }
 
 // Task preview dialog methods
@@ -862,10 +1544,20 @@ const getPreviewTaskTitle = () => {
   if ( previewTaskData.value ) {
     return previewTaskData.value.name || 'Unnamed Task'
   }
+
   if ( previewTaskTemplateId.value ) {
-    const task = form.tasks.find( t => t.id === previewTaskTemplateId.value )
+    const templateId = previewTaskTemplateId.value
+    const task = form.tasks.find(
+      t =>
+        t.templateId === templateId ||
+        t.template_id === templateId ||
+        t.payload?.template_id === templateId ||
+        t.id === templateId
+    )
+
     return task?.name || 'Task Preview'
   }
+
   return 'Task Preview'
 }
 
@@ -882,7 +1574,7 @@ const handleCloseAddStandardDialog = () => {
   closeAddStandardDialog()
 }
 
-const onAddStandards = ( selectedStandards ) => {
+const onAddStandards = selectedStandards => {
   if ( !Array.isArray( selectedStandards ) ) return
 
   isHydratingForm = true
@@ -894,43 +1586,45 @@ const onAddStandards = ( selectedStandards ) => {
   closeAddStandardDialog()
 }
 
-const handleStandardAction = ( action ) => {
-  const { type, template } = action
-
-  switch ( type ) {
-    case 'remove':
-      handleRemoveStandard( template )
-      break
+const handleStandardAction = ( { action, data } ) => {
+  switch ( action ) {
     case 'preview':
-      handlePreviewStandard( template )
+      handlePreviewStandard( data )
       break
     case 'edit':
-      handleEditStandard( template )
+      handleEditStandard( data )
+      break
+    case 'delete':
+      if ( handleRemoveStandard( data ) ) {
+        ElMessage.success( `Standard "${data?.name || 'Standard'}" removed` )
+      }
       break
     default:
-      console.warn( 'Unknown standard action:', type )
+      console.warn( 'Unknown standard action:', action )
   }
 }
 
-const handleRemoveStandard = ( standard ) => {
+const handleRemoveStandard = standard => {
   const index = form.standards.findIndex( s => s.id === standard.id )
   if ( index !== -1 ) {
     form.standards.splice( index, 1 )
     syncFormData()
+    return true
   }
+  return false
 }
 
-const handlePreviewStandard = ( standard ) => {
+const handlePreviewStandard = standard => {
   previewStandardData.value = standard
   showStandardPreviewDialog.value = true
 }
 
-const handleEditStandard = ( standard ) => {
+const handleEditStandard = standard => {
   editingStandard.value = standard
   showEditStandardDialog.value = true
 }
 
-const onStandardUpdate = ( updatedStandard ) => {
+const onStandardUpdate = updatedStandard => {
   const index = form.standards.findIndex( s => s.id === updatedStandard.id )
   if ( index !== -1 ) {
     form.standards.splice( index, 1, updatedStandard )
@@ -941,29 +1635,27 @@ const onStandardUpdate = ( updatedStandard ) => {
 }
 
 const handleDeleteAllStandards = () => {
-  ElMessageBox.confirm(
-    'Are you sure you want to remove all standards?',
-    'Confirm Remove All Standards',
-    {
-      confirmButtonText : 'Remove All',
-      cancelButtonText : 'Cancel',
-      type : 'warning'
-    }
-  ).then( () => {
-    form.standards.splice( 0 )
-    syncFormData()
-    ElMessage.success( 'All standards removed successfully' )
-  } ).catch( () => {
-    // User cancelled
+  ElMessageBox.confirm( 'Are you sure you want to remove all standards?', 'Confirm Remove All Standards', {
+    confirmButtonText : 'Remove All',
+    cancelButtonText : 'Cancel',
+    type : 'warning'
   } )
+    .then( () => {
+      form.standards.splice( 0 )
+      syncFormData()
+      ElMessage.success( 'All standards removed successfully' )
+    } )
+    .catch( () => {
+      // User cancelled
+    } )
 }
 
 // File handling methods
-const handleImageListUpdate = ( imageList ) => {
+const handleImageListUpdate = imageList => {
   form.image_list = imageList
 }
 
-const handleFilesListUpdate = ( filesList ) => {
+const handleFilesListUpdate = filesList => {
   form.file_list = filesList
 }
 
@@ -993,35 +1685,31 @@ const handleBackToDetail = () => {
     return
   }
 
-  ElMessageBox.confirm(
-    'Are you sure you want to leave the form? All unsaved changes will be lost.',
-    'Confirm Leave',
-    {
-      confirmButtonText : 'Leave',
-      cancelButtonText : 'Cancel',
-      type : 'warning'
-    }
-  ).then( () => {
-    emit( 'back-to-detail' )
-  } ).catch( () => {
-    // User cancelled
+  ElMessageBox.confirm( 'Are you sure you want to leave the form? All unsaved changes will be lost.', 'Confirm Leave', {
+    confirmButtonText : 'Leave',
+    cancelButtonText : 'Cancel',
+    type : 'warning'
   } )
+    .then( () => {
+      emit( 'back-to-detail' )
+    } )
+    .catch( () => {
+      // User cancelled
+    } )
 }
 
 const resetForm = () => {
-  ElMessageBox.confirm(
-    'Are you sure you want to reset the form? All unsaved changes will be lost.',
-    'Confirm Reset',
-    {
-      confirmButtonText : 'Reset',
-      cancelButtonText : 'Cancel',
-      type : 'warning'
-    }
-  ).then( () => {
-    resetFormSilent()
-  } ).catch( () => {
-    // User cancelled
+  ElMessageBox.confirm( 'Are you sure you want to reset the form? All unsaved changes will be lost.', 'Confirm Reset', {
+    confirmButtonText : 'Reset',
+    cancelButtonText : 'Cancel',
+    type : 'warning'
   } )
+    .then( () => {
+      resetFormSilent()
+    } )
+    .catch( () => {
+      // User cancelled
+    } )
 }
 
 const resetFormSilent = () => {
@@ -1032,60 +1720,280 @@ const resetFormSilent = () => {
 // Check for unsaved changes
 const checkForUnsavedChanges = () => {
   // Simple check - in production you might want more sophisticated change detection
-  return form.name !== ( props.workOrder?.name || '' ) ||
-         form.description !== ( props.workOrder?.description || '' )
+  return form.name !== ( props.workOrder?.name || '' ) || form.description !== ( props.workOrder?.description || '' )
 }
 
 // Work order data population for edit mode
-const populateFormFromWorkOrder = ( workOrder ) => {
+const populateFormFromWorkOrder = workOrder => {
   if ( !workOrder ) return
 
   isHydratingForm = true
 
-  // Basic information
-  form.name = workOrder.name || ''
-  form.description = workOrder.description || ''
+  console.log( 'WorkOrderEdit: populateFormFromWorkOrder called', {
+    workOrderId : workOrder.id,
+    hasTaskList : Array.isArray( workOrder.task_list ) && workOrder.task_list.length > 0,
+    currentFormTasksCount : form.tasks.length
+  } )
 
-  // Dates
-  form.start_date = workOrder.start_date || null
-  form.due_date = workOrder.due_date || null
+  try {
+    form.name = workOrder.name || ''
+    form.description = workOrder.description || ''
 
-  // IDs and arrays
-  form.category_ids = Array.isArray( workOrder.categories )
-    ? workOrder.categories.map( c => c.id )
-    : workOrder.category_ids || []
+    const startDateSource = workOrder.start_date || workOrder.start_date_time || workOrder.expected_start_date
+    const dueDateSource = workOrder.due_date || workOrder.due_date_time || workOrder.expected_due_date
+    const endDateSource = workOrder.end_date || workOrder.end_date_time || workOrder.expected_end_date || dueDateSource
 
-  form.equipment_node_ids = Array.isArray( workOrder.equipment_nodes )
-    ? workOrder.equipment_nodes.map( e => e.id )
-    : workOrder.equipment_node_ids || []
+    form.start_date = formatDateTimeForPicker( startDateSource )
+    form.due_date = formatDateTimeForPicker( dueDateSource )
+    form.end_date = formatDateTimeForPicker( endDateSource )
 
-  form.assignee_ids = Array.isArray( workOrder.assignees )
-    ? workOrder.assignees.map( a => a.id )
-    : workOrder.assignee_ids || []
+    // Handle categories using the same fallback pattern as WorkOrderDetail.vue
+    if ( Array.isArray( workOrder.categories ) && workOrder.categories.length ) {
+      form.category_ids = workOrder.categories.map( c => c.id )
+      console.log( '🏷️ WorkOrderEdit: Using workOrder.categories', workOrder.categories, '→', form.category_ids )
+    } else if ( Array.isArray( workOrder.category_list ) && workOrder.category_list.length ) {
+      form.category_ids = workOrder.category_list.map( c => c.id )
+      console.log( '🏷️ WorkOrderEdit: Using workOrder.category_list', workOrder.category_list, '→', form.category_ids )
+    } else if ( workOrder.category ) {
+      // Single category case - convert to array
+      const categoryId = typeof workOrder.category === 'object' ? workOrder.category.id : workOrder.category
+      form.category_ids = categoryId ? [categoryId] : []
+      console.log( '🏷️ WorkOrderEdit: Using workOrder.category', workOrder.category, '→', form.category_ids )
+    } else {
+      // Fallback to direct category_ids
+      form.category_ids = cloneArray( workOrder.category_ids ) || []
+      console.log(
+        '🏷️ WorkOrderEdit: Using workOrder.category_ids fallback',
+        workOrder.category_ids,
+        '→',
+        form.category_ids
+      )
+    }
 
-  form.priority_id = workOrder.priority?.id || workOrder.priority_id || null
-  form.state_id = workOrder.state?.id || workOrder.state_id || 1
-  form.work_type_id = workOrder.work_type?.id || workOrder.work_type_id || null
-  form.approved_by_id = workOrder.approved_by?.id || workOrder.approved_by_id || null
+    form.equipment_node_ids = Array.isArray( workOrder.equipment_nodes )
+      ? workOrder.equipment_nodes.map( e => e.id )
+      : cloneArray( workOrder.equipment_node_ids )
 
-  // Tasks and standards
-  form.tasks = workOrder.tasks || []
-  form.standards = workOrder.standards || []
+    form.assignee_ids = Array.isArray( workOrder.assignees )
+      ? workOrder.assignees.map( a => a.id )
+      : cloneArray( workOrder.assignee_ids )
 
-  // Files
-  form.image_list = workOrder.image_list || []
-  form.file_list = workOrder.file_list || []
-  existingImages.value = workOrder.image_list || []
-  existingFiles.value = workOrder.file_list || []
+    form.vendor_ids = cloneArray( workOrder.vendor_ids )
 
-  // Recurrence settings
-  form.recurrence_setting = workOrder.recurrence_setting || {}
-  form.recurrence_setting_request = workOrder.recurrence_setting_request || {
-    start_date_time : null
+    form.priority_id = workOrder.priority?.id || workOrder.priority_id || null
+    form.state_id = workOrder.state?.id || workOrder.state_id || 1
+    form.work_type_id = workOrder.work_type?.id || workOrder.work_type_id || null
+    form.approved_by_id = workOrder.approved_by?.id || workOrder.approved_by_id || null
+
+    if ( ( !Array.isArray( form.assignee_ids ) || form.assignee_ids.length === 0 ) && assigneeOptions.value.length > 0 ) {
+      const randomAssignee = pickRandomOptionId( assigneeOptions.value )
+      form.assignee_ids = randomAssignee ? [randomAssignee] : []
+    }
+
+    if ( ( form.approved_by_id == null || form.approved_by_id === '' ) && supervisorOptions.value.length > 0 ) {
+      const randomSupervisor = pickRandomOptionId( supervisorOptions.value )
+      if ( randomSupervisor != null ) {
+        form.approved_by_id = randomSupervisor
+      }
+    }
+
+    if ( ( !Array.isArray( form.category_ids ) || form.category_ids.length === 0 ) && categoryOptions.value.length > 0 ) {
+      const randomCategory = pickRandomOptionId( categoryOptions.value )
+      form.category_ids = randomCategory != null ? [randomCategory] : []
+    }
+
+    const sourceTasks =
+      Array.isArray( workOrder.tasks ) && workOrder.tasks.length > 0
+        ? workOrder.tasks
+        : Array.isArray( workOrder.task_list )
+          ? workOrder.task_list
+          : []
+
+    console.log( 'WorkOrderEdit: Populating tasks', {
+      hasWorkOrderTasks : Array.isArray( workOrder.tasks ) && workOrder.tasks.length > 0,
+      hasTaskList : Array.isArray( workOrder.task_list ) && workOrder.task_list.length > 0,
+      sourceTasksCount : sourceTasks.length,
+      workOrderId : workOrder.id
+    } )
+
+    form.tasks = normalizeExistingTasks( sourceTasks, workOrder.id )
+
+    console.log( 'WorkOrderEdit: Tasks normalized', {
+      normalizedTasksCount : form.tasks.length,
+      firstTaskName : form.tasks[0]?.name,
+      isHydratingForm
+    } )
+
+    const sourceStandards =
+      Array.isArray( workOrder.standards ) && workOrder.standards.length > 0
+        ? workOrder.standards
+        : Array.isArray( workOrder.standard_list )
+          ? workOrder.standard_list
+          : []
+
+    const standardsClone = clonePayload( sourceStandards )
+    form.standards = Array.isArray( standardsClone ) ? standardsClone : []
+
+    // Store original tasks and standards for change tracking
+    originalTasks.value = clonePayload( form.tasks )
+    originalStandards.value = clonePayload( form.standards )
+
+    // Sync original data to draft store for designer navigation consistency
+    workOrderDraftStore.originalTasks = clonePayload( form.tasks )
+    workOrderDraftStore.originalStandards = clonePayload( form.standards )
+
+    form.image_list = cloneArray( workOrder.image_list )
+    form.file_list = cloneArray( workOrder.file_list )
+    existingImages.value = cloneArray( workOrder.image_list )
+    existingFiles.value = cloneArray( workOrder.file_list )
+
+    // Build recurrence_setting from work order data
+    const recurrenceSetting = {}
+    if ( workOrder.recurrence_type ) {
+      recurrenceSetting.recurrence_type = workOrder.recurrence_type.id
+    }
+
+    // For "Does not repeat" type (typically ID 1), use start_date_time and end_date_time
+    if ( workOrder.recurrence_type?.id === 1 ) {
+      if ( startDateSource ) {
+        recurrenceSetting.start_date_time = formatDateTimeForPicker( startDateSource )
+      }
+      if ( endDateSource ) {
+        recurrenceSetting.end_date_time = formatDateTimeForPicker( endDateSource )
+      }
+    }
+
+    form.recurrence_setting = recurrenceSetting
+
+    // Set recurrence type fields
+    if ( workOrder.recurrence_type ) {
+      form.recurrence_type = workOrder.recurrence_type.id
+      form.recurrence_type_id = workOrder.recurrence_type.id
+    }
+
+    form.recurrence_setting_request = clonePayload(
+      workOrder.recurrence_setting_request || {
+        start_date_time : startDateSource ? formatDateTimeForPicker( startDateSource ) : null,
+        end_date_time : endDateSource ? formatDateTimeForPicker( endDateSource ) : null
+      }
+    )
+
+    if ( !form.recurrence_setting_request.start_date_time && startDateSource ) {
+      form.recurrence_setting_request.start_date_time = formatDateTimeForPicker( startDateSource )
+    }
+    if ( !form.recurrence_setting_request.end_date_time && endDateSource ) {
+      form.recurrence_setting_request.end_date_time = formatDateTimeForPicker( endDateSource )
+    }
+
+    decorateTasksCategories( form.tasks )
+  } finally {
+    isHydratingForm = false
   }
 
-  // Sync derived data
   syncFormData()
+}
+
+// Task assignee dialog methods (matching tools dialog pattern)
+const handleTaskAssigneeUpdate = ( { taskId, assigneeIds, taskData } ) => {
+  const taskIndex = form.tasks.findIndex( task => task.id === taskId )
+  if ( taskIndex === -1 ) return
+
+  // Update the task's assignee_ids
+  if ( form.tasks[taskIndex].payload ) {
+    form.tasks[taskIndex].payload.assignee_ids = assigneeIds
+  } else {
+    form.tasks[taskIndex].assignee_ids = assigneeIds
+  }
+
+  syncFormData()
+
+  // Show success message
+  const assigneeNames = assigneeOptions.value
+    .filter( user => assigneeIds.includes( user.id ) )
+    .map( user => user.name )
+    .join( ', ' )
+
+  if ( assigneeIds.length === 0 ) {
+    ElMessage.success( `Removed all assignees from "${taskData.name}"` )
+  } else {
+    ElMessage.success( `Updated assignees for "${taskData.name}": ${assigneeNames}` )
+  }
+}
+
+const handleOpenAssigneeDialog = ( { taskId, taskData, currentAssigneeIds } ) => {
+  currentEditingTask.value = taskData
+  userSearchQuery.value = ''
+
+  // Initialize local selected assignees with current task assignees
+  const assigneeIds = taskData.payload?.assignee_ids || taskData.assignee_ids || []
+  localSelectedTaskAssignees.value = [...assigneeIds]
+
+  showTaskAssigneeDialog.value = true
+}
+
+const filteredAssigneeOptions = computed( () => {
+  if ( !userSearchQuery.value ) {
+    return assigneeOptions.value
+  }
+
+  const query = userSearchQuery.value.toLowerCase()
+  return assigneeOptions.value.filter(
+    user => user.name.toLowerCase().includes( query ) || ( user.email && user.email.toLowerCase().includes( query ) )
+  )
+} )
+
+const isUserSelected = userId => {
+  return localSelectedTaskAssignees.value.includes( userId )
+}
+
+const toggleUser = user => {
+  const isSelected = isUserSelected( user.id )
+
+  if ( isSelected ) {
+    removeSelectedUser( user.id )
+  } else {
+    addSelectedUser( user.id )
+  }
+}
+
+const addSelectedUser = userId => {
+  if ( !localSelectedTaskAssignees.value.includes( userId ) ) {
+    localSelectedTaskAssignees.value.push( userId )
+  }
+}
+
+const removeSelectedUser = userId => {
+  localSelectedTaskAssignees.value = localSelectedTaskAssignees.value.filter( id => id !== userId )
+}
+
+const clearAllAssignees = () => {
+  localSelectedTaskAssignees.value = []
+}
+
+const getSelectedUserObjects = () => {
+  return localSelectedTaskAssignees.value.map( id => {
+    const found = assigneeOptions.value.find( user => user.id === id )
+    return found || { id, name : `User #${id}`, email : '' }
+  } )
+}
+
+const saveTaskAssignees = () => {
+  if ( !currentEditingTask.value ) return
+
+  handleTaskAssigneeUpdate( {
+    taskId : currentEditingTask.value.id,
+    assigneeIds : [...localSelectedTaskAssignees.value],
+    taskData : currentEditingTask.value
+  } )
+
+  resetTaskAssigneeDialog()
+}
+
+const resetTaskAssigneeDialog = () => {
+  showTaskAssigneeDialog.value = false
+  currentEditingTask.value = null
+  localSelectedTaskAssignees.value = []
+  userSearchQuery.value = ''
 }
 
 // Load form data from API
@@ -1094,19 +2002,14 @@ const loadFormData = async() => {
     loading.value = true
 
     // Load all dropdown options in parallel
-    const [
-      workTypesResponse,
-      prioritiesResponse,
-      categoriesResponse,
-      statesResponse,
-      equipmentResponse
-    ] = await Promise.all( [
-      getAllWorkTypes(),
-      getAllPriorities(),
-      getAllCategories(),
-      getAllStates(),
-      getEquipmentNodeTrees()
-    ] )
+    const [workTypesResponse, prioritiesResponse, categoriesResponse, statesResponse, equipmentResponse] =
+      await Promise.all( [
+        getAllWorkTypes(),
+        getAllPriorities(),
+        getAllCategories(),
+        getAllStates(),
+        getEquipmentNodeTrees()
+      ] )
 
     // Set options
     workTypeOptions.value = workTypesResponse.data || []
@@ -1115,19 +2018,8 @@ const loadFormData = async() => {
     stateOptions.value = statesResponse.data || []
     assetTreeData.value = equipmentResponse.data || []
 
-    // For now, using mock data for assignees/supervisors
+    // For now, using mock data for assignees/supervisors - data already set at component level
     // In production, these would come from a users API
-    assigneeOptions.value = [
-      { id : 1, name : 'John Doe' },
-      { id : 2, name : 'Jane Smith' },
-      { id : 3, name : 'Mike Johnson' }
-    ]
-
-    supervisorOptions.value = [
-      { id : 1, name : 'Sarah Connor' },
-      { id : 2, name : 'James Cameron' },
-      { id : 3, name : 'Linda Hamilton' }
-    ]
 
     // Populate form with work order data
     populateFormFromWorkOrder( props.workOrder )
@@ -1139,30 +2031,64 @@ const loadFormData = async() => {
   }
 }
 
-// Payload creation (adapted from WorkOrderCreate)
+// Payload creation for work order updates with proper API field mapping
 const createWorkOrderPayload = () => {
   const formattedDueDate = toUtcIso( form.due_date )
   const formattedStartDate = toUtcIso( form.start_date )
+  const formattedEndDate = toUtcIso( form.end_date )
+
+  // Calculate task and standard changes
+  calculateTaskChanges()
+  calculateStandardChanges()
 
   const basePayload = {
+    // Core work order fields
     name : form.name,
-    category_ids : form.category_ids,
+    description : form.description || '',
+    category_ids : form.category_ids || [],
     priority_id : form.priority_id,
     state_id : form.state_id,
     work_type_id : form.work_type_id,
+
+    // Date fields
     start_date : formattedStartDate,
     due_date : formattedDueDate,
-    recurrence_setting_request : form.recurrence_setting_request,
-    description : form.description || '',
-    equipment_node_ids : form.equipment_node_ids,
-    assignee_ids : form.assignee_ids,
+    end_date : formattedEndDate,
+
+    // Assignment fields
+    assignee_ids : form.assignee_ids || [],
     approved_by_id : form.approved_by_id,
+
+    // Equipment and vendors
+    equipment_node_ids : form.equipment_node_ids || [],
     vendor_ids : form.vendor_ids || [],
-    time_zone : form.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone,
-    task_list : form.task_list || [],
-    standard_list : form.standard_list || [],
+
+    // Task management using proper API structure
+    task_add_list : taskChanges.added,
+    task_update_list : taskChanges.updated,
+    task_delete_list : taskChanges.deleted,
+
+    // Standard management using proper API structure
+    standard_add_list : standardChanges.added,
+    standard_update_list : standardChanges.updated,
+    standard_delete_list : standardChanges.deleted,
+
+    // File attachments
     image_list : form.image_list || [],
-    file_list : form.file_list || []
+    file_list : form.file_list || [],
+
+    // Recurrence settings
+    recurrence_setting_request : form.recurrence_setting_request || {},
+    recurrence_type : form.recurrence_type || form.recurrence_type_id || 1,
+    recurrence_type_id : form.recurrence_type || form.recurrence_type_id || 1,
+
+    // System fields
+    time_zone : form.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone
+  }
+
+  // Add recurrence_uuid for recurrence updates
+  if ( props.workOrder?.recurrence_uuid ) {
+    basePayload.recurrence_uuid = props.workOrder.recurrence_uuid
   }
 
   return basePayload
@@ -1207,51 +2133,42 @@ const submitForm = async() => {
       await uploadFilesToServer()
     }
 
-    // Prepare dates for backend
-    const formattedDueDate = toUtcIso( form.due_date )
+    // Ensure recurrence settings are properly populated
     const formattedStartDate = toUtcIso( form.start_date )
+    const formattedEndDate = toUtcIso( form.end_date )
 
-    // Ensure start_date_time is set for recurrence
-    if ( !form.recurrence_setting_request.start_date_time && formattedStartDate ) {
-      form.recurrence_setting_request.start_date_time = formattedStartDate
+    if ( form.recurrence_setting_request ) {
+      if ( !form.recurrence_setting_request.start_date_time && formattedStartDate ) {
+        form.recurrence_setting_request.start_date_time = formattedStartDate
+      }
+      if ( !form.recurrence_setting_request.end_date_time && formattedEndDate ) {
+        form.recurrence_setting_request.end_date_time = formattedEndDate
+      }
     }
 
-    // Ensure derived lists are up to date
-    syncTaskPayloads()
-    syncStandards()
+    // Create the update payload using our enhanced payload creation function
+    const updatePayload = createWorkOrderPayload()
 
-    // Prepare task list for update
-    const taskAddList = Array.isArray( form.task_list ) ? form.task_list : []
-    const normalizedTaskAddList = taskAddList.map( task => {
-      const payload = clonePayload( task )
-      payload.work_order_id = payload.work_order_id ?? props.workOrder.id
-      payload.state = payload.state ?? DEFAULT_TASK_STATE
-      payload.time_estimate_sec =
-        payload.time_estimate_sec && payload.time_estimate_sec > 0 ? payload.time_estimate_sec : 1800
-      payload.steps = Array.isArray( payload.steps ) ? payload.steps : []
-      return payload
-    } )
+    // Apply transformation for logging and debugging
+    const finalPayload = transformPayload( updatePayload, 'workOrderUpdate' )
 
-    // Create base payload
-    const basePayload = createWorkOrderPayload()
-    const payload = {
-      ...basePayload,
-      task_list : normalizedTaskAddList,
-      recurrence_type : form.recurrence_type || form.recurrence_type_id || 1,
-      recurrence_type_id : form.recurrence_type || form.recurrence_type_id || 1
-    }
-
-    // Apply final transformation and cleaning
-    const finalPayload = transformPayload( payload, 'workOrderUpdate' )
-
-    // Decide which API to call based on work order type
+    // Determine API endpoint based on work order type
     let response
-    if ( props.workOrder.recurrence_uuid ) {
-      // Update recurring work orders
-      finalPayload.recurrence_uuid = props.workOrder.recurrence_uuid
+    const hasRecurrenceUuid = props.workOrder?.recurrence_uuid && props.workOrder.recurrence_uuid.trim() !== ''
+    const isDoesNotRepeat = props.workOrder?.recurrence_type?.id === 1
+    const isRecurrenceWorkOrder = hasRecurrenceUuid && !isDoesNotRepeat
+
+    if ( isRecurrenceWorkOrder ) {
+      // Update all work orders in this recurrence
+      console.log( 'Updating recurrence work orders with UUID:', props.workOrder.recurrence_uuid )
       response = await updateRecurrenceWorkOrders( finalPayload )
     } else {
-      // Update individual work order
+      // Update individual work order (includes "Does not repeat" cases)
+      console.log(
+        'Updating individual work order ID:',
+        props.workOrder.id,
+        isDoesNotRepeat ? '(Does not repeat)' : '(No recurrence)'
+      )
       response = await updateWorkOrder( props.workOrder.id, finalPayload )
     }
 
@@ -1267,34 +2184,376 @@ const submitForm = async() => {
   } catch ( error ) {
     console.error( 'Failed to update work order:', error )
 
+    // Enhanced error handling for edit-specific scenarios
     let errorMessage = 'Failed to update work order. Please try again.'
-    if ( error.response?.data?.message ) {
-      errorMessage = error.response.data.message
+    let errorType = 'general'
+
+    if ( error.response ) {
+      const status = error.response.status
+      const responseData = error.response.data
+
+      switch ( status ) {
+        case 400:
+          errorType = 'validation'
+          errorMessage = responseData?.message || 'Invalid work order data. Please check your inputs.'
+          break
+        case 401:
+          errorType = 'auth'
+          errorMessage = 'Authentication failed. Please log in again.'
+          break
+        case 403:
+          errorType = 'permission'
+          errorMessage = 'You do not have permission to edit this work order.'
+          break
+        case 404:
+          errorType = 'notFound'
+          errorMessage = 'Work order not found. It may have been deleted.'
+          break
+        case 409:
+          errorType = 'conflict'
+          errorMessage = 'Work order was modified by another user. Please refresh and try again.'
+          break
+        case 422:
+          errorType = 'validation'
+          // Handle detailed validation errors
+          if ( responseData?.errors ) {
+            const errors = Object.values( responseData.errors ).flat()
+            errorMessage = `Validation failed: ${errors.join( ', ' )}`
+          } else {
+            errorMessage = responseData?.message || 'Invalid data provided.'
+          }
+          break
+        case 500:
+          errorType = 'server'
+          errorMessage = 'Server error occurred. Please try again later.'
+          break
+        default:
+          errorMessage = responseData?.message || `Update failed with status ${status}.`
+      }
+    } else if ( error.request ) {
+      errorType = 'network'
+      errorMessage = 'Network error. Please check your connection and try again.'
     } else if ( error.message ) {
       errorMessage = error.message
     }
 
-    ElMessage.error( errorMessage )
+    // Log detailed error information for debugging
+    console.error( `Work order update failed [${errorType}]:`, {
+      workOrderId : props.workOrder?.id,
+      recurrenceUuid : props.workOrder?.recurrence_uuid,
+      error : error.response?.data || error.message,
+      stackTrace : error.stack
+    } )
+
+    // Show appropriate error message
+    ElMessage.error( {
+      message : errorMessage,
+      duration : errorType === 'validation' ? 8000 : 5000 // Show validation errors longer
+    } )
+
+    // Handle specific error types
+    if ( errorType === 'auth' ) {
+      // Redirect to login if authentication failed
+      console.warn( 'Authentication failed, user may need to log in again' )
+    } else if ( errorType === 'notFound' ) {
+      // Emit event to parent to handle missing work order
+      emit( 'work-order-not-found' )
+    }
   } finally {
     loading.value = false
   }
 }
 
+// Handle hydrating form from draft store - Enhanced for better context handling
+const hydrateFormFromDraft = () => {
+  console.log( 'WorkOrderEdit: Attempting to hydrate from draft', {
+    hasDraft : workOrderDraftStore.hasDraft,
+    isEditMode : workOrderDraftStore.isEditMode,
+    currentContext : workOrderDraftStore.currentContext,
+    draftTasks : workOrderDraftStore.draftForm?.tasks?.length || 0,
+    currentFormTasks : form.tasks.length
+  } )
+
+  if ( !workOrderDraftStore.hasDraft ) {
+    console.log( 'WorkOrderEdit: No draft available, skipping hydration' )
+    return
+  }
+
+  // Be more permissive about context - if we have a draft and we're in WorkOrderEdit, use it
+  if ( !workOrderDraftStore.isEditMode && workOrderDraftStore.currentContext !== null ) {
+    console.warn( 'WorkOrderEdit: Draft store is not in edit mode but has context, attempting to set edit mode' )
+    workOrderDraftStore.setContext( 'edit' )
+  }
+
+  isHydratingForm = true
+
+  // Get tasks from draft store
+  const draftTasks = workOrderDraftStore.draftForm?.tasks || []
+  const draftStandards = workOrderDraftStore.draftForm?.standards || []
+
+  let addedCount = 0
+  let updatedCount = 0
+
+  // Process tasks from draft - completely replace the array to ensure reactivity
+  if ( draftTasks.length > 0 ) {
+    const newTasksArray = []
+
+    // Start with existing tasks
+    form.tasks.forEach( existingTask => {
+      const taskId = getTaskIdentifier( existingTask )
+      const draftUpdate = draftTasks.find( draftTask => getTaskIdentifier( draftTask ) === taskId )
+
+      if ( draftUpdate ) {
+        // Task was updated in draft
+        newTasksArray.push( {
+          ...draftUpdate,
+          isFromEdit : true
+        } )
+        updatedCount++
+      } else {
+        // Task wasn't modified in draft, keep original
+        newTasksArray.push( existingTask )
+      }
+    } )
+
+    // Add completely new tasks from draft
+    draftTasks.forEach( draftTask => {
+      const draftId = getTaskIdentifier( draftTask )
+      const alreadyExists = form.tasks.some( task => getTaskIdentifier( task ) === draftId )
+
+      if ( !alreadyExists ) {
+        newTasksArray.push( {
+          ...draftTask,
+          isFromEdit : true
+        } )
+        addedCount++
+      }
+    } )
+
+    // Replace the entire array to trigger Vue reactivity
+    form.tasks.splice( 0, form.tasks.length, ...newTasksArray )
+
+    // Show appropriate success message
+    if ( addedCount > 0 && updatedCount > 0 ) {
+      ElMessage.success( `${addedCount} task(s) added and ${updatedCount} task(s) updated` )
+    } else if ( addedCount > 0 ) {
+      ElMessage.success( `${addedCount} task(s) added successfully` )
+    } else if ( updatedCount > 0 ) {
+      ElMessage.success( `${updatedCount} task(s) updated successfully` )
+    }
+  }
+
+  // Process standards from draft - completely replace the array to ensure reactivity
+  if ( draftStandards.length > 0 ) {
+    const newStandardsArray = []
+
+    // Start with existing standards
+    form.standards.forEach( existingStandard => {
+      const standardId = getStandardIdentifier( existingStandard )
+      const draftUpdate = draftStandards.find( draftStandard => getStandardIdentifier( draftStandard ) === standardId )
+
+      if ( draftUpdate ) {
+        newStandardsArray.push( draftUpdate )
+      } else {
+        newStandardsArray.push( existingStandard )
+      }
+    } )
+
+    // Add completely new standards from draft
+    draftStandards.forEach( draftStandard => {
+      const draftId = getStandardIdentifier( draftStandard )
+      const alreadyExists = form.standards.some( standard => getStandardIdentifier( standard ) === draftId )
+
+      if ( !alreadyExists ) {
+        newStandardsArray.push( draftStandard )
+      }
+    } )
+
+    // Replace the entire array to trigger Vue reactivity
+    form.standards.splice( 0, form.standards.length, ...newStandardsArray )
+  }
+
+  // Ensure categories are decorated
+  decorateTasksCategories( form.tasks )
+
+  // Sync form data
+  syncFormData()
+
+  // Force Vue reactivity update and UI refresh
+  nextTick( () => {
+    // Force re-render of both tasks and standards sections by triggering reactivity
+    if ( form.tasks.length > 0 ) {
+      // Create a completely new array reference to trigger Vue reactivity
+      const updatedTasks = [...form.tasks]
+      form.tasks.splice( 0, form.tasks.length, ...updatedTasks )
+    }
+
+    if ( form.standards.length > 0 ) {
+      // Same for standards
+      const updatedStandards = [...form.standards]
+      form.standards.splice( 0, form.standards.length, ...updatedStandards )
+    }
+
+    console.log( 'WorkOrderEdit: Hydration completed', {
+      addedTasks : addedCount,
+      updatedTasks : updatedCount,
+      totalTasks : form.tasks.length,
+      hasStandards : draftStandards.length > 0
+    } )
+
+    // Force a full form reactivity update by triggering the watch
+    syncFormData()
+
+    // Mark that we've successfully hydrated from draft
+    hasHydratedFromDraft.value = true
+  } )
+
+  // Restore original task/standard tracking from draft store if available
+  if ( workOrderDraftStore.originalTasks && workOrderDraftStore.originalTasks.length > 0 ) {
+    originalTasks.value = clonePayload( workOrderDraftStore.originalTasks )
+  }
+  if ( workOrderDraftStore.originalStandards && workOrderDraftStore.originalStandards.length > 0 ) {
+    originalStandards.value = clonePayload( workOrderDraftStore.originalStandards )
+  }
+
+  // Don't clear the draft immediately - let the UI render first
+  // This will be cleared after the next tick to ensure Vue has processed the changes
+  nextTick( () => {
+    isHydratingForm = false
+
+    // Wait for Vue to process reactivity updates before clearing draft
+    setTimeout( () => {
+      workOrderDraftStore.clearDraft()
+      workOrderDraftStore.clearReturnContext()
+      // Reset the hydration flag after a successful draft clear
+      hasHydratedFromDraft.value = false
+    }, 100 )
+  } )
+}
+
 // Initialize component
 onMounted( async() => {
+  // Set edit mode context before loading any data
+  workOrderDraftStore.setEditModeData( props.workOrder )
+
   await loadFormData()
+
+  // Use nextTick and small delay to ensure draft store is ready
+  // This handles the case where we're returning from designer
+  nextTick( () => {
+    setTimeout( () => {
+      // Hydrate form from draft store (this handles tasks from library designer)
+      hydrateFormFromDraft()
+    }, 150 ) // Slightly longer delay than TodoView context clearing
+  } )
 } )
 
-// Watch for work order prop changes
+// Watch for work order prop changes - but avoid overriding hydrated data
 watch(
   () => props.workOrder,
-  ( newWorkOrder ) => {
+  newWorkOrder => {
     if ( newWorkOrder ) {
-      populateFormFromWorkOrder( newWorkOrder )
+      // Check hydration state more reliably
+      const workOrderChanged = newWorkOrder.id !== form.workOrderId
+      const hasDraftData = workOrderDraftStore.hasDraft
+      const hasRecentlyHydrated = hasHydratedFromDraft.value
+
+      console.log( 'WorkOrderEdit: workOrder watch triggered', {
+        hasRecentlyHydrated,
+        workOrderChanged,
+        hasDraftData,
+        newWorkOrderId : newWorkOrder.id,
+        currentFormWorkOrderId : form.workOrderId,
+        currentTasksCount : form.tasks.length
+      } )
+
+      // Only populate from work order if:
+      // 1. Work order actually changed, OR
+      // 2. We haven't recently hydrated from draft AND there's no draft data
+      if ( workOrderChanged || ( !hasRecentlyHydrated && !hasDraftData ) ) {
+        // Store the work order ID to detect changes
+        form.workOrderId = newWorkOrder.id
+        populateFormFromWorkOrder( newWorkOrder )
+      } else {
+        console.log( 'WorkOrderEdit: Skipping populateFormFromWorkOrder - preserving hydrated/draft state' )
+      }
     }
   },
   { immediate : true }
 )
+
+// Watch for draft store changes - rehydrate when draft becomes available
+watch(
+  () => workOrderDraftStore.hasDraft,
+  hasDraft => {
+    if ( hasDraft && workOrderDraftStore.isEditMode ) {
+      console.log( 'WorkOrderEdit: Draft detected, rehydrating form' )
+      hydrateFormFromDraft()
+    }
+  }
+)
+
+// Watch route query for returned standalone taskData
+watch(
+  () => route.query.taskData,
+  taskDataJSON => {
+    if ( taskDataJSON ) {
+      try {
+        const returnedTaskData = JSON.parse( taskDataJSON )
+        console.log( 'WorkOrderEdit: Processing returned task data:', returnedTaskData )
+
+        // Find the task to update by ID or templateId
+        const taskIndex = form.tasks.findIndex(
+          task =>
+            task.id === returnedTaskData.id ||
+            task.id === route.query.taskId ||
+            ( returnedTaskData.templateId &&
+              ( task.templateId === returnedTaskData.templateId || task.template_id === returnedTaskData.templateId ) )
+        )
+
+        if ( taskIndex !== -1 ) {
+          // Update the task with returned data
+          form.tasks[taskIndex] = {
+            ...form.tasks[taskIndex],
+            ...returnedTaskData,
+            id : form.tasks[taskIndex].id // Preserve original ID
+          }
+
+          // Apply decorations and sync
+          decorateTaskCategory( form.tasks[taskIndex] )
+          syncFormData()
+
+          console.log( 'WorkOrderEdit: Successfully updated task:', form.tasks[taskIndex] )
+          ElMessage.success( `Task "${returnedTaskData.name || 'Unnamed'}" updated` )
+        } else {
+          console.warn( 'WorkOrderEdit: Could not find task to update with returned data' )
+          ElMessage.warning( 'Could not find task to update' )
+        }
+
+        // Clear the query parameters to avoid reprocessing
+        router.replace( { query : { ...route.query, taskData : undefined, taskId : undefined }} )
+      } catch ( error ) {
+        console.error( 'WorkOrderEdit: Failed to parse returned task data:', error )
+        ElMessage.error( 'Failed to process returned task data' )
+      }
+    }
+  },
+  { immediate : true }
+)
+
+// Handle keep-alive component reactivation
+onActivated( () => {
+  console.log( 'WorkOrderEdit: Component reactivated' )
+
+  // Re-hydrate if there's a draft available
+  if ( workOrderDraftStore.hasDraft && workOrderDraftStore.isEditMode ) {
+    console.log( 'WorkOrderEdit: Rehydrating from draft on reactivation' )
+    hydrateFormFromDraft()
+  }
+
+  // Re-register template update listener in case it was lost
+  taskLibraryStore.addTemplateUpdateListener( handleTemplateUpdate )
+} )
 </script>
 
 <style scoped lang="scss">
@@ -1393,7 +2652,7 @@ watch(
     align-items: center;
     gap: 8px;
     font-size: 16px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--el-text-color-primary);
 
     .section-icon {
@@ -1409,66 +2668,65 @@ watch(
     }
   }
 
-  .task-actions, .standards-actions {
+  .task-actions,
+  .standards-actions {
     display: flex;
-    gap: 8px;
+    gap: 5px;
   }
 }
 
-.tasks-container, .standards-container {
+.tasks-container,
+.standards-container {
   margin-top: 16px;
   min-height: 120px;
   flex: 1;
 
-  &.no-tasks, &.no-standards {
-    .empty-tasks, .empty-standards {
+  &.no-tasks,
+  &.no-standards {
+    .empty-tasks,
+    .empty-standards {
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 200px;
-      background: var(--el-fill-color-light);
-      border: 2px dashed var(--el-border-color-light);
       border-radius: 8px;
 
       .empty-content {
         text-align: center;
+        color: #909399;
 
         .empty-icon {
-          font-size: 48px;
-          color: var(--el-text-color-placeholder);
+          font-size: 64px;
+          color: #c0c4cc;
           margin-bottom: 16px;
         }
 
         h4 {
+          margin: 0 0 0 0;
           font-size: 16px;
-          font-weight: 600;
-          color: var(--el-text-color-primary);
-          margin: 0 0 8px 0;
+          font-weight: 500;
+          color: var(--el-text-color-regular);
         }
 
         p {
+          margin: -8px 0 6px 0;
           font-size: 14px;
-          color: var(--el-text-color-regular);
-          margin: 0 0 20px 0;
+          color: var(--el-text-color-secondary);
         }
       }
     }
   }
 }
 
-.tasks-list, .standards-list {
+.tasks-list,
+.standards-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
 }
 
-.task-card, .standard-card {
-  transition: all 0.2s ease;
-
-  &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
+.task-card,
+.standard-card {
+  width: 100%;
 }
 
 // Work order duration display
@@ -1551,7 +2809,8 @@ watch(
 
       .tab-content-wrapper {
         .tab-pane-content {
-          .overview-card, .description-card {
+          .overview-card,
+          .description-card {
             background: var(--el-fill-color-light);
             border-radius: 8px;
             margin-bottom: 16px;
@@ -1669,5 +2928,131 @@ watch(
   .form-actions {
     padding: 12px 16px;
   }
+}
+
+/* Task Assignee Dialog Styles (matching tools dialog pattern) */
+.assignee-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 500px;
+}
+
+.search-section {
+  margin-bottom: 8px;
+}
+
+.selected-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.selected-section h4,
+.available-section h4 {
+  margin: 0 0 12px 0;
+  color: #303133;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.selected-section-header h4 {
+  margin: 0;
+}
+
+.clear-all-btn {
+  color: #f56c6c;
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.clear-all-btn:hover {
+  color: #f56c6c;
+  background-color: rgba(245, 108, 108, 0.1);
+}
+
+.selected-users {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.selected-user-tag {
+  margin: 0;
+}
+
+.user-email {
+  opacity: 0.7;
+  font-size: 11px;
+}
+
+.available-section {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.empty-users {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.users-list {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  max-height: 300px;
+}
+
+.user-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.user-item:last-child {
+  border-bottom: none;
+}
+
+.user-item:hover {
+  background: #f5f7fa;
+}
+
+.user-item.selected {
+  background: #e6f7ff;
+  border-color: #91d5ff;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.user-name {
+  font-weight: 500;
+  color: #303133;
+  margin-bottom: 2px;
+}
+
+.user-item .user-email {
+  font-size: 12px;
+  color: #606266;
+}
+
+.user-actions {
+  margin-left: 12px;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
 }
 </style>

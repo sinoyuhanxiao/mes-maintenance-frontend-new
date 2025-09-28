@@ -103,7 +103,11 @@
               <div class="detail-column">
                 <div class="detail-item" v-if="event.priority">
                   <span class="detail-label">{{ $t('workOrder.table.priority') }}:</span>
-                  <span class="detail-value priority-tag" :class="getPriorityClass(event.priority)" :style="{ color: getPriorityColor(event.priority?.name) }">
+                  <span
+                    class="detail-value priority-tag"
+                    :class="getPriorityClass(event.priority)"
+                    :style="{ color: getPriorityColor(event.priority?.name) }"
+                  >
                     <el-icon :style="{ color: getPriorityColor(event.priority?.name), marginRight: '4px' }">
                       <Flag />
                     </el-icon>
@@ -223,8 +227,7 @@ const getPriorityClass = priority => {
 }
 
 const isCurrentWorkOrder = event => {
-  return props.currentWorkOrderId && event.id &&
-         String( event.id ) === String( props.currentWorkOrderId )
+  return props.currentWorkOrderId && event.id && String( event.id ) === String( props.currentWorkOrderId )
 }
 
 defineOptions( {

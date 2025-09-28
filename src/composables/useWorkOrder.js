@@ -5,7 +5,13 @@
 import { ref, reactive, computed } from 'vue'
 import { ElMessage, ElNotification } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import { searchWorkOrders, getWorkOrdersByRecurrence, searchWorkOrdersByList, deleteIndividualWorkOrder, deleteRecurrenceWorkOrders } from '@/api/work-order'
+import {
+  searchWorkOrders,
+  getWorkOrdersByRecurrence,
+  searchWorkOrdersByList,
+  deleteIndividualWorkOrder,
+  deleteRecurrenceWorkOrders
+} from '@/api/work-order'
 import { useCommonDataStore } from '@/store/modules/commonData'
 
 export function useWorkOrder() {

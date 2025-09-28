@@ -530,6 +530,20 @@ const workOrderReturnRoute = computed( () => {
   return queryRoute || workOrderDraftStore.returnRoute || '/work-order/table'
 } )
 
+const workOrderReturnPanel = computed( () => {
+  const queryPanel = typeof route.query.returnPanel === 'string' ? route.query.returnPanel : null
+  return queryPanel || workOrderDraftStore.returnPanel || null
+} )
+
+const workOrderReturnWorkOrderId = computed( () => {
+  const queryId = typeof route.query.returnWorkOrderId === 'string' ? route.query.returnWorkOrderId : null
+  if ( queryId ) return queryId
+  if ( workOrderDraftStore.returnWorkOrderId != null ) {
+    return String( workOrderDraftStore.returnWorkOrderId )
+  }
+  return null
+} )
+
 const { loadTemplates, createTemplate, updateTemplate, validateTemplate } = useTaskLibrary()
 
 // Tour functionality
@@ -1029,10 +1043,49 @@ const handleBack = () => {
 }
 
 const navigateBackToWorkOrder = async message => {
-  const target = workOrderReturnRoute.value || '/work-order/table'
-  const hasShowCreate = target.includes( 'showCreate=' )
-  const separator = target.includes( '?' ) ? '&' : '?'
-  const fullRoute = hasShowCreate ? target : `${target}${separator}showCreate=1`
+  const rawTarget = workOrderReturnRoute.value || '/work-order/table'
+  const panel = workOrderReturnPanel.value
+  const returnWorkOrderId = workOrderReturnWorkOrderId.value
+
+  const targetUrl = new URL( rawTarget, window.location.origin )
+  let basePath = targetUrl.pathname || '/work-order/table'
+  if ( basePath === '/' && targetUrl.hash && targetUrl.hash.startsWith( '#/' ) ) {
+    basePath = targetUrl.hash.slice( 1 )
+  }
+  const baseQueryEntries = Object.fromEntries( targetUrl.searchParams.entries() )
+
+  const finalQuery = { ...baseQueryEntries }
+
+  // Enhanced context validation - ensure proper edit vs create distinction
+  const isEditContext = panel === 'edit' && returnWorkOrderId
+  const isCreateContext = panel === 'create' || ( !panel && workOrderDraftStore.shouldOpenCreatePanel )
+
+  // Validate context consistency with draft store
+  if ( isEditContext && !workOrderDraftStore.isEditMode ) {
+    console.warn( 'Context mismatch: Navigation indicates edit mode but draft store is not in edit mode' )
+    // Force edit mode in draft store to ensure consistency
+    workOrderDraftStore.setContext( 'edit' )
+  } else if ( isCreateContext && !workOrderDraftStore.isCreateMode ) {
+    console.warn( 'Context mismatch: Navigation indicates create mode but draft store is not in create mode' )
+    // Force create mode in draft store to ensure consistency
+    workOrderDraftStore.setCreateMode()
+  }
+
+  const shouldOpenCreate = isCreateContext
+
+  if ( shouldOpenCreate ) {
+    finalQuery.panel = 'create'
+    if ( !( 'showCreate' in finalQuery ) ) {
+      finalQuery.showCreate = '1'
+    }
+  } else if ( isEditContext ) {
+    finalQuery.panel = 'edit'
+    if ( returnWorkOrderId ) {
+      finalQuery.workOrderId = returnWorkOrderId
+    }
+  }
+
+  workOrderDraftStore.setShouldOpenCreatePanel( shouldOpenCreate )
 
   if ( message ) {
     ElMessage.success( message )
@@ -1042,10 +1095,7 @@ const navigateBackToWorkOrder = async message => {
     await tagsViewStore.DEL_VIEW( route )
   }
 
-  workOrderDraftStore.setShouldOpenCreatePanel( true )
-  workOrderDraftStore.clearReturnRoute()
-
-  await router.push( fullRoute )
+  await router.push( { path : basePath, query : finalQuery } )
 }
 
 const promptWorkOrderSaveMode = async() => {
@@ -1129,8 +1179,24 @@ const performSave = async( { mode = 'template', fromWorkOrderContext = false } =
       originalTemplate.value = JSON.parse( JSON.stringify( templateForm.value ) )
 
       if ( fromWorkOrderContext ) {
+        const returnPanel = workOrderReturnPanel.value
+        const returnWorkOrderId = workOrderReturnWorkOrderId.value
+
+        // Enhanced context validation for template updates
+        const isEditContext = returnPanel === 'edit' && returnWorkOrderId
+        const isCreateContext = returnPanel === 'create'
+
+        // Ensure draft store context consistency during template updates
+        if ( isEditContext && !workOrderDraftStore.isEditMode ) {
+          console.warn( 'Template update: Setting edit mode context for consistency' )
+          workOrderDraftStore.setContext( 'edit' )
+        } else if ( isCreateContext && !workOrderDraftStore.isCreateMode ) {
+          console.warn( 'Template update: Setting create mode context for consistency' )
+          workOrderDraftStore.setCreateMode()
+        }
+
         workOrderDraftStore.updateTasksWithTemplate( updatedTemplate )
-        workOrderDraftStore.setShouldOpenCreatePanel( true )
+        workOrderDraftStore.setShouldOpenCreatePanel( isCreateContext )
         await navigateBackToWorkOrder( 'Template updated and task refreshed.' )
         return
       }
@@ -2144,14 +2210,58 @@ const transformStandaloneStepToDesigner = ( step, index ) => {
   }
 }
 
+// Track initialization to prevent multiple concurrent calls
+const initializationInProgress = ref( false )
+
 // Initialize template data
 const initializeTemplate = async() => {
+  if ( initializationInProgress.value ) {
+    console.log( 'TemplateDesignerView: initializeTemplate already in progress, skipping...' )
+    return
+  }
+
+  initializationInProgress.value = true
+  console.log( 'TemplateDesignerView: initializeTemplate called with route:', {
+    params : route.params,
+    query : route.query,
+    isStandaloneTask : isStandaloneTask.value,
+    routeParamsId : route.params.id,
+    routeQueryStandalone : route.query.standalone,
+    routeQueryTaskData : route.query.taskData ? 'present' : 'missing',
+    routeQueryTaskDataKey : route.query.taskDataKey ? 'present' : 'missing'
+  } )
+
   if ( isStandaloneTask.value ) {
     // Handle standalone task editing
     try {
-      const taskDataString = route.query.taskData
+      let taskDataString = route.query.taskData
+      const taskDataKey = route.query.taskDataKey
+
+      console.log( 'TemplateDesignerView: taskDataString:', taskDataString ? 'present' : 'missing' )
+      console.log( 'TemplateDesignerView: taskDataKey:', taskDataKey ? 'present' : 'missing' )
+
+      // Try to get data from sessionStorage if taskDataKey is provided
+      if ( !taskDataString && taskDataKey ) {
+        console.log( 'TemplateDesignerView: Retrieving task data from sessionStorage with key:', taskDataKey )
+        taskDataString = sessionStorage.getItem( taskDataKey )
+        if ( taskDataString ) {
+          console.log( 'TemplateDesignerView: Successfully retrieved task data from sessionStorage' )
+          // Don't clean up immediately - wait until after successful initialization
+        } else {
+          console.log( 'TemplateDesignerView: No data found in sessionStorage for key:', taskDataKey )
+        }
+      }
+
+      // If taskDataString is still missing, wait a bit and retry (handles timing issues with route updates)
       if ( !taskDataString ) {
-        throw new Error( 'No task data provided for standalone task' )
+        console.log( 'TemplateDesignerView: taskData missing, retrying after delay...' )
+        await new Promise( resolve => setTimeout( resolve, 100 ) )
+        taskDataString = route.query.taskData || ( taskDataKey ? sessionStorage.getItem( taskDataKey ) : null )
+        console.log( 'TemplateDesignerView: taskDataString after retry:', taskDataString ? 'present' : 'missing' )
+      }
+
+      if ( !taskDataString ) {
+        throw new Error( 'Task data not found in route query parameters or sessionStorage' )
       }
 
       const taskData = JSON.parse( taskDataString )
@@ -2185,6 +2295,12 @@ const initializeTemplate = async() => {
       if ( settingsStore.tagsView ) {
         const newTitle = `Edit Standalone Task - ${taskData.name || taskData.id}`
         tagsViewStore.UPDATE_VISITED_VIEW_TITLE( route.path, newTitle )
+      }
+
+      // Clean up sessionStorage after successful initialization
+      if ( taskDataKey ) {
+        console.log( 'TemplateDesignerView: Cleaning up sessionStorage for key:', taskDataKey )
+        sessionStorage.removeItem( taskDataKey )
       }
 
       // Initial validation check
@@ -2421,6 +2537,28 @@ onActivated( async() => {
     renderReady.value = true
   }
 } )
+
+// Watch for route changes to reinitialize when navigating between different tasks
+watch(
+  () => [route.params.id, route.query.taskData, route.query.standalone],
+  async( [newId, newTaskData, newStandalone], [oldId, oldTaskData, oldStandalone] ) => {
+    // Only reinitialize if the route actually changed meaningfully
+    const routeChanged = newId !== oldId || newTaskData !== oldTaskData || newStandalone !== oldStandalone
+
+    if ( routeChanged && ( newId || newTaskData ) ) {
+      renderReady.value = false
+
+      try {
+        await initializeTemplate()
+        renderReady.value = true
+      } catch ( error ) {
+        console.error( 'TemplateDesignerView: Failed to reinitialize on route change:', error )
+        renderReady.value = true
+      }
+    }
+  },
+  { immediate : false } // Don't run immediately since onMounted handles the initial load
+)
 
 onDeactivated( () => {
   isComponentActive.value = false

@@ -252,6 +252,10 @@ const props = defineProps( {
   workOrderDueDate : {
     type : String,
     default : null
+  },
+  recurrenceSetting : {
+    type : Object,
+    default : () => ( {} )
   }
 } )
 
@@ -315,9 +319,76 @@ const loadRecurrenceTypes = async() => {
   }
 }
 
-onMounted( () => {
-  loadRecurrenceTypes()
+// Initialize form from incoming recurrence setting
+const initializeFromRecurrenceSetting = () => {
+  if ( !props.recurrenceSetting || Object.keys( props.recurrenceSetting ).length === 0 ) {
+    return
+  }
+
+  const setting = props.recurrenceSetting
+
+  // Find the recurrence type string from the ID
+  let recurrenceTypeString = 'none'
+  if ( setting.recurrence_type ) {
+    // Find the string key that maps to this ID
+    for ( const [key, value] of Object.entries( recurrenceTypeMap.value ) ) {
+      if ( value === setting.recurrence_type ) {
+        recurrenceTypeString = key
+        break
+      }
+    }
+  }
+
+  recurrence.value = recurrenceTypeString
+
+  // Initialize date/time fields based on type
+  if ( recurrenceTypeString === 'none' ) {
+    if ( setting.start_date_time ) {
+      startDate.value = setting.start_date_time
+    }
+    if ( setting.end_date_time ) {
+      endDate.value = setting.end_date_time
+    }
+  } else {
+    // For recurring types, initialize time fields
+    if ( setting.start_time ) {
+      startTime.value = setting.start_time
+    }
+    if ( setting.end_time ) {
+      endTime.value = setting.end_time
+    }
+
+    // Initialize type-specific fields
+    if ( recurrenceTypeString === 'weekly' ) {
+      if ( setting.interval ) repeatInterval.value = setting.interval
+      if ( setting.days_of_week ) selectedDays.value = setting.days_of_week
+    } else if ( recurrenceTypeString === 'monthlyByDate' ) {
+      if ( setting.interval ) monthlyRepeatInterval.value = setting.interval
+      if ( setting.day_of_month ) monthlyDate.value = setting.day_of_month
+    } else if ( recurrenceTypeString === 'yearly' ) {
+      if ( setting.interval ) yearlyRepeatInterval.value = setting.interval
+      if ( setting.month ) yearlyMonth.value = setting.month
+      if ( setting.day_of_month ) yearlyDay.value = setting.day_of_month
+    }
+  }
+}
+
+onMounted( async() => {
+  await loadRecurrenceTypes()
+  // Initialize after recurrence types are loaded
+  initializeFromRecurrenceSetting()
 } )
+
+// Watch for changes to recurrenceSetting prop
+watch(
+  () => props.recurrenceSetting,
+  () => {
+    if ( Object.keys( recurrenceTypeMap.value ).length > 0 ) {
+      initializeFromRecurrenceSetting()
+    }
+  },
+  { deep : true }
+)
 
 // Date validation functions
 const disabledStartDate = date => {

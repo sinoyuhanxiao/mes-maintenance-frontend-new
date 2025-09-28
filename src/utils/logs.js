@@ -5,23 +5,23 @@ import { ref } from 'vue'
  * @returns {Object} - Payload logging utilities
  */
 export const usePayloadLogger = () => {
-  const currentPayload = ref(null)
-  const showJsonDisplayer = ref(false)
+  const currentPayload = ref( null )
+  const showJsonDisplayer = ref( false )
 
-  const logPayload = (payload, context = 'default', metadata = {}) => {
+  const logPayload = ( payload, context = 'default', metadata = {} ) => {
     // Store only the clean payload for the drawer
-    const cleanPayload = clonePayload(payload)
+    const cleanPayload = clonePayload( payload )
     currentPayload.value = cleanPayload
     showJsonDisplayer.value = true
 
     // Log enriched payload to console for development
     const enrichedPayload = {
-      timestamp: new Date().toISOString(),
+      timestamp : new Date().toISOString(),
       context,
       metadata,
-      data: cleanPayload
+      data : cleanPayload
     }
-    console.log(`[${context}] Payload Debug:`, enrichedPayload)
+    console.log( `[${context}] Payload Debug:`, enrichedPayload )
   }
 
   const closeDebugDrawer = () => {
@@ -41,27 +41,27 @@ export const usePayloadLogger = () => {
  * @param {any} payload - Data to clone
  * @returns {any} - Cloned data
  */
-export const clonePayload = (payload) => {
-  if (payload === null || payload === undefined) {
+export const clonePayload = payload => {
+  if ( payload === null || payload === undefined ) {
     return payload
   }
 
-  if (typeof payload !== 'object') {
+  if ( typeof payload !== 'object' ) {
     return payload
   }
 
-  if (payload instanceof Date) {
-    return new Date(payload.getTime())
+  if ( payload instanceof Date ) {
+    return new Date( payload.getTime() )
   }
 
-  if (Array.isArray(payload)) {
-    return payload.map(item => clonePayload(item))
+  if ( Array.isArray( payload ) ) {
+    return payload.map( item => clonePayload( item ) )
   }
 
   const cloned = {}
-  for (const key in payload) {
-    if (payload.hasOwnProperty(key)) {
-      cloned[key] = clonePayload(payload[key])
+  for ( const key in payload ) {
+    if ( payload.hasOwnProperty( key ) ) {
+      cloned[key] = clonePayload( payload[key] )
     }
   }
 
@@ -74,18 +74,18 @@ export const clonePayload = (payload) => {
  * @param {string} context - Transformation context
  * @returns {Object} - Transformed payload
  */
-export const transformPayload = (payload, context = 'default') => {
-  const transformed = clonePayload(payload)
+export const transformPayload = ( payload, context = 'default' ) => {
+  const transformed = clonePayload( payload )
 
   // Add transformation metadata
   transformed._transform = {
     context,
-    timestamp: new Date().toISOString(),
-    version: '1.0.0'
+    timestamp : new Date().toISOString(),
+    version : '1.0.0'
   }
 
   // Context-specific transformations
-  switch (context) {
+  switch ( context ) {
     case 'workOrderCreate':
       transformed._context = 'Work Order Creation'
       break

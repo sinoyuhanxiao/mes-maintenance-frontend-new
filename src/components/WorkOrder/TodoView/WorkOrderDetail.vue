@@ -21,16 +21,23 @@
         </el-col>
         <el-col :span="4">
           <div class="header-actions">
+            <el-button
+              class="edit-button"
+              type="primary"
+              plain
+              size="default"
+              @click="emit('edit', workOrder)"
+              :aria-label="$t('workOrder.actions.edit')"
+            >
+              <el-icon style="margin-right: 4px"><Edit /></el-icon>
+              {{ $t('workOrder.actions.edit') }}
+            </el-button>
             <el-dropdown trigger="click" @command="handleHeaderAction">
               <el-button type="text" size="default" class="action-button">
                 <el-icon class="rotated-icon"><MoreFilled /></el-icon>
               </el-button>
               <template #dropdown>
                 <el-dropdown-menu>
-                  <el-dropdown-item command="edit">
-                    <el-icon><Edit /></el-icon>
-                    {{ $t('workOrder.actions.edit') }}
-                  </el-dropdown-item>
                   <el-dropdown-item command="share">
                     <el-icon><Share /></el-icon>
                     {{ $t('workOrder.actions.share') }}
@@ -39,6 +46,7 @@
                     <el-icon><Download /></el-icon>
                     {{ $t('workOrder.actions.export') }}
                   </el-dropdown-item>
+                  <StartWorkOrderAction :work-order="workOrder" @start="handleStartWorkOrder" />
                   <el-dropdown-item command="delete" divided class="delete-item">
                     <el-icon><Delete /></el-icon>
                     {{ $t('workOrder.actions.delete') }}
@@ -78,7 +86,10 @@
           <WorkTypeTag :work-type="workOrder.work_type" />
         </el-descriptions-item>
         <el-descriptions-item :label="$t('workOrder.table.category')">
-          <CategoryTag :category="workOrder.categories || workOrder.category_list?.[0]" />
+          <div class="category-tag-list" v-if="categoryTags.length">
+            <CategoryTag v-for="category in categoryTags" :key="categoryKey(category)" :category="category" />
+          </div>
+          <span v-else>-</span>
         </el-descriptions-item>
         <el-descriptions-item :label="$t('workOrder.table.estimatedTime')">
           <span class="detail-value">
@@ -115,14 +126,23 @@
           </span>
         </el-descriptions-item>
         <el-descriptions-item label="Recurrence Type">
-          <span
-            class="detail-value"
-            :class="{ 'recurrence-clickable': isRecurring }"
-            @click="isRecurring ? scrollToScheduleSection() : null"
-            :style="{ cursor: isRecurring ? 'pointer' : 'default' }"
-          >
-            {{ getRecurrenceTypeLabel() }}
-          </span>
+          <div class="recurrence-value-container">
+            <el-tooltip v-if="isRecurring" content="View Work Order Timeline" placement="top" :show-after="500">
+              <div class="recurrence-value-container">
+                <span
+                  class="detail-value"
+                  :class="{ 'recurrence-clickable': isRecurring }"
+                  @click="openTimelineModal"
+                  :style="{ cursor: isRecurring ? 'pointer' : 'default' }"
+                >
+                  {{ getRecurrenceTypeLabel() }}
+                </span>
+                <el-icon class="timeline-icon" @click="openTimelineModal">
+                  <View />
+                </el-icon>
+              </div>
+            </el-tooltip>
+          </div>
         </el-descriptions-item>
       </el-descriptions>
     </div>
@@ -278,7 +298,7 @@
     </div>
 
     <!-- Schedule Conditions Section -->
-    <div v-if="isRecurring" class="detail-section schedule-conditions-section">
+    <div v-if="isRecurring" class="detail-section schedule-conditions-section" v-show="false">
       <el-divider />
       <div class="schedule-header" ref="scheduleSection">
         <h3 class="section-title">{{ $t('workOrder.schedule.title') }}</h3>
@@ -340,12 +360,17 @@
           <div class="tab-content">
             <div class="standards-container" :class="{ 'no-standards': !workOrder.standards?.length }">
               <div v-if="workOrder.standards?.length" class="standards-list">
-                <div v-for="standard in workOrder.standards" :key="standard.id" class="standard-item standard-card" @click="handleStandardPreview(standard)">
+                <div
+                  v-for="standard in workOrder.standards"
+                  :key="standard.id"
+                  class="standard-item standard-card"
+                  @click="handleStandardPreview(standard)"
+                >
                   <div class="standard-header">
                     <span class="standard-name">{{ standard.name }}</span>
                     <span class="standard-code">{{ standard.code }}</span>
                   </div>
-<!--                  <div v-if="standard.description" class="standard-description">{{ standard.description }}</div>-->
+                  <!--                  <div v-if="standard.description" class="standard-description">{{ standard.description }}</div>-->
                   <div class="standard-tags">
                     <el-tag v-if="standard.category" size="small" class="tag-item">
                       {{ formatCategoryName(standard.category) }}
@@ -395,7 +420,9 @@
       <Timeline v-else :timeline-events="timelineEvents" :current-work-order-id="workOrder.id" />
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="timelineModalVisible = false" style="margin-right: 12px">{{ $t('workOrder.actions.cancel') }}</el-button>
+          <el-button @click="timelineModalVisible = false" style="margin-right: 12px">{{
+            $t('workOrder.actions.cancel')
+          }}</el-button>
           <el-dropdown @command="handleExportFormat" :disabled="timelineEvents.length === 0">
             <el-button type="primary" :disabled="timelineEvents.length === 0">
               <el-icon style="margin-right: 8px"><Download /></el-icon>
@@ -601,6 +628,7 @@ import Timeline from '../Timeline/Timeline.vue'
 import WorkOrderTaskCard from './WorkOrderTaskCard.vue'
 import StepsPreview from '@/components/TaskLibrary/StepsPreview.vue'
 import StandardsPreview from '@/components/TaskLibrary/StandardsPreview.vue'
+import StartWorkOrderAction from '@/components/WorkOrder/StartWorkOrderAction.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 // Router
@@ -625,7 +653,8 @@ const emit = defineEmits( [
   'add-costs',
   'view-procedure',
   'add-comment',
-  'delete'
+  'delete',
+  'start-work-order'
 ] )
 
 // State
@@ -661,6 +690,28 @@ const isOverdue = computed( () => {
 const hasAttachments = computed( () => {
   return props.workOrder?.image_list && props.workOrder.image_list.length > 0
 } )
+
+const categoryTags = computed( () => {
+  const workOrder = props.workOrder
+  if ( !workOrder ) return []
+  if ( Array.isArray( workOrder.categories ) && workOrder.categories.length ) {
+    return workOrder.categories
+  }
+  if ( Array.isArray( workOrder.category_list ) && workOrder.category_list.length ) {
+    return workOrder.category_list
+  }
+  if ( workOrder.category ) {
+    return [workOrder.category]
+  }
+  return []
+} )
+
+const categoryKey = category => {
+  if ( category && typeof category === 'object' ) {
+    return category.id ?? category.name ?? JSON.stringify( category )
+  }
+  return category
+}
 
 const isRecurring = computed( () => {
   // Check if work order has recurrence (not type 1 which means "Does not repeat")
@@ -941,8 +992,15 @@ const handleStatusChange = newStatus => {
   emit( 'status-change', { workOrder : props.workOrder, status : newStatus } )
 }
 
+const handleStartWorkOrder = () => {
+  emit( 'start-work-order', props.workOrder )
+}
+
 const handleHeaderAction = action => {
   switch ( action ) {
+    case 'start':
+      handleStartWorkOrder()
+      break
     case 'edit':
       emit( 'edit', props.workOrder )
       break
@@ -1054,7 +1112,7 @@ const handleTimelineModalClose = () => {
   timelineModalVisible.value = false
 }
 
-const handleExportFormat = async( format ) => {
+const handleExportFormat = async format => {
   try {
     if ( !timelineEvents.value || timelineEvents.value.length === 0 ) {
       ElMessage.warning( 'No timeline data available to export' )
@@ -1065,16 +1123,11 @@ const handleExportFormat = async( format ) => {
     const filename = generateTimestampedFilename( `work-order-${props.workOrder.id}-timeline` )
 
     // Export with selected format and current work order highlighting
-    const result = exportTimelineData(
-      timelineEvents.value,
-      format,
-      filename,
-      {
-        currentWorkOrderId : props.workOrder.id,
-        sheetName : `Work Order ${props.workOrder.id} Timeline`,
-        includeMetadata : true
-      }
-    )
+    const result = exportTimelineData( timelineEvents.value, format, filename, {
+      currentWorkOrderId : props.workOrder.id,
+      sheetName : `Work Order ${props.workOrder.id} Timeline`,
+      includeMetadata : true
+    } )
 
     if ( result.success ) {
       ElMessage.success( `${result.message} (${result.recordCount} records)` )
@@ -1118,11 +1171,15 @@ const transformWorkOrdersToTimeline = workOrders => {
         duration : workOrder.estimated_minutes ? `${workOrder.estimated_minutes}m` : null,
         plannedEnd : workOrder.due_date,
         actualEnd : workOrder.finished_at,
-        assignees : workOrder.created_by ? [{
-          id : 1,
-          name : String( workOrder.created_by ).trim() || 'Unknown',
-          avatar : ''
-        }] : []
+        assignees : workOrder.created_by
+          ? [
+            {
+              id : 1,
+              name : String( workOrder.created_by ).trim() || 'Unknown',
+              avatar : ''
+            }
+          ]
+          : []
       }
     } )
 }
@@ -1438,6 +1495,13 @@ defineOptions( {
     display: flex;
     gap: 8px;
     justify-content: flex-end;
+    align-items: center;
+
+    .edit-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
 
     .action-button {
       padding: 4px;
@@ -1588,6 +1652,12 @@ defineOptions( {
   }
 }
 
+.category-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .description-content {
   p {
     margin: 0;
@@ -1618,6 +1688,27 @@ defineOptions( {
         color: var(--el-color-danger);
         font-weight: 500;
       }
+    }
+  }
+}
+
+// Recurrence value container styling
+.recurrence-value-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .timeline-icon {
+    font-size: 16px;
+    color: var(--el-color-primary);
+    cursor: pointer;
+    opacity: 0.7;
+    transition: all 0.2s ease;
+
+    &:hover {
+      opacity: 1;
+      color: var(--el-color-primary-dark-2);
+      transform: scale(1.1);
     }
   }
 }

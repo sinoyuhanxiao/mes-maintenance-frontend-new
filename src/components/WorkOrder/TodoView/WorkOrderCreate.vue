@@ -67,21 +67,6 @@
         </el-form-item>
       </div>
 
-      <!-- Assigned To -->
-      <div class="form-section">
-        <el-form-item :label="$t('workOrder.create.assignTo')" prop="assignee_ids">
-          <el-select
-            v-model="form.assignee_ids"
-            :placeholder="$t('workOrder.create.assigneePlaceholder')"
-            filterable
-            multiple
-            style="width: 100%"
-          >
-            <el-option v-for="user in assigneeOptions" :key="user.id" :label="user.name" :value="user.id" />
-          </el-select>
-        </el-form-item>
-      </div>
-
       <!-- Supervisor -->
       <div class="form-section">
         <el-form-item label="Supervisor" prop="approved_by_id">
@@ -134,7 +119,10 @@
                 v-for="task in form.tasks"
                 :key="task.id"
                 :template="task"
+                :assignee-options="assigneeOptions"
                 @selection="handleTaskAction"
+                @assignee-update="handleTaskAssigneeUpdate"
+                @open-assignee-dialog="handleOpenAssigneeDialog"
                 class="task-card"
               />
             </div>
@@ -487,6 +475,79 @@
       </div>
     </el-form>
 
+    <!-- Task Assignee Management Dialog -->
+    <el-dialog
+      v-model="showTaskAssigneeDialog"
+      title="Select Workers"
+      width="600px"
+      @close="resetTaskAssigneeDialog"
+      top="8vh"
+    >
+      <div class="assignee-picker">
+        <!-- Search -->
+        <div class="search-section">
+          <el-input v-model="userSearchQuery" placeholder="Search users..." clearable>
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+        </div>
+
+        <!-- Available Workers -->
+        <div class="available-section">
+          <h4>Available Workers</h4>
+          <div v-if="filteredAssigneeOptions.length === 0" class="empty-users">
+            <el-empty description="No users found" :image-size="60" />
+          </div>
+          <div v-else class="users-list">
+            <div
+              v-for="user in filteredAssigneeOptions"
+              :key="user.id"
+              class="user-item"
+              :class="{ selected: isUserSelected(user.id) }"
+              @click="toggleUser(user)"
+            >
+              <div class="user-info">
+                <div class="user-name">{{ user.name }}</div>
+                <div v-if="user.email" class="user-email">{{ user.email }}</div>
+              </div>
+              <div class="user-actions">
+                <el-checkbox :model-value="isUserSelected(user.id)" @click.stop @change="toggleUser(user)" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selected Workers -->
+        <div v-if="localSelectedTaskAssignees.length > 0" class="selected-section">
+          <div class="selected-section-header">
+            <h4>Selected Workers ({{ localSelectedTaskAssignees.length }})</h4>
+            <el-button type="text" size="small" @click="clearAllAssignees" class="clear-all-btn"> Clear All </el-button>
+          </div>
+          <div class="selected-users">
+            <el-tag
+              v-for="user in getSelectedUserObjects()"
+              :key="user.id"
+              closable
+              @close="removeSelectedUser(user.id)"
+              class="selected-user-tag"
+            >
+              {{ user.name }}
+            </el-tag>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="resetTaskAssigneeDialog">Cancel</el-button>
+          <el-button type="primary" @click="saveTaskAssignees">
+            Save Selection ({{ localSelectedTaskAssignees.length }})
+          </el-button>
+        </span>
+      </template>
+    </el-dialog>
+
     <!-- JSON Debug Drawer -->
     <JsonDebugDrawer
       v-model="showJsonDisplayer"
@@ -508,7 +569,8 @@ import {
   DocumentAdd,
   Document,
   List,
-  DocumentChecked
+  DocumentChecked,
+  Search
 } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import RecurrenceEditor from '@/views/workOrder/components/RecurrenceEditor.vue'
@@ -540,6 +602,12 @@ const showAddTaskDialog = ref( false )
 const showAddStandardDialog = ref( false )
 const showEditStandardDialog = ref( false )
 const editingStandard = ref( null )
+
+// Task assignee dialog state
+const showTaskAssigneeDialog = ref( false )
+const currentEditingTask = ref( null )
+const userSearchQuery = ref( '' )
+const localSelectedTaskAssignees = ref( [] )
 
 // Preview dialog state
 const showTaskPreviewDialog = ref( false )
@@ -581,6 +649,112 @@ const handleTaskAction = ( { id, action, data } ) => {
     syncTaskPayloads()
     ElMessage.success( `Task "${data.name}" removed` )
   }
+}
+
+const handleTaskAssigneeUpdate = ( { taskId, assigneeIds, taskData } ) => {
+  const taskIndex = form.tasks.findIndex( t => t.id === taskId )
+  if ( taskIndex === -1 ) {
+    ElMessage.error( 'Task not found' )
+    return
+  }
+
+  // Update the task's assignee_ids in both the display data and payload
+  form.tasks[taskIndex].assignee_ids = assigneeIds
+  if ( form.tasks[taskIndex].payload ) {
+    form.tasks[taskIndex].payload.assignee_ids = assigneeIds
+  }
+
+  // Sync the payload to ensure it's included in the API call
+  syncTaskPayloads()
+
+  // Show success message
+  const assigneeNames = assigneeOptions.value
+    .filter( user => assigneeIds.includes( user.id ) )
+    .map( user => user.name )
+    .join( ', ' )
+
+  if ( assigneeIds.length === 0 ) {
+    ElMessage.success( `Removed all assignees from "${taskData.name}"` )
+  } else {
+    ElMessage.success( `Updated assignees for "${taskData.name}": ${assigneeNames}` )
+  }
+}
+
+// Task assignee dialog methods
+const handleOpenAssigneeDialog = ( { taskId, taskData, currentAssigneeIds } ) => {
+  currentEditingTask.value = taskData
+  userSearchQuery.value = ''
+
+  // Initialize local selected assignees with current task assignees
+  const assigneeIds = taskData.payload?.assignee_ids || taskData.assignee_ids || []
+  localSelectedTaskAssignees.value = [...assigneeIds]
+
+  showTaskAssigneeDialog.value = true
+}
+
+const filteredAssigneeOptions = computed( () => {
+  if ( !userSearchQuery.value ) {
+    return assigneeOptions.value
+  }
+
+  const query = userSearchQuery.value.toLowerCase()
+  return assigneeOptions.value.filter(
+    user => user.name.toLowerCase().includes( query ) || ( user.email && user.email.toLowerCase().includes( query ) )
+  )
+} )
+
+const isUserSelected = userId => {
+  return localSelectedTaskAssignees.value.includes( userId )
+}
+
+const toggleUser = user => {
+  const isSelected = isUserSelected( user.id )
+
+  if ( isSelected ) {
+    removeSelectedUser( user.id )
+  } else {
+    addSelectedUser( user.id )
+  }
+}
+
+const addSelectedUser = userId => {
+  if ( !localSelectedTaskAssignees.value.includes( userId ) ) {
+    localSelectedTaskAssignees.value.push( userId )
+  }
+}
+
+const removeSelectedUser = userId => {
+  localSelectedTaskAssignees.value = localSelectedTaskAssignees.value.filter( id => id !== userId )
+}
+
+const clearAllAssignees = () => {
+  localSelectedTaskAssignees.value = []
+}
+
+const getSelectedUserObjects = () => {
+  return localSelectedTaskAssignees.value.map( id => {
+    const found = assigneeOptions.value.find( user => user.id === id )
+    return found || { id, name : `User #${id}`, email : '' }
+  } )
+}
+
+const saveTaskAssignees = () => {
+  if ( !currentEditingTask.value ) return
+
+  handleTaskAssigneeUpdate( {
+    taskId : currentEditingTask.value.id,
+    assigneeIds : [...localSelectedTaskAssignees.value],
+    taskData : currentEditingTask.value
+  } )
+
+  resetTaskAssigneeDialog()
+}
+
+const resetTaskAssigneeDialog = () => {
+  showTaskAssigneeDialog.value = false
+  currentEditingTask.value = null
+  localSelectedTaskAssignees.value = []
+  userSearchQuery.value = ''
 }
 
 const handleStandardAction = ( { id, action, data } ) => {
@@ -779,6 +953,9 @@ const handleEditTask = async taskData => {
     ElMessage.info( 'Opening template editor...' )
 
     workOrderDraftStore.setReturnRoute( currentRoute.fullPath )
+    workOrderDraftStore.setReturnPanel( 'create' )
+    workOrderDraftStore.setReturnWorkOrderId( null )
+    workOrderDraftStore.setShouldOpenCreatePanel( true )
 
     if ( isStandaloneTask ) {
       // For standalone tasks, pass the task data directly via query parameters
@@ -791,7 +968,8 @@ const handleEditTask = async taskData => {
           workOrderName : form.name || 'New Work Order',
           taskId : taskData.id,
           standalone : 'true',
-          taskData : JSON.stringify( taskData ) // Pass the full task data
+          taskData : JSON.stringify( taskData ), // Pass the full task data
+          returnPanel : 'create'
         }
       } )
     } else {
@@ -804,7 +982,8 @@ const handleEditTask = async taskData => {
           workOrderId : form.name || 'New Work Order',
           workOrderName : form.name || 'New Work Order',
           taskId : taskData.id,
-          originalTemplateId
+          originalTemplateId,
+          returnPanel : 'create'
         }
       } )
     }
@@ -858,6 +1037,9 @@ const handleTemplateUpdate = updatedTemplate => {
 
 // Component mounted
 onMounted( () => {
+  // Set create mode context before any operations
+  workOrderDraftStore.setCreateMode()
+
   hydrateFormFromDraft()
   loadFormData()
 
@@ -986,7 +1168,7 @@ const hydrateFormFromDraft = () => {
 
   nextTick( () => {
     isHydratingForm = false
-    workOrderDraftStore.saveDraft( form )
+    workOrderDraftStore.saveContextAwareDraft( form, 'create' )
   } )
 }
 
@@ -1013,7 +1195,7 @@ watch(
   form,
   () => {
     if ( isHydratingForm ) return
-    workOrderDraftStore.saveDraft( form )
+    workOrderDraftStore.saveContextAwareDraft( form, 'create' )
   },
   { deep : true }
 )
@@ -1195,17 +1377,18 @@ const assetTreeData = ref( [] )
 const loading = ref( false )
 
 const assigneeOptions = ref( [
-  { id : 1, name : 'Erik Yu' },
-  { id : 2, name : 'Jane Smith' },
-  { id : 3, name : 'Mike Johnson' },
-  { id : 4, name : 'Sarah Wilson' }
+  { id : 84, name : 'System' },
+  { id : 37, name : 'Erik Yu' },
+  { id : 43, name : 'Chang Shi' },
+  { id : 45, name : 'Maxwell Wang' },
+  { id : 46, name : 'Justin Li' },
+  { id : 47, name : 'Justin Tung' },
+  { id : 48, name : 'Eric Huang' }
 ] )
 
 const supervisorOptions = ref( [
-  { id : 1, name : 'Erik Yu' },
-  { id : 2, name : 'Mary Johnson' },
-  { id : 3, name : 'Robert Brown' },
-  { id : 4, name : 'Lisa Davis' }
+  { id : 36, name : 'Yao Li' },
+  { id : 41, name : 'John Li' }
 ] )
 const formRef = ref( null )
 
@@ -1312,7 +1495,7 @@ const hasFormChanges = () => {
     form.standards.length > 0 ||
     ( form.category_ids && form.category_ids.length > 0 ) ||
     ( form.equipment_node_ids && form.equipment_node_ids.length > 0 ) ||
-    ( form.assignee_ids && form.assignee_ids.length > 0 ) ||
+    // Removed work order level assignee_ids check since we use per-task assignment
     ( form.approved_by_id && form.approved_by_id !== null ) ||
     ( form.work_type_id && form.work_type_id !== null ) ||
     ( form.priority_id && form.priority_id !== null ) ||
@@ -1495,8 +1678,8 @@ const createWorkOrderPayload = () => {
     standard_list : form.standard_list || [],
     request_id : form.request_id,
     parent_work_order_id : form.parent_work_order_id,
-    vendor_ids : form.vendor_ids,
-    assignee_ids : form.assignee_ids
+    vendor_ids : form.vendor_ids
+    // assignee_ids removed - now handled per-task
   }
 
   // Transform and clean payload using centralized utilities
@@ -1677,6 +1860,8 @@ const submitForm = async() => {
       payload.time_estimate_sec =
         payload.time_estimate_sec && payload.time_estimate_sec > 0 ? payload.time_estimate_sec : 1800
       payload.steps = Array.isArray( payload.steps ) ? payload.steps : []
+      // Ensure assignee_ids is properly set
+      payload.assignee_ids = Array.isArray( payload.assignee_ids ) ? payload.assignee_ids : []
       return payload
     } )
 
@@ -2334,5 +2519,131 @@ defineOptions( {
   .description-text::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
   }
+}
+
+/* Task Assignee Dialog Styles (matching tools dialog pattern) */
+.assignee-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: 500px;
+}
+
+.search-section {
+  margin-bottom: 8px;
+}
+
+.selected-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.selected-section h4,
+.available-section h4 {
+  margin: 0 0 12px 0;
+  color: #303133;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.selected-section-header h4 {
+  margin: 0;
+}
+
+.clear-all-btn {
+  color: #f56c6c;
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.clear-all-btn:hover {
+  color: #f56c6c;
+  background-color: rgba(245, 108, 108, 0.1);
+}
+
+.selected-users {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.selected-user-tag {
+  margin: 0;
+}
+
+.user-email {
+  opacity: 0.7;
+  font-size: 11px;
+}
+
+.available-section {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.empty-users {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.users-list {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  max-height: 300px;
+}
+
+.user-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.user-item:last-child {
+  border-bottom: none;
+}
+
+.user-item:hover {
+  background: #f5f7fa;
+}
+
+.user-item.selected {
+  background: #e6f7ff;
+  border-color: #91d5ff;
+}
+
+.user-info {
+  flex: 1;
+}
+
+.user-name {
+  font-weight: 500;
+  color: #303133;
+  margin-bottom: 2px;
+}
+
+.user-item .user-email {
+  font-size: 12px;
+  color: #606266;
+}
+
+.user-actions {
+  margin-left: 12px;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
 }
 </style>

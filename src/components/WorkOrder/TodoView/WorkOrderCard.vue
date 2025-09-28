@@ -26,6 +26,10 @@
                 <el-icon><View /></el-icon>
                 {{ $t('workOrder.actions.view') }}
               </el-dropdown-item>
+              <StartWorkOrderAction
+                :work-order="workOrder"
+                @start="() => emit('action', { action: 'start', workOrder })"
+              />
               <el-dropdown-item command="delete" divided>
                 <el-icon><Delete /></el-icon>
                 {{ $t('workOrder.actions.delete') }}
@@ -103,6 +107,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { MoreFilled, Edit, View, Delete, Flag, Picture } from '@element-plus/icons-vue'
+import StartWorkOrderAction from '@/components/WorkOrder/StartWorkOrderAction.vue'
 import { convertToLocalTime } from '@/utils/datetime'
 
 // Props
