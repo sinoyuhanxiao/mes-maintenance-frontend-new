@@ -1440,7 +1440,6 @@ const toUtcIso = dateValue => {
     const date = new Date( dateValue )
     return date.toISOString()
   } catch ( error ) {
-    console.warn( 'Invalid date for UTC conversion:', dateValue )
     return null
   }
 }
@@ -1544,7 +1543,6 @@ const handlePreviewTask = async taskData => {
       previewTaskLoading.value = true
       await ensureStandaloneTaskEntryData( targetTask )
     } catch ( error ) {
-      console.error( 'Failed to load task entry for preview:', error )
       ElMessage.error( 'Failed to load task preview.' )
       previewTaskLoading.value = false
       return false
@@ -1627,18 +1625,12 @@ const handleEditTask = async taskData => {
     loading.value = true
 
     let standaloneEntryId = resolveTaskEntryId( baseTask )
-    if ( !standaloneEntryId ) {
-      const fallbackId = normalizeIdentifier( taskIdentifierString )
-      if ( fallbackId && !isGeneratedIdentifier( fallbackId ) ) {
-        standaloneEntryId = fallbackId
-      }
-    }
 
     if ( needsStandaloneEntryFetch( baseTask ) ) {
       try {
         await ensureStandaloneTaskEntryData( baseTask )
+        baseTask.__entryStepsLoaded = true
       } catch ( fetchError ) {
-        console.error( 'Failed to load standalone task for editing:', fetchError )
         ElMessage.error( 'Failed to load task details for editing.' )
         return false
       }
@@ -1674,12 +1666,18 @@ const handleEditTask = async taskData => {
 
     const taskIdentifier = getTaskIdentifier( currentTaskData )
     if ( !taskIdentifier ) {
-      console.error( 'WorkOrderEdit: Unable to determine task identifier for editing', currentTaskData )
       ElMessage.error( 'Unable to edit task: missing task identifier. Please try refreshing and editing again.' )
       return false
     }
 
     const taskIdentifierString = String( taskIdentifier )
+
+    if ( !standaloneEntryId ) {
+      const fallbackId = normalizeIdentifier( taskIdentifierString )
+      if ( fallbackId && !isGeneratedIdentifier( fallbackId ) ) {
+        standaloneEntryId = fallbackId
+      }
+    }
 
     const baseQuery = {
       fromWorkOrder : 'true',
@@ -1729,13 +1727,11 @@ const handleEditTask = async taskData => {
 
       // Validate that essential data is present before navigation
       if ( !standaloneTaskData.name ) {
-        console.error( 'WorkOrderEdit: Missing required field "name" in standalone task data' )
         ElMessage.error( 'Unable to edit task: missing task name. Please try refreshing and editing again.' )
         return
       }
 
       if ( !standaloneTaskData.id ) {
-        console.error( 'WorkOrderEdit: Missing required field "id" in standalone task data' )
         ElMessage.error( 'Unable to edit task: missing task ID. Please try refreshing and editing again.' )
         return
       }
@@ -1788,7 +1784,6 @@ const handleEditTask = async taskData => {
       } )
     }
   } catch ( error ) {
-    console.error( 'Failed to open task editor:', error )
     const errorMessage = error.response?.data?.message || error.message || 'Failed to open task editor'
     ElMessage.error( errorMessage )
     return false
@@ -1956,7 +1951,6 @@ const uploadFilesToServer = async() => {
     form.image_list = uploadResults.images || []
     form.file_list = uploadResults.files || []
   } catch ( error ) {
-    console.error( 'File upload failed:', error )
     throw new Error( 'File upload failed. Please try again.' )
   }
 }
@@ -2282,7 +2276,6 @@ const loadFormData = async() => {
     // Populate form with work order data
     populateFormFromWorkOrder( props.workOrder )
   } catch ( error ) {
-    console.error( 'Failed to load form data:', error )
     ElMessage.error( 'Failed to load form data. Please refresh and try again.' )
   } finally {
     loading.value = false
@@ -2434,83 +2427,7 @@ const submitForm = async() => {
     // Navigate back to detail view
     emit( 'back-to-detail' )
   } catch ( error ) {
-    console.error( 'Failed to update work order:', error )
-
-    // Enhanced error handling for edit-specific scenarios
-    let errorMessage = 'Failed to update work order. Please try again.'
-    let errorType = 'general'
-
-    if ( error.response ) {
-      const status = error.response.status
-      const responseData = error.response.data
-
-      switch ( status ) {
-        case 400:
-          errorType = 'validation'
-          errorMessage = responseData?.message || 'Invalid work order data. Please check your inputs.'
-          break
-        case 401:
-          errorType = 'auth'
-          errorMessage = 'Authentication failed. Please log in again.'
-          break
-        case 403:
-          errorType = 'permission'
-          errorMessage = 'You do not have permission to edit this work order.'
-          break
-        case 404:
-          errorType = 'notFound'
-          errorMessage = 'Work order not found. It may have been deleted.'
-          break
-        case 409:
-          errorType = 'conflict'
-          errorMessage = 'Work order was modified by another user. Please refresh and try again.'
-          break
-        case 422:
-          errorType = 'validation'
-          // Handle detailed validation errors
-          if ( responseData?.errors ) {
-            const errors = Object.values( responseData.errors ).flat()
-            errorMessage = `Validation failed: ${errors.join( ', ' )}`
-          } else {
-            errorMessage = responseData?.message || 'Invalid data provided.'
-          }
-          break
-        case 500:
-          errorType = 'server'
-          errorMessage = 'Server error occurred. Please try again later.'
-          break
-        default:
-          errorMessage = responseData?.message || `Update failed with status ${status}.`
-      }
-    } else if ( error.request ) {
-      errorType = 'network'
-      errorMessage = 'Network error. Please check your connection and try again.'
-    } else if ( error.message ) {
-      errorMessage = error.message
-    }
-
-    // Log detailed error information for debugging
-    console.error( `Work order update failed [${errorType}]:`, {
-      workOrderId : props.workOrder?.id,
-      recurrenceUuid : props.workOrder?.recurrence_uuid,
-      error : error.response?.data || error.message,
-      stackTrace : error.stack
-    } )
-
-    // Show appropriate error message
-    ElMessage.error( {
-      message : errorMessage,
-      duration : errorType === 'validation' ? 8000 : 5000 // Show validation errors longer
-    } )
-
-    // Handle specific error types
-    if ( errorType === 'auth' ) {
-      // Redirect to login if authentication failed
-      console.warn( 'Authentication failed, user may need to log in again' )
-    } else if ( errorType === 'notFound' ) {
-      // Emit event to parent to handle missing work order
-      emit( 'work-order-not-found' )
-    }
+    loading.value = false
   } finally {
     loading.value = false
   }
@@ -2721,7 +2638,6 @@ const applyStandaloneTaskReturn = returnedTaskData => {
   } )
 
   if ( taskIndex === -1 ) {
-    console.warn( 'WorkOrderEdit: Could not find task to update with returned data' )
     ElMessage.warning( 'Could not find task to update' )
     return
   }
@@ -2766,7 +2682,6 @@ const applyStandaloneTaskReturn = returnedTaskData => {
   decorateTaskCategory( form.tasks[taskIndex] )
   syncFormData()
 
-  console.log( 'WorkOrderEdit: Successfully updated task:', form.tasks[taskIndex] )
   ElMessage.success( `Task "${returnedTaskData.name || 'Unnamed'}" updated` )
 }
 
@@ -2778,7 +2693,6 @@ watch(
       const returnedTaskData = JSON.parse( taskDataJSON )
       applyStandaloneTaskReturn( returnedTaskData )
     } catch ( error ) {
-      console.error( 'WorkOrderEdit: Failed to parse returned task data:', error )
       ElMessage.error( 'Failed to process returned task data' )
     } finally {
       router.replace( {
@@ -2809,7 +2723,6 @@ watch(
         console.warn( 'WorkOrderEdit: No session data found for key', taskDataKey )
       }
     } catch ( error ) {
-      console.error( 'WorkOrderEdit: Failed to load returned task data from storage:', error )
       ElMessage.error( 'Failed to process returned task data' )
     } finally {
       router.replace( {
