@@ -16,7 +16,8 @@ export const useWorkOrderDraftStore = defineStore( 'workOrderDraft', {
     editModeOriginalData : null, // Store original work order data when in edit mode
     // Edit mode task tracking
     originalTasks : null, // Store original tasks for change detection
-    originalStandards : null // Store original standards for change detection
+    originalStandards : null, // Store original standards for change detection
+    pendingStandaloneTask : null
   } ),
 
   getters : {
@@ -119,10 +120,21 @@ export const useWorkOrderDraftStore = defineStore( 'workOrderDraft', {
       this.editModeOriginalData = null
       this.originalTasks = null
       this.originalStandards = null
+      this.pendingStandaloneTask = null
     },
 
     setShouldOpenCreatePanel( flag ) {
       this.shouldOpenCreatePanel = flag
+    },
+
+    setPendingStandaloneTask( task ) {
+      this.pendingStandaloneTask = task ? clone( task ) : null
+    },
+
+    consumePendingStandaloneTask() {
+      const task = this.pendingStandaloneTask ? clone( this.pendingStandaloneTask ) : null
+      this.pendingStandaloneTask = null
+      return task
     },
 
     appendTask( task ) {
@@ -200,18 +212,26 @@ export const useWorkOrderDraftStore = defineStore( 'workOrderDraft', {
         draft.tasks = []
       }
 
+      const normalizedTaskId = String( taskId )
+
       draft.tasks = draft.tasks.map( task => {
-        if ( task.id === taskId ) {
+        const candidateId = task.id != null ? String( task.id ) : null
+        if ( candidateId === normalizedTaskId ) {
           const updatedTask = {
             ...task,
             ...updatedTaskData,
-            id : taskId // Preserve the original ID
+            id : normalizedTaskId, // Preserve the original ID as string
+            task_id : normalizedTaskId
           }
 
           // Handle payload - either update existing or use new payload from updatedTaskData
           if ( updatedTaskData.payload ) {
             // If updatedTaskData provides a complete payload, use it
-            updatedTask.payload = updatedTaskData.payload
+            updatedTask.payload = {
+              ...updatedTaskData.payload,
+              id : normalizedTaskId,
+              task_id : normalizedTaskId
+            }
           } else if ( task.payload ) {
             // Otherwise, update existing payload
             updatedTask.payload = {
@@ -221,7 +241,9 @@ export const useWorkOrderDraftStore = defineStore( 'workOrderDraft', {
               estimated_minutes : updatedTaskData.estimated_minutes || task.payload.estimated_minutes,
               time_estimate_sec : ( updatedTaskData.estimated_minutes || task.payload.estimated_minutes || 30 ) * 60,
               equipment_node_id : updatedTaskData.equipment_node_id || task.payload.equipment_node_id,
-              steps : updatedTaskData.steps || task.payload.steps
+              steps : updatedTaskData.steps || task.payload.steps,
+              id : normalizedTaskId,
+              task_id : normalizedTaskId
             }
           }
 

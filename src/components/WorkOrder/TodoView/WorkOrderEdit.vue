@@ -338,8 +338,8 @@
       </div>
 
       <!-- Footer Actions -->
-      <div class="form-actions">
-        <div class="left-actions">
+      <div class="form-actions-fixed">
+        <div class="form-actions-content">
           <el-button
             @click="logCurrentPayload"
             size="default"
@@ -413,18 +413,21 @@
         </div>
       </template>
 
-      <StepsPreview
-        v-if="previewTaskTemplateId"
-        :template-id="previewTaskTemplateId"
-        :interactive="isTaskInteractive"
-        :show-mode-switch="false"
-      />
-      <StepsPreview
-        v-else-if="previewTaskData && previewTaskData.steps"
-        :steps="previewTaskData.steps"
-        :interactive="isTaskInteractive"
-        :show-mode-switch="false"
-      />
+      <div class="preview-content" v-loading="previewTaskLoading">
+        <StepsPreview
+          v-if="previewTaskTemplateId"
+          :template-id="previewTaskTemplateId"
+          :interactive="isTaskInteractive"
+          :show-mode-switch="false"
+        />
+        <StepsPreview
+          v-else-if="previewTaskData && previewTaskData.steps"
+          :steps="previewTaskData.steps"
+          :interactive="isTaskInteractive"
+          :show-mode-switch="false"
+        />
+        <div v-else class="preview-empty">No steps available for preview.</div>
+      </div>
     </el-dialog>
 
     <!-- Standard Preview Dialog -->
@@ -634,6 +637,7 @@ import {
   updateWorkOrder,
   updateRecurrenceWorkOrders
 } from '@/api/work-order'
+import { getTaskEntryById } from '@/api/task-entry'
 import { useRouter, useRoute } from 'vue-router'
 import { useTaskLibraryStore } from '@/store/modules/taskLibrary'
 import { useWorkOrderDraftStore } from '@/store/modules/workOrderDraft'
@@ -664,6 +668,7 @@ const previewTaskTemplateId = ref( null )
 const previewTaskData = ref( null )
 const previewStandardData = ref( null )
 const isTaskInteractive = ref( false )
+const previewTaskLoading = ref( false )
 
 // Task assignee dialog state
 const showTaskAssigneeDialog = ref( false )
@@ -752,6 +757,216 @@ const pickRandomOptionId = options => {
   if ( !Array.isArray( options ) || options.length === 0 ) return null
   const randomOption = options[Math.floor( Math.random() * options.length )]
   return randomOption?.id ?? randomOption?.value ?? null
+}
+
+const normalizeIdentifier = value => {
+  if ( value === undefined || value === null ) return null
+  const normalized = String( value ).trim()
+  return normalized.length > 0 ? normalized : null
+}
+
+const generatedIdPrefixes = ['work-order-task-', 'new-task-', 'existing-task-', 'temp-']
+
+const isGeneratedIdentifier = id => {
+  const normalized = normalizeIdentifier( id )
+  if ( !normalized ) return false
+  const lower = normalized.toLowerCase()
+  return generatedIdPrefixes.some( prefix => lower.startsWith( prefix ) )
+}
+
+const getTaskIdentityCandidates = task => {
+  if ( !task || typeof task !== 'object' ) return []
+  const seen = new Set()
+  const pushCandidate = candidate => {
+    const normalized = normalizeIdentifier( candidate )
+    if ( normalized && !seen.has( normalized ) ) {
+      seen.add( normalized )
+    }
+  }
+
+  const payload = task.payload || {}
+  ;[
+    task.task_id,
+    task.taskId,
+    task.work_order_task_id,
+    task.workOrderTaskId,
+    task.id,
+    payload.task_id,
+    payload.id,
+    payload.work_order_task_id
+  ].forEach( pushCandidate )
+
+  return Array.from( seen )
+}
+
+const findTaskIndexInCollection = ( collection, task ) => {
+  if ( !Array.isArray( collection ) || !task ) return -1
+  const candidates = getTaskIdentityCandidates( task )
+  if ( candidates.length === 0 ) return -1
+  const candidateSet = new Set( candidates )
+  return collection.findIndex( item => {
+    const itemCandidates = getTaskIdentityCandidates( item )
+    return itemCandidates.some( candidate => candidateSet.has( candidate ) )
+  } )
+}
+
+const resolveTaskEntryId = task => {
+  const candidates = getTaskIdentityCandidates( task )
+  for ( const candidate of candidates ) {
+    if ( candidate && !isGeneratedIdentifier( candidate ) ) {
+      return candidate
+    }
+  }
+  return null
+}
+
+const hasTemplateAssociation = task => {
+  if ( !task || typeof task !== 'object' ) return false
+  return Boolean(
+    task.templateId ||
+    task.template_id ||
+    task.payload?.template_id ||
+    task.rawTemplate?.template_id ||
+    task.rawTemplate?.id
+  )
+}
+
+const isStandaloneTaskRecord = task => {
+  if ( !task || typeof task !== 'object' ) return false
+  if ( hasTemplateAssociation( task ) ) return false
+  if ( task.source && task.source !== 'adhoc' ) return false
+  return true
+}
+
+const needsStandaloneEntryFetch = task => {
+  if ( !isStandaloneTaskRecord( task ) ) return false
+  if ( task?.__hasLocalEdits || task?.__entryStepsLoaded ) return false
+  return Boolean( resolveTaskEntryId( task ) )
+}
+
+const applyStepsToTask = ( targetTask, steps, { markLocalEdit = false, entryId = null } = {} ) => {
+  if ( !targetTask || typeof targetTask !== 'object' ) return
+
+  const normalizedSteps = Array.isArray( steps ) && steps.length > 0 ? clonePayload( steps ) : [createFallbackStep()]
+  targetTask.steps = clonePayload( normalizedSteps )
+
+  if ( !targetTask.payload || typeof targetTask.payload !== 'object' ) {
+    targetTask.payload = {}
+  }
+
+  targetTask.payload.steps = clonePayload( normalizedSteps )
+
+  if ( entryId ) {
+    const currentId = normalizeIdentifier( targetTask.id )
+    if ( !currentId || isGeneratedIdentifier( currentId ) ) {
+      targetTask.id = entryId
+    }
+
+    const payloadId = normalizeIdentifier( targetTask.payload.id )
+    if ( !payloadId || isGeneratedIdentifier( payloadId ) ) {
+      targetTask.payload.id = entryId
+    }
+
+    const payloadTaskId = normalizeIdentifier( targetTask.payload.task_id )
+    if ( !payloadTaskId || isGeneratedIdentifier( payloadTaskId ) ) {
+      targetTask.payload.task_id = entryId
+    }
+  }
+
+  if ( markLocalEdit ) {
+    targetTask.__hasLocalEdits = true
+  }
+
+  targetTask.__entryStepsLoaded = true
+}
+
+const updateTaskStepsInCollection = ( collection, task, steps, entryId = null ) => {
+  if ( !Array.isArray( collection ) || !task ) return
+  const normalizedSteps = Array.isArray( steps ) && steps.length > 0 ? clonePayload( steps ) : [createFallbackStep()]
+  const index = findTaskIndexInCollection( collection, task )
+  if ( index === -1 ) return
+
+  const target = collection[index]
+  if ( !target || typeof target !== 'object' ) return
+
+  target.steps = clonePayload( normalizedSteps )
+
+  if ( !target.payload || typeof target.payload !== 'object' ) {
+    target.payload = {}
+  }
+  target.payload.steps = clonePayload( normalizedSteps )
+
+  if ( entryId ) {
+    const currentId = normalizeIdentifier( target.id )
+    if ( !currentId || isGeneratedIdentifier( currentId ) ) {
+      target.id = entryId
+    }
+
+    const payloadId = normalizeIdentifier( target.payload.id )
+    if ( !payloadId || isGeneratedIdentifier( payloadId ) ) {
+      target.payload.id = entryId
+    }
+
+    const payloadTaskId = normalizeIdentifier( target.payload.task_id )
+    if ( !payloadTaskId || isGeneratedIdentifier( payloadTaskId ) ) {
+      target.payload.task_id = entryId
+    }
+  }
+
+  target.__entryStepsLoaded = true
+}
+
+const syncOriginalTaskEntrySteps = ( task, steps, entryId = null ) => {
+  updateTaskStepsInCollection( originalTasks.value, task, steps, entryId )
+  if ( Array.isArray( workOrderDraftStore.originalTasks ) ) {
+    updateTaskStepsInCollection( workOrderDraftStore.originalTasks, task, steps, entryId )
+  }
+}
+
+const ensureStandaloneTaskEntryData = async task => {
+  if ( !needsStandaloneEntryFetch( task ) ) {
+    const existingSteps = Array.isArray( task?.steps ) && task.steps.length > 0
+      ? task.steps
+      : task?.payload?.steps || []
+    return { steps : existingSteps }
+  }
+
+  const entryId = resolveTaskEntryId( task )
+  if ( !entryId ) {
+    return { steps : task?.steps || [] }
+  }
+
+  const response = await getTaskEntryById( entryId )
+  const entryData = response?.data ?? response
+
+  if ( !entryData ) {
+    throw new Error( 'Missing task entry payload' )
+  }
+
+  const entrySteps = Array.isArray( entryData.steps ) ? entryData.steps : []
+  applyStepsToTask( task, entrySteps, { entryId } )
+  syncOriginalTaskEntrySteps( task, entrySteps, entryId )
+
+  if ( entryData.name && !task.name ) {
+    task.name = entryData.name
+  }
+
+  if ( entryData.description !== undefined && entryData.description !== null && !task.description ) {
+    task.description = entryData.description
+  }
+
+  if ( entryData.name ) {
+    task.payload.name = entryData.name
+  }
+
+  if ( entryData.description !== undefined && entryData.description !== null ) {
+    task.payload.description = entryData.description
+  }
+
+  return {
+    steps : entrySteps,
+    entryData
+  }
 }
 
 // Task change tracking utilities
@@ -1284,13 +1499,13 @@ const onAddTaskTemplates = selectedTemplates => {
   closeAddTaskDialog()
 }
 
-const handleTaskAction = ( { action, data } ) => {
+const handleTaskAction = async( { action, data } ) => {
   switch ( action ) {
     case 'preview':
-      handlePreviewTask( data )
+      await handlePreviewTask( data )
       break
     case 'edit':
-      handleEditTask( data )
+      await handleEditTask( data )
       break
     case 'delete':
       if ( handleRemoveTask( data ) ) {
@@ -1312,42 +1527,66 @@ const handleRemoveTask = task => {
   return false
 }
 
-const handlePreviewTask = taskData => {
+const handlePreviewTask = async taskData => {
   if ( !taskData ) {
     ElMessage.warning( 'Unable to preview this task.' )
-    return
+    return false
   }
+
+  const taskIndex = findTaskIndexInCollection( form.tasks, taskData )
+  const targetTask = taskIndex !== -1 ? form.tasks[taskIndex] : taskData
+
+  previewTaskTemplateId.value = null
+  previewTaskData.value = null
+
+  if ( needsStandaloneEntryFetch( targetTask ) ) {
+    try {
+      previewTaskLoading.value = true
+      await ensureStandaloneTaskEntryData( targetTask )
+    } catch ( error ) {
+      console.error( 'Failed to load task entry for preview:', error )
+      ElMessage.error( 'Failed to load task preview.' )
+      previewTaskLoading.value = false
+      return false
+    } finally {
+      previewTaskLoading.value = false
+    }
+  }
+
+  const freshestTask = getMostCurrentTaskData( taskIndex !== -1 ? form.tasks[taskIndex] : targetTask )
 
   const templateId =
-    taskData.templateId ||
-    taskData.template_id ||
-    taskData.payload?.template_id ||
-    taskData.rawTemplate?.template_id ||
-    taskData.rawTemplate?.id ||
+    freshestTask.templateId ||
+    freshestTask.template_id ||
+    freshestTask.payload?.template_id ||
+    freshestTask.rawTemplate?.template_id ||
+    freshestTask.rawTemplate?.id ||
     null
 
-  const isAdhocTask = taskData.source === 'adhoc' || !templateId
+  if ( isStandaloneTaskRecord( freshestTask ) || !templateId ) {
+    const steps = Array.isArray( freshestTask.steps ) && freshestTask.steps.length > 0
+      ? freshestTask.steps
+      : Array.isArray( freshestTask.payload?.steps )
+        ? freshestTask.payload.steps
+        : []
 
-  if ( isAdhocTask ) {
-    const steps =
-      Array.isArray( taskData.steps ) && taskData.steps.length > 0
-        ? taskData.steps
-        : Array.isArray( taskData.payload?.steps )
-          ? taskData.payload.steps
-          : []
+    if ( !Array.isArray( steps ) || steps.length === 0 ) {
+      ElMessage.warning( 'No steps available to preview for this task.' )
+      return false
+    }
 
     previewTaskData.value = {
-      ...taskData,
-      steps
+      ...freshestTask,
+      steps : clonePayload( steps )
     }
     previewTaskTemplateId.value = null
-    showTaskPreviewDialog.value = true
-    return
+  } else {
+    previewTaskTemplateId.value = templateId
+    previewTaskData.value = null
   }
 
-  previewTaskTemplateId.value = templateId
-  previewTaskData.value = null
   showTaskPreviewDialog.value = true
+  return true
 }
 
 const getMostCurrentTaskData = taskData => {
@@ -1378,14 +1617,35 @@ const getMostCurrentTaskData = taskData => {
 const handleEditTask = async taskData => {
   if ( !taskData ) {
     ElMessage.warning( 'Unable to edit this task.' )
-    return
+    return false
   }
 
-  // Get the most current version of the task data
-  const currentTaskData = getMostCurrentTaskData( taskData )
+  const taskIndex = findTaskIndexInCollection( form.tasks, taskData )
+  const baseTask = taskIndex !== -1 ? form.tasks[taskIndex] : taskData
 
   try {
     loading.value = true
+
+    let standaloneEntryId = resolveTaskEntryId( baseTask )
+    if ( !standaloneEntryId ) {
+      const fallbackId = normalizeIdentifier( taskIdentifierString )
+      if ( fallbackId && !isGeneratedIdentifier( fallbackId ) ) {
+        standaloneEntryId = fallbackId
+      }
+    }
+
+    if ( needsStandaloneEntryFetch( baseTask ) ) {
+      try {
+        await ensureStandaloneTaskEntryData( baseTask )
+      } catch ( fetchError ) {
+        console.error( 'Failed to load standalone task for editing:', fetchError )
+        ElMessage.error( 'Failed to load task details for editing.' )
+        return false
+      }
+    }
+
+    // Get the most current version of the task data
+    const currentTaskData = getMostCurrentTaskData( taskIndex !== -1 ? form.tasks[taskIndex] : baseTask )
 
     const originalTemplateId =
       currentTaskData.templateId ||
@@ -1412,11 +1672,20 @@ const handleEditTask = async taskData => {
     workOrderDraftStore.setReturnWorkOrderId( props.workOrder?.id ?? null )
     workOrderDraftStore.setShouldOpenCreatePanel( false )
 
+    const taskIdentifier = getTaskIdentifier( currentTaskData )
+    if ( !taskIdentifier ) {
+      console.error( 'WorkOrderEdit: Unable to determine task identifier for editing', currentTaskData )
+      ElMessage.error( 'Unable to edit task: missing task identifier. Please try refreshing and editing again.' )
+      return false
+    }
+
+    const taskIdentifierString = String( taskIdentifier )
+
     const baseQuery = {
       fromWorkOrder : 'true',
       workOrderId : String( workOrderId ),
       workOrderName : workOrderLabel,
-      taskId : currentTaskData.id,
+      taskId : taskIdentifierString,
       returnPanel : 'edit'
     }
 
@@ -1440,6 +1709,24 @@ const handleEditTask = async taskData => {
         steps : currentTaskData.steps || currentTaskData.payload?.steps || taskData.steps || []
       }
 
+      // Normalize identifiers so the designer can return updates reliably
+      standaloneTaskData.id = taskIdentifierString
+      if ( standaloneTaskData.task_id == null ) {
+        standaloneTaskData.task_id = taskIdentifierString
+      }
+      if ( standaloneTaskData.payload && typeof standaloneTaskData.payload === 'object' ) {
+        if ( standaloneTaskData.payload.id == null ) {
+          standaloneTaskData.payload.id = taskIdentifierString
+        }
+        if ( standaloneTaskData.payload.task_id == null ) {
+          standaloneTaskData.payload.task_id = taskIdentifierString
+        }
+      }
+
+      if ( standaloneEntryId ) {
+        standaloneTaskData.entry_id = standaloneEntryId
+      }
+
       // Validate that essential data is present before navigation
       if ( !standaloneTaskData.name ) {
         console.error( 'WorkOrderEdit: Missing required field "name" in standalone task data' )
@@ -1456,15 +1743,39 @@ const handleEditTask = async taskData => {
       // Store task data in sessionStorage to avoid URL length limits
       const storageKey = `standalone-task-${standaloneTaskData.id}-${Date.now()}`
       sessionStorage.setItem( storageKey, JSON.stringify( standaloneTaskData ) )
+      try {
+        sessionStorage.setItem( 'last-standalone-task-key', storageKey )
+      } catch ( storageError ) {
+        console.warn( 'WorkOrderEdit: Failed to persist last standalone task key', storageError )
+      }
+
+      workOrderDraftStore.setPendingStandaloneTask( standaloneTaskData )
+
+      let serializedTaskData = null
+      try {
+        serializedTaskData = JSON.stringify( standaloneTaskData )
+      } catch ( serializeError ) {
+        console.warn( 'WorkOrderEdit: Failed to serialize standalone task data for query payload', serializeError )
+      }
+
+      const queryPayload = {
+        ...baseQuery,
+        standalone : 'true',
+        taskDataKey : storageKey,
+        taskData : serializedTaskData || undefined,
+        taskEntryId : standaloneEntryId ? String( standaloneEntryId ) : undefined
+      }
+
+      Object.keys( queryPayload ).forEach( key => {
+        if ( queryPayload[key] === undefined ) {
+          delete queryPayload[key]
+        }
+      } )
 
       await router.push( {
         name : 'TaskDesignerEdit',
         params : { id : 'standalone' },
-        query : {
-          ...baseQuery,
-          standalone : 'true',
-          taskDataKey : storageKey
-        }
+        query : queryPayload
       } )
     } else {
       await router.push( {
@@ -1480,9 +1791,12 @@ const handleEditTask = async taskData => {
     console.error( 'Failed to open task editor:', error )
     const errorMessage = error.response?.data?.message || error.message || 'Failed to open task editor'
     ElMessage.error( errorMessage )
+    return false
   } finally {
     loading.value = false
   }
+
+  return true
 }
 
 const handleDeleteAllTasks = () => {
@@ -2260,15 +2574,6 @@ const hydrateFormFromDraft = () => {
 
     // Replace the entire array to trigger Vue reactivity
     form.tasks.splice( 0, form.tasks.length, ...newTasksArray )
-
-    // Show appropriate success message
-    if ( addedCount > 0 && updatedCount > 0 ) {
-      ElMessage.success( `${addedCount} task(s) added and ${updatedCount} task(s) updated` )
-    } else if ( addedCount > 0 ) {
-      ElMessage.success( `${addedCount} task(s) added successfully` )
-    } else if ( updatedCount > 0 ) {
-      ElMessage.success( `${updatedCount} task(s) updated successfully` )
-    }
   }
 
   // Process standards from draft - completely replace the array to ensure reactivity
@@ -2405,47 +2710,117 @@ watch(
 )
 
 // Watch route query for returned standalone taskData
+const applyStandaloneTaskReturn = returnedTaskData => {
+  const taskIdCandidates = new Set()
+  if ( returnedTaskData.id != null ) taskIdCandidates.add( String( returnedTaskData.id ) )
+  if ( returnedTaskData.task_id != null ) taskIdCandidates.add( String( returnedTaskData.task_id ) )
+
+  const taskIndex = form.tasks.findIndex( task => {
+    const existingCandidates = getTaskIdentityCandidates( task ).map( normalizeIdentifier ).filter( Boolean )
+    return existingCandidates.some( candidate => taskIdCandidates.has( candidate ) )
+  } )
+
+  if ( taskIndex === -1 ) {
+    console.warn( 'WorkOrderEdit: Could not find task to update with returned data' )
+    ElMessage.warning( 'Could not find task to update' )
+    return
+  }
+
+  const existingTask = form.tasks[taskIndex]
+  const updatedStepsSource = Array.isArray( returnedTaskData.steps ) && returnedTaskData.steps.length > 0
+    ? clonePayload( returnedTaskData.steps )
+    : Array.isArray( returnedTaskData.payload?.steps ) && returnedTaskData.payload.steps.length > 0
+      ? clonePayload( returnedTaskData.payload.steps )
+      : existingTask.steps
+
+  const mergedTask = {
+    ...existingTask,
+    ...returnedTaskData,
+    id : existingTask.id
+  }
+
+  if ( updatedStepsSource ) {
+    mergedTask.steps = clonePayload( updatedStepsSource )
+  }
+
+  if ( returnedTaskData.payload ) {
+    mergedTask.payload = {
+      ...( existingTask.payload || {} ),
+      ...returnedTaskData.payload,
+      steps : clonePayload( returnedTaskData.payload.steps || updatedStepsSource || existingTask.payload?.steps || [] )
+    }
+  } else {
+    const fallbackPayloadSteps = updatedStepsSource || existingTask.payload?.steps || []
+    mergedTask.payload = {
+      ...( existingTask.payload || {} ),
+      name : mergedTask.name ?? existingTask.payload?.name,
+      description : mergedTask.description ?? existingTask.payload?.description,
+      steps : clonePayload( fallbackPayloadSteps )
+    }
+  }
+
+  mergedTask.__hasLocalEdits = true
+  mergedTask.__entryStepsLoaded = true
+
+  form.tasks.splice( taskIndex, 1, mergedTask )
+  decorateTaskCategory( form.tasks[taskIndex] )
+  syncFormData()
+
+  console.log( 'WorkOrderEdit: Successfully updated task:', form.tasks[taskIndex] )
+  ElMessage.success( `Task "${returnedTaskData.name || 'Unnamed'}" updated` )
+}
+
 watch(
   () => route.query.taskData,
   taskDataJSON => {
-    if ( taskDataJSON ) {
-      try {
-        const returnedTaskData = JSON.parse( taskDataJSON )
-
-        // Find the task to update by ID or templateId
-        const taskIndex = form.tasks.findIndex(
-          task =>
-            task.id === returnedTaskData.id ||
-            task.id === route.query.taskId ||
-            ( returnedTaskData.templateId &&
-              ( task.templateId === returnedTaskData.templateId || task.template_id === returnedTaskData.templateId ) )
-        )
-
-        if ( taskIndex !== -1 ) {
-          // Update the task with returned data
-          form.tasks[taskIndex] = {
-            ...form.tasks[taskIndex],
-            ...returnedTaskData,
-            id : form.tasks[taskIndex].id // Preserve original ID
-          }
-
-          // Apply decorations and sync
-          decorateTaskCategory( form.tasks[taskIndex] )
-          syncFormData()
-
-          console.log( 'WorkOrderEdit: Successfully updated task:', form.tasks[taskIndex] )
-          ElMessage.success( `Task "${returnedTaskData.name || 'Unnamed'}" updated` )
-        } else {
-          console.warn( 'WorkOrderEdit: Could not find task to update with returned data' )
-          ElMessage.warning( 'Could not find task to update' )
+    if ( !taskDataJSON ) return
+    try {
+      const returnedTaskData = JSON.parse( taskDataJSON )
+      applyStandaloneTaskReturn( returnedTaskData )
+    } catch ( error ) {
+      console.error( 'WorkOrderEdit: Failed to parse returned task data:', error )
+      ElMessage.error( 'Failed to process returned task data' )
+    } finally {
+      router.replace( {
+        query : {
+          ...route.query,
+          taskData : undefined,
+          taskId : undefined,
+          shouldFetchEntry : undefined,
+          taskEntryId : undefined
         }
+      } )
+    }
+  },
+  { immediate : true }
+)
 
-        // Clear the query parameters to avoid reprocessing
-        router.replace( { query : { ...route.query, taskData : undefined, taskId : undefined }} )
-      } catch ( error ) {
-        console.error( 'WorkOrderEdit: Failed to parse returned task data:', error )
-        ElMessage.error( 'Failed to process returned task data' )
+watch(
+  () => route.query.taskDataKey,
+  taskDataKey => {
+    if ( !taskDataKey ) return
+    try {
+      const stored = sessionStorage.getItem( taskDataKey )
+      if ( stored ) {
+        const returnedTaskData = JSON.parse( stored )
+        sessionStorage.removeItem( taskDataKey )
+        applyStandaloneTaskReturn( returnedTaskData )
+      } else {
+        console.warn( 'WorkOrderEdit: No session data found for key', taskDataKey )
       }
+    } catch ( error ) {
+      console.error( 'WorkOrderEdit: Failed to load returned task data from storage:', error )
+      ElMessage.error( 'Failed to process returned task data' )
+    } finally {
+      router.replace( {
+        query : {
+          ...route.query,
+          taskDataKey : undefined,
+          taskId : undefined,
+          shouldFetchEntry : undefined,
+          taskEntryId : undefined
+        }
+      } )
     }
   },
   { immediate : true }
@@ -2651,23 +3026,29 @@ onActivated( () => {
 }
 
 // Form actions
-.form-actions {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: var(--el-bg-color);
-  border-top: 1px solid var(--el-border-color-light);
-  padding: 16px 24px;
-  z-index: 100;
+.work-order-edit-enhanced {
+  .form-actions-fixed {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    background: var(--el-bg-color);
+    border-top: 1px solid var(--el-border-color-light);
+    padding: 10px 24px;
+    box-shadow: 0 0 1px rgba(0, 0, 0, 0.1);
 
-  .left-actions {
-    display: flex;
-    gap: 12px;
-    justify-content: flex-end;
+    .form-actions-content {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
 
-    .update-button {
-      min-width: 120px;
+      .update-button {
+        min-width: 120px;
+        padding: 12px 24px;
+        font-size: 16px;
+        font-weight: 500;
+      }
     }
   }
 }
@@ -2693,6 +3074,16 @@ onActivated( () => {
       font-weight: 600;
     }
   }
+}
+
+.preview-content {
+  min-height: 200px;
+}
+
+.preview-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--el-text-color-secondary);
 }
 
 // Standalone standard preview
@@ -2832,8 +3223,18 @@ onActivated( () => {
     }
   }
 
-  .form-actions {
+  .form-actions-fixed {
     padding: 12px 16px;
+
+    .form-actions-content {
+      gap: 8px;
+
+      .update-button {
+        padding: 10px 16px;
+        font-size: 14px;
+        min-width: 100px;
+      }
+    }
   }
 }
 

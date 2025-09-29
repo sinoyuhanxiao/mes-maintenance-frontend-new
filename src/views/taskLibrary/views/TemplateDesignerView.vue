@@ -499,6 +499,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 // Native drag and drop implementation
 import { useTaskLibrary } from '@/composables/designer/useTaskLibrary'
 import { getTaskTemplateById } from '@/api/task-library'
+import { getTaskEntryById } from '@/api/task-entry'
 import { useDesignerStateCache } from '@/composables/designer/useDesignerStateCache'
 import { useDesignerTour } from '@/composables/designer/useDesignerTour'
 import { useAppStore, useSettingsStore, useTagsViewStore } from '@/store'
@@ -543,6 +544,8 @@ const workOrderReturnWorkOrderId = computed( () => {
   }
   return null
 } )
+
+const standaloneTaskIdRef = ref( typeof route.query.taskId === 'string' ? route.query.taskId : null )
 
 const { loadTemplates, createTemplate, updateTemplate, validateTemplate } = useTaskLibrary()
 
@@ -1042,7 +1045,7 @@ const handleBack = () => {
   }
 }
 
-const navigateBackToWorkOrder = async message => {
+const navigateBackToWorkOrder = async( message, additionalQuery = {} ) => {
   const rawTarget = workOrderReturnRoute.value || '/work-order/table'
   const panel = workOrderReturnPanel.value
   const returnWorkOrderId = workOrderReturnWorkOrderId.value
@@ -1054,7 +1057,7 @@ const navigateBackToWorkOrder = async message => {
   }
   const baseQueryEntries = Object.fromEntries( targetUrl.searchParams.entries() )
 
-  const finalQuery = { ...baseQueryEntries }
+  const finalQuery = { ...baseQueryEntries, ...additionalQuery }
 
   // Enhanced context validation - ensure proper edit vs create distinction
   const isEditContext = panel === 'edit' && returnWorkOrderId
@@ -1287,7 +1290,7 @@ const performStandaloneSave = async() => {
     saving.value = true
 
     // Get the original task ID from route query
-    const originalTaskId = route.query.taskId
+    const originalTaskId = standaloneTaskIdRef.value || route.query.taskId || route.params.id
     if ( !originalTaskId ) {
       throw new Error( 'Original task ID not found' )
     }
@@ -1301,8 +1304,10 @@ const performStandaloneSave = async() => {
     const transformedTask = buildDisplayTaskFromDesigner( templateForm.value, categoryOption )
 
     // Create the updated task data with proper payload structure
+    const normalizedTaskId = String( originalTaskId )
+
     const updatedTaskData = {
-      id : originalTaskId,
+      id : normalizedTaskId,
       name : transformedTask.name,
       description : transformedTask.description,
       category : transformedTask.category,
@@ -1313,14 +1318,27 @@ const performStandaloneSave = async() => {
       payload : transformedTask.payload // This is crucial - includes the backend-ready payload
     }
 
+    if ( !updatedTaskData.task_id ) {
+      updatedTaskData.task_id = normalizedTaskId
+    }
+
+    if ( updatedTaskData.payload && typeof updatedTaskData.payload === 'object' ) {
+      updatedTaskData.payload.id = normalizedTaskId
+      updatedTaskData.payload.task_id = normalizedTaskId
+    }
+
     // Update the task in the work order draft store
-    workOrderDraftStore.updateTask( originalTaskId, updatedTaskData )
+    workOrderDraftStore.updateTask( normalizedTaskId, updatedTaskData )
 
     hasUnsavedChanges.value = false
     clearStateByKey( stableCacheKey.value )
 
-    // Navigate back to work order
-    await navigateBackToWorkOrder( 'Standalone task updated successfully.' )
+    // Persist updated task data for work order edit view to consume
+    // Navigate back to work order with reference to the stored update
+    await navigateBackToWorkOrder( 'Standalone task updated successfully.', {
+      taskData : JSON.stringify( updatedTaskData ),
+      taskId : normalizedTaskId
+    } )
   } catch ( error ) {
     console.error( 'Standalone save error:', error )
 
@@ -2257,14 +2275,100 @@ const initializeTemplate = async() => {
         console.log( 'TemplateDesignerView: taskData missing, retrying after delay...' )
         await new Promise( resolve => setTimeout( resolve, 100 ) )
         taskDataString = route.query.taskData || ( taskDataKey ? sessionStorage.getItem( taskDataKey ) : null )
+        if ( !taskDataString ) {
+          const fallbackKey = sessionStorage.getItem( 'last-standalone-task-key' )
+          if ( fallbackKey ) {
+            taskDataString = sessionStorage.getItem( fallbackKey )
+            if ( !taskDataKey && taskDataString ) {
+              console.log( 'TemplateDesignerView: Using fallback session key for standalone task data' )
+              sessionStorage.removeItem( 'last-standalone-task-key' )
+            }
+          }
+        }
         console.log( 'TemplateDesignerView: taskDataString after retry:', taskDataString ? 'present' : 'missing' )
       }
 
-      if ( !taskDataString ) {
+      let taskData = null
+
+      if ( taskDataString ) {
+        taskData = JSON.parse( taskDataString )
+      }
+
+      const shouldFetchEntry = route.query.shouldFetchEntry === 'true'
+      const rawEntryLookupId =
+        route.query.taskEntryId || route.query.taskId || ( route.params.id !== 'standalone' ? route.params.id : null ) || taskData?.entry_id
+      const entryLookupId = rawEntryLookupId && rawEntryLookupId !== 'undefined' ? rawEntryLookupId : null
+
+      if ( shouldFetchEntry && entryLookupId ) {
+        try {
+          console.log( 'TemplateDesignerView: Fetching standalone task entry via API for id:', entryLookupId )
+          const entryResponse = await getTaskEntryById( entryLookupId )
+          const entryData = entryResponse?.data || entryResponse || null
+          if ( entryData ) {
+            taskData = {
+              ...entryData,
+              ...taskData
+            }
+          }
+        } catch ( entryError ) {
+          console.warn( 'TemplateDesignerView: Failed to fetch task entry via API:', entryError )
+        }
+      } else if ( !taskData && entryLookupId ) {
+        console.log( 'TemplateDesignerView: Attempting fallback task entry fetch for id:', entryLookupId )
+        try {
+          const entryResponse = await getTaskEntryById( entryLookupId )
+          taskData = entryResponse?.data || entryResponse || null
+        } catch ( entryError ) {
+          console.warn( 'TemplateDesignerView: Fallback task entry fetch failed:', entryError )
+        }
+      }
+
+      if ( !taskData ) {
+        const pendingTask = workOrderDraftStore.consumePendingStandaloneTask()
+        if ( pendingTask ) {
+          const pendingIdCandidates = [pendingTask.id, pendingTask.task_id, pendingTask.taskId]
+            .filter( Boolean )
+            .map( value => String( value ) )
+          const lookupId = entryLookupId ? String( entryLookupId ) : null
+
+          if ( !lookupId || pendingIdCandidates.includes( lookupId ) ) {
+            console.log( 'TemplateDesignerView: Using pending standalone task data from draft store' )
+            taskData = pendingTask
+          } else {
+            // Put it back if it doesn't match
+            workOrderDraftStore.setPendingStandaloneTask( pendingTask )
+          }
+        }
+      }
+
+      if ( !taskData ) {
+        const draftTasks = workOrderDraftStore.draftForm?.tasks || []
+        const draftMatch = draftTasks.find( task => {
+          const candidates = [task.id, task.task_id, task.taskId]
+            .filter( Boolean )
+            .map( value => String( value ) )
+          const lookupId = entryLookupId ? String( entryLookupId ) : null
+          return lookupId ? candidates.includes( lookupId ) : false
+        } )
+
+        if ( draftMatch ) {
+          console.log( 'TemplateDesignerView: Resolved standalone task data from draft store' )
+          taskData = JSON.parse( JSON.stringify( draftMatch ) )
+        }
+      }
+
+      if ( !taskData ) {
         throw new Error( 'Task data not found in route query parameters or sessionStorage' )
       }
 
-      const taskData = JSON.parse( taskDataString )
+      if ( taskData.id || taskData.task_id ) {
+        standaloneTaskIdRef.value = String( taskData.id || taskData.task_id )
+      }
+
+      // Normalize minimal identifiers
+      if ( !taskData.id && taskData.task_id ) {
+        taskData.id = taskData.task_id
+      }
 
       // Transform standalone task data to match the designer form structure
       templateForm.value = {
@@ -2297,10 +2401,21 @@ const initializeTemplate = async() => {
         tagsViewStore.UPDATE_VISITED_VIEW_TITLE( route.path, newTitle )
       }
 
-      // Clean up sessionStorage after successful initialization
+     // Clean up sessionStorage after successful initialization
       if ( taskDataKey ) {
         console.log( 'TemplateDesignerView: Cleaning up sessionStorage for key:', taskDataKey )
         sessionStorage.removeItem( taskDataKey )
+      }
+
+      sessionStorage.removeItem( 'last-standalone-task-key' )
+
+      // Clean up query parameters that were used only for initialization
+      if ( taskDataKey || route.query.shouldFetchEntry || route.query.taskData ) {
+        const cleanedQuery = { ...route.query }
+        delete cleanedQuery.taskDataKey
+        delete cleanedQuery.taskData
+        delete cleanedQuery.shouldFetchEntry
+        router.replace( { query : cleanedQuery } ).catch( () => {} )
       }
 
       // Initial validation check
