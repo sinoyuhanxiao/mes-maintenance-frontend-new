@@ -1,101 +1,194 @@
 <template>
-  <el-form :model="shift" ref="shiftFormRef" :rules="validationRules" label-width="170px">
-    <template v-for="item in formItems" :key="item.prop">
-      <el-form-item :label="item.label" :prop="item.prop" v-if="item.type === 'input'">
-        <el-input v-model="shift[item.prop]" :placeholder="item.placeholder" :maxlength="item.maxlength" />
+  <el-form ref="formRef" :model="internalShift" :rules="shiftFormRules" label-width="160px" class="two-col-form">
+    <el-form-item prop="name" :label="t('common.name')">
+      <el-input v-model="internalShift.name" />
+    </el-form-item>
+
+    <div class="form-row">
+      <el-form-item class="full-width" prop="description" :label="t('common.description')">
+        <el-input type="textarea" v-model="internalShift.description" />
+      </el-form-item>
+    </div>
+
+    <div class="form-row">
+      <el-form-item prop="start_time" :label="t('shift.startTime')">
+        <el-time-picker v-model="internalShift.start_time" value-format="HH:mm:ss" />
       </el-form-item>
 
-      <el-form-item :label="item.label" :prop="item.prop" v-else-if="item.type === 'textarea'">
-        <el-input type="textarea" v-model="shift[item.prop]" :placeholder="item.placeholder" />
+      <el-form-item prop="end_time" :label="t('shift.endTime')">
+        <el-time-picker v-model="internalShift.end_time" value-format="HH:mm:ss" />
       </el-form-item>
-    </template>
-
-    <el-row>
-      <el-col :span="7">
-        <el-form-item :label="t('shift.startTime')" prop="start_time">
-          <el-time-picker v-model="shift.start_time" />
-        </el-form-item>
-      </el-col>
-
-      <el-col :span="7">
-        <el-form-item :label="t('shift.endTime')" prop="end_time">
-          <el-time-picker v-model="shift.end_time" />
-        </el-form-item>
-      </el-col>
-
-      <el-col :span="10">
-        <el-form-item :label="t('shift.graceTimeMinute')">
-          <el-input-number v-model="shift.grace_minute" :min="0" :max="120" style="margin-right: 10px" />
-        </el-form-item>
-      </el-col>
-    </el-row>
-
-    <div style="display: flex; justify-content: end">
-      <el-button @click="emit('cancel')">{{ t('common.cancel') }}</el-button>
-      <el-button type="primary" @click="validateAndSubmit">{{ t('common.confirm') }}</el-button>
     </div>
   </el-form>
+
+  <div class="form-action-row">
+    <el-button @click="emit('cancel')">{{ t('common.cancel') }}</el-button>
+    <el-button type="warning" @click="handleResetForm">
+      {{ t('workOrder.actions.reset') }}
+    </el-button>
+    <el-button type="primary" :disabled="internalShift.id && !isShiftEdited" @click="handleConfirmSubmit">
+      {{ t('common.confirm') }}
+    </el-button>
+  </div>
 </template>
 
 <script setup>
-import { ref, computed, toRef } from 'vue'
-// import { useStore } from 'vuex'
+import { ref, computed, watch, nextTick } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useI18n } from 'vue-i18n'
+import { createShift, updateShift } from '@/api/shift'
 
 const props = defineProps( {
-  shift : { type : Object, required : true },
-  isEditMode : { type : Boolean, required : true }
+  shift : {
+    type : Object,
+    default : null
+  }
 } )
-const emit = defineEmits( ['submit', 'cancel'] )
+
 const { t } = useI18n()
+const emit = defineEmits( ['confirm', 'cancel', 'update:loading'] )
 
-const shiftFormRef = ref( null )
-defineExpose( { shiftFormRef } )
+const formRef = ref()
+const submitting = ref( false )
 
-const shift = computed( () => toRef( props, 'shift' ).value )
-
-const validationRules = {
+const shiftFormRules = {
   name : [{ required : true, message : t( 'common.nameRequired' ), trigger : 'blur' }],
   start_time : [{ required : true, message : t( 'shift.startTimeRequired' ), trigger : 'change' }],
   end_time : [{ required : true, message : t( 'shift.endTimeRequired' ), trigger : 'change' }]
 }
 
-const formItems = [
-  {
-    prop : 'name',
-    label : t( 'common.name' ),
-    placeholder : t( 'common.namePlaceholder' ),
-    type : 'input',
-    maxlength : 255
-  },
-  {
-    prop : 'description',
-    label : t( 'common.description' ),
-    placeholder : t( 'common.descriptionPlaceholder' ),
-    type : 'textarea'
+function createEmptyShift() {
+  return {
+    name : '',
+    description : '',
+    start_time : null,
+    end_time : null
   }
-]
+}
 
-function validateAndSubmit() {
-  shiftFormRef.value?.validate( valid => {
-    if ( !valid ) return console.error( 'Form validation failed!' )
+const internalShift = ref( createEmptyShift() )
+const originalShiftSnapshot = ref( null )
 
-    const payload = { ...shift.value, status : 1 }
-    // TODO: Add create/update by param later
-    // const userId = store.getters.getUser?.id
-    const now = new Date().toISOString()
-
-    if ( payload.id == null ) {
-      // payload.created_by = userId
-      payload.created_at = now
+watch(
+  () => props.shift,
+  async shift => {
+    if ( shift ) {
+      internalShift.value = { ...createEmptyShift(), ...shift }
+      originalShiftSnapshot.value = JSON.parse( JSON.stringify( internalShift.value ) )
     } else {
-      // payload.updated_by = userId
-      payload.updated_at = now
+      internalShift.value = createEmptyShift()
+      originalShiftSnapshot.value = null
     }
 
-    emit( 'submit', payload )
-  } )
+    await nextTick()
+    formRef.value?.clearValidate()
+  },
+  { immediate : true }
+)
+
+async function handleResetForm() {
+  try {
+    await ElMessageBox.confirm( t( 'common.confirmMessage' ), t( 'common.warning' ), {
+      type : 'warning',
+      confirmButtonText : t( 'common.confirm' ),
+      cancelButtonText : t( 'common.cancel' ),
+      distinguishCancelAndClose : true
+    } )
+    if ( originalShiftSnapshot.value === null ) {
+      internalShift.value = createEmptyShift()
+    } else {
+      internalShift.value = JSON.parse( JSON.stringify( originalShiftSnapshot.value ) )
+    }
+    formRef.value.clearValidate()
+  } catch {}
 }
+
+function buildCreateShiftPayload( entry ) {
+  return {
+    name : entry.name,
+    description : entry.description,
+    start_time : entry.start_time,
+    end_time : entry.end_time,
+    status : 1
+  }
+}
+
+function buildUpdateShiftPayload( entry, original ) {
+  const payload = {}
+  if ( entry.name !== original.name ) payload.name = entry.name
+  if ( entry.description !== original.description ) payload.description = entry.description
+  if ( entry.start_time !== original.start_time ) {
+    payload.start_time = entry.start_time
+  }
+  if ( entry.end_time !== original.end_time ) {
+    payload.end_time = entry.end_time
+  }
+  return payload
+}
+
+const isShiftEdited = computed( () => {
+  if ( !internalShift.value.id || !originalShiftSnapshot.value ) return true
+  const payload = buildUpdateShiftPayload( internalShift.value, originalShiftSnapshot.value )
+  return Object.keys( payload ).length > 0
+} )
+
+async function handleConfirmSubmit() {
+  const isValid = await formRef.value.validate()
+  if ( !isValid ) {
+    return ElMessage.error( t( 'user.message.pleaseCorrectErrors' ) )
+  }
+
+  submitting.value = true
+  emit( 'update:loading', true )
+
+  try {
+    const payload = internalShift.value.id
+      ? buildUpdateShiftPayload( internalShift.value, originalShiftSnapshot.value )
+      : buildCreateShiftPayload( internalShift.value )
+
+    if ( internalShift.value.id ) {
+      await updateShift( internalShift.value.id, payload )
+      ElMessage.success( t( 'shift.message.updated' ) )
+    } else {
+      await createShift( payload )
+      ElMessage.success( t( 'shift.message.created' ) )
+    }
+
+    emit( 'confirm' )
+  } catch ( err ) {
+    console.error( 'Error submitting shift form:', err )
+    ElMessage.error( t( 'shift.message.shiftUpdatedFailed' ) )
+  } finally {
+    submitting.value = false
+    emit( 'update:loading', false )
+  }
+}
+
+// function formatTime( val ) {
+//   if ( !val ) return null
+//   console.log( formatTime )
+//   const d = new Date( val )
+//   const formatD = d.toLocaleTimeString( 'en-GB', { hour12 : false } )
+//   console.log( formatTime )
+//   return formatD
+// }
 </script>
 
-<style scoped></style>
+<style scoped lang="scss">
+.two-col-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.two-col-form .form-row .full-width {
+  grid-column: span 2;
+}
+
+.form-action-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+</style>

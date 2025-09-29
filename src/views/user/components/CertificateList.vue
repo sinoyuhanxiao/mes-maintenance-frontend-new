@@ -1,18 +1,18 @@
 <template>
   <div class="certificate-container">
     <template v-if="certificates.length">
-      <div v-for="certificate in certificates" :key="certificate.id" class="certificate-card">
+      <div v-for="(certificate, index) in certificates" :key="certificate.id" class="certificate-card">
         <!-- Left: image preview -->
         <div class="certificate-image-preview-section">
           <el-image
-            :src="certificate.image_list?.[0]?.url || ''"
-            :preview-src-list="certificate.image_list"
+            :src="certificate.file_list?.[0] || ''"
+            :preview-src-list="certificate.file_list"
             :initial-index="0"
             fit="cover"
             class="certificate-thumb"
           >
             <template #error>
-              <div class="image-placeholder">No Image</div>
+              <el-text>No Image</el-text>
             </template>
           </el-image>
         </div>
@@ -20,21 +20,28 @@
         <!-- Middle: details -->
         <div class="certificate-detail-section">
           <div class="certificate-detail-row">
-            <el-text tag="b">{{ certificate.certificate_name }}</el-text>
+            <el-text tag="b">{{ certificate.name }}</el-text>
           </div>
           <div class="certificate-detail-row">
             {{ t('user.certificateNumber') }}: {{ certificate.certificate_number }}
           </div>
           <div class="certificate-detail-row">
             <div>{{ t('user.issueDate') }}: {{ fmt(certificate.issue_date) }}</div>
-            <div>{{ t('user.expiryDate') }}: {{ fmt(certificate.expiration_date) }}</div>
+            <div :class="{ expired: isExpired(certificate.expiration_date) }">
+              {{ t('user.expiryDate') }}: {{ fmt(certificate.expiration_date) }}
+            </div>
           </div>
         </div>
 
         <!-- Right: actions -->
         <div class="certificate-actions-section">
           <div>
-            <el-button class="certificate-actions-item" :icon="Edit" size="small" @click="$emit('edit', certificate)">
+            <el-button
+              class="certificate-actions-item"
+              :icon="Edit"
+              size="small"
+              @click="$emit('edit', certificate, index)"
+            >
               {{ t('common.edit') }}
             </el-button>
           </div>
@@ -45,7 +52,7 @@
               :icon="Delete"
               type="danger"
               size="small"
-              @click="$emit('delete', certificate)"
+              @click="$emit('delete', certificate, index)"
             >
               {{ t('common.delete') }}
             </el-button>
@@ -92,6 +99,10 @@ function fmt( iso ) {
   return `${d.getFullYear()}-${String( d.getMonth() + 1 ).padStart( 2, '0' )}-${String( d.getDate() ).padStart( 2, '0' )}`
 }
 
+function isExpired( iso ) {
+  return iso && new Date( iso ).getTime() < Date.now()
+}
+
 const { t } = useI18n()
 </script>
 
@@ -117,6 +128,10 @@ const { t } = useI18n()
   text-align: center;
 }
 
+.certificate-thumb {
+  object-fit: cover;
+}
+
 .certificate-detail-section {
   width: 60%;
   display: flex;
@@ -140,12 +155,12 @@ const { t } = useI18n()
   gap: 20px;
 }
 
-.certificate-thumb {
-  width: 100%;
-  object-fit: cover;
-}
-
 .empty-cert-placeholder {
   align-self: center;
+}
+
+.expired {
+  color: var(--el-color-danger);
+  font-weight: 600;
 }
 </style>

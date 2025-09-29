@@ -8,8 +8,22 @@ import Layout from '@/layout/index.vue'
 import nested from './modules/nested'
 import taskLibraryRoutes from './modules/taskLibrary'
 
+const isAllowAll = import.meta.env.VITE_ALL_PERMISSION === 'true'
+
 // 配置路由信息
 export const constantRoutes = [
+  {
+    path : '/callback',
+    name : 'Callback',
+    component : () => import( '@/views/callback/index.vue' ),
+    meta : { requiresAuth : false }
+  },
+  {
+    path : '/logout-success',
+    name : 'LogoutSuccess',
+    component : () => import( '@/views/logout/index.vue' ),
+    meta : { requiresAuth : false }
+  },
   {
     path : '/redirect',
     name : 'Redirect',
@@ -24,7 +38,7 @@ export const constantRoutes = [
       }
     ]
   },
-  {
+  /* {
     path : '/login',
     name : 'Login',
     component : () => import( '@/views/login/index.vue' ),
@@ -32,7 +46,7 @@ export const constantRoutes = [
       hidden : true,
       title : 'router.login'
     }
-  },
+  }, */
   {
     path : '/404',
     name : 'Error404',
@@ -237,25 +251,31 @@ export const asyncRoutes = [
         path : 'user-management',
         component : () => import( '@/views/user/index.vue' ),
         name : 'UserManagement',
-        meta : { title : 'router.userManagement', icon : 'users', noCache : false }
+        meta : { title : 'router.user', icon : 'users', noCache : false }
       },
       {
         path : 'team-management',
         component : () => import( '@/views/team/index.vue' ),
         name : 'TeamManagement',
-        meta : { title : 'router.teamManagement', icon : 'users', noCache : true }
+        meta : { title : 'router.team', icon : 'users', noCache : true }
+      },
+      {
+        path : 'department-management',
+        component : () => import( '@/views/department/index.vue' ),
+        name : 'DepartmentManagement',
+        meta : { title : 'router.department', icon : 'users', noCache : true }
       },
       {
         path : 'shift-management',
         component : () => import( '@/views/shift/index.vue' ),
         name : 'ShiftManagement',
-        meta : { title : 'router.shiftManagement', icon : 'users', noCache : true }
+        meta : { title : 'router.shift', icon : 'users', noCache : true }
       },
       {
         path : 'my-account',
         component : () => import( '@/views/userCenter/index.vue' ),
         name : 'MyAccount',
-        meta : { title : 'router.myAccount', icon : 'users', noCache : true }
+        meta : { title : 'router.myAccount', icon : 'users', noCache : true, hidden : true }
       },
       {
         path : 'user-detail/:id',
@@ -280,14 +300,18 @@ export const asyncRoutes = [
   }
 ]
 
+// Allow-All pre-register all; RBAC only register constant
+const baseRoutes = isAllowAll ? constantRoutes.concat( asyncRoutes ) : constantRoutes
+
 const router = createRouter( {
   history : createWebHashHistory( './' ),
-  routes : constantRoutes.concat( asyncRoutes ),
+  routes : baseRoutes,
   scrollBehavior : () => ( { left : 0, top : 0 } )
 } )
 
 export function resetRouter() {
-  const WHITE_NAME_LIST = ['Login']
+  if ( isAllowAll ) return
+  const WHITE_NAME_LIST = ['Callback', 'LogoutSuccess', 'Error404', 'Error401', 'Error500', 'Redirect', 'RedirectPath']
   router.getRoutes().forEach( route => {
     const { name } = route
     if ( name && !WHITE_NAME_LIST.includes( name ) ) {

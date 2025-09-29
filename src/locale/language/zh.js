@@ -413,7 +413,8 @@ export default {
       navigateToLocation : '导航到位置',
       locationTreeTitle : '位置树 - {location}',
       close : '关闭',
-      viewFullTree : '查看完整树'
+      viewFullTree : '查看完整树',
+      unknownLocation : '未知区域'
     },
 
     // Vendors
@@ -477,7 +478,12 @@ export default {
     updatedBy : '更新人',
     actions : '操作',
     code : '编号',
-    type : '类型'
+    type : '类型',
+    filterByDepartmentPlaceholder : '按部門篩選',
+    filterByRolePlaceholder : '按角色篩選',
+    filterByUserPlaceholder : '按用戶篩選',
+    filterByLocationPlaceholder : '按地點篩選',
+    filterByEquipmentPlaceholder : '按設備篩選'
   },
   errors : {
     badRequest : '请求参数错误',
@@ -508,9 +514,10 @@ export default {
     vendorsAndLocations : '供应商和地址',
     userCenter : '个人中心',
     userDetail : '用户信息',
-    userManagement : '用户管理',
-    teamManagement : '班组管理',
-    shiftManagement : '班次管理',
+    user : '用户',
+    team : '班组',
+    shift : '班次',
+    department : '部门',
     systemManagement : '系统管理',
     myAccount : '我的账号',
     nested : '嵌套路由',
@@ -523,6 +530,7 @@ export default {
     menu2 : '菜单2'
   },
   user : {
+    userManagement : '用户管理',
     firstName : '名',
     lastName : '姓',
     unknownUser : '未知用户',
@@ -590,7 +598,12 @@ export default {
       selectDepartmentPlaceHolder : '选择部门',
       changePassword : '修改密码',
       newPassword : '新密码',
-      confirmPassword : '确认密码'
+      confirmPassword : '确认密码',
+      autoGenerate : '系统自动生成',
+      customUsername : '自定义用户名',
+      enterCustomUsername : '输入用户名',
+      usernameHintNoUpdate : '用户名创建后将无法修改',
+      usernameAutoHint : '系统会在创建账号时用姓名自动生成用户名'
     },
     status : {
       active : '已激活',
@@ -605,7 +618,7 @@ export default {
       teamsUpdatedSuccess : '班组更新成功',
       teamsUpdateFailed : '班组更新失败',
       selfDeactivationSuccess : '你的账号已经成功注销，登出后将无法登入.',
-      selfDeactivationWarning : '您正在停用自己的账号。确定要继续吗?',
+      selfDeactivateConfirm : '您正在停用自己的账号。确定要继续吗?',
       selfDeletionWarning : '您正在删除自己的账号及其关联的班组。确定要继续吗?',
       deletionConfirmation : '确定要删除用户“{name}”及其班组关联吗?',
       deletionCanceled : '删除已取消',
@@ -629,6 +642,8 @@ export default {
       passwordsNotMatch : '密码不匹配',
       statusRequired : '激活状态是必填项',
       usernameExists : '该用户名已存在',
+      usernameRequired : '请输入用户名',
+      usernameMaxLength : '用户名长度不能超过25个字符',
       emailRequired : '邮箱是必填项',
       emailInvalid : '邮箱格式不正确',
       phoneNumberRequired : '电话号码是必填项',
@@ -649,6 +664,7 @@ export default {
     }
   },
   team : {
+    teamManagement : '班组管理',
     editTeam : '编辑班组',
     newTeam : '新增班组',
     assignedLocation : '负责设备',
@@ -698,8 +714,14 @@ export default {
       selectEquipment : '请选择负责设备'
     }
   },
+  department : {
+    departmentManagement : '部门管理',
+    editDepartment : '编辑部门',
+    newDepartment : '新增部门',
+    unknownDepartment : '未知部门'
+  },
   shift : {
-    graceTimeMinute : '缓冲时间(分鐘)',
+    shiftManagement : '班次管理',
     createShift : '新增班次',
     editShift : '编辑班次',
     startTime : '开始时间',

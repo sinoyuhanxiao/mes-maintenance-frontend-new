@@ -1,5 +1,5 @@
 <template>
-  <MesLayout :title="t('router.userManagement')" :view-mode="'table'">
+  <MesLayout :title="t('user.userManagement')" :view-mode="'table'">
     <template #viewMode> </template>
 
     <template #head>
@@ -23,7 +23,7 @@
           <div class="filter-item">
             <el-select
               v-model="localFilters.department_ids"
-              :placeholder="$t('user.department')"
+              :placeholder="$t('common.filterByDepartmentPlaceholder')"
               clearable
               multiple
               collapse-tags
@@ -39,7 +39,7 @@
           <div class="filter-item">
             <el-select
               v-model="localFilters.role_ids"
-              :placeholder="$t('user.table.role')"
+              :placeholder="$t('common.filterByRolePlaceholder')"
               clearable
               multiple
               collapse-tags
@@ -131,8 +131,8 @@
 
           <el-table-column :label="t('user.table.profileImage')" width="130" prop="image" align="center" fixed="left">
             <template #default="scope">
-              <!--              <WorkOrderImage :image-path="scope.row.image ? [scope.row.image] : null" />-->
               <el-image
+                v-if="scope.row.image"
                 :src="scope.row.image"
                 fit="cover"
                 :preview-src-list="[scope.row.image]"
@@ -146,19 +146,34 @@
                   </div>
                 </template>
               </el-image>
+
+              <el-image v-else class="circular-image" fit="cover">
+                <template #error>
+                  <el-tooltip>
+                    <template #content>
+                      <span>{{ t('workOrder.messages.noImagePlaceholder') }}</span>
+                    </template>
+                    <div class="image-slot-circle">
+                      <el-icon><Picture /></el-icon>
+                    </div>
+                  </el-tooltip>
+                </template>
+              </el-image>
             </template>
           </el-table-column>
 
           <el-table-column
             :label="t('user.firstName')"
             prop="first_name"
-            width="150"
+            width="200"
             sortable="custom"
             align="center"
             fixed="left"
           >
             <template #default="scope">
-              <el-link @click="handleView(scope.row)">{{ scope.row.first_name }}</el-link>
+              <el-link @click="handleView(scope.row)">
+                {{ scope.row.first_name }}
+              </el-link>
             </template>
           </el-table-column>
 
@@ -171,7 +186,7 @@
           <el-table-column
             :label="t('user.table.username')"
             prop="username"
-            width="180"
+            width="200"
             sortable="custom"
             align="center"
           >
@@ -209,45 +224,77 @@
           <!--            </template>-->
           <!--          </el-table-column>-->
 
-          <el-table-column
-            :label="t('user.department')"
-            prop="department_id"
-            width="150"
-            sortable="custom"
-            align="center"
-          >
+          <el-table-column :label="t('user.department')" prop="department_list" width="150" align="center">
             <template #default="scope">
-              <el-text>
-                {{ findDepartmentById(scope.row.department_id)?.name || '-' }}
-              </el-text>
+              <template v-if="scope.row.department_ids && scope.row.department_ids.length">
+                <!--                <el-popover trigger="click" placement="top" width="200">-->
+                <!--                  <template #reference>-->
+                <!--                    <el-button :type="'info'" plain :size="'small'">-->
+                <!--                      {{ scope.row.department_ids.length }}-->
+                <!--                      {{ scope.row.department_ids.length === 1 ? 'department' : 'departments' }}-->
+                <!--                    </el-button>-->
+                <!--                  </template>-->
+
+                <!--                  <div style="display: flex; flex-wrap: wrap; gap: 6px">-->
+                <!--                    <template v-for="departmentId in scope.row.department_ids" :key="departmentId">-->
+                <!--                      <DepartmentTag :departmentId="departmentId" />-->
+                <!--                    </template>-->
+                <!--                  </div>-->
+                <!--                </el-popover>-->
+
+                <TagPopover
+                  :items="scope.row.department_ids"
+                  singular-label="department"
+                  plural-label="departments"
+                  :search-key="id => departmentMap[id]?.name || id"
+                  :item-key="id => id"
+                >
+                  <template #default="{ item }">
+                    <DepartmentTag :departmentId="item" />
+                  </template>
+                </TagPopover>
+              </template>
+              <template v-else>
+                <span>-</span>
+              </template>
             </template>
           </el-table-column>
 
-          <el-table-column :label="t('user.table.role')" prop="roles" width="200" align="center" sortable="custom">
+          <el-table-column :label="t('user.table.role')" prop="role_list" width="150" align="center">
             <template #default="scope">
-              <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 4px">
-                <template v-for="role in scope.row.roles.slice(0, 3)" :key="role.id">
-                  <RoleTag :role="role" />
-                </template>
+              <template v-if="scope.row.role_list && scope.row.role_list.length">
+                <TagPopover :items="scope.row.role_list" singular-label="role" plural-label="roles" search-key="name">
+                  <template #default="{ item }">
+                    <RoleTag :role="item" />
+                  </template>
+                </TagPopover>
+                <!--                -->
+                <!--                <el-popover trigger="click" placement="top" width="300">-->
+                <!--                  <template #reference>-->
+                <!--                    <el-button :type="'info'" plain :size="'small'">-->
+                <!--                      {{ scope.row.role_list.length }}-->
+                <!--                      {{ scope.row.role_list.length === 1 ? 'role' : 'roles' }}-->
+                <!--                    </el-button>-->
+                <!--                  </template>-->
 
-                <template v-if="scope.row.roles.length > 3">
-                  <el-popover placement="top" trigger="hover" width="200">
-                    <template #default>
-                      <div style="display: flex; flex-wrap: wrap; gap: 4px">
-                        <RoleTag v-for="role in scope.row.roles.slice(3)" :key="role.id" :role="role" />
-                      </div>
-                    </template>
-
-                    <template #reference>
-                      <el-tag size="small" type="info"> +{{ scope.row.roles.length - 3 }} </el-tag>
-                    </template>
-                  </el-popover>
-                </template>
-              </div>
+                <!--                  <div style="display: flex; flex-wrap: wrap; gap: 6px">-->
+                <!--                    <RoleTag v-for="role in scope.row.role_list" :key="role.id" :role="role" />-->
+                <!--                  </div>-->
+                <!--                </el-popover>-->
+              </template>
+              <template v-else>
+                <span>-</span>
+              </template>
             </template>
           </el-table-column>
 
-          <el-table-column :label="t('user.table.status')" prop="enabled" width="130" sortable="custom" align="center">
+          <el-table-column :label="t('user.table.certificate')" prop="certificate" width="150" align="center">
+            <template #default="scope">
+              <certificate-hover-detail :certificates="scope.row.certificate_list || []" />
+            </template>
+          </el-table-column>
+
+          <el-table-column :label="t('user.table.status')" prop="enabled" width="150" sortable="custom" align="center">
             <template #header>
               <span>
                 {{ t('user.table.status') }}
@@ -275,12 +322,6 @@
           <!--              </span>-->
           <!--            </template>-->
           <!--          </el-table-column>-->
-
-          <el-table-column :label="t('user.table.certificate')" prop="certificate" width="120" align="center">
-            <template #default="scope">
-              <certificate-hover-detail :certificates="scope.row.certificates || []" />
-            </template>
-          </el-table-column>
 
           <el-table-column :label="t('user.table.email')" prop="email" width="220" sortable="custom" align="center">
             <template #default="scope">
@@ -320,10 +361,10 @@
             fixed="right"
           >
             <template #default="scope">
-              <el-button :icon="View" size="small" @click="handleView(scope.row)">
+              <el-button :icon="View" type="info" size="small" @click="handleView(scope.row)">
                 {{ t('common.view') }}
               </el-button>
-              <el-button :icon="Edit" size="small" @click="handleEdit(scope.row)">
+              <el-button :icon="Edit" type="primary" size="small" @click="handleEdit(scope.row)">
                 {{ t('common.edit') }}
               </el-button>
 
@@ -356,22 +397,17 @@
       <el-dialog
         v-model="showSuccessDialog"
         width="480px"
-        :show-close="false"
+        :show-close="true"
         :close-on-click-modal="false"
         :close-on-press-escape="false"
         align-center
+        @close="closeSuccessDialog"
       >
-        <el-result
-          icon="success"
-          title="New User Created"
-          sub-title="Below is the auto-generated username for the account"
-        >
+        <el-result icon="success" title="New User Created" sub-title="Below is the username for the account">
           <template #extra>
             <div style="display: flex; flex-direction: column; align-items: center">
               <el-text tag="b" size="large">{{ createdUsername }}</el-text>
-              <el-button type="primary" style="margin-top: 12px" @click="closeSuccessDialog">
-                Back to User List
-              </el-button>
+              <el-button type="primary" style="margin-top: 12px" @click="closeSuccessDialog"> Confirm </el-button>
             </div>
           </template>
         </el-result>
@@ -380,39 +416,41 @@
 
     <!-- User table pagination -->
     <template #foot>
-      <el-pagination
-        @current-change="handleCurrentPageChange"
-        @size-change="handleSizeChange"
-        :current-page="currentPage"
-        :page-size="selectedPageSize"
-        :page-sizes="[10, 20, 50]"
-        layout="total, sizes, prev, pager, next"
-        :total="totalElements"
-      >
-        <!-- total -->
-        <template #total>
-          {{ t('pagination.total', { total: totalElements }) }}
-        </template>
+      <div style="display: flex; flex-direction: row; justify-content: center">
+        <el-pagination
+          @current-change="handleCurrentPageChange"
+          @size-change="handleSizeChange"
+          :current-page="currentPage"
+          :page-size="selectedPageSize"
+          :page-sizes="[10, 20, 50]"
+          layout="total, sizes, prev, pager, next"
+          :total="totalElements"
+        >
+          <!-- total -->
+          <template #total>
+            {{ t('pagination.total', { total: totalElements }) }}
+          </template>
 
-        <!-- page -->
-        <template #sizes>
-          <span>{{ t('pagination.perPage') }}</span>
-          <el-select v-model="selectedPageSize" placeholder="Select">
-            <el-option
-              v-for="size in [10, 20, 50]"
-              :key="size"
-              :label="`${size} ${t('pagination.perPage')}`"
-              :value="size"
-            />
-          </el-select>
-        </template>
-      </el-pagination>
+          <!-- page -->
+          <template #sizes>
+            <span>{{ t('pagination.perPage') }}</span>
+            <el-select v-model="selectedPageSize" placeholder="Select">
+              <el-option
+                v-for="size in [10, 20, 50]"
+                :key="size"
+                :label="`${size} ${t('pagination.perPage')}`"
+                :value="size"
+              />
+            </el-select>
+          </template>
+        </el-pagination>
+      </div>
     </template>
   </MesLayout>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount, computed } from 'vue'
 import MesLayout from 'src/components/MesLayout'
 import { EditPen, Edit, View, Delete, QuestionFilled, Search, Picture, Remove } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
@@ -422,9 +460,14 @@ import RoleTag from '@/views/user/components/RoleTag.vue'
 // import AssociatedTeamSelect from '@/views/user/components/AssociatedTeamSelect.vue'
 import CertificateHoverDetail from '@/views/user/components/CertificateHoverDetail.vue'
 import { useRouter } from 'vue-router'
-import { searchUsers, updateUserByAdmin, getAllDepartments, getAllRoles } from '@/api/user.js'
-
+import { deleteUserById, getUserById, searchUsers } from '@/api/user.js'
 import UserForm from '@/views/user/components/UserForm.vue'
+import { disableUsers, enableUsers, searchRoles } from '@/api/rbac'
+import { searchDepartments } from '@/api/department'
+import DepartmentTag from '@/views/department/components/DepartmentTag.vue'
+import TagPopover from '@/views/team/components/TagPopover.vue'
+import { useUserStore } from '@/store'
+import { emitter } from '@/utils/mitt'
 
 defineOptions( {
   name : 'UserManagement'
@@ -461,19 +504,21 @@ const localFilters = reactive( { ...initialFilters } )
 const roleOptions = ref( [] )
 const departmentOptions = ref( [] )
 
-function openCreateForm() {
+const departmentMap = computed( () => Object.fromEntries( departmentOptions.value.map( d => [d.id, d] ) ) )
+
+async function openCreateForm() {
   currentEditingUser.value = null
   isUserFormDialogVisible.value = true
 }
 
-function handleUserSubmit( username ) {
+async function handleUserSubmit( username ) {
   isUserFormDialogVisible.value = false
 
   if ( username ) {
     createdUsername.value = username
     showSuccessDialog.value = true
   } else {
-    loadUsers()
+    await loadUsers()
   }
 }
 
@@ -487,7 +532,7 @@ function handleView( user ) {
 }
 
 function handleEdit( user ) {
-  currentEditingUser.value = user
+  currentEditingUser.value = { ...user }
   isUserFormDialogVisible.value = true
 }
 
@@ -504,9 +549,9 @@ async function confirmDelete( row ) {
         distinguishCancelAndClose : true
       }
     )
-    ElMessage.warning( 'Delete user is not implemented yet' )
-    // await handleDelete( row.id )
-    // ElMessage.success( t( 'common.confirmDeleteSuccess' ) )
+    await deleteUserById( row.id )
+    ElMessage.success( t( 'user.message.userDeletedSuccess' ) )
+    await loadUsers()
   } catch {
     // user canceled/closed — do nothing
   }
@@ -524,11 +569,32 @@ function handleSizeChange( val ) {
 }
 
 async function handleActivationStatusChange( userId, newStatus ) {
+  const userStore = useUserStore()
+
   try {
-    const payload = {
-      enabled : newStatus
+    // Case: current user trying to deactivate self
+    if ( userId === userStore.uid && newStatus === false ) {
+      try {
+        await ElMessageBox.confirm( t( 'user.message.selfDeactivateConfirm' ), t( 'common.warning' ), {
+          type : 'warning',
+          confirmButtonText : t( 'common.confirm' ),
+          cancelButtonText : t( 'common.cancel' ),
+          distinguishCancelAndClose : true
+        } )
+      } catch {
+        // User cancelled → revert switch state
+        const target = usersTableData.value.find( u => u.id === userId )
+        if ( target ) target.enabled = true
+        return
+      }
     }
-    await updateUserByAdmin( userId, payload )
+
+    if ( newStatus ) {
+      await enableUsers( [userId] )
+    } else {
+      await disableUsers( [userId] )
+    }
+
     ElMessage.success( t( 'user.message.statusUpdatedSuccess' ) )
     await loadUsers()
   } catch ( err ) {
@@ -565,14 +631,28 @@ async function loadUsers() {
   }
 }
 
-function findDepartmentById( id ) {
-  return departmentOptions.value.find( dep => dep.id === id ) || null
+async function loadRoles() {
+  try {
+    const response = await searchRoles( {}, 1, 1000 )
+    roleOptions.value = response.data.content
+  } catch ( e ) {
+    ElMessage.error( e )
+  }
+}
+
+async function loadDepartments() {
+  try {
+    const response = await searchDepartments( {}, 1, 1000 )
+    departmentOptions.value = response.data.content
+  } catch ( e ) {
+    ElMessage.error( e )
+  }
 }
 
 async function handleFilterChange() {
   try {
     // TODO assigned teams is not support in api for now
-    delete localFilters.assignedTeam
+    // delete localFilters.assignedTeam
     currentPage.value = 1
 
     await loadUsers()
@@ -596,13 +676,28 @@ const updateTableHeight = () => {
   tableHeight.value = window.innerHeight - 320
 }
 
-onMounted( async() => {
-  const roles = await getAllRoles()
-  const departments = await getAllDepartments()
-  roleOptions.value = roles
-  departmentOptions.value = departments
+onBeforeUnmount( () => {
+  emitter.off( 'user:updated' )
+} )
 
+onMounted( async() => {
+  await loadRoles()
+  await loadDepartments()
   await loadUsers()
+
+  emitter.on( 'user:updated', async updatedUserId => {
+    // Attempt to update that user's data if exist in table
+    const idx = usersTableData.value.findIndex( u => u.id === updatedUserId )
+    if ( idx !== -1 ) {
+      // Refresh only that user row
+      try {
+        const res = await getUserById( updatedUserId )
+        usersTableData.value[idx] = res.data
+      } catch ( err ) {
+        console.error( 'Failed to refresh user row:', err )
+      }
+    }
+  } )
 } )
 
 onMounted( () => {
@@ -657,5 +752,16 @@ onBeforeUnmount( () => {
   border: 2px solid var(--el-border-color-lighter);
   transition: all 0.2s ease;
   cursor: pointer;
+}
+
+.image-slot-circle {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 50px;
+  height: 50px;
+  background: var(--el-fill-color-light);
+  color: var(--el-text-color-secondary);
+  font-size: 30px;
 }
 </style>

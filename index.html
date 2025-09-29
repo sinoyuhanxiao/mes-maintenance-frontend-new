@@ -2,6 +2,16 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      (function () {
+        // 只在 Cognito 回调路径且还没有 hash 时重写为 hash 路由
+        var p = window.location.pathname;
+        if ((p === '/callback' || p === '/callback/') && !window.location.hash) {
+          var newUrl = window.location.origin + '/#' + p + window.location.search;
+          window.location.replace(newUrl); // 不留历史记录，避免回退循环
+        }
+      })();
+    </script>
     <link rel="icon" href="/fpsicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Loading MES Maintenance</title>

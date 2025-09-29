@@ -33,12 +33,20 @@ import '@/utils/debug-api'
 import Vue3Lottie from 'vue3-lottie'
 import 'vue3-lottie/dist/style.css'
 
+import { createPinia } from 'pinia'
+import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
+
 const app = createApp( App )
 
 const initApp = async() => {
   app.use( Vue3Lottie )
   app.use( router )
   useSvgIcon( app )
+
+  const pinia = createPinia()
+  pinia.use( piniaPluginPersistedstate )
+  app.use( pinia )
+
   registerStore( app )
   registerDirective( app )
   await router.isReady()
@@ -50,4 +58,5 @@ const initApp = async() => {
   app.use( ElementPlus )
   app.mount( '#app' )
 }
+
 initApp()

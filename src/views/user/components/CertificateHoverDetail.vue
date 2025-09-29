@@ -1,57 +1,63 @@
 <template>
-  <el-popover
-    trigger="hover"
-    placement="top"
-    :width="320"
-    popper-class="cert-popover"
-    :disabled="certificates.length === 0"
-  >
-    <template #default>
-      <div class="cert-list">
-        <el-card v-for="c in certificates" :key="c.certificate_number" class="cert-card" shadow="never">
-          <!-- left: preview (30%) -->
-          <div class="image-preview">
-            <el-image
-              v-if="c.image_list && c.image_list.length > 0"
-              :src="c.image_list[0].url"
-              fit="cover"
-              :preview-src-list="c.image_list.map(i => i.url)"
-              class="thumb"
-            />
+  <template v-if="certificates && certificates.length">
+    <el-popover trigger="click" placement="top" :width="400" popper-class="cert-popover">
+      <template #default>
+        <div class="cert-list">
+          <el-card v-for="c in certificates" :key="c.id" class="cert-card" shadow="never">
+            <!-- left: preview (30%) -->
+            <div class="image-preview">
+              <el-image
+                v-if="c.file_list && c.file_list.length > 0"
+                :src="c.file_list[0]"
+                fit="cover"
+                :preview-src-list="c.file_list"
+                class="thumb"
+              />
 
-            <el-image v-else src="" fit="cover" class="thumb">
-              <template #error>
-                <div class="image-placeholder">No Image</div>
-              </template>
-            </el-image>
-          </div>
+              <el-image v-else src="" fit="cover" class="thumb">
+                <template #error>
+                  <div class="image-placeholder">No Image</div>
+                </template>
+              </el-image>
+            </div>
 
-          <!-- right: grid (70%), stacked vertically -->
-          <div class="cert-grid">
-            <div class="row">
-              <el-tag size="small" type="info">{{ c.certificate_name }}</el-tag>
-            </div>
-            <div class="row">
-              <span class="label">{{ t('user.issueDate') }}</span>
-              <span class="value">{{ fmt(c.issue_date) }}</span>
-            </div>
-            <div class="row">
-              <span class="label">{{ t('user.expiryDate') }}</span>
-              <span class="value" :class="{ expired: isExpired(c.expiration_date) }">
-                {{ fmt(c.expiration_date) }}
-              </span>
-            </div>
-          </div>
-        </el-card>
-      </div>
-    </template>
+            <!-- right: grid (70%), stacked vertically -->
+            <div class="cert-grid">
+              <div class="row">
+                <el-text tag="b">{{ c.name || '-' }}</el-text>
+              </div>
 
-    <template #reference>
-      <el-tag size="small" :type="certificates?.length ? 'primary' : 'info'">
-        {{ certificates?.length ?? 0 }}
-      </el-tag>
-    </template>
-  </el-popover>
+              <div class="row">
+                <el-text size="small">{{ c.certificate_number || '-' }}</el-text>
+              </div>
+
+              <div class="row">
+                <span class="label">{{ t('user.issueDate') }}</span>
+                <span class="value">{{ fmt(c.issue_date) }}</span>
+              </div>
+              <div class="row">
+                <span class="label">{{ t('user.expiryDate') }}</span>
+                <span class="value" :class="{ expired: isExpired(c.expiration_date) }">
+                  {{ fmt(c.expiration_date) }}
+                </span>
+              </div>
+            </div>
+          </el-card>
+        </div>
+      </template>
+
+      <template #reference>
+        <el-button :type="'info'" plain :size="'small'">
+          {{ certificates.length }}
+          {{ certificates.length === 1 ? 'certificate' : 'certificates' }}
+        </el-button>
+      </template>
+    </el-popover>
+  </template>
+
+  <template v-else>
+    <span>-</span>
+  </template>
 </template>
 
 <script setup>
@@ -93,8 +99,7 @@ function isExpired( iso ) {
 
 /* left column (30%) */
 .image-preview {
-  flex: 0 0 30%;
-  max-width: 30%;
+  flex: auto;
 }
 .thumb {
   width: 100%;
@@ -116,10 +121,10 @@ function isExpired( iso ) {
 
 /* right column (70%) — vertical stack of rows */
 .cert-grid {
-  flex: 1 1 70%;
+  flex: 0 0 70%;
   display: flex; /* vertical */
   flex-direction: column; /* ← stacked items */
-  gap: 8px;
+  gap: 4px;
   font-size: 12px;
 }
 

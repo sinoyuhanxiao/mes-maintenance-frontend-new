@@ -1,9 +1,129 @@
 import { defineStore } from 'pinia'
-import cookies from '@/utils/cookies'
-import { TOKEN, AVATAR } from '@/config/constant'
+import { logout, getCurrentUser } from '@/api/user'
 import { resetRouter } from '@/router'
 import useTagsViewStore from './tagsView'
+// import DefaultAvatar from '@/assets/imgs/avatar.png?url'
 
+const TOKEN_KEYS = ['access_token', 'refresh_token', 'id_token']
+// const DEFAULT_AVATAR = DefaultAvatar
+
+function clearTokens() {
+  TOKEN_KEYS.forEach( key => localStorage.removeItem( key ) )
+}
+
+function extractPermissionsFromRoles( roles = [] ) {
+  const permissionSet = new Set()
+  roles.forEach( role => {
+    role.permissions?.forEach( p => permissionSet.add( p.name ) )
+  } )
+  return Array.from( permissionSet )
+}
+
+const useUserStore = defineStore( {
+  id : 'users',
+  state : () => ( {
+    uid : '',
+    username : '',
+    firstName : '',
+    lastName : '',
+    avatar : '',
+    phone : '',
+    email : '',
+    title : '',
+    department_list : null,
+    isVerified : false,
+    enabled : true,
+    role_list : [],
+    permissions : []
+  } ),
+
+  actions : {
+    async GET_USER_INFO() {
+      const { data : user } = await getCurrentUser()
+      console.log( '[Pinia User] getCurrentUser:', user )
+
+      this.uid = user.id || ''
+      this.username = user.username || ''
+      this.firstName = user.first_name || ''
+      this.lastName = user.last_name || ''
+      this.avatar =
+        user.image ||
+        'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent( user?.first_name + ' ' + user?.last_name )
+      this.phone = user.phone_number || ''
+      this.email = user.email || ''
+      this.title = user.title || ''
+      this.department_list = user.department_list ?? null
+      this.isVerified = user.is_verified ?? false
+      this.enabled = user.enabled ?? true
+      this.role_list = user.role_list || []
+      this.permissions = extractPermissionsFromRoles( this.roles )
+
+      console.log( '[GET_USER_INFO] roles 已设置：', this.roles )
+
+      return {
+        uid : this.uid,
+        roles : this.roles,
+        permissions : this.permissions
+      }
+    },
+
+    // Cold start: If there is no user information yet, attempt to fetch it once (for use after a refresh)
+    async HYDRATE_IF_NEEDED() {
+      // Existing data no longer requested
+      if ( this.uid ) return { hydrate : false }
+      try {
+        await this.GET_USER_INFO()
+        return { hydrate : true }
+      } catch ( e ) {
+        return { hydrated : false, error : e }
+      }
+    },
+
+    async LOGIN_OUT() {
+      try {
+        await logout()
+      } catch ( error ) {
+        console.warn( 'Logout failed or skipped:', error )
+      } finally {
+        await this.RESET_INFO()
+      }
+    },
+
+    async RESET_INFO() {
+      return new Promise( resolve => {
+        const tagsViewStore = useTagsViewStore()
+        this.$reset()
+        resetRouter()
+        tagsViewStore.DEL_ALL_VIEWS()
+        clearTokens()
+        resolve()
+      } )
+    }
+  },
+
+  // Persisting User Information
+  persist : {
+    key : 'app:user',
+    storage : sessionStorage,
+    paths : [
+      'uid',
+      'username',
+      'firstName',
+      'lastName',
+      'avatar',
+      'phone',
+      'email',
+      'title',
+      'departmentId',
+      'isVerified',
+      'enabled',
+      'roles',
+      'permissions'
+    ]
+  }
+} )
+
+/*
 const useUserStore = defineStore( {
   id : 'users',
   state : () => {
@@ -101,5 +221,5 @@ const useUserStore = defineStore( {
       } )
     }
   }
-} )
+} ) */
 export default useUserStore

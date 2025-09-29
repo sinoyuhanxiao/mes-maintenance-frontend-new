@@ -1,5 +1,5 @@
 <template>
-  <div class="root">
+  <div class="root" v-loading="loading">
     <div class="padding-container" />
 
     <div class="left-container">
@@ -7,17 +7,17 @@
         <!--              <WorkOrderImage :image-path="scope.row.image ? [scope.row.image] : null" />-->
         <el-image
           :src="
-            user?.image !== null
-              ? user?.image
+            rawUser?.image !== null
+              ? rawUser?.image
               : 'https://api.dicebear.com/7.x/initials/svg?seed=' +
-                encodeURIComponent(user?.first_name + ' ' + user?.last_name)
+                encodeURIComponent(rawUser?.first_name + ' ' + rawUser?.last_name)
           "
           fit="cover"
           :preview-src-list="[
-            user?.image !== null
-              ? user?.image
+            rawUser?.image !== null
+              ? rawUser?.image
               : 'https://api.dicebear.com/7.x/initials/svg?seed=' +
-                encodeURIComponent(user?.first_name + ' ' + user?.last_name),
+                encodeURIComponent(rawUser?.first_name + ' ' + rawUser?.last_name),
           ]"
           class="circular-image"
           :z-index="2000"
@@ -33,20 +33,23 @@
 
         <div class="user-thumb">
           <div class="user-name">
-            {{ user?.first_name + ' ' + user?.last_name }}
+            {{ rawUser?.first_name + ' ' + rawUser?.last_name }}
           </div>
 
-          <div v-for="role in user?.roles" :key="role.id" class="user-text">
+          <div v-for="role in rawUser?.role_list" :key="role.id" class="user-text">
             {{ role.name || '-' }}
           </div>
 
-          <div class="user-text">{{ t('user.lastVisited') }}: {{ user?.last_visited || '-' }}</div>
+          <!-- Not supported in backend for now -->
+          <!--          <div class="user-text">{{ t('user.lastVisited') }}: {{ rawUser?.last_visited || '-' }}</div>-->
         </div>
       </div>
 
       <div class="actions-group">
         <div style="flex: 1">
-          <el-button :icon="Edit" type="info" @click="handleEdit">{{ t('common.edit') }}</el-button>
+          <el-button :icon="Edit" type="info" @click="handleEdit">
+            {{ t('common.edit') }}
+          </el-button>
         </div>
 
         <div>
@@ -69,7 +72,7 @@
           <el-descriptions-item :label="'ID'" :span="1">
             <template #default>
               <div style="display: flex; align-items: center">
-                <span>{{ user?.id }}</span>
+                <span>{{ rawUser?.id }}</span>
               </div>
             </template>
           </el-descriptions-item>
@@ -77,7 +80,7 @@
           <el-descriptions-item :label="t('user.firstName')" :span="1">
             <template #default>
               <div style="display: flex; align-items: center">
-                <span>{{ user?.first_name }}</span>
+                <span>{{ rawUser?.first_name }}</span>
               </div>
             </template>
           </el-descriptions-item>
@@ -85,17 +88,22 @@
           <el-descriptions-item :label="t('user.lastName')" :span="1">
             <template #default>
               <div style="display: flex; align-items: center">
-                <span>{{ user?.last_name }}</span>
+                <span>{{ rawUser?.last_name }}</span>
               </div>
             </template>
           </el-descriptions-item>
 
           <el-descriptions-item :label="t('user.department')" :span="1">
             <template #default>
-              <div style="display: flex; align-items: center">
-                <el-text>
-                  {{ findDepartmentById(user?.department_id)?.name || '-' }}
-                </el-text>
+              <div v-if="rawUser?.department_ids && rawUser?.department_ids.length">
+                <div v-for="id in rawUser?.department_ids" :key="id" style="display: flex; align-items: center">
+                  <el-text>
+                    {{ departmentOptions.find(dept => dept.id === id)?.name || '-' }}
+                  </el-text>
+                </div>
+              </div>
+              <div v-else>
+                {{ '-' }}
               </div>
             </template>
           </el-descriptions-item>
@@ -103,7 +111,7 @@
           <el-descriptions-item :label="t('user.table.username')" :span="1">
             <template #default>
               <div style="display: flex; align-items: center">
-                <span>{{ user?.username }}</span>
+                <span>{{ rawUser?.username }}</span>
               </div>
             </template>
           </el-descriptions-item>
@@ -111,7 +119,7 @@
           <el-descriptions-item :label="t('user.table.phoneNumber')" :span="1">
             <template #default>
               <div style="display: flex; align-items: center">
-                <span>{{ user?.phone_number }}</span>
+                <span>{{ rawUser?.phone_number }}</span>
               </div>
             </template>
           </el-descriptions-item>
@@ -119,21 +127,18 @@
           <el-descriptions-item :label="t('user.table.email')" :span="1">
             <template #default>
               <div style="display: flex; align-items: center">
-                <span>{{ user?.email }}</span>
+                <span>{{ rawUser?.email }}</span>
               </div>
             </template>
           </el-descriptions-item>
 
-          <el-descriptions-item :label="t('user.assignedTeam')" :span="2" v-if="user?.teams?.length > 0">
+          <!-- TODO: team info not in user dto -->
+          <el-descriptions-item :label="t('user.assignedTeam')" :span="2" v-if="userTeams?.length > 0">
             <template #default>
-              <div style="display: flex; align-items: center">
-                <el-tag
-                  v-for="(team, index) in user?.teams"
-                  :key="index"
-                  :type="team.isLeader === true ? 'warning' : 'info'"
-                >
-                  {{ team.name }} - {{ team.isLeader ? 'Leader' : 'Member' }}
-                </el-tag>
+              <div v-for="team in userTeams" :key="team.id" style="display: flex; align-items: center">
+                <el-text>
+                  {{ team.name }}
+                </el-text>
               </div>
             </template>
           </el-descriptions-item>
@@ -151,11 +156,19 @@
 
       <!-- Role cards -->
       <div class="detail-section">
-        <div v-for="role in user?.roles || []" :key="role.id" class="el-col el-col-24 is-guttered card-container">
+        <div
+          v-for="role in rawUser?.role_list || []"
+          :key="role.id"
+          class="el-col el-col-24 is-guttered card-container"
+        >
           <div class="role-card">
             <el-text size="large" style="color: var(--el-color-primary)">
               {{ role.name }}
             </el-text>
+
+            <!--            <el-text size="large" style="color: var(&#45;&#45;el-color-primary)">-->
+            <!--               - {{ role.description }}-->
+            <!--            </el-text>-->
             <!-- Hide permission matrix table for now -->
             <!--            <role-permission-content :role="role" />-->
           </div>
@@ -173,36 +186,42 @@
 
       <!-- Certificate cards -->
       <div class="certificate-info-list">
-        <div v-if="user?.certificates?.length > 0">
+        <div v-if="rawUser?.certificate_list?.length > 0">
           <div
-            v-for="cert in user?.certificates || []"
+            v-for="cert in rawUser?.certificate_list || []"
             :key="cert.id"
             class="info-card"
             style="display: flex; flex-direction: row; gap: 16px"
           >
             <div class="image-container">
               <el-carousel height="150px">
-                <el-carousel-item v-for="img in cert.image_list" :key="img.id">
-                  <el-image :src="img.url" fit="contain" style="height: 150px; width: 150px" />
+                <el-carousel-item v-for="(img, index) in cert.file_list" :key="img">
+                  <el-image
+                    :src="img"
+                    :preview-src-list="cert.file_list"
+                    :initial-index="index"
+                    fit="cover"
+                    style="height: 150px; width: 150px"
+                    preview-teleported
+                  />
                 </el-carousel-item>
               </el-carousel>
             </div>
 
             <div class="cert-info detail-section">
               <el-descriptions class="general-details-descriptions" :column="4">
-                <el-descriptions-item :label="t('user.certificateName')">{{
-                  cert.certificate_name
-                }}</el-descriptions-item>
-                <el-descriptions-item :label="t('user.certificateNumber')">{{
-                  cert.certificate_number
-                }}</el-descriptions-item>
-                <el-descriptions-item :label="t('user.issueDate')">{{
-                  cert.issue_date.slice(0, 10)
-                }}</el-descriptions-item>
-                <el-descriptions-item :label="t('user.expiryDate')">{{
-                  cert.expiration_date.slice(0, 10)
-                }}</el-descriptions-item>
-                <el-descriptions-item :label="t('user.reviewer')">{{ cert.reviewer?.name }}</el-descriptions-item>
+                <el-descriptions-item :label="t('user.certificateName')">
+                  {{ cert.name }}
+                </el-descriptions-item>
+                <el-descriptions-item :label="t('user.certificateNumber')">
+                  {{ cert.certificate_number }}
+                </el-descriptions-item>
+                <el-descriptions-item v-if="cert.issue_date" :label="t('user.issueDate')">
+                  {{ cert.issue_date.slice(0, 10) }}
+                </el-descriptions-item>
+                <el-descriptions-item v-if="cert.expiration_date" :label="t('user.expiryDate')">
+                  {{ cert.expiration_date.slice(0, 10) }}
+                </el-descriptions-item>
               </el-descriptions>
             </div>
           </div>
@@ -218,7 +237,7 @@
     <el-dialog :title="t('user.form.editUser')" v-model="isUserFormDialogVisible" top="10vh" width="50%">
       <div v-loading="isFormProcessing">
         <UserForm
-          :user="user"
+          :user="rawUser"
           :role-options="roleOptions"
           :department-options="departmentOptions"
           @confirm="handleUserSubmit"
@@ -232,39 +251,43 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { getAllDepartments, getAllRoles, getUserById } from '@/api/user.js'
-import { ElMessageBox } from 'element-plus'
-// import RolePermissionContent from '@/views/user/components/RolePermissionContent.vue'
+import { useRoute } from 'vue-router'
+import { getUserById } from '@/api/user.js'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Edit, Picture, SwitchButton } from '@element-plus/icons-vue'
 import { useUserStore } from '@/store'
 import { useI18n } from 'vue-i18n'
 import UserForm from '@/views/user/components/UserForm.vue'
+import { gotoCognitoLogin } from '@/utils/cognito/cognito'
+import { searchDepartments } from '@/api/department'
+import { searchRoles } from '@/api/rbac'
+import { searchTeams } from '@/api/team'
 
 const { t } = useI18n()
-
 const route = useRoute()
-const router = useRouter()
 const userStore = useUserStore()
+
 const roleOptions = ref( [] )
 const departmentOptions = ref( [] )
 const isFormProcessing = ref( false )
 const isUserFormDialogVisible = ref( false )
-const user = ref( null )
-
+const rawUser = ref( null )
 const viewedUserId = ref( null )
+const loading = ref( false )
+const userTeams = ref( [] )
 
 onMounted( async() => {
-  // 1. Use ID from URL if available, otherwise fallback to current user
-  const routeId = parseInt( route.params.id )
-  viewedUserId.value = isNaN( routeId ) ? parseInt( userStore.uid ) : routeId
-
-  await loadUser( viewedUserId.value )
-
-  const roles = await getAllRoles()
-  const departments = await getAllDepartments()
-  roleOptions.value = roles
-  departmentOptions.value = departments
+  viewedUserId.value = parseInt( route.params.id )
+  try {
+    loading.value = true
+    await loadRoles()
+    await loadDepartments()
+    await loadUser( viewedUserId.value )
+    await loadUserTeams( viewedUserId.value )
+  } catch ( e ) {
+  } finally {
+    loading.value = false
+  }
 } )
 
 function handleEdit( user ) {
@@ -278,25 +301,50 @@ function handleUserSubmit() {
 
 const handleLogout = async() => {
   try {
-    await ElMessageBox.confirm( 'Are you sure you want to log out?', 'Warning', {
-      type : 'warning'
-    } )
-
+    await ElMessageBox.confirm( 'Are you sure you want to log out?', 'Warning', { type : 'warning' } )
     await userStore.LOGIN_OUT()
-    await router.push( '/login' )
+    gotoCognitoLogin()
     window.location.reload()
   } catch ( error ) {}
-}
-
-function findDepartmentById( id ) {
-  return departmentOptions.value.find( dep => dep.id === id ) || null
 }
 
 async function loadUser( id ) {
   try {
     const response = await getUserById( id )
-    user.value = response.data
+    rawUser.value = { ...response.data }
   } catch ( e ) {}
+}
+
+async function loadRoles() {
+  try {
+    const response = await searchRoles( {}, 1, 1000 )
+    roleOptions.value = response.data.content
+  } catch ( e ) {
+    ElMessage.error( e )
+  }
+}
+
+async function loadDepartments() {
+  try {
+    const response = await searchDepartments( {}, 1, 1000 )
+    departmentOptions.value = response.data.content
+  } catch ( e ) {
+    ElMessage.error( e )
+  }
+}
+
+async function loadUserTeams( userId ) {
+  if ( !userId ) {
+    userTeams.value = []
+    return
+  }
+  try {
+    const res = await searchTeams( { member_ids : [userId] }, 1, 1000 )
+    userTeams.value = res?.data?.content || []
+  } catch ( err ) {
+    console.error( 'Failed to load teams for user', err )
+    userTeams.value = []
+  }
 }
 </script>
 

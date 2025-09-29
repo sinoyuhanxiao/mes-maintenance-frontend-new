@@ -3,13 +3,13 @@
     v-model="selectedLocationIds"
     :data="locationTree"
     :props="locationNodeDefaultProps"
-    multiple
+    :multiple="multiple"
     check-strictly
     show-checkbox
     node-key="id"
     :default-expand-all="false"
     :filterable="true"
-    :placeholder="t('team.placeholder.selectLocation')"
+    :placeholder="t('common.filterByLocationPlaceholder')"
     style="width: 100%"
     clearable
     collapse-tags
@@ -20,12 +20,24 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { getLocationTree } from '@/api/location.js'
 import { ElTreeSelect } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
+const props = defineProps( {
+  modelValue : {
+    type : [Array, Number, String],
+    default : () => []
+  },
+  multiple : {
+    type : Boolean,
+    default : true
+  }
+} )
+
+const emit = defineEmits( ['update:modelValue', 'change'] )
 const selectedLocationIds = ref( [] )
 const locationTree = ref( [] )
 
@@ -34,8 +46,6 @@ const locationNodeDefaultProps = {
   children : 'children',
   value : 'id'
 }
-
-const emit = defineEmits( ['update:modelValue', 'change'] )
 
 async function fetchLocationTree() {
   try {
@@ -47,14 +57,32 @@ async function fetchLocationTree() {
 }
 
 function emitSelection() {
-  // Emit flat array of selected node ids
-  const flatSelected = Array.isArray( selectedLocationIds.value )
-    ? selectedLocationIds.value
-    : [selectedLocationIds.value]
-
-  emit( 'update:modelValue', flatSelected )
-  emit( 'change', flatSelected )
+  if ( props.multiple ) {
+    // Already an array
+    emit( 'update:modelValue', selectedLocationIds.value || [] )
+    emit( 'change', selectedLocationIds.value || [] )
+  } else {
+    // Single selection: wrap as array for consistency
+    const val = selectedLocationIds.value
+    emit( 'update:modelValue', val ? [val] : [] )
+    emit( 'change', val ? [val] : [] )
+  }
 }
+
+// keep local state in sync with parent
+watch(
+  () => props.modelValue,
+  newVal => {
+    if ( props.multiple ) {
+      // expect array
+      selectedLocationIds.value = Array.isArray( newVal ) ? newVal : newVal ? [newVal] : []
+    } else {
+      // expect single value
+      selectedLocationIds.value = Array.isArray( newVal ) ? newVal[0] || null : newVal
+    }
+  },
+  { immediate : true }
+)
 
 onMounted( async() => {
   await fetchLocationTree()

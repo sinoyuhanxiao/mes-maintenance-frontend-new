@@ -375,7 +375,8 @@ export default {
       navigateToLocation : 'Navigate to Location',
       locationTreeTitle : 'Location Tree - {location}',
       close : 'Close',
-      viewFullTree : 'View Full Tree'
+      viewFullTree : 'View Full Tree',
+      unknownLocation : 'Unknown Location'
     },
 
     // Vendors
@@ -481,7 +482,12 @@ export default {
     updatedBy : 'Updated By',
     actions : 'Actions',
     code : 'Code',
-    type : 'Type'
+    type : 'Type',
+    filterByDepartmentPlaceholder : 'Filter By Department',
+    filterByRolePlaceholder : 'Filter By Role',
+    filterByUserPlaceholder : 'Filter By User',
+    filterByLocationPlaceholder : 'Filter By Location',
+    filterByEquipmentPlaceholder : 'Filter By Equipment'
   },
   errors : {
     badRequest : 'Bad request',
@@ -518,9 +524,10 @@ export default {
     userCenter : 'User Center',
     userDetail : 'User Detail',
     systemManagement : 'System Management',
-    userManagement : 'User Management',
-    teamManagement : 'Team Management',
-    shiftManagement : 'Shift Management',
+    user : 'User',
+    team : 'Team',
+    department : 'Department',
+    shift : 'Shift',
     myAccount : 'My Account',
     nested : 'Nested Routes',
     menu1 : 'Menu 1',
@@ -532,6 +539,7 @@ export default {
     menu2 : 'Menu 2'
   },
   user : {
+    userManagement : 'User Management',
     firstName : 'First Name',
     lastName : 'Last Name',
     unknownUser : 'Unknown User',
@@ -599,7 +607,13 @@ export default {
       selectDepartmentPlaceHolder : 'Select Department',
       changePassword : 'Change Password',
       newPassword : 'New Password',
-      confirmPassword : 'Confirm Password'
+      confirmPassword : 'Confirm Password',
+      autoGenerate : 'Auto-generate',
+      customUsername : 'Custom username',
+      enterCustomUsername : 'Enter username',
+      usernameHintNoUpdate : 'Once created, username cannot be updated later.',
+      usernameAutoHint :
+        'System will generate a unique username using first name & last name when the account is created.'
     },
     status : {
       active : 'Active',
@@ -613,6 +627,9 @@ export default {
       userDeletedSuccess : 'User deleted successfully',
       teamsUpdatedSuccess : 'Teams updated successfully',
       teamsUpdateFailed : 'Failed to update teams',
+      selfDeactivateConfirm : 'You are about to deactivate your own account. This may log you out. Continue?',
+      statusUpdatedSuccess : 'User status updated successfully',
+      statusUpdatedFailed : 'Failed to update user status',
       selfDeactivationSuccess :
         'Your account has been successfully deactivated. You will not be able to log in after logging out.',
       selfDeactivationWarning : 'You are deactivating your own account. Are you sure you want to proceed?',
@@ -621,8 +638,6 @@ export default {
       deletionConfirmation : 'Are you sure you want to delete the user "{name}" as well as the association with teams?',
       deletionCanceled : 'Deletion canceled',
       selfDeletionCanceled : 'Self-deletion canceled',
-      statusUpdatedSuccess : 'Status updated successfully',
-      statusUpdatedFailed : 'Failed to update status',
       validationErrors : 'Please fix validation errors before proceeding',
       selfDeactivationTitle : 'Self Deactivation',
       deletionTitle : 'Deletion',
@@ -639,7 +654,9 @@ export default {
       statusRequired : 'Status is required',
       passwordRequired : 'Password is required',
       passwordsNotMatch : 'Passwords do not match or are empty!',
-      usernameExists : 'This username already exists',
+      usernameExists : 'This username already exists, please choose another.',
+      usernameRequired : 'Username is required.',
+      usernameMaxLength : 'Username must be at most 25 characters',
       emailRequired : 'Email is required',
       emailInvalid : 'Invalid email format',
       phoneNumberRequired : 'Phone number is required',
@@ -656,10 +673,12 @@ export default {
       nameNoNumbers : 'No numbers allowed.',
       nameNoSpecialChars : 'No symbols allowed.',
       nameNoSpaces : 'No spaces allowed.',
-      employeeNumberFormat : 'Employee number can only contain letters, digits, hyphens (-), or underscores (_).'
+      employeeNumberFormat : 'Employee number can only contain letters, digits, hyphens (-), or underscores (_).',
+      usernameCheckFailed : 'Failed to check username availability.'
     }
   },
   team : {
+    teamManagement : 'Team Management',
     editTeam : 'Edit Team',
     newTeam : 'New Team',
     assignedLocation : 'Assigned Location',
@@ -709,8 +728,14 @@ export default {
       selectEquipment : 'Please select assigned equipment'
     }
   },
+  department : {
+    departmentManagement : 'Department Management',
+    editDepartment : 'Edit Department',
+    newDepartment : 'New Department',
+    unknownDepartment : 'Unknown Department'
+  },
   shift : {
-    graceTimeMinute : 'Grace Period (Minute)',
+    shiftManagement : 'Shift Management',
     createShift : 'New Shift',
     editShift : 'Edit Shift',
     startTime : 'Start Time',

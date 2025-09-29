@@ -23,13 +23,15 @@
           :placeholder="t('team.placeholder.selectLeader')"
           clearable
           filterable
+          :filter-method="filterUserOptions"
         >
-          <el-option
-            v-for="user in userOptions"
-            :key="user.id"
-            :label="user.first_name + ' ' + user.last_name"
-            :value="user.id"
-          />
+          <el-option v-for="user in filteredUserOptions" :key="user.id" :value="user.id" :label="formatUserLabel(user)">
+            <template #default>
+              <span class="user-option-label">
+                {{ formatUserLabel(user) }}
+              </span>
+            </template>
+          </el-option>
         </el-select>
       </el-form-item>
 
@@ -41,15 +43,22 @@
           collapse-tags-tooltip
           :max-collapse-tags="2"
           filterable
+          :filter-method="filterUserOptions"
           :placeholder="t('team.placeholder.selectMembers')"
         >
           <el-option
-            v-for="user in userOptions"
+            v-for="user in filteredUserOptions"
             :key="user.id"
-            :label="user.first_name + ' ' + user.last_name"
             :value="user.id"
+            :label="formatUserLabel(user)"
             :disabled="user.id === internalTeam.leader_id"
-          />
+          >
+            <template #default>
+              <span class="user-option-label">
+                {{ formatUserLabel(user) }}
+              </span>
+            </template>
+          </el-option>
         </el-select>
       </el-form-item>
     </div>
@@ -114,8 +123,7 @@ const { t } = useI18n()
 const emit = defineEmits( ['confirm', 'cancel', 'update:loading'] )
 
 const teamFormRules = {
-  name : [{ required : true, message : t( 'team.validation.nameRequired' ), trigger : 'blur' }],
-  code : [{ required : true, message : t( 'team.validation.codeRequired' ), trigger : 'blur' }]
+  name : [{ required : true, message : t( 'common.nameRequired' ), trigger : 'blur' }]
 }
 const formRef = ref()
 const submitting = ref( false )
@@ -141,6 +149,8 @@ function transformIncomingTeam( team ) {
   return {
     ...createEmptyTeam(),
     ...team,
+    department_id : team.department?.id || null,
+    leader_id : Array.isArray( team.leader_id ) && team.leader_id.length > 0 ? team.leader_id[0] : null,
     location_ids : team.team_locations_id,
     equipment_node_ids : team.team_equipment_nodes_id
   }
@@ -170,7 +180,7 @@ watch(
 
 watch(
   () => internalTeam.value.leader_id,
-  ( newLeaderId, oldLeaderId ) => {
+  newLeaderId => {
     if ( !newLeaderId ) return
 
     // Remove leader_id if it exists in team_members_id to prevent duplicate selection
@@ -208,8 +218,8 @@ const buildCreateTeamPayload = entry => ( {
   description : entry.description,
   department_id : entry.department_id,
   member_requests : entry.member_requests,
-  team_location_ids : entry.location_ids,
-  team_equipment_node_ids : entry.equipment_node_ids
+  location_ids : entry.location_ids,
+  equipment_node_ids : entry.equipment_node_ids
 } )
 
 const buildUpdateTeamPayload = ( entry, original ) => {
@@ -234,11 +244,11 @@ const buildUpdateTeamPayload = ( entry, original ) => {
   }
 
   if ( entry.location_ids !== original.location_ids ) {
-    payload.team_locations_id = entry.location_ids
+    payload.location_ids = entry.location_ids
   }
 
   if ( entry.equipment_node_ids !== original.equipment_node_ids ) {
-    payload.team_equipment_nodes_id = entry.equipment_node_ids
+    payload.equipment_node_ids = entry.equipment_node_ids
   }
 
   return payload
@@ -273,10 +283,10 @@ async function handleConfirmSubmit() {
 
     if ( internalTeam.value.id ) {
       await updateTeam( internalTeam.value.id, payload )
-      ElMessage.success( t( 'team.message.updated' ) )
+      ElMessage.success( t( 'team.message.teamUpdatedSuccess' ) )
     } else {
       await createTeam( payload )
-      ElMessage.success( t( 'team.message.created' ) )
+      ElMessage.success( t( 'team.message.teamAddedSuccess' ) )
     }
 
     emit( 'confirm' )
@@ -305,6 +315,32 @@ function buildMemberRequests( leaderId, memberIds ) {
 
   return requests
 }
+
+const searchQuery = ref( '' )
+
+// Label formatter
+const formatUserLabel = user => {
+  const roles = user.role_list?.map( role => role.name ).join( ', ' ) || '-'
+  return `${user.first_name} ${user.last_name} (${roles})`
+}
+
+// Custom filter
+const filterUserOptions = query => {
+  searchQuery.value = query
+}
+
+// Filtered list (by name OR role)
+const filteredUserOptions = computed( () => {
+  if ( !searchQuery.value ) {
+    return prop.userOptions
+  }
+
+  return prop.userOptions.filter( user => {
+    const fullName = `${user.first_name} ${user.last_name}`.toLowerCase()
+    const roles = user.role_list?.map( r => r.name.toLowerCase() ).join( ' ' ) || ''
+    return fullName.includes( searchQuery.value.toLowerCase() ) || roles.includes( searchQuery.value.toLowerCase() )
+  } )
+} )
 </script>
 
 <style scoped lang="scss">
@@ -323,5 +359,14 @@ function buildMemberRequests( leaderId, memberIds ) {
   justify-content: flex-end;
   gap: 12px;
   margin-top: 20px;
+}
+
+.user-option-label {
+  display: inline-block;
+  max-width: 240px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  vertical-align: middle;
 }
 </style>

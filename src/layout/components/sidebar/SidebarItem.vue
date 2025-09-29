@@ -15,7 +15,7 @@
             :icon-class="onlyOneChild.meta.icon || (props.item.meta && props.item.meta.icon)"
           />
           <template #title>
-            <span> {{ $t(onlyOneChild.meta.title) }} </span>
+            <span> {{ renderTitle(onlyOneChild) }} </span>
           </template>
         </el-menu-item>
       </AppLink>
@@ -28,10 +28,10 @@
           v-if="props.item.meta && props.item.meta.icon"
           :icon-class="props.item.meta && props.item.meta.icon"
         />
-        <span> {{ $t(props.item.meta.title) }} </span>
+        <span> {{ renderTitle(props.item) }} </span>
       </template>
       <SidebarItem
-        v-for="child in props.item.children"
+        v-for="child in props.item.children || []"
         :key="child.path"
         :is-nest="true"
         :item="child"
@@ -44,6 +44,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import path from 'path-browserify'
 import { isExternal } from '@/utils/validate'
 import AppLink from './Link.vue'
@@ -63,12 +64,26 @@ const props = defineProps( {
     default : ''
   }
 } )
-
+const { t } = useI18n()
 const onlyOneChild = ref( null )
 const subMenu = ref( null )
 
+// If the title is a string, render it as `t(title)`, otherwise, fallback to the title itself / breadcrumb / route name.
+function renderTitle( routeItem ) {
+  const raw = routeItem?.meta?.title
+  if ( typeof raw === 'string' ) {
+    try {
+      return t( raw )
+    } catch ( e ) {
+      // i18n 没有这个 key 时，优雅降级为原值
+      return raw
+    }
+  }
+  return raw ?? routeItem?.meta?.breadcrumb ?? routeItem?.name ?? ''
+}
+
 function hasOneShowingChild( children = [], parent ) {
-  const showingChildren = children.filter( item => {
+  const showingChildren = ( children || [] ).filter( item => {
     if ( item.meta?.hidden ) {
       return false
     } else {

@@ -1,5 +1,5 @@
 <template>
-  <MesLayout :title="t('router.teamManagement')" :view-mode="'table'">
+  <MesLayout :title="t('team.teamManagement')" :view-mode="'table'">
     <template #viewMode> </template>
 
     <template #head>
@@ -8,8 +8,31 @@
         <div class="filters-container">
           <div class="filter-item">
             <el-select
+              v-model="localFilters.member_ids"
+              :placeholder="t('common.filterByUserPlaceholder')"
+              clearable
+              multiple
+              collapse-tags
+              collapse-tags-tooltip
+              :max-collapse-tags="2"
+              filterable
+              size="default"
+              style="width: 200px"
+              @change="handleFilterChange"
+            >
+              <el-option
+                v-for="user in userOptions"
+                :key="user.id"
+                :label="user.first_name + ' ' + user.last_name"
+                :value="user.id"
+              />
+            </el-select>
+          </div>
+
+          <div class="filter-item">
+            <el-select
               v-model="localFilters.department_ids"
-              :placeholder="t('user.department')"
+              :placeholder="t('common.filterByDepartmentPlaceholder')"
               clearable
               multiple
               collapse-tags
@@ -76,18 +99,22 @@
         @sort-change="handleSortChange"
       >
         <el-table-column prop="id" :label="'ID'" width="100" sortable="custom" align="center" fixed="left" />
-        <el-table-column
-          prop="name"
-          :label="t('team.name')"
-          width="220"
-          sortable="custom"
-          align="center"
-          fixed="left"
-        />
-        <el-table-column prop="leader_id" :label="t('team.leader')" width="150" align="center">
+
+        <el-table-column prop="name" :label="t('team.name')" width="220" sortable="custom" align="center" fixed="left">
           <template #default="scope">
-            <template v-if="scope.row.leader_id">
-              <UserTag v-if="userMap[scope.row.leader_id]" :user="userMap[scope.row.leader_id]" style="margin: 2px" />
+            <el-text tag="b">{{ scope.row.name }}</el-text>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="leader_id" :label="t('team.leader')" width="180" align="center">
+          <template #default="scope">
+            <template v-if="scope.row.leader_id?.length > 0">
+              <UserTag
+                v-if="userMap[scope.row.leader_id]"
+                :user="userMap[scope.row.leader_id]"
+                :department-options="departmentOptions"
+                style="margin: 2px"
+              />
             </template>
             <template v-else>
               <span>-</span>
@@ -95,12 +122,33 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="team_members_id" :label="t('team.members')" align="center" width="260">
+        <el-table-column prop="team_members_id" :label="t('team.members')" align="center" width="200">
           <template #default="scope">
-            <template v-if="getValidMembers(scope.row.team_members_id).length">
-              <div class="tag-list">
-                <UserTag v-for="user in getValidMembers(scope.row.team_members_id)" :key="user.id" :user="user" />
-              </div>
+            <template v-if="scope.row.team_members_id && scope.row.team_members_id.length">
+              <!--              <el-popover trigger="click" placement="top" width="300">-->
+              <!--                <template #reference>-->
+              <!--                  <el-button :type="'info'" plain :size="'small'">-->
+              <!--                    {{ scope.row.team_members_id.length }}-->
+              <!--                    {{ scope.row.team_members_id.length === 1 ? 'member' : 'members' }}-->
+              <!--                  </el-button>-->
+              <!--                </template>-->
+
+              <!--                <div class="tag-list">-->
+              <!--                  <UserTag v-for="id in scope.row.team_members_id" :key="id" :user="userMap[id]" :department-options="departmentOptions" />-->
+              <!--                </div>-->
+              <!--              </el-popover>-->
+
+              <TagPopover
+                :items="scope.row.team_members_id"
+                singular-label="member"
+                plural-label="members"
+                :search-key="userId => (userMap[userId]?.first_name || '') + ' ' + (userMap[userId]?.last_name || '')"
+                :item-key="m => m"
+              >
+                <template #default="{ item }">
+                  <UserTag :user="userMap[item]" :department-options="departmentOptions" />
+                </template>
+              </TagPopover>
             </template>
             <template v-else>
               <span>-</span>
@@ -108,16 +156,36 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="team_locations_id" :label="t('team.assignedLocation')" align="center" width="260">
+        <el-table-column prop="team_locations_id" :label="t('team.assignedLocation')" align="center" width="200">
           <template #default="scope">
             <template v-if="scope.row.team_locations_id && scope.row.team_locations_id.length">
-              <div class="tag-list">
-                <LocationTag
-                  v-for="id in scope.row.team_locations_id"
-                  :key="id"
-                  :location="locationMap[String(id)] || null"
-                />
-              </div>
+              <TagPopover
+                :items="scope.row.team_locations_id"
+                singular-label="location"
+                plural-label="locations"
+                :search-key="lid => locationMap[String(lid)]?.name || ''"
+                :item-key="lid => lid"
+              >
+                <template #default="{ item }">
+                  <LocationTag :location="locationMap[String(item)] || null" />
+                </template>
+              </TagPopover>
+              <!--              <el-popover trigger="click" placement="top" width="300">-->
+              <!--                <template #reference>-->
+              <!--                  <el-button :type="'info'" plain :size="'small'">-->
+              <!--                    {{ scope.row.team_locations_id.length }}-->
+              <!--                    {{ scope.row.team_locations_id.length === 1 ? 'location' : 'locations' }}-->
+              <!--                  </el-button>-->
+              <!--                </template>-->
+
+              <!--                <div class="tag-list">-->
+              <!--                  <LocationTag-->
+              <!--                    v-for="id in scope.row.team_locations_id"-->
+              <!--                    :key="id"-->
+              <!--                    :location="locationMap[String(id)] || null"-->
+              <!--                  />-->
+              <!--                </div>-->
+              <!--              </el-popover>-->
             </template>
             <template v-else>
               <span>-</span>
@@ -125,16 +193,48 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="team_equipment_nodes_id" :label="t('team.assignedEquipment')" align="center" width="260">
+        <el-table-column prop="team_equipment_nodes_id" :label="t('team.assignedEquipment')" align="center" width="200">
           <template #default="scope">
             <template v-if="scope.row.team_equipment_nodes_id && scope.row.team_equipment_nodes_id.length">
-              <div class="tag-list">
-                <EquipmentTag
-                  v-for="id in scope.row.team_equipment_nodes_id"
-                  :key="id"
-                  :equipment="equipmentMap[String(id)] || null"
-                />
-              </div>
+              <TagPopover
+                :items="scope.row.team_equipment_nodes_id"
+                singular-label="equipment"
+                plural-label="equipments"
+                :search-key="eid => equipmentMap[String(eid)]?.name || ''"
+                :item-key="eid => eid"
+              >
+                <template #default="{ item }">
+                  <EquipmentTag :equipment="equipmentMap[String(item)] || null" />
+                </template>
+              </TagPopover>
+
+              <!--              <el-popover trigger="click" placement="top" width="300">-->
+              <!--                <template #reference>-->
+              <!--                  <el-button :type="'info'" plain :size="'small'">-->
+              <!--                    {{ scope.row.team_equipment_nodes_id.length }}-->
+              <!--                    {{ scope.row.team_equipment_nodes_id.length === 1 ? 'equipment' : 'equipments' }}-->
+              <!--                  </el-button>-->
+              <!--                </template>-->
+
+              <!--                <div class="tag-list">-->
+              <!--                  <EquipmentTag-->
+              <!--                    v-for="id in scope.row.team_equipment_nodes_id"-->
+              <!--                    :key="id"-->
+              <!--                    :equipment="equipmentMap[String(id)] || null"-->
+              <!--                  />-->
+              <!--                </div>-->
+              <!--              </el-popover>-->
+            </template>
+            <template v-else>
+              <span>-</span>
+            </template>
+          </template>
+        </el-table-column>
+
+        <el-table-column :label="t('user.department')" prop="department" width="250" align="center">
+          <template #default="scope">
+            <template v-if="scope.row.department">
+              <DepartmentTag :department="scope.row.department" />
             </template>
             <template v-else>
               <span>-</span>
@@ -152,10 +252,12 @@
           align="center"
         />
 
-        <el-table-column :label="t('common.actions')" fixed="right" align="center" header-align="center" width="160">
+        <el-table-column :label="t('common.actions')" fixed="right" align="center" header-align="center" width="200">
           <template #default="scope">
-            <el-button size="small" @click="handleEdit(scope.row)">{{ t('common.edit') }}</el-button>
-            <el-button size="small" type="danger" @click="handleDelete(scope.row.id)">{{
+            <el-button :icon="Edit" type="primary" size="small" @click="handleEdit(scope.row)">{{
+              t('common.edit')
+            }}</el-button>
+            <el-button :icon="Delete" type="danger" size="small" @click="handleDelete(scope.row.id)">{{
               t('common.delete')
             }}</el-button>
           </template>
@@ -199,25 +301,28 @@
 import { ref, reactive, onMounted, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MesLayout from 'src/components/MesLayout'
-import { EditPen, Remove, Search } from '@element-plus/icons-vue'
-import { searchTeams, deactivateTeam } from '@/api/team.js'
-import { getAllDepartments, getAllUsers } from '@/api/user.js'
+import { Delete, Edit, EditPen, Remove, Search } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { searchTeams, deactivateTeam } from '@/api/team.js'
+import { searchUsers } from '@/api/user.js'
+import { searchLocations } from '@/api/location'
+import { searchEquipmentNodes } from '@/api/equipment'
+import { searchDepartments } from '@/api/department'
+import LocationTag from '@/views/team/components/LocationTag.vue'
+import EquipmentTag from '@/views/team/components/EquipmentTag.vue'
 import LocationTreeSelect from '@/views/team/components/LocationTreeSelect.vue'
 import EquipmentTreeSelect from '@/views/team/components/EquipmentTreeSelect.vue'
 import TeamForm from '@/views/team/components/TeamForm.vue'
 import UserTag from '@/views/user/components/UserTag.vue'
-import { searchLocations } from '@/api/location'
-import { searchEquipmentNodes } from '@/api/equipment'
-import LocationTag from '@/views/team/components/LocationTag.vue'
-import EquipmentTag from '@/views/team/components/EquipmentTag.vue'
+import DepartmentTag from '@/views/department/components/DepartmentTag.vue'
+import TagPopover from '@/views/team/components/TagPopover.vue'
 
 const { t } = useI18n()
 const loading = ref( false )
 const isFormProcessing = ref( false )
 const isDialogVisible = ref( false )
 const teamsTableData = ref( [] )
-const sortSettings = ref( { prop : '', order : '' } )
+const sortSettings = ref( { prop : 'id', order : 'descending' } )
 const currentPage = ref( 1 )
 const pageSize = ref( 20 )
 const totalElements = ref( 0 )
@@ -232,7 +337,8 @@ const initialFilters = {
   keyword : '',
   department_ids : [],
   location_ids : [],
-  equipment_node_ids : []
+  equipment_node_ids : [],
+  member_ids : []
 }
 
 const localFilters = reactive( { ...initialFilters } )
@@ -305,16 +411,24 @@ async function loadTeams() {
     )
 
     const data = response.data
-    const rawTeams = data.content || []
+    const rawTeam = data.content || []
 
     // Clean location & equipment ids: only keep if they're still in the corresponding map (status 1)
-    teamsTableData.value = rawTeams.map( team => {
+    teamsTableData.value = rawTeam.map( team => {
       return {
         ...team,
-        team_locations_id : ( team.team_locations_id || [] ).filter( id => locationMap.value[String( id )] !== undefined ),
-        team_equipment_nodes_id : ( team.team_equipment_nodes_id || [] ).filter(
-          id => equipmentMap.value[String( id )] !== undefined
-        )
+        leader_id : team.team_member_list
+          .filter( member => member.is_leader && member.status === 1 )
+          .map( member => member.id ),
+        team_members_id : team.team_member_list
+          .filter( member => !member.is_leader && member.status === 1 )
+          .map( member => member.id ),
+        team_locations_id : ( team.team_location_list || [] )
+          .filter( location => location.status === 1 )
+          .map( location => location.id ),
+        team_equipment_nodes_id : ( team.team_equipment_node_list || [] )
+          .filter( equipment => equipment.status === 1 )
+          .map( equipment => equipment.id )
       }
     } )
 
@@ -354,7 +468,7 @@ async function loadUsers() {
   // Fetch fixed number of users assuming all user count are less than 1000.
   // TODO: Refactor later on, we could include user data in teams dto, or allow api to fetch all users
   try {
-    const response = await getAllUsers( 1, 1000 ) // adjust page/size if needed
+    const response = await searchUsers( { status_ids : [1] }, 1, 1000 )
     userOptions.value = response?.data?.content || []
   } catch ( err ) {
     console.error( 'Failed to load users:', err )
@@ -387,8 +501,13 @@ async function loadEquipments() {
   }
 }
 
-function getValidMembers( idArr ) {
-  return ( idArr || [] ).map( id => userMap.value[id] ).filter( Boolean )
+async function loadDepartments() {
+  try {
+    const response = await searchDepartments( {}, 1, 1000 )
+    departmentOptions.value = response.data.content
+  } catch ( e ) {
+    ElMessage.error( e )
+  }
 }
 
 // Watch for changes in location or equipment filters and reload
@@ -401,11 +520,16 @@ watch(
 )
 
 onMounted( async() => {
-  departmentOptions.value = await getAllDepartments()
-  await loadLocations()
-  await loadEquipments()
-  await loadUsers()
-  await loadTeams()
+  try {
+    loading.value = true
+    await loadDepartments()
+    await loadLocations()
+    await loadEquipments()
+    await loadUsers()
+    await loadTeams()
+  } finally {
+    loading.value = false
+  }
 } )
 </script>
 
@@ -438,6 +562,5 @@ onMounted( async() => {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  justify-content: center;
 }
 </style>

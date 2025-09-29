@@ -52,6 +52,7 @@
     "path-browserify": "^1.0.1",
     "path-to-regexp": "^8.2.0",
     "pinia": "^2.1.4",
+    "pinia-plugin-persistedstate": "^2.4.0",
     "postcss": "^8.4.38",
     "screenfull": "^6.0.2",
     "tailwindcss": "^3.3.2",

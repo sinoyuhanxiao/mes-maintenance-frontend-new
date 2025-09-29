@@ -1,27 +1,38 @@
 <template>
-  <MesLayout :title="t('router.shiftManagement')" :view-mode="'table'">
+  <MesLayout :title="t('shift.shiftManagement')" :view-mode="'table'">
+    <template #viewMode> </template>
+
     <template #head>
-      <!-- Header tool bar -->
+      <!-- Toolbar -->
       <div class="toolbar">
+        <div class="filters-container">
+          <!-- Keyword Filter -->
+          <div class="filter-item"></div>
+
+          <!--          <div class="filter-item">-->
+          <!--            <el-button :icon="Remove" type="warning" plain @click="clearLocalFilters">-->
+          <!--              {{ t('workOrder.filters.clearAll') }}-->
+          <!--            </el-button>-->
+          <!--          </div>-->
+        </div>
+
         <div class="actions-row">
           <div class="actions-item">
-            <!-- Search Box -->
-            <el-input v-model="searchQuery" :placeholder="t('common.searchByKeyword')" clearable style="width: 280px">
+            <el-input
+              v-model="localFilters.keyword"
+              :placeholder="t('user.searchByName')"
+              clearable
+              @input="handleFilterChange"
+              style="width: 200px"
+            >
               <template #prefix>
                 <el-icon><Search /></el-icon>
               </template>
             </el-input>
           </div>
 
-          <!-- Refresh & Add Button -->
           <div class="actions-item">
-            <el-button class="refresh-button" type="primary" circle @click="handleRefreshButton">
-              <el-icon style="color: white">
-                <RefreshRight />
-              </el-icon>
-            </el-button>
-
-            <el-button type="primary" @click="openDialog()">
+            <el-button :icon="EditPen" type="primary" @click="openCreateForm">
               {{ t('shift.createShift') }}
             </el-button>
           </div>
@@ -30,188 +41,210 @@
     </template>
 
     <template #body>
-      <div style="display: flex; flex-direction: column; max-width: 100%">
-        <!-- Shift List -->
-        <ShiftList
-          :loading="loading"
-          :shifts="shifts"
-          @edit-shift="openDialog"
-          @delete-shift="confirmDelete"
-          :search-input="searchQuery"
-          :user-map="userMap"
-        />
-
-        <!-- Dialog for Create/Edit -->
-        <el-dialog
-          v-model="dialogVisible"
-          :title="isEditMode ? t('shift.editShift') : t('shift.createShift')"
-          :close-on-click-modal="false"
+      <el-table
+        v-loading="loading"
+        :data="shiftsTableData"
+        border
+        fit
+        highlight-current-row
+        style="width: 100%"
+        :height="tableHeight"
+        :empty-text="t('common.noData')"
+        @sort-change="handleSortChange"
+      >
+        <el-table-column prop="id" :label="'ID'" width="100" sortable="custom" align="center" fixed="left" />
+        <el-table-column
+          prop="name"
+          :label="t('common.name')"
+          width="300"
+          sortable="custom"
+          align="center"
+          fixed="left"
         >
+          <template #default="scope">
+            <el-text tag="b">{{ scope.row.name }}</el-text>
+          </template>
+        </el-table-column>
+        <el-table-column prop="start_time" :label="t('shift.startTime')" width="200" sortable="custom" align="center" />
+        <el-table-column prop="end_time" :label="t('shift.endTime')" width="200" sortable="custom" align="center" />
+        <el-table-column prop="description" :label="t('common.description')" sortable="custom" align="center" />
+        <el-table-column :label="t('common.actions')" fixed="right" align="center" width="200">
+          <template #default="scope">
+            <el-button :icon="Edit" size="small"  type="primary" @click="handleEdit(scope.row)">{{ t('common.edit') }}</el-button>
+            <el-button :icon="Delete" size="small" type="danger" @click="handleDeactivate(scope.row.id)">
+              {{ t('common.delete') }}
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <!-- Dialog -->
+      <el-dialog
+        :title="currentEditingShift ? t('shift.editShift') : t('shift.createShift')"
+        v-model="isDialogVisible"
+        top="10vh"
+        width="50%"
+      >
+        <div v-loading="isFormProcessing">
           <ShiftForm
-            ref="shiftFormComp"
-            :shift="shiftForm"
-            :is-edit-mode="isEditMode"
-            @submit="submitForm"
-            @cancel="dialogVisible = false"
+            :shift="currentEditingShift"
+            @confirm="handleShiftSubmitted"
+            @cancel="() => (isDialogVisible = false)"
+            @update:loading="isFormProcessing = $event"
           />
-        </el-dialog>
-      </div>
+        </div>
+      </el-dialog>
+    </template>
+
+    <template #foot>
+      <el-pagination
+        @current-change="handlePageChange"
+        @size-change="handleSizeChange"
+        :current-page="currentPage"
+        :page-size="pageSize"
+        :page-sizes="[10, 20, 50]"
+        layout="total, sizes, prev, pager, next"
+        :total="totalElements"
+      />
     </template>
   </MesLayout>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, nextTick } from 'vue'
-import { formatDateObjectToOffsetTime } from '@/utils/datetime.js'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { RefreshRight, Search } from '@element-plus/icons-vue'
-import { createShift, deleteShift, getAllShifts, updateShift } from '@/api/shift'
-import ShiftList from '@/views/shift/components/shiftList.vue'
-import ShiftForm from '@/views/shift/components/shiftForm.vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import MesLayout from '@/components/MesLayout/src/index.vue'
+import MesLayout from '@/components/MesLayout'
+import { Delete, Edit, EditPen, Search } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { searchShifts, deactivateShift } from '@/api/shift'
 import { getAllUsers } from '@/api/user'
+// import UserTag from '@/views/user/components/UserTag.vue'
+import ShiftForm from '@/views/shift/components/shiftForm.vue'
+// import { convertToLocalTime } from '@/utils/datetime'
 
 const { t } = useI18n()
 
-/** Refs/State */
 const loading = ref( false )
-const shifts = ref( [] )
-const searchQuery = ref( '' )
-const dialogVisible = ref( false )
-const isEditMode = ref( false )
-const shiftFormComp = ref( null )
+const isFormProcessing = ref( false )
+const isDialogVisible = ref( false )
+const shiftsTableData = ref( [] )
+const sortSettings = ref( { prop : 'id', order : 'descending' } )
+const currentPage = ref( 1 )
+const pageSize = ref( 20 )
+const totalElements = ref( 0 )
+const tableHeight = ref( window.innerHeight - 250 )
+const currentEditingShift = ref( null )
+const userOptions = ref( [] )
+const initialFilters = { keyword : '' }
+const localFilters = reactive( { ...initialFilters } )
 
-const shiftForm = reactive( {
-  id : null,
-  name : '',
-  description : '',
-  start_time : null,
-  end_time : null,
-  grace_minute : 0
-} )
+// const userMap = computed( () =>
+//   Object.fromEntries( userOptions.value.map( user => [user.id, user] ) )
+// )
 
-const userMap = ref( {} )
-
-/** Helpers */
-function parseTimeToDateOrNull( val ) {
-  if ( !val ) {
-    return null
-  }
-
-  const date = new Date( `1970-01-01T${val}` )
-  return isNaN( date.getTime() ) ? null : date
+function openCreateForm() {
+  currentEditingShift.value = null
+  isDialogVisible.value = true
 }
 
-/** Actions */
-function openDialog( shiftRow = null ) {
-  isEditMode.value = !!shiftRow
-
-  if ( shiftRow ) {
-    // clone the row
-    shiftForm.id = shiftRow.id ?? null
-    shiftForm.name = shiftRow.name ?? ''
-    shiftForm.description = shiftRow.description ?? ''
-    shiftForm.grace_minute = shiftRow.grace_minute ?? 0
-    // Convert backend time strings to Date for time pickers
-    shiftForm.start_time = parseTimeToDateOrNull( shiftRow.start_time )
-    shiftForm.end_time = parseTimeToDateOrNull( shiftRow.end_time )
-  } else {
-    shiftForm.id = null
-    shiftForm.name = ''
-    shiftForm.description = ''
-    shiftForm.start_time = null
-    shiftForm.end_time = null
-    shiftForm.grace_minute = 0
-  }
-
-  dialogVisible.value = true
-
-  // Wait for dialog + child to mount, then clear validation
-  nextTick( () => {
-    const formEl = shiftFormComp.value?.$refs?.shiftFormRef
-    if ( formEl?.clearValidate ) {
-      formEl.clearValidate()
-    }
-  } )
+function handleEdit( shift ) {
+  currentEditingShift.value = shift
+  isDialogVisible.value = true
 }
+
+function handleShiftSubmitted() {
+  isDialogVisible.value = false
+  loadShifts()
+}
+
+function handleFilterChange() {
+  currentPage.value = 1
+  loadShifts()
+}
+
+// function clearLocalFilters() {
+//   Object.assign( localFilters, initialFilters )
+//   handleFilterChange()
+// }
+
+function handlePageChange( val ) {
+  currentPage.value = val
+  loadShifts()
+}
+
+function handleSizeChange( val ) {
+  pageSize.value = val
+  currentPage.value = 1
+  loadShifts()
+}
+
+function handleSortChange( { prop, order } ) {
+  sortSettings.value = { prop, order }
+  loadShifts()
+}
+
+// const formatDateTime = dateString => {
+//   return dateString ? convertToLocalTime( dateString ) : '-'
+// }
 
 async function loadShifts() {
+  function snakeToCamel( str ) {
+    return str.replace( /_([a-z])/g, ( _, char ) => char.toUpperCase() )
+  }
+
+  loading.value = true
   try {
-    loading.value = true
-    const res = await getAllShifts()
-    shifts.value.splice( 0, shifts.value.length, ...res.data.data )
+    const sortKey = snakeToCamel( sortSettings.value.prop )
+
+    const response = await searchShifts(
+      localFilters,
+      currentPage.value,
+      pageSize.value,
+      sortKey,
+      sortSettings.value.order === 'ascending' ? 'ASC' : 'DESC'
+    )
+    const data = response.data
+    shiftsTableData.value = data.content || []
+    totalElements.value = data.totalElements
   } catch ( err ) {
     console.error( 'Failed to load shifts:', err )
-    shifts.value = []
+    ElMessage.error( t( 'shift.message.fetchFailed' ) )
   } finally {
     loading.value = false
   }
 }
 
-async function loadUserMap() {
-  try {
-    const response = await getAllUsers( 1, 1000 )
-    const list = response.data.content
-    const map = {}
-    list.forEach( u => {
-      map[u.id] = u
-    } )
-    userMap.value = map
-  } catch ( err ) {
-    ElMessage.error( t( 'user.message.errorLoadingUsersData' ) )
-  }
-}
-
-async function submitForm( updatedShift ) {
-  try {
-    // Convert Date objects back to offset times for API
-    const offsetStart = formatDateObjectToOffsetTime( updatedShift.start_time )
-    const offsetEnd = formatDateObjectToOffsetTime( updatedShift.end_time )
-    const payload = {
-      ...updatedShift,
-      start_time : offsetStart,
-      end_time : offsetEnd
-    }
-
-    if ( isEditMode.value ) {
-      await updateShift( payload.id, payload )
-    } else {
-      await createShift( payload )
-    }
-    dialogVisible.value = false
-    await loadShifts()
-  } catch ( err ) {
-    console.error( 'Error saving shift:', err )
-  }
-}
-
-async function confirmDelete( id ) {
+async function handleDeactivate( id ) {
   try {
     await ElMessageBox.confirm( t( 'common.confirmMessage' ), t( 'common.warning' ), {
       confirmButtonText : t( 'common.confirm' ),
       cancelButtonText : t( 'common.cancel' ),
-      type : 'warning'
+      type : 'warning',
+      distinguishCancelAndClose : true
     } )
-    await deleteShift( id )
+    await deactivateShift( id )
     await loadShifts()
+    ElMessage.success( t( 'shift.message.deactivateSuccess' ) )
   } catch ( err ) {
-    // Canceled or error
-    if ( err !== 'cancel' ) {
-      console.error( 'Error deleting shift:', err )
-    }
+    if ( err === 'cancel' || err === 'close' ) return
+    console.error( err )
+    ElMessage.error( t( 'shift.message.deactivateFailed' ) )
   }
 }
 
-async function handleRefreshButton() {
-  searchQuery.value = ''
-  await loadShifts()
+async function loadUsers() {
+  try {
+    const response = await getAllUsers( 1, 1000 )
+    userOptions.value = response?.data?.content || []
+  } catch ( err ) {
+    console.error( 'Failed to load users:', err )
+    ElMessage.error( t( 'user.message.errorLoadingUsersData' ) )
+  }
 }
 
-/** Lifecycle */
-onMounted( () => {
-  loadShifts()
-  loadUserMap()
+onMounted( async() => {
+  await loadUsers()
+  await loadShifts()
 } )
 </script>
 
@@ -219,27 +252,24 @@ onMounted( () => {
 .toolbar {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  .filters-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .filter-item {
+    display: flex;
+    align-items: center;
+  }
 
   .actions-row {
     display: flex;
-    justify-content: flex-end;
-    flex: 1;
+    align-items: center;
     gap: 12px;
   }
-}
-
-.refresh-button {
-  background-color: #80cfff;
-  border-color: #80cfff;
-}
-.refresh-button:hover {
-  background-color: #66b5ff;
-  border-color: #66b5ff;
-  transform: rotate(360deg);
-  transition: transform 0.3s ease-in-out, background-color 0.2s ease;
-}
-.refresh-button el-icon {
-  color: white;
 }
 </style>

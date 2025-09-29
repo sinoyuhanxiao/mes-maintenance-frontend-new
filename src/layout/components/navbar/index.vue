@@ -36,10 +36,11 @@
 
       <el-dropdown class="p8 avatar-container right-menu-item hover-effect" trigger="click">
         <div class="avatar-wrapper">
-          <img :src="set.avatar + '?imageView2/1/w/80/h/80'" class="user-avatar" />
+          <!--          <img :src="set.avatar + '?imageView2/1/w/80/h/80'" class="user-avatar" />-->
+          <img :src="set.avatar" class="user-avatar" />
 
-          <div class="username">
-            {{ set.userName }}
+          <div class="fullName">
+            {{ set.fullName }}
             <el-icon class="arrow">
               <ArrowDown />
             </el-icon>
@@ -79,7 +80,7 @@
 <script setup>
 import { reactive, computed } from 'vue'
 import { useAppStore, useUserStore, useSettingsStore } from '@/store'
-import { useRouter } from 'vue-router'
+// import { useRouter } from 'vue-router'
 import HamBurger from './components/HamBurger'
 import BreadCrumb from './components/BreadCrumb'
 import HeaderSearch from './components/HeaderSearch'
@@ -87,13 +88,14 @@ import ScreenFull from './components/Screenfull'
 import SizeSelect from './components/SizeSelect'
 import LangSelect from './components/LangSelect'
 import { emitter } from '@/utils/mitt'
+import { gotoCognitoLogin } from '@/utils/cognito/cognito'
 
 import Logo from '@/layout/components/sidebar/Logo'
 import MenuBar from '../sidebar/Menu'
 import { useChatbotStore } from '@/store/modules/ai-chatbot'
 
 const chatbot = useChatbotStore()
-const router = useRouter()
+// const router = useRouter()
 const appStore = useAppStore()
 const userStore = useUserStore()
 const settingsStore = useSettingsStore()
@@ -115,8 +117,8 @@ const set = reactive( {
   avatar : computed( () => {
     return userStore.avatar
   } ),
-  userName : computed( () => {
-    return userStore.name
+  fullName : computed( () => {
+    return userStore.firstName + ' ' + userStore.lastName
   } ),
   device : computed( () => {
     return appStore.device
@@ -126,7 +128,8 @@ const set = reactive( {
 // 退出登录
 const logout = async() => {
   await userStore.LOGIN_OUT()
-  router.push( '/login' )
+  /* router.push( '/login' ) */
+  gotoCognitoLogin()
   window.location.reload()
 }
 
@@ -225,7 +228,7 @@ defineOptions( {
           display: inline-block;
         }
 
-        .username {
+        .fullName {
           margin-left: 12px;
           vertical-align: middle;
           display: inline-block;

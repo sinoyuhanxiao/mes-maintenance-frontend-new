@@ -10,7 +10,7 @@
     :default-expand-all="false"
     :filterable="true"
     :render-after-expand="false"
-    :placeholder="t('team.placeholder.selectEquipment')"
+    :placeholder="t('common.filterByEquipmentPlaceholder')"
     style="width: 100%"
     clearable
     collapse-tags

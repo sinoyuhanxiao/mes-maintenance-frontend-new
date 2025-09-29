@@ -18,11 +18,13 @@
     </div>
 
     <div class="form-row">
-      <el-form-item :label="t('user.department')" prop="department_id">
+      <el-form-item :label="t('user.department')" prop="department_list">
         <el-select
-          v-model="internalUser.department_id"
+          v-model="internalUser.department_list"
           :placeholder="t('user.form.selectDepartmentPlaceHolder')"
           filterable
+          multiple
+          clearable
         >
           <el-option
             v-for="department in prop.departmentOptions"
@@ -30,7 +32,7 @@
             :label="department.name"
             :value="department.id"
           >
-            <el-tag :type="department.el_tag_type">{{ department.name }}</el-tag>
+            <el-tag>{{ department.name }}</el-tag>
           </el-option>
         </el-select>
       </el-form-item>
@@ -44,26 +46,11 @@
           :max-collapse-tags="2"
           :placeholder="t('user.form.selectRolePlaceHolder')"
           filterable
+          :disabled="!internalUser.department_list.length"
         >
-          <el-option v-for="role in prop.roleOptions" :key="role.id" :label="role.name" :value="role.id">
-            <el-tag :type="role.el_tag_type">{{ role.name }}</el-tag>
+          <el-option v-for="role in availableRoleOptions" :key="role.id" :label="role.name" :value="role.id">
+            <el-tag>{{ role.name }}</el-tag>
           </el-option>
-        </el-select>
-      </el-form-item>
-    </div>
-
-    <div class="form-row">
-      <!--            <el-form-item :label="t('user.form.username')" prop="username">-->
-      <!--              <el-input v-model="internalUser.username" />-->
-      <!--            </el-form-item>-->
-      <el-form-item :label="t('user.employeeNumber')" prop="employee_number">
-        <el-input v-model="internalUser.employee_number" />
-      </el-form-item>
-
-      <el-form-item :label="t('user.form.status')" prop="enabled">
-        <el-select v-model="internalUser.enabled" :placeholder="t('user.form.status')">
-          <el-option :label="t('user.status.active')" :value="true" />
-          <el-option :label="t('user.status.inactive')" :value="false" />
         </el-select>
       </el-form-item>
     </div>
@@ -73,16 +60,6 @@
         <el-input v-model="internalUser.email" />
       </el-form-item>
 
-      <!--            <el-form-item :label="t('user.form.phoneNumber')" prop="phone_number">-->
-      <!--              <el-input-->
-      <!--                  v-model="internalUser.phone_number"-->
-      <!--                  placeholder="+15551234567"-->
-      <!--                  clearable-->
-      <!--              >-->
-      <!--                <template #prepend>+</template>-->
-      <!--              </el-input>-->
-      <!--            </el-form-item>-->
-
       <el-form-item :label="t('user.form.phoneNumber')" prop="phone_number">
         <vue-tel-input
           v-model="internalUser.phone_number"
@@ -91,7 +68,14 @@
           :default-country="'CA'"
           :valid-character-only="true"
           :input-options="{ showDialCode: true, maxlength: 20 }"
+          @blur="handlePhoneBlur"
         />
+      </el-form-item>
+    </div>
+
+    <div class="form-row">
+      <el-form-item :label="t('user.employeeNumber')" prop="employee_number">
+        <el-input v-model="internalUser.employee_number" @input="val => (internalUser.employee_number = val || null)" />
       </el-form-item>
     </div>
 
@@ -104,16 +88,12 @@
     <!--            <associated-team-select v-model="internalUser.teams" />-->
     <!--          </el-form-item>-->
 
-    <!--          <el-divider>-->
-    <!--            {{ t('user.certificate') }}-->
-    <!--          </el-divider>-->
-
-    <el-form-item :label="t('user.certificate')" prop="certificates">
+    <el-form-item :label="t('user.certificate')" prop="user_certificates">
       <certificate-list
-        :certificates="internalUser.certificates"
-        @edit="handleEditCert"
-        @delete="handleDeleteCert"
-        @add="handleAddCert"
+        :certificates="internalUser.user_certificates"
+        @edit="handleEditCertificate"
+        @delete="handleDeleteCertificate"
+        @add="handleAddCertificate"
       />
     </el-form-item>
 
@@ -132,6 +112,35 @@
 
     <!-- Show only for new user -->
     <template v-if="internalUser.id == null">
+      <!-- Custom username radio group -->
+      <div class="form-row">
+        <el-form-item :label="t('user.form.username')">
+          <el-radio-group v-model="useCustomUsername">
+            <el-radio :label="false">{{ t('user.form.autoGenerate') }}</el-radio>
+            <el-radio :label="true">{{ t('user.form.customUsername') }}</el-radio>
+          </el-radio-group>
+        </el-form-item>
+
+        <!-- Show input only if custom username is chosen -->
+        <el-form-item v-if="useCustomUsername" prop="username">
+          <el-input
+            v-model="internalUser.username"
+            :placeholder="t('user.form.enterCustomUsername')"
+            @blur="checkUsername"
+            clearable
+          />
+        </el-form-item>
+
+        <!-- Show info text if auto-generate is chosen -->
+        <div v-if="!useCustomUsername" class="hint">
+          {{ t('user.form.usernameAutoHint') }}
+        </div>
+      </div>
+
+      <el-alert center type="info" show-icon :closable="false">
+        <p>{{ t('user.form.usernameHintNoUpdate') }}</p>
+      </el-alert>
+
       <div class="form-row">
         <el-form-item :label="t('user.form.newPassword')" prop="newPassword">
           <el-input v-model="internalUser.newPassword" type="password" show-password />
@@ -182,8 +191,8 @@
   <!-- Certificate Form Dialog -->
   <certificate-form-dialog
     :visible="showCertForm"
-    :certificate="editingCert"
-    @save="handleCertFormSave"
+    :certificate="selectedCertificate"
+    @confirm="handleConfirmCertificateForm"
     @close="showCertForm = false"
   />
 </template>
@@ -195,10 +204,12 @@ import FileUploadMultiple from '@/components/FileUpload/FileUploadMultiple.vue'
 import { VueTelInput } from 'vue-tel-input'
 import { computed, nextTick, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { createUser, updateUserByAdmin } from '@/api/user'
+import { createUser, isUsernameExist, updateUserByAdmin } from '@/api/user'
 import { deleteObjectList, uploadMultipleToMinio } from '@/api/minio'
 import { useI18n } from 'vue-i18n'
 import 'vue-tel-input/vue-tel-input.css'
+import { useUserStore } from '@/store'
+import { emitter } from '@/utils/mitt'
 
 const prop = defineProps( {
   user : {
@@ -219,13 +230,15 @@ const emit = defineEmits( ['confirm', 'cancel', 'update:loading'] )
 const formRef = ref()
 const userFormImageUploadRef = ref()
 const showCertForm = ref( false )
-const editingCert = ref( null )
+const selectedCertificate = ref( null )
+const selectedCertificateIndex = ref( null )
 const toBeUploadImageList = ref()
 const toBeRemoveImageList = ref()
 const changePassword = ref( false )
 const submitting = ref( false )
 const internalUser = ref( createEmptyUser() )
 const originalUserSnapshot = ref( null ) // stores original userEntry on edit
+const useCustomUsername = ref( false )
 
 watch(
   () => prop.user,
@@ -257,58 +270,89 @@ function createEmptyUser() {
     id : null,
     first_name : '',
     last_name : '',
-    department_id : null,
+    department_list : [],
     role_list : [],
     email : '',
     phone_number : '+1',
     enabled : true,
-    employee_number : '',
+    employee_number : null,
     image : null,
-    certificates : [],
+    user_certificates : [],
     teams : [],
     newPassword : '',
-    confirmPassword : ''
+    confirmPassword : '',
+    username : null // Initialize as null, keep null for auto generation
   }
 }
 
 function transformIncomingUser( user ) {
+  function transformIncomingCertificate( cert ) {
+    return {
+      id : cert.id,
+      name : cert.name,
+      certificate_number : cert.certificate_number,
+      issue_date : cert.issue_date,
+      expiration_date : cert.expiration_date,
+      review_date : cert.review_date,
+      external_reviewer_name : cert.external_reviewer_name,
+      reviewer_id : cert.reviewer_id,
+      note : cert.note,
+      file_list : cert.file_list ? [...cert.file_list] : []
+    }
+  }
+
   changePassword.value = false
 
   return {
     ...createEmptyUser(),
     ...user,
-    role_list : user.roles?.map( r => r.id ) || []
+    user_certificates : ( user.certificate_list || [] ).map( c => transformIncomingCertificate( c ) ),
+    department_list : user.department_ids || [],
+    role_list : user.role_list?.map( r => r.id ) || []
   }
 }
 
-const handleEditCert = cert => {
-  editingCert.value = { ...cert }
+const handleEditCertificate = ( cert, index ) => {
+  selectedCertificateIndex.value = index
+  selectedCertificate.value = { ...cert }
   showCertForm.value = true
 }
 
-const handleAddCert = () => {
-  editingCert.value = null
+const handleAddCertificate = () => {
+  selectedCertificate.value = null
+  selectedCertificateIndex.value = null
+
   showCertForm.value = true
 }
 
-const handleDeleteCert = cert => {
-  internalUser.value.certificates = internalUser.value.certificates.filter( c => c.id !== cert.id )
+const handleDeleteCertificate = ( cert, index ) => {
+  console.log( 'delete certificate index', index )
+
+  if ( index !== null && index >= 0 && index < internalUser.value.user_certificates.length ) {
+    internalUser.value.user_certificates.splice( index, 1 )
+  }
 }
 
-const handleCertFormSave = certData => {
-  if ( certData.id ) {
-    // Replace target certificate with new data
-    const index = internalUser.value.certificates.findIndex( c => c.id === certData.id )
-
-    if ( index !== -1 ) {
-      internalUser.value.certificates[index] = certData
-    }
+const handleConfirmCertificateForm = updatedCertificate => {
+  console.log( 'updatedCertificate emit from certificate form:', updatedCertificate )
+  // Update certificate in internal_user.certificates using index if it exists
+  if (
+    selectedCertificateIndex.value !== null &&
+    selectedCertificateIndex.value >= 0 &&
+    selectedCertificateIndex.value < internalUser.value.user_certificates.length
+  ) {
+    // Replace the certificate at the specific index
+    internalUser.value.user_certificates[selectedCertificateIndex.value] = updatedCertificate
   } else {
-    // TODO: remove later when connected to backend
-    certData.id = Date.now() // mock id
-    internalUser.value.certificates.push( certData )
+    // Add new certificate
+    internalUser.value.user_certificates.push( updatedCertificate )
   }
+
   showCertForm.value = false
+
+  // Reset selection state
+  selectedCertificateIndex.value = null
+  selectedCertificate.value = null
 }
 
 const userFormValidationRules = computed( () => {
@@ -363,9 +407,8 @@ const userFormValidationRules = computed( () => {
         trigger : 'blur'
       }
     ],
-    department_id : [{ required : true, message : t( 'user.validation.departmentRequired' ), trigger : 'blur' }],
+    department_list : [{ required : true, message : t( 'user.validation.departmentRequired' ), trigger : 'blur' }],
     role_list : [{ required : true, message : t( 'user.validation.roleRequired' ), trigger : 'blur' }],
-    enabled : [{ required : true, message : t( 'user.validation.statusRequired' ), trigger : 'blur' }],
     phone_number : [
       {
         required : true,
@@ -459,8 +502,53 @@ const userFormValidationRules = computed( () => {
     rules.confirmPassword = confirmRules
   }
 
+  // Rule when using custom username
+  if ( !internalUser.value.id && useCustomUsername.value ) {
+    rules.username = [
+      {
+        required : true,
+        message : t( 'user.validation.usernameRequired' ),
+        trigger : 'blur'
+      },
+      {
+        min : 1,
+        max : 25,
+        message : t( 'user.validation.usernameMaxLength' ),
+        trigger : 'blur'
+      },
+      {
+        async validator( rule, value, callback ) {
+          if ( !value ) return callback()
+
+          if ( value.length > 25 ) {
+            return callback( new Error( t( 'user.validation.usernameMaxLength' ) ) )
+          }
+
+          try {
+            const res = await isUsernameExist( value )
+            if ( res.data ) {
+              callback( new Error( t( 'user.validation.usernameExists' ) ) )
+            } else {
+              callback()
+            }
+          } catch ( e ) {
+            callback( new Error( t( 'user.validation.usernameCheckFailed' ) ) )
+          }
+        },
+        trigger : 'blur'
+      }
+    ]
+  }
+
   return rules
 } )
+
+function handlePhoneBlur() {
+  // Manually trigger validation of phone_number
+  if ( formRef.value ) {
+    formRef.value.validateField( 'phone_number' )
+  }
+}
 
 function handleFileUpdate( type, data ) {
   switch ( type ) {
@@ -484,20 +572,22 @@ const toE164 = value => {
   return digits ? `+${digits}` : null // prefix a single +
 }
 
-const buildCreateUserPayload = entry => ( {
-  first_name : entry.first_name,
-  last_name : entry.last_name,
-  email : entry.email,
-  phone_number : toE164( entry.phone_number ),
-  password : entry.confirmPassword,
-  employee_number : entry.employee_number,
-  department_id : entry.department_id,
-  role_list : entry.role_list,
-  enabled : entry.enabled,
-  image : entry.image
-  // team : entry.teams
-  // certificate_list : entry.certificates
-} )
+const buildCreateUserPayload = entry => {
+  return {
+    first_name : entry.first_name,
+    last_name : entry.last_name,
+    username : useCustomUsername.value ? entry.username : null,
+    email : entry.email,
+    phone_number : toE164( entry.phone_number ),
+    password : entry.confirmPassword,
+    employee_number : entry.employee_number,
+    department_list : entry.department_list,
+    role_list : entry.role_list,
+    enabled : entry.enabled,
+    image : entry.image,
+    user_certificates : entry.user_certificates
+  }
+}
 
 const buildUpdateUserPayload = ( entry, original ) => {
   const payload = {}
@@ -528,13 +618,20 @@ const buildUpdateUserPayload = ( entry, original ) => {
     payload.employee_number = entry.employee_number
   }
 
-  if ( entry.department_id !== original.department_id ) {
-    payload.department_id = entry.department_id
+  const departmentChanged = JSON.stringify( entry.department_list ) !== JSON.stringify( original.department_list )
+  if ( departmentChanged ) {
+    payload.department_list = entry.department_list
   }
 
-  const rolesChanged = JSON.stringify( entry.role_list || [] ) !== JSON.stringify( ( original.roles || [] ).map( r => r.id ) )
+  const rolesChanged = JSON.stringify( entry.role_list ) !== JSON.stringify( original.role_list )
   if ( rolesChanged ) {
     payload.role_list = entry.role_list
+  }
+
+  const certificateChanged =
+    JSON.stringify( entry.user_certificates || [] ) !== JSON.stringify( original.user_certificates || [] )
+  if ( certificateChanged ) {
+    payload.user_certificates = entry.user_certificates
   }
 
   if ( entry.enabled !== original.enabled ) {
@@ -558,16 +655,20 @@ async function handleConfirm() {
   submitting.value = true
   emit( 'update:loading', true )
 
+  // Create
   try {
     // Upload images to minio
     try {
       if ( toBeUploadImageList.value.length > 0 ) {
         const imageRes = await uploadMultipleToMinio( toBeUploadImageList.value )
         const images = imageRes.data.uploadedFiles?.map( file => file.url ) || []
-        // TODO: refactor later, now hard code first
-        internalUser.value.image = images[0] || null
-      } else {
-        // No image is attached
+
+        // Expects user can only upload one image so replace as first image
+        internalUser.value.image = images[0]
+      }
+
+      if ( toBeRemoveImageList.value.length > 0 && toBeUploadImageList.value.length === 0 ) {
+        // Expects user removing the only image and did not upload new image
         internalUser.value.image = null
       }
     } catch ( err ) {
@@ -584,6 +685,8 @@ async function handleConfirm() {
     // Submit API
     if ( internalUser.value.id != null ) {
       await updateUserByAdmin( internalUser.value.id, payload )
+
+      emitter.emit( 'user:updated', internalUser.value.id )
     } else {
       const res = await createUser( payload )
       username = res?.data?.username
@@ -607,8 +710,23 @@ async function handleConfirm() {
       ElMessage.error( 'Image file delete failed' )
     }
 
-    // File upload cleanup
+    // If updated user is the logged-in user, refresh the store
+    if ( internalUser.value.id ) {
+      const userStore = useUserStore()
+      if ( internalUser.value.id === userStore.uid ) {
+        try {
+          await userStore.GET_USER_INFO()
+        } catch ( err ) {
+          console.error( '[UserForm] Failed to refresh self userStore:', err )
+        }
+      }
+    }
+
+    // Clear local state
+    internalUser.value.image = null
+    internalUser.value.user_certificates = []
     clearFileUploadComponent()
+    formRef.value.resetFields()
 
     if ( username ) {
       emit( 'confirm', username ) // Pass the username to parent
@@ -675,6 +793,49 @@ const isUserEdited = computed( () => {
 
   return Object.keys( payload ).length > 0
 } )
+
+async function checkUsername() {
+  if ( !internalUser.value.username ) return
+  try {
+    await isUsernameExist( internalUser.value.username )
+  } catch ( err ) {
+    console.error( err )
+    ElMessage.error( t( 'user.validation.usernameCheckFailed' ) )
+  }
+}
+
+// Restrict role selection based on selected department
+const departmentRoleMap = computed( () => {
+  const map = {}
+  prop.departmentOptions.forEach( dep => {
+    map[dep.id] = dep.role_list || []
+  } )
+  return map
+} )
+
+// Filtered role options based on selected departments
+const availableRoleOptions = computed( () => {
+  if ( !internalUser.value.department_list?.length ) return []
+  const roles = []
+  internalUser.value.department_list.forEach( depId => {
+    const depRoles = departmentRoleMap.value[depId] || []
+    depRoles.forEach( r => {
+      if ( !roles.find( existing => existing.id === r.id ) ) {
+        roles.push( r ) // dedupe across departments
+      }
+    } )
+  } )
+  return roles
+} )
+
+// Watch department selection → clear invalid roles
+watch(
+  () => internalUser.value.department_list,
+  newDepartments => {
+    const validRoleIds = newDepartments.flatMap( depId => ( departmentRoleMap.value[depId] || [] ).map( r => r.id ) )
+    internalUser.value.role_list = internalUser.value.role_list.filter( rid => validRoleIds.includes( rid ) )
+  }
+)
 </script>
 
 <style scoped lang="scss">

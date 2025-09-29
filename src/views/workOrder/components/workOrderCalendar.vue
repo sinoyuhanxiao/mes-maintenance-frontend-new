@@ -279,7 +279,7 @@ const calendarOptions = ref( {
   eventMouseLeave : handleEventMouseLeave,
   locales : [enLocale, zhLocale],
   locale : 'en',
-  aspectRatio : '2.9',
+  aspectRatio : '2.7',
   multiMonthMaxColumns : 1,
   nowIndicator : true,
   nowIndicatorClassNames : ['custom-now-indicator'],
@@ -356,7 +356,7 @@ const popoverVisible = ref( false )
 
 const popoverData = reactive( {
   id : '',
-  gropuId : '',
+  groupId : '',
   title : '',
   startDate : '',
   endDate : '',

@@ -28,19 +28,61 @@
   <!--        </div>-->
   <!--      </div>-->
   <!--    </template>-->
-
-  <el-tag :type="props.role?.el_tag_type" size="default">
-    {{ props.role?.name || '-' }}
-  </el-tag>
   <!--  </el-popover>-->
+
+  <!-- Unknown role -->
+  <span v-if="!role">
+    <el-tag size="small" type="info" effect="light">
+      {{ 'Unknown Role' }}
+    </el-tag>
+  </span>
+
+  <el-popover v-else effect="light" trigger="hover" placement="top" width="auto">
+    <template #default>
+      <div>
+        <el-text>{{ 'ID' }}: {{ role.id }}</el-text>
+      </div>
+      <div>
+        <el-text>{{ t('common.name') }}: {{ role.name }}</el-text>
+      </div>
+      <div>
+        <el-text>{{ t('common.description') }}: {{ role.description }}</el-text>
+      </div>
+      <div>
+        <el-text>{{ 'Permission List' }}: {{ role.permission_list?.length || '-' }}</el-text>
+      </div>
+      <div>
+        <el-text>{{ 'Associated Department List' }}:
+          <template v-if="role.department_list && role.department_list?.length">
+            {{ role.department_list.map(dep => dep.name).join(', ') }}
+          </template>
+          <template v-else>
+            -
+          </template>
+        </el-text>
+      </div>
+    </template>
+
+    <template #reference>
+      <el-tag :type="'primary'" size="small" effect="light">
+        {{ role.name }}
+      </el-tag>
+    </template>
+  </el-popover>
 </template>
 
 <script setup>
 // import { computed } from 'vue'
 // import { CircleCheck } from '@element-plus/icons-vue'
 
-const props = defineProps( {
-  role : Object
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
+defineProps( {
+  role : {
+    type : Object,
+    default : null
+  }
 } )
 
 // // keep a consistent action order in the UI

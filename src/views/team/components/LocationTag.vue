@@ -15,7 +15,7 @@ const { t } = useI18n()
   <!-- Unknown location -->
   <span v-if="!location">
     <el-tag size="small" type="info" effect="light">
-      {{ t('location.unknownLocation') }}
+      {{ '-' }}
     </el-tag>
   </span>
 

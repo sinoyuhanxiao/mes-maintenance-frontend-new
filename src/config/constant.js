@@ -80,3 +80,5 @@ export const LOGIN_ERROR_CODE = [
     msg : 'login info invalid'
   }
 ]
+
+export const WHITE_LIST = ['/callback', '/logout-success', '/refresh']
