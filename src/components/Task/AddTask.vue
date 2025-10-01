@@ -239,9 +239,10 @@ const mergeTemplateData = ( baseTemplate, detailedTemplate ) => {
   return {
     ...baseTemplate,
     ...detailedTemplate,
-    steps : Array.isArray( detailedTemplate?.steps ) && detailedTemplate.steps.length > 0
-      ? detailedTemplate.steps
-      : baseTemplate?.steps || []
+    steps :
+      Array.isArray( detailedTemplate?.steps ) && detailedTemplate.steps.length > 0
+        ? detailedTemplate.steps
+        : baseTemplate?.steps || []
   }
 }
 
@@ -276,9 +277,7 @@ const handleAddTemplates = async() => {
 
   isAddingTemplates.value = true
   try {
-    const templatesToAdd = await Promise.all(
-      selectedTemplatesList.value.map( template => ensureTemplateSteps( template ) )
-    )
+    const templatesToAdd = await Promise.all( selectedTemplatesList.value.map( template => ensureTemplateSteps( template ) ) )
 
     const validTemplates = templatesToAdd.filter( Boolean )
     if ( validTemplates.length === 0 ) {

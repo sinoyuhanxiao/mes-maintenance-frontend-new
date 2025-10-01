@@ -226,7 +226,7 @@
 </template>
 
 <script setup>
-import { ref, watch, computed, onMounted } from 'vue'
+import { ref, watch, computed, onMounted, nextTick } from 'vue'
 import { Warning, Clock } from '@element-plus/icons-vue'
 import { getAllRecurrenceTypes } from '@/api/work-order'
 
@@ -536,12 +536,21 @@ const disabledEndMinutes = hour => {
   return disabledMinutes
 }
 
-// Helper function to get work order date part
-const getWorkOrderDate = () => {
+// Helper function to get work order start date part
+const getWorkOrderStartDate = () => {
   if ( !props.workOrderStartDate ) return null
 
   // Extract date part from work order start date (e.g., "2025-09-29T07:00:00.000Z" -> "2025-09-29")
   const date = new Date( props.workOrderStartDate )
+  return date.toISOString().split( 'T' )[0]
+}
+
+// Helper function to get work order due date part
+const getWorkOrderDueDate = () => {
+  if ( !props.workOrderDueDate ) return null
+
+  // Extract date part from work order due date (e.g., "2025-09-30T17:00:00.000Z" -> "2025-09-30")
+  const date = new Date( props.workOrderDueDate )
   return date.toISOString().split( 'T' )[0]
 }
 
@@ -669,14 +678,16 @@ const recurrenceSetting = computed( () => {
       setting.duration_minutes = 0
     }
   } else if ( ['daily', 'weekly', 'monthlyByDate', 'yearly'].includes( recurrence.value ) ) {
-    // For recurring types, use work order date with specified times
-    const workOrderDate = getWorkOrderDate()
-    if ( workOrderDate && startTime.value ) {
-      const startDateTime = new Date( `${workOrderDate}T${startTime.value}` )
+    // For recurring types, use work order start date with start time, and due date with end time
+    const workOrderStartDate = getWorkOrderStartDate()
+    const workOrderDueDate = getWorkOrderDueDate()
+
+    if ( workOrderStartDate && startTime.value ) {
+      const startDateTime = new Date( `${workOrderStartDate}T${startTime.value}` )
       setting.start_date_time = startDateTime.toISOString()
     }
-    if ( workOrderDate && endTime.value ) {
-      const endDateTime = new Date( `${workOrderDate}T${endTime.value}` )
+    if ( workOrderDueDate && endTime.value ) {
+      const endDateTime = new Date( `${workOrderDueDate}T${endTime.value}` )
       setting.end_date_time = endDateTime.toISOString()
     }
     // Also set individual time fields for validation
@@ -706,10 +717,17 @@ const recurrenceSetting = computed( () => {
 } )
 
 // Sync recurrence_setting on internal changes
+let isUpdating = false
 watch(
   recurrenceSetting,
   newSetting => {
+    if ( isUpdating ) return
+    isUpdating = true
     emit( 'update:recurrenceSetting', newSetting )
+    // Use nextTick to reset the flag after the update cycle completes
+    nextTick( () => {
+      isUpdating = false
+    } )
   },
   { deep : true }
 )

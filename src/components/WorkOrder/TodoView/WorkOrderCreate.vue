@@ -81,6 +81,21 @@
         </el-form-item>
       </div>
 
+      <!-- Assignees -->
+      <div class="form-section">
+        <el-form-item :label="$t('workOrder.create.assignTo')" prop="assignee_ids">
+          <el-select
+            v-model="form.assignee_ids"
+            :placeholder="$t('workOrder.create.assigneePlaceholder')"
+            filterable
+            multiple
+            style="width: 100%"
+          >
+            <el-option v-for="assignee in assigneeOptions" :key="assignee.id" :label="assignee.name" :value="assignee.id" />
+          </el-select>
+        </el-form-item>
+      </div>
+
       <!-- Tasks -->
       <el-divider />
       <div class="form-section tasks-section">
@@ -186,7 +201,6 @@
             style="width: 100%"
             format="MM/DD/YYYY HH:mm"
             value-format="YYYY-MM-DDTHH:mm:ss"
-            :disabled-date="disabledDueDates"
           />
           <div v-if="showWorkOrderDuration" class="work-order-duration">
             <el-text type="info" size="small"> Work order duration: {{ formatWorkOrderDuration() }} </el-text>
@@ -204,7 +218,6 @@
             style="width: 100%"
             format="MM/DD/YYYY HH:mm"
             value-format="YYYY-MM-DDTHH:mm:ss"
-            :disabled-date="disabledStartDates"
           />
         </el-form-item>
       </div>
@@ -621,6 +634,25 @@ const standalonePreviewTab = ref( 'general' )
 // Centralized payload logging
 const { currentPayload, showJsonDisplayer, logPayload, closeDebugDrawer } = usePayloadLogger()
 
+// Message throttling system to prevent duplicate notifications
+const messageThrottle = new Map()
+const THROTTLE_DURATION = 2000 // 2 seconds
+
+const showThrottledMessage = ( type, message, key = null ) => {
+  const throttleKey = key || message
+  const now = Date.now()
+
+  if ( messageThrottle.has( throttleKey ) ) {
+    const lastShown = messageThrottle.get( throttleKey )
+    if ( now - lastShown < THROTTLE_DURATION ) {
+      return // Skip showing message if shown recently
+    }
+  }
+
+  messageThrottle.set( throttleKey, now )
+  ElMessage[type]( message )
+}
+
 const handleAddStandard = () => {
   showAddStandardDialog.value = true
 }
@@ -647,7 +679,7 @@ const handleTaskAction = ( { id, action, data } ) => {
   } else if ( action === 'delete' ) {
     form.tasks = form.tasks.filter( t => t.id !== id )
     syncTaskPayloads()
-    ElMessage.success( `Task "${data.name}" removed` )
+    showThrottledMessage( 'success', `Task "${data.name}" removed`, `task-remove-${data.id || Date.now()}` )
   }
 }
 
@@ -673,11 +705,11 @@ const handleTaskAssigneeUpdate = ( { taskId, assigneeIds, taskData } ) => {
     .map( user => user.name )
     .join( ', ' )
 
-  if ( assigneeIds.length === 0 ) {
-    ElMessage.success( `Removed all assignees from "${taskData.name}"` )
-  } else {
-    ElMessage.success( `Updated assignees for "${taskData.name}": ${assigneeNames}` )
-  }
+  const message =
+    assigneeIds.length === 0
+      ? `Removed all assignees from "${taskData.name}"`
+      : `Updated assignees for "${taskData.name}": ${assigneeNames}`
+  showThrottledMessage( 'success', message, `assignee-update-${taskData.id}` )
 }
 
 // Task assignee dialog methods
@@ -766,7 +798,7 @@ const handleStandardAction = ( { id, action, data } ) => {
   } else if ( action === 'delete' ) {
     form.standards = form.standards.filter( s => s.id !== id )
     syncStandards()
-    ElMessage.success( `Standard "${data.name}" removed` )
+    showThrottledMessage( 'success', `Standard "${data.name}" removed`, `standard-remove-${data.id || Date.now()}` )
   }
 }
 
@@ -792,8 +824,10 @@ const onAddTaskTemplates = selectedTemplates => {
   decorateTasksCategories( newTasks )
   syncTaskPayloads()
 
-  ElMessage.success(
-    `${selectedTemplates.length} task template${selectedTemplates.length > 1 ? 's' : ''} added successfully`
+  showThrottledMessage(
+    'success',
+    `${selectedTemplates.length} task template${selectedTemplates.length > 1 ? 's' : ''} added successfully`,
+    'templates-added'
   )
 
   closeAddTaskDialog()
@@ -817,7 +851,7 @@ const handleDeleteAllTasks = () => {
     .then( () => {
       form.tasks = []
       syncTaskPayloads()
-      ElMessage.success( 'All task selections cleared' )
+      showThrottledMessage( 'success', 'All task selections cleared', 'all-tasks-cleared' )
     } )
     .catch( () => {
       // User cancelled - no action needed
@@ -852,7 +886,11 @@ const onAddStandards = selectedStandards => {
   syncStandards()
 
   // Show success message
-  ElMessage.success( `${selectedStandards.length} standard${selectedStandards.length > 1 ? 's' : ''} added successfully` )
+  showThrottledMessage(
+    'success',
+    `${selectedStandards.length} standard${selectedStandards.length > 1 ? 's' : ''} added successfully`,
+    'standards-added'
+  )
 
   // Close the dialog
   closeAddStandardDialog()
@@ -876,7 +914,7 @@ const handleDeleteAllStandards = () => {
     .then( () => {
       form.standards = []
       syncStandards()
-      ElMessage.success( 'All standard selections cleared' )
+      showThrottledMessage( 'success', 'All standard selections cleared', 'all-standards-cleared' )
     } )
     .catch( () => {
       // User cancelled - no action needed
@@ -1031,7 +1069,11 @@ const handleTemplateUpdate = updatedTemplate => {
 
   // Show notification that tasks were refreshed
   if ( form.tasks.some( task => task.templateId === templateId || task.template_id === templateId ) ) {
-    ElMessage.success( `Tasks updated with latest template changes: ${updatedTemplate.name}` )
+    showThrottledMessage(
+      'success',
+      `Tasks updated with latest template changes: ${updatedTemplate.name}`,
+      `template-update-${templateId}`
+    )
   }
 }
 
@@ -1065,6 +1107,7 @@ const syncTaskPayloads = () => {
 
 const syncStandards = () => {
   form.standard_list = form.standards.map( s => {
+    // eslint-disable-next-line no-unused-vars
     const { id, standardId, ...rest } = s
     if ( s.isStandalone ) {
       return { ...rest, module : 200 }
@@ -1206,17 +1249,6 @@ const validateStartDate = ( rule, value, callback ) => {
     callback( new Error( 'Start date is required' ) )
     return
   }
-
-  const now = new Date()
-  const startDate = new Date( value )
-
-  // Allow past dates but warn if too far in the past (more than 30 days)
-  const thirtyDaysAgo = new Date( now.getTime() - 30 * 24 * 60 * 60 * 1000 )
-  if ( startDate < thirtyDaysAgo ) {
-    callback( new Error( 'Start date is more than 30 days in the past. Please verify this is correct.' ) )
-    return
-  }
-
   callback()
 }
 
@@ -1487,26 +1519,24 @@ const uploadFilesToServer = async() => {
 }
 
 // Helper function to check if the form has meaningful changes
-const hasFormChanges = () => {
-  return (
-    ( form.name && form.name.trim() !== '' ) ||
-    ( form.description && form.description.trim() !== '' ) ||
-    form.tasks.length > 0 ||
-    form.standards.length > 0 ||
-    ( form.category_ids && form.category_ids.length > 0 ) ||
-    ( form.equipment_node_ids && form.equipment_node_ids.length > 0 ) ||
-    // Removed work order level assignee_ids check since we use per-task assignment
-    ( form.approved_by_id && form.approved_by_id !== null ) ||
-    ( form.work_type_id && form.work_type_id !== null ) ||
-    ( form.priority_id && form.priority_id !== null ) ||
-    ( form.state_id && form.state_id !== 1 ) || // 1 is default state
-    ( form.start_date && form.start_date !== null ) ||
-    ( form.due_date && form.due_date !== null ) ||
-    ( form.vendor_ids && form.vendor_ids.length > 0 ) ||
-    ( form.image_list && form.image_list.length > 0 ) ||
-    ( form.file_list && form.file_list.length > 0 )
-  )
-}
+const hasFormChanges = () => [
+  form.name?.trim(),
+  form.description?.trim(),
+  form.tasks.length,
+  form.standards.length,
+  form.category_ids?.length,
+  form.equipment_node_ids?.length,
+  form.assignee_ids?.length,
+  form.approved_by_id,
+  form.work_type_id,
+  form.priority_id,
+  form.state_id !== 1,
+  form.start_date,
+  form.due_date,
+  form.vendor_ids?.length,
+  form.image_list?.length,
+  form.file_list?.length
+].some( Boolean )
 
 const handleBackToDetail = () => {
   if ( !hasFormChanges() ) {
@@ -1673,37 +1703,17 @@ const createWorkOrderPayload = () => {
     halt_type : form.halt_type,
     recurrence_type_id : form.recurrence_type || form.recurrence_type_id || 1,
     approved_by_id : form.approved_by_id,
+    assignee_ids : form.assignee_ids || [],
     image_list : form.image_list,
     file_list : form.file_list,
     standard_list : form.standard_list || [],
     request_id : form.request_id,
     parent_work_order_id : form.parent_work_order_id,
     vendor_ids : form.vendor_ids
-    // assignee_ids removed - now handled per-task
   }
 
   // Transform and clean payload using centralized utilities
   return transformPayload( basePayload, 'workOrderCreate' )
-}
-
-// Date picker constraints and helpers for main work order dates
-const disabledStartDates = date => {
-  // Allow dates from 30 days ago to 2 years in the future
-  const thirtyDaysAgo = new Date()
-  thirtyDaysAgo.setDate( thirtyDaysAgo.getDate() - 30 )
-
-  const twoYearsFromNow = new Date()
-  twoYearsFromNow.setFullYear( twoYearsFromNow.getFullYear() + 2 )
-
-  return date < thirtyDaysAgo || date > twoYearsFromNow
-}
-
-const disabledDueDates = date => {
-  // Don't allow dates more than 2 years in the future
-  const twoYearsFromNow = new Date()
-  twoYearsFromNow.setFullYear( twoYearsFromNow.getFullYear() + 2 )
-
-  return date > twoYearsFromNow
 }
 
 const showWorkOrderDuration = computed( () => {
@@ -1887,7 +1897,7 @@ const submitForm = async() => {
     const response = await createWorkOrder( finalPayload )
 
     // Show success message
-    ElMessage.success( 'Work order created successfully!' )
+    showThrottledMessage( 'success', 'Work order created successfully!', 'work-order-created' )
 
     // Emit the created work order (can be single or array)
     const createdWorkOrders = Array.isArray( response.data ) ? response.data : [response.data]

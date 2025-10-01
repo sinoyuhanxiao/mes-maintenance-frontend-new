@@ -1002,8 +1002,11 @@ const calculateTaskChanges = () => {
     const originalTask = findOriginalTask( taskId )
 
     if ( !originalTask ) {
-      // New task - add to added list
-      taskChanges.added.push( currentTask.payload || currentTask )
+      // New task - add to added list (clean payload)
+      const addPayload = { ...( currentTask.payload || currentTask ) }
+      delete addPayload.work_order_id
+      delete addPayload.category_name
+      taskChanges.added.push( addPayload )
     } else if ( isTaskModified( currentTask, originalTask ) ) {
       // Modified task - add to updated list
       const updatePayload = {

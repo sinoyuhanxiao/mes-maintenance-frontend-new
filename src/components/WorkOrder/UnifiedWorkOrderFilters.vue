@@ -34,7 +34,6 @@
             <el-option :label="$t('workOrder.filters.today')" value="today" />
             <el-option :label="$t('workOrder.filters.thisWeek')" value="thisWeek" />
             <el-option :label="$t('workOrder.filters.thisMonth')" value="thisMonth" />
-            <el-option :label="$t('workOrder.filters.custom')" value="custom" />
           </el-select>
         </div>
 
@@ -253,19 +252,6 @@
       </div>
     </div>
 
-    <!-- Custom Date Range Picker (shown when due date filter is 'custom') -->
-    <div v-if="localFilters.dueDate === 'custom'" class="custom-date-range">
-      <el-date-picker
-        v-model="localFilters.customDateRange"
-        type="daterange"
-        :range-separator="$t('common.to')"
-        :start-placeholder="$t('common.startDate')"
-        :end-placeholder="$t('common.endDate')"
-        @change="handleFilterChange"
-        style="width: 300px"
-      />
-    </div>
-
     <!-- Filter Drawer -->
     <el-drawer
       v-model="drawerVisible"
@@ -397,7 +383,6 @@ const localFilters = reactive( {
   state : props.modelValue.state || null,
   category : props.modelValue.category || null,
   search : props.modelValue.search || '',
-  customDateRange : props.modelValue.customDateRange || null,
   latest_per_recurrence : props.currentView !== 'calendar',
   status : props.modelValue.status || null,
   equipment : props.modelValue.equipment || null,
@@ -636,8 +621,7 @@ computed( () => {
       overdue : t( 'workOrder.filters.overdue' ),
       today : t( 'workOrder.filters.today' ),
       thisWeek : t( 'workOrder.filters.thisWeek' ),
-      thisMonth : t( 'workOrder.filters.thisMonth' ),
-      custom : t( 'workOrder.filters.custom' )
+      thisMonth : t( 'workOrder.filters.thisMonth' )
     }
     tags.push( {
       key : 'dueDate',
@@ -914,12 +898,6 @@ defineOptions( {
     color: var(--el-color-danger);
     margin-left: auto;
   }
-}
-
-.custom-date-range {
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--el-border-color-lighter);
 }
 
 // Filter Drawer Styles

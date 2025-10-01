@@ -2296,7 +2296,10 @@ const initializeTemplate = async() => {
 
       const shouldFetchEntry = route.query.shouldFetchEntry === 'true'
       const rawEntryLookupId =
-        route.query.taskEntryId || route.query.taskId || ( route.params.id !== 'standalone' ? route.params.id : null ) || taskData?.entry_id
+        route.query.taskEntryId ||
+        route.query.taskId ||
+        ( route.params.id !== 'standalone' ? route.params.id : null ) ||
+        taskData?.entry_id
       const entryLookupId = rawEntryLookupId && rawEntryLookupId !== 'undefined' ? rawEntryLookupId : null
 
       if ( shouldFetchEntry && entryLookupId ) {
@@ -2344,9 +2347,7 @@ const initializeTemplate = async() => {
       if ( !taskData ) {
         const draftTasks = workOrderDraftStore.draftForm?.tasks || []
         const draftMatch = draftTasks.find( task => {
-          const candidates = [task.id, task.task_id, task.taskId]
-            .filter( Boolean )
-            .map( value => String( value ) )
+          const candidates = [task.id, task.task_id, task.taskId].filter( Boolean ).map( value => String( value ) )
           const lookupId = entryLookupId ? String( entryLookupId ) : null
           return lookupId ? candidates.includes( lookupId ) : false
         } )
@@ -2401,7 +2402,7 @@ const initializeTemplate = async() => {
         tagsViewStore.UPDATE_VISITED_VIEW_TITLE( route.path, newTitle )
       }
 
-     // Clean up sessionStorage after successful initialization
+      // Clean up sessionStorage after successful initialization
       if ( taskDataKey ) {
         console.log( 'TemplateDesignerView: Cleaning up sessionStorage for key:', taskDataKey )
         sessionStorage.removeItem( taskDataKey )
