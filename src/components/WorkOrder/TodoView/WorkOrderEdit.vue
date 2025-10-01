@@ -643,6 +643,7 @@ import { useTaskLibraryStore } from '@/store/modules/taskLibrary'
 import { useWorkOrderDraftStore } from '@/store/modules/workOrderDraft'
 import { createEmptyWorkOrderForm } from './workOrderFormDefaults'
 import { DEFAULT_TASK_STATE, buildDisplayTaskFromTemplate } from './taskPayloadHelpers'
+import { calculateStepChangesForTask, hasAnyStepChanged } from './taskStepChangeTracking'
 
 // Props
 const props = defineProps( {
@@ -982,12 +983,31 @@ const findOriginalTask = taskId => {
 const isTaskModified = ( currentTask, originalTask ) => {
   if ( !originalTask ) return false
 
-  // Compare key properties that indicate a task has been modified
-  const compareProps = ['name', 'description', 'estimated_minutes', 'category_id']
-  return (
-    compareProps.some( prop => currentTask[prop] !== originalTask[prop] ) ||
-    JSON.stringify( currentTask.steps || [] ) !== JSON.stringify( originalTask.steps || [] )
+  // Check task-level metadata changes
+  const metadataProps = [
+    'name',
+    'description',
+    'estimated_minutes',
+    'category_id',
+    'equipment_node_id'
+  ]
+
+  const metadataChanged = metadataProps.some(
+    prop => currentTask[prop] !== originalTask[prop]
   )
+
+  if ( metadataChanged ) return true
+
+  // Check if assignees changed
+  const currentAssignees = JSON.stringify( currentTask.assignee_ids || [] )
+  const originalAssignees = JSON.stringify( originalTask.assignee_ids || [] )
+  if ( currentAssignees !== originalAssignees ) return true
+
+  // Check if steps changed (using the helper function for accurate detection)
+  const currentSteps = currentTask.steps || currentTask.payload?.steps || []
+  const originalSteps = originalTask.steps || originalTask.payload?.steps || []
+
+  return hasAnyStepChanged( currentSteps, originalSteps )
 }
 
 const calculateTaskChanges = () => {
@@ -1008,11 +1028,32 @@ const calculateTaskChanges = () => {
       delete addPayload.category_name
       taskChanges.added.push( addPayload )
     } else if ( isTaskModified( currentTask, originalTask ) ) {
-      // Modified task - add to updated list
+      // Modified task - build structured update payload with step change tracking
       const updatePayload = {
-        ...( currentTask.payload || currentTask ),
-        id : originalTask.id || originalTask.task_id // Ensure we have the original ID for updates
+        id : originalTask.id || originalTask.task_id, // Ensure we have the original ID for updates
+        name : currentTask.name,
+        description : currentTask.description || '',
+        time_estimate_sec : currentTask.estimated_minutes
+          ? currentTask.estimated_minutes * 60
+          : currentTask.time_estimate_sec || 1800,
+        category_id : currentTask.category_id,
+        equipment_node_id : currentTask.equipment_node_id,
+        assignee_ids : currentTask.assignee_ids || []
       }
+
+      // Calculate step-level changes using the new helper function
+      const stepChanges = calculateStepChangesForTask( currentTask, originalTask )
+
+      // Add step change lists to the payload
+      updatePayload.step_add_list = stepChanges.step_add_list
+      updatePayload.step_update_list = stepChanges.step_update_list
+      updatePayload.step_delete_list = stepChanges.step_delete_list
+
+      // Remove the old 'steps' field - no longer needed
+      // Old approach: { id, steps: [...all steps...] }
+      // New approach: { id, step_add_list, step_update_list, step_delete_list }
+      delete updatePayload.steps
+
       taskChanges.updated.push( updatePayload )
     }
   } )
