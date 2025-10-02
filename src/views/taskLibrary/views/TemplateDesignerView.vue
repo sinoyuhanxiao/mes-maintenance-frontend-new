@@ -1200,7 +1200,7 @@ const performSave = async( { mode = 'template', fromWorkOrderContext = false } =
 
         workOrderDraftStore.updateTasksWithTemplate( updatedTemplate )
         workOrderDraftStore.setShouldOpenCreatePanel( isCreateContext )
-        await navigateBackToWorkOrder( 'Template updated and task refreshed.' )
+        await navigateBackToWorkOrder( 'Task updated successfully' )
         return
       }
 
@@ -1270,7 +1270,6 @@ const performSave = async( { mode = 'template', fromWorkOrderContext = false } =
     }
   } catch ( error ) {
     console.error( 'Save error:', error )
-
     if ( error.fields ) {
       ElMessage.error( 'Please fix validation errors before saving' )
     } else if ( error.response?.data?.message ) {

@@ -1417,7 +1417,7 @@ const handleTemplateUpdate = updatedTemplate => {
 
   // Show notification that tasks were refreshed
   if ( form.tasks.some( task => task.templateId === templateId || task.template_id === templateId ) ) {
-    ElMessage.success( `Tasks updated with latest template changes: ${updatedTemplate.name}` )
+    // ElMessage.success( `Tasks updated with latest template changes: ${updatedTemplate.name}` )
   }
 }
 
@@ -2534,9 +2534,6 @@ const submitForm = async() => {
       response = await updateWorkOrder( props.workOrder.id, finalPayload )
     }
 
-    // Show success message
-    ElMessage.success( 'Work order updated successfully!' )
-
     // Emit the updated work order
     const updatedWorkOrder = Array.isArray( response.data ) ? response.data[0] : response.data
     emit( 'work-order-updated', updatedWorkOrder )
@@ -2799,7 +2796,7 @@ const applyStandaloneTaskReturn = returnedTaskData => {
   decorateTaskCategory( form.tasks[taskIndex] )
   syncFormData()
 
-  ElMessage.success( `Task "${returnedTaskData.name || 'Unnamed'}" updated` )
+  // ElMessage.success( `Task "${returnedTaskData.name || 'Unnamed'}" updated` )
 }
 
 watch(
@@ -2925,7 +2922,6 @@ onActivated( () => {
 }
 
 .edit-form {
-  padding-bottom: 120px;
 }
 
 .form-section {

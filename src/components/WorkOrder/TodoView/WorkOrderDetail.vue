@@ -202,7 +202,7 @@
             </div>
             <div class="equipment-info">
               <div class="equipment-name">{{ equipment.name || `Equipment ${equipment.id}` }}</div>
-              <div class="equipment-type">{{ equipment.type || equipment.equipment_type || 'Equipment' }}</div>
+              <div class="equipment-code">Code : {{ equipment.code }}</div>
             </div>
           </div>
         </el-tooltip>
@@ -1982,7 +1982,7 @@ defineOptions( {
         margin-bottom: 4px;
       }
 
-      .equipment-type {
+      .equipment-code {
         font-size: 12px;
         color: var(--el-text-color-secondary);
       }

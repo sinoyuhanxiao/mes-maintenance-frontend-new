@@ -342,7 +342,6 @@ const handleWorkOrderUpdated = async updatedWorkOrder => {
   if ( index !== -1 ) {
     list.value[index] = updatedWorkOrder
   }
-  showSuccess( t( 'workOrder.messages.updateSuccess' ) )
   // Optionally refresh to ensure data consistency with server
   // await fetchWorkOrders()
 }

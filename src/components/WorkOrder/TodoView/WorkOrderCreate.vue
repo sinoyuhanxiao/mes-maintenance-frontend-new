@@ -634,24 +634,6 @@ const standalonePreviewTab = ref( 'general' )
 // Centralized payload logging
 const { currentPayload, showJsonDisplayer, logPayload, closeDebugDrawer } = usePayloadLogger()
 
-// Message throttling system to prevent duplicate notifications
-const messageThrottle = new Map()
-const THROTTLE_DURATION = 2000 // 2 seconds
-
-const showThrottledMessage = ( type, message, key = null ) => {
-  const throttleKey = key || message
-  const now = Date.now()
-
-  if ( messageThrottle.has( throttleKey ) ) {
-    const lastShown = messageThrottle.get( throttleKey )
-    if ( now - lastShown < THROTTLE_DURATION ) {
-      return // Skip showing message if shown recently
-    }
-  }
-
-  messageThrottle.set( throttleKey, now )
-  ElMessage[type]( message )
-}
 
 const handleAddStandard = () => {
   showAddStandardDialog.value = true
@@ -679,7 +661,7 @@ const handleTaskAction = ( { id, action, data } ) => {
   } else if ( action === 'delete' ) {
     form.tasks = form.tasks.filter( t => t.id !== id )
     syncTaskPayloads()
-    showThrottledMessage( 'success', `Task "${data.name}" removed`, `task-remove-${data.id || Date.now()}` )
+    ElMessage.success( `Task "${data.name}" removed` )
   }
 }
 
@@ -709,7 +691,7 @@ const handleTaskAssigneeUpdate = ( { taskId, assigneeIds, taskData } ) => {
     assigneeIds.length === 0
       ? `Removed all assignees from "${taskData.name}"`
       : `Updated assignees for "${taskData.name}": ${assigneeNames}`
-  showThrottledMessage( 'success', message, `assignee-update-${taskData.id}` )
+  ElMessage.success( message )
 }
 
 // Task assignee dialog methods
@@ -798,7 +780,7 @@ const handleStandardAction = ( { id, action, data } ) => {
   } else if ( action === 'delete' ) {
     form.standards = form.standards.filter( s => s.id !== id )
     syncStandards()
-    showThrottledMessage( 'success', `Standard "${data.name}" removed`, `standard-remove-${data.id || Date.now()}` )
+    ElMessage.success( `Standard "${data.name}" removed` )
   }
 }
 
@@ -824,10 +806,8 @@ const onAddTaskTemplates = selectedTemplates => {
   decorateTasksCategories( newTasks )
   syncTaskPayloads()
 
-  showThrottledMessage(
-    'success',
-    `${selectedTemplates.length} task template${selectedTemplates.length > 1 ? 's' : ''} added successfully`,
-    'templates-added'
+  ElMessage.success(
+    `${selectedTemplates.length} task template${selectedTemplates.length > 1 ? 's' : ''} added successfully`
   )
 
   closeAddTaskDialog()
@@ -851,7 +831,7 @@ const handleDeleteAllTasks = () => {
     .then( () => {
       form.tasks = []
       syncTaskPayloads()
-      showThrottledMessage( 'success', 'All task selections cleared', 'all-tasks-cleared' )
+      ElMessage.success( 'All task selections cleared' )
     } )
     .catch( () => {
       // User cancelled - no action needed
@@ -886,10 +866,8 @@ const onAddStandards = selectedStandards => {
   syncStandards()
 
   // Show success message
-  showThrottledMessage(
-    'success',
-    `${selectedStandards.length} standard${selectedStandards.length > 1 ? 's' : ''} added successfully`,
-    'standards-added'
+  ElMessage.success(
+    `${selectedStandards.length} standard${selectedStandards.length > 1 ? 's' : ''} added successfully`
   )
 
   // Close the dialog
@@ -914,7 +892,7 @@ const handleDeleteAllStandards = () => {
     .then( () => {
       form.standards = []
       syncStandards()
-      showThrottledMessage( 'success', 'All standard selections cleared', 'all-standards-cleared' )
+      ElMessage.success( 'All standard selections cleared' )
     } )
     .catch( () => {
       // User cancelled - no action needed
@@ -1069,11 +1047,7 @@ const handleTemplateUpdate = updatedTemplate => {
 
   // Show notification that tasks were refreshed
   if ( form.tasks.some( task => task.templateId === templateId || task.template_id === templateId ) ) {
-    showThrottledMessage(
-      'success',
-      `Tasks updated with latest template changes: ${updatedTemplate.name}`,
-      `template-update-${templateId}`
-    )
+    // ElMessage.success( `Tasks updated with latest template changes: ${updatedTemplate.name}` )
   }
 }
 
@@ -1897,7 +1871,7 @@ const submitForm = async() => {
     const response = await createWorkOrder( finalPayload )
 
     // Show success message
-    showThrottledMessage( 'success', 'Work order created successfully!', 'work-order-created' )
+    ElMessage.success( 'Work order created successfully!' )
 
     // Emit the created work order (can be single or array)
     const createdWorkOrders = Array.isArray( response.data ) ? response.data : [response.data]
