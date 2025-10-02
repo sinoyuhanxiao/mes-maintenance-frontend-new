@@ -63,12 +63,7 @@
     <div class="detail-section">
       <el-descriptions :column="4" class="general-details-descriptions">
         <el-descriptions-item :label="$t('workOrder.table.state')">
-          <el-select v-model="localStatus" @change="handleStatusChange" size="small" style="width: 150px">
-            <el-option label="Ready" value="Ready" />
-            <el-option label="On Hold" value="On Hold" />
-            <el-option label="In Progress" value="In Progress" />
-            <el-option label="Completed" value="Completed" />
-          </el-select>
+          <span class="detail-value">{{ workOrder.state?.name || '-' }}</span>
         </el-descriptions-item>
         <el-descriptions-item v-if="workOrder.code" label="Work Order Code">
           <span class="detail-value work-order-code">{{ workOrder.code }}</span>
@@ -121,27 +116,29 @@
           </span>
         </el-descriptions-item>
         <el-descriptions-item :label="$t('workOrder.table.dueDate')">
-          <span class="detail-value" :class="{ overdue: isOverdue }">
+          <span class="detail-value" :class="{ incomplete: isIncomplete }">
             {{ workOrder.due_date ? formatDate(workOrder.due_date) : '-' }}
           </span>
         </el-descriptions-item>
         <el-descriptions-item label="Recurrence Type">
           <div class="recurrence-value-container">
-            <el-tooltip v-if="isRecurring" content="View Work Order Timeline" placement="top" :show-after="500">
-              <div class="recurrence-value-container">
-                <span
-                  class="detail-value"
-                  :class="{ 'recurrence-clickable': isRecurring }"
-                  @click="openTimelineModal"
-                  :style="{ cursor: isRecurring ? 'pointer' : 'default' }"
-                >
-                  {{ getRecurrenceTypeLabel() }}
-                </span>
-                <el-icon class="timeline-icon" @click="openTimelineModal">
-                  <View />
-                </el-icon>
-              </div>
-            </el-tooltip>
+            <div class="recurrence-value-container">
+              <span
+                class="detail-value"
+                :class="{ 'recurrence-clickable': isRecurring }"
+                v-if="isRecurring"
+                @click="openTimelineModal"
+                :style="{ cursor: isRecurring ? 'pointer' : 'default' }"
+              >
+                {{ workOrder.recurrence_type.name }}
+              </span>
+              <span v-else class="detail-value">
+                {{ workOrder.recurrence_type.name }}
+              </span>
+              <el-icon v-if="isRecurring" class="timeline-icon" @click="openTimelineModal">
+                <View />
+              </el-icon>
+            </div>
           </div>
         </el-descriptions-item>
       </el-descriptions>
@@ -647,7 +644,6 @@ const emit = defineEmits( [
   'edit',
   'share',
   'export',
-  'status-change',
   'add-parts',
   'add-time',
   'add-costs',
@@ -658,7 +654,6 @@ const emit = defineEmits( [
 ] )
 
 // State
-const localStatus = ref( '' )
 const activeTrackingTab = ref( 'tasks' )
 const showTaskPreviewDialog = ref( false )
 const selectedTaskForPreview = ref( null )
@@ -683,8 +678,8 @@ const standalonePreviewTab = ref( 'general' )
 const timelineEvents = ref( [] )
 
 // Computed
-const isOverdue = computed( () => {
-  return props.workOrder?.due_date && new Date( props.workOrder.due_date ) < new Date()
+const isIncomplete = computed( () => {
+  return props.workOrder?.state?.id === 13 || props.workOrder?.state?.name === 'Incomplete'
 } )
 
 const hasAttachments = computed( () => {
@@ -936,7 +931,6 @@ watch(
   () => props.workOrder,
   newWorkOrder => {
     if ( newWorkOrder ) {
-      localStatus.value = newWorkOrder.state?.name || 'Ready'
       // Load equipment details when work order changes
       loadEquipmentDetails()
       resetTaskState()
@@ -986,10 +980,6 @@ const formatDate = ( dateString, use25HourFormat = false ) => {
   }
 
   return convertToLocalTime( dateString )
-}
-
-const handleStatusChange = newStatus => {
-  emit( 'status-change', { workOrder : props.workOrder, status : newStatus } )
 }
 
 const handleStartWorkOrder = () => {
@@ -1150,7 +1140,7 @@ const transformWorkOrdersToTimeline = workOrders => {
     .map( ( workOrder, index ) => {
       const isCompleted = workOrder.state?.name?.toLowerCase() === 'completed'
       const isInProgress = workOrder.state?.name?.toLowerCase() === 'in progress'
-      const isOverdue = workOrder.due_date && new Date( workOrder.due_date ) < new Date() && !isCompleted
+      const isIncomplete = ( workOrder.state?.id === 13 || workOrder.state?.name === 'Incomplete' ) && !isCompleted
       const taskCount = Array.isArray( workOrder.task_list ) ? workOrder.task_list.length : 0
 
       return {
@@ -1158,12 +1148,12 @@ const transformWorkOrdersToTimeline = workOrders => {
         title : workOrder.name || `Work Order #${workOrder.id}`,
         description : workOrder.description || 'No description provided',
         timestamp : formatDate( workOrder.start_date || workOrder.created_at, true ), // 25-hour format
-        type : isOverdue ? 'danger' : isCompleted ? 'success' : isInProgress ? 'primary' : 'info',
-        color : isOverdue ? '#f56c6c' : isCompleted ? '#67c23a' : isInProgress ? '#409eff' : '#909399',
+        type : isIncomplete ? 'danger' : isCompleted ? 'success' : isInProgress ? 'primary' : 'info',
+        color : isIncomplete ? '#f56c6c' : isCompleted ? '#67c23a' : isInProgress ? '#409eff' : '#909399',
         icon : 'DocumentChecked',
         hollow : !isCompleted,
         status : workOrder.state?.name || 'Pending',
-        isOverdue,
+        isIncomplete,
         dueDate : workOrder.due_date,
         category : workOrder.category || workOrder.categories,
         priority : workOrder.priority,
@@ -1352,35 +1342,6 @@ const getFileTypeFromName = fileName => {
 
 const viewRequest = request => {
   ElMessage.info( `Navigation to request ${request.name} will be implemented` )
-}
-
-const getRecurrenceTypeLabel = () => {
-  if ( !props.workOrder?.recurrence_type ) {
-    return 'Does not repeat'
-  }
-
-  // Handle different possible data structures
-  const recurrenceType = props.workOrder.recurrence_type
-
-  // Debug: log the recurrence type structure
-  console.log( 'Recurrence Type Data:', recurrenceType )
-
-  // If it's an object with name property
-  if ( typeof recurrenceType === 'object' && recurrenceType.name ) {
-    return recurrenceType.name
-  }
-
-  // If it's a string directly
-  if ( typeof recurrenceType === 'string' ) {
-    return recurrenceType
-  }
-
-  // If it has an id property, check if it's not "Does not repeat" (id: 1)
-  if ( recurrenceType.id && recurrenceType.id !== 1 ) {
-    return recurrenceType.label || recurrenceType.name || 'Recurring'
-  }
-
-  return 'Does not repeat'
 }
 
 const scrollToScheduleSection = () => {
@@ -1684,7 +1645,7 @@ defineOptions( {
       font-size: 14px;
       color: var(--el-text-color-primary);
 
-      &.overdue {
+      &.incomplete {
         color: var(--el-color-danger);
         font-weight: 500;
       }

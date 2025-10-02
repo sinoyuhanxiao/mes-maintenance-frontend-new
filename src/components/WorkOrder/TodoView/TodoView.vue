@@ -100,7 +100,6 @@
         @edit="handleEdit"
         @share="handleShare"
         @export="handleExport"
-        @status-change="handleStatusChange"
         @add-parts="handleAddParts"
         @add-time="handleAddTime"
         @add-costs="handleAddCosts"
@@ -195,7 +194,6 @@ const props = defineProps( {
 const emit = defineEmits( [
   'edit',
   'delete',
-  'status-change',
   'refresh',
   'work-order-created',
   'work-order-updated',
@@ -568,10 +566,6 @@ const handleExport = async workOrder => {
 const handlePdfPreviewClose = () => {
   showPdfPreview.value = false
   pdfPreviewData.value = null
-}
-
-const handleStatusChange = ( { workOrder, status } ) => {
-  emit( 'status-change', { workOrder, status } )
 }
 
 const handleAddParts = () => {

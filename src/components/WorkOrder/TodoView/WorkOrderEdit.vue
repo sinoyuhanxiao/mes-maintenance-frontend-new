@@ -638,6 +638,7 @@ import {
   updateRecurrenceWorkOrders
 } from '@/api/work-order'
 import { getTaskEntryById } from '@/api/task-entry'
+import { getTaskTemplateById } from '@/api/task-library'
 import { useRouter, useRoute } from 'vue-router'
 import { useTaskLibraryStore } from '@/store/modules/taskLibrary'
 import { useWorkOrderDraftStore } from '@/store/modules/workOrderDraft'
@@ -1005,7 +1006,17 @@ const isTaskModified = ( currentTask, originalTask ) => {
 
   // Check if steps changed (using the helper function for accurate detection)
   const currentSteps = currentTask.steps || currentTask.payload?.steps || []
-  const originalSteps = originalTask.steps || originalTask.payload?.steps || []
+
+  // For template tasks, use __originalTemplateSteps (fetched before navigation)
+  // For standalone tasks that were edited, use __originalSteps (from updateTasksWithTemplate)
+  // Otherwise fall back to originalTask.steps
+  const originalSteps = currentTask.__originalTemplateSteps
+    || currentTask.__originalSteps
+    || currentTask.payload?.__originalTemplateSteps
+    || currentTask.payload?.__originalSteps
+    || originalTask.steps
+    || originalTask.payload?.steps
+    || []
 
   return hasAnyStepChanged( currentSteps, originalSteps )
 }
@@ -1041,8 +1052,35 @@ const calculateTaskChanges = () => {
         assignee_ids : currentTask.assignee_ids || []
       }
 
+      // For template tasks, use __originalTemplateSteps (fetched before navigation)
+      // For standalone tasks that were edited, use __originalSteps (from updateTasksWithTemplate)
+      // This provides the baseline for comparing which steps were added/modified/deleted
+      let comparisonTask = originalTask
+
+      if ( currentTask.__originalTemplateSteps || currentTask.payload?.__originalTemplateSteps ) {
+        // Template task - use original template steps
+        comparisonTask = {
+          ...originalTask,
+          steps : currentTask.__originalTemplateSteps || currentTask.payload.__originalTemplateSteps,
+          payload : {
+            ...( originalTask.payload || {} ),
+            steps : currentTask.__originalTemplateSteps || currentTask.payload.__originalTemplateSteps
+          }
+        }
+      } else if ( currentTask.__originalSteps || currentTask.payload?.__originalSteps ) {
+        // Standalone task - use original task steps (from updateTasksWithTemplate)
+        comparisonTask = {
+          ...originalTask,
+          steps : currentTask.__originalSteps || currentTask.payload.__originalSteps,
+          payload : {
+            ...( originalTask.payload || {} ),
+            steps : currentTask.__originalSteps || currentTask.payload.__originalSteps
+          }
+        }
+      }
+
       // Calculate step-level changes using the new helper function
-      const stepChanges = calculateStepChangesForTask( currentTask, originalTask )
+      const stepChanges = calculateStepChangesForTask( currentTask, comparisonTask )
 
       // Add step change lists to the payload
       updatePayload.step_add_list = stepChanges.step_add_list
@@ -1692,6 +1730,41 @@ const handleEditTask = async taskData => {
       null
 
     const isStandaloneTask = currentTaskData.source === 'adhoc' && !originalTemplateId
+
+    // For template tasks, fetch the task ENTRY (actual current state), not template definition
+    // This ensures we compare against what the task entry currently has, not the pristine template
+    // Template tasks in work orders are instances that may have been customized (steps added/modified/deleted)
+    // We need the task entry's actual state as the comparison baseline, similar to standalone tasks
+    if ( !isStandaloneTask && originalTemplateId ) {
+      const taskEntryId = resolveTaskEntryId( currentTaskData )
+
+      if ( taskEntryId ) {
+        try {
+          const taskEntryResponse = await getTaskEntryById( taskEntryId )
+          const taskEntryData = taskEntryResponse?.data || taskEntryResponse
+
+          if ( taskEntryData && Array.isArray( taskEntryData.steps ) ) {
+            const entrySteps = clonePayload( taskEntryData.steps )
+
+            // Store as __originalTemplateSteps to maintain compatibility with existing logic
+            currentTaskData.__originalTemplateSteps = entrySteps
+
+            if ( taskIndex !== -1 ) {
+              form.tasks[taskIndex].__originalTemplateSteps = entrySteps
+            }
+
+            // CRITICAL: Sync to originalTasks (same pattern as standalone tasks)
+            // This ensures the comparison baseline reflects the task entry's actual state
+            syncOriginalTaskEntrySteps( currentTaskData, entrySteps, taskEntryId )
+          }
+        } catch ( fetchError ) {
+          console.warn( 'Failed to fetch task entry for comparison:', fetchError )
+          // Continue anyway - comparison will use available data
+        }
+      } else {
+        console.warn( 'Template task missing task entry ID, cannot fetch accurate baseline' )
+      }
+    }
 
     if ( !originalTemplateId && !isStandaloneTask ) {
       ElMessage.warning( 'This task does not have an associated template to edit.' )

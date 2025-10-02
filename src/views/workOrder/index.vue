@@ -81,7 +81,6 @@
           :page-size="listQuery.limit"
           @edit="handleUpdate"
           @delete="handleDelete"
-          @status-change="handleStatusChange"
           @refresh="fetchWorkOrders"
           @work-order-created="handleWorkOrderCreated"
           @work-order-updated="handleWorkOrderUpdated"
@@ -250,11 +249,6 @@ const handleViewChange = async view => {
     // Clear status filter for table view to show all items
     updateFilters( { status : null } )
   }
-}
-
-const handleStatusChange = ( { workOrder, status } ) => {
-  // Implement status change API call
-  showSuccess( t( 'workOrder.messages.statusChanged' ) )
 }
 
 const handleRefresh = async() => {

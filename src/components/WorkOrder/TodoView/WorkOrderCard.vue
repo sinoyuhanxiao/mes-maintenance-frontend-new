@@ -3,7 +3,7 @@
     class="work-order-card"
     :class="{
       selected: isSelected,
-      overdue: isOverdue,
+      incomplete: isIncomplete,
       'high-priority': isHighPriority,
     }"
     @click="$emit('select', workOrder)"
@@ -11,7 +11,7 @@
     <!-- Card Header -->
     <div class="card-header">
       <div class="card-id">#{{ workOrder.id }}</div>
-      <div class="card-actions">
+      <div class="card-actions" v-show="false">
         <el-dropdown trigger="click" @command="handleAction">
           <el-button type="text" size="small" class="action-button">
             <el-icon class="rotated-icon"><MoreFilled /></el-icon>
@@ -58,17 +58,20 @@
         <!-- Due Date -->
         <div class="card-meta" v-if="workOrder.due_date">
           <span class="meta-label">{{ $t('workOrder.table.dueDate') }}:</span>
-          <span class="meta-value" :class="{ 'overdue-text': isOverdue }">
+          <span class="meta-value" :class="{ 'incomplete-text': isIncomplete }">
             {{ formatDate(workOrder.due_date) }}
           </span>
         </div>
 
         <!-- Status and Priority Badges -->
         <div class="card-badges">
-          <el-tag :type="getStatusTagType(workOrder.state?.name)" size="small" effect="plain">
+          <el-tag
+            :type="getStatusTagType(workOrder.state?.name)"
+            size="small"
+            :effect="workOrder.state?.name === 'Incomplete' ? 'dark' : 'plain'"
+          >
             {{ getStatusName(workOrder.state?.name) }}
           </el-tag>
-
           <el-tag :type="getPriorityTagType(workOrder.priority?.name)" size="small" effect="plain">
             <el-icon style="margin-right: 4px">
               <Flag />
@@ -76,9 +79,9 @@
             {{ getPriorityName(workOrder.priority?.name) }}
           </el-tag>
 
-          <el-tag v-if="isOverdue" type="danger" size="small" effect="dark">
-            {{ $t('workOrder.status.overdue') }}
-          </el-tag>
+<!--          <el-tag v-if="isIncomplete" type="danger" size="small" effect="dark">-->
+<!--            {{ $t('workOrder.status.incomplete') }}-->
+<!--          </el-tag>-->
         </div>
       </div>
 
@@ -128,8 +131,8 @@ const emit = defineEmits( ['select', 'action'] )
 const { t } = useI18n()
 
 // Computed
-const isOverdue = computed( () => {
-  return props.workOrder.due_date && new Date( props.workOrder.due_date ) < new Date()
+const isIncomplete = computed( () => {
+  return props.workOrder.state?.id === 13 || props.workOrder.state?.name === 'Incomplete'
 } )
 
 const isHighPriority = computed( () => {
@@ -144,6 +147,8 @@ const formatDate = dateString => {
 const getStatusTagType = status => {
   switch ( status ) {
     case 'Failed':
+      return 'danger'
+    case 'Incomplete':
       return 'danger'
     case 'Completed':
       return 'success'
@@ -218,17 +223,17 @@ defineOptions( {
     background: var(--el-color-primary-light-9);
   }
 
-  &.overdue {
+  &.incomplete {
     border-left: 2px solid var(--el-color-danger);
   }
 
-  &.high-priority {
-    border-left: 2px solid var(--el-color-warning);
-  }
+  //&.high-priority {
+  //  border-left: 2px solid var(--el-color-warning);
+  //}
 
-  &.overdue.high-priority {
-    border-left: 2px solid var(--el-color-danger);
-  }
+  //&.incomplete.high-priority {
+  //  border-left: 2px solid var(--el-color-danger);
+  //}
 }
 
 .card-header {
@@ -288,7 +293,7 @@ defineOptions( {
       .meta-value {
         color: var(--el-text-color-primary);
 
-        &.overdue-text {
+        &.incomplete-text {
           color: var(--el-color-danger);
           font-weight: 500;
         }

@@ -104,7 +104,8 @@ export default {
       inProgress : 'In Progress',
       pending : 'Pending',
       overdue : 'Overdue',
-      cancelled : 'Cancelled'
+      cancelled : 'Cancelled',
+      incomplete : 'Incomplete'
     },
 
     // Priority values

@@ -102,7 +102,8 @@ export default {
       inProgress : '进行中',
       pending : '待处理',
       overdue : '已逾期',
-      cancelled : '已取消'
+      cancelled : '已取消',
+      incomplete : '未完成'
     },
 
     // Priority values

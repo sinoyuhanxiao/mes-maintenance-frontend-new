@@ -179,14 +179,23 @@ export const useWorkOrderDraftStore = defineStore( 'workOrderDraft', {
 
       draft.tasks = draft.tasks.map( task => {
         if ( task.source === 'template' && ( task.templateId === templateId || task.template_id === templateId ) ) {
+          // CRITICAL: Preserve original steps BEFORE template update for change tracking
+          // When user edits a template and returns to work order, calculateTaskChanges()
+          // needs to compare original steps (before edit) vs current steps (after edit)
+          const originalSteps = clone( task.steps || task.payload?.steps || [] )
+
           const refreshedTask = buildDisplayTaskFromTemplate( template )
           return {
             ...task,
             ...refreshedTask,
             id : task.id,
+            // Store original steps for change comparison in WorkOrderEdit.vue
+            __originalSteps : originalSteps,
             payload : {
               ...( task.payload || {} ),
-              ...refreshedTask.payload
+              ...refreshedTask.payload,
+              // Also preserve in payload for fallback access
+              __originalSteps : originalSteps
             },
             category_name : refreshedTask.category?.name || refreshedTask.category_name || task.category_name
           }

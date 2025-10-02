@@ -1,46 +1,40 @@
 <template>
   <el-dialog
     :model-value="modelValue"
-    :title="dialogTitle"
-    width="680px"
+    title="Review Standards"
+    width="600px"
     top="10vh"
     append-to-body
     class="review-standards-dialog"
     @close="handleCancel"
   >
-    <div class="dialog-intro">
-      <el-icon class="intro-icon"><Document /></el-icon>
-      <div>
-        <p class="intro-title">Review associated standards before starting execution.</p>
-        <p class="intro-subtitle">Please confirm all rules have been reviewed.</p>
+    <div class="dialog-content">
+      <div ref="listRef" class="standards-list" @scroll="handleScroll">
+        <template v-if="hasStandards">
+          <div v-for="standard in standards" :key="standard.id || standard.name" class="standard-item">
+            <div class="standard-title">
+              <span class="standard-name">{{ standard.name || 'Standard' }}</span>
+              <el-tag v-if="standard.category" size="small" type="info" effect="plain">{{
+                formatCategory(standard.category)
+              }}</el-tag>
+            </div>
+            <ul class="rules-list" v-if="standard.items && standard.items.length">
+              <li v-for="(rule, index) in standard.items" :key="index">
+                {{ rule }}
+              </li>
+            </ul>
+          </div>
+        </template>
+        <el-empty v-else description="No standards to review" :image-size="80" />
       </div>
     </div>
 
-    <div ref="listRef" class="standards-wrapper" @scroll="handleScroll">
-      <template v-if="hasStandards">
-        <div v-for="standard in standards" :key="standard.id || standard.name" class="standard-card">
-          <div class="standard-header">
-            <div class="standard-name">{{ standard.name || 'Standard' }}</div>
-            <el-tag v-if="standard.category" size="small" type="info" effect="plain">{{
-              formatCategory(standard.category)
-            }}</el-tag>
-          </div>
-          <p v-if="standard.description" class="standard-description">{{ standard.description }}</p>
-          <ul class="rules-list" v-if="standard.items && standard.items.length">
-            <li v-for="(rule, index) in standard.items" :key="index">
-              <span class="rule-index">{{ index + 1 }}.</span>
-              <span>{{ rule }}</span>
-            </li>
-          </ul>
-          <div v-else class="empty-rule">No rules provided for this standard.</div>
-        </div>
-      </template>
-      <el-empty v-else description="No standards associated with this work order." :image-size="120" />
-    </div>
     <template #footer>
       <div class="dialog-footer">
-        <el-button @click="handleCancel">Cancel</el-button>
-        <el-button type="primary" :disabled="confirmDisabled" @click="handleConfirm">Confirm &amp; Continue</el-button>
+        <el-button @click="handleCancel" size="default">Cancel</el-button>
+        <el-button type="primary" :disabled="confirmDisabled" @click="handleConfirm" size="default">
+          Confirm
+        </el-button>
       </div>
     </template>
   </el-dialog>
@@ -48,7 +42,6 @@
 
 <script setup>
 import { computed, onMounted, onBeforeUnmount, ref, watch, nextTick } from 'vue'
-import { Document } from '@element-plus/icons-vue'
 
 const props = defineProps( {
   modelValue : {
@@ -66,10 +59,6 @@ const props = defineProps( {
 } )
 
 const emit = defineEmits( ['update:modelValue', 'confirm', 'cancel'] )
-
-const dialogTitle = computed( () => {
-  return props.workOrderName ? `Review Standards — ${props.workOrderName}` : 'Review Standards'
-} )
 
 const hasStandards = computed( () => Array.isArray( props.standards ) && props.standards.length > 0 )
 
@@ -154,102 +143,111 @@ onBeforeUnmount( () => {
 </script>
 
 <style scoped>
-.review-standards-dialog :deep(.el-dialog__body) {
-  padding-top: 8px;
+.review-standards-dialog {
+  :deep(.el-dialog__header) {
+    padding: 20px 20px 10px 20px;
+  }
+
+  :deep(.el-dialog__body) {
+    padding: 10px 20px 20px 20px;
+  }
+
+  :deep(.el-dialog__footer) {
+    padding: 0 20px 20px 20px;
+  }
 }
 
-.dialog-intro {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 8px 0 16px;
-}
-
-.intro-icon {
-  font-size: 20px;
-  color: var(--el-color-primary);
-  margin-top: 2px;
-}
-
-.intro-title {
-  margin: 0;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-}
-
-.intro-subtitle {
-  margin: 4px 0 0;
-  color: var(--el-text-color-secondary);
-  font-size: 13px;
-}
-
-.standards-wrapper {
-  max-height: 60vh;
-  overflow-y: auto;
+.dialog-content {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-.standard-card {
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 12px;
-  padding: 16px 20px;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.06);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.standard-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.standard-name {
-  font-weight: 600;
-  font-size: 16px;
-  color: var(--el-text-color-primary);
-}
-
-.standard-description {
+.dialog-message {
   margin: 0;
-  font-size: 13px;
-  color: var(--el-text-color-secondary);
-}
-
-.rules-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.rules-list li {
-  display: flex;
-  gap: 6px;
-  color: var(--el-text-color-primary);
+  font-size: 14px;
+  color: var(--el-text-color-regular);
+  text-align: center;
   line-height: 1.5;
 }
 
-.rule-index {
-  font-weight: 600;
-  color: var(--el-color-primary);
+.standards-list {
+  max-height: 60vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px;
 }
 
-.empty-rule {
-  color: var(--el-text-color-placeholder);
+.standard-item {
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 6px;
+  padding: 12px 16px;
+  background: var(--el-fill-color-blank);
+  transition: all 0.2s ease;
+}
+
+.standard-item:hover {
+  border-color: var(--el-color-primary-light-5);
+  background: var(--el-fill-color-light);
+}
+
+.standard-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.standard-name {
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--el-text-color-primary);
+}
+
+.rules-list {
+  list-style: disc;
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rules-list li {
   font-size: 13px;
+  color: var(--el-text-color-regular);
+  line-height: 1.6;
 }
 
 .dialog-footer {
   display: flex;
-  justify-content: flex-end;
-  gap: 8px;
+  justify-content: center;
+  gap: 12px;
+}
+
+.dialog-footer .el-button {
+  min-width: 120px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .review-standards-dialog {
+    :deep(.el-dialog) {
+      width: 90% !important;
+      margin: 0 auto;
+    }
+  }
+
+  .dialog-footer {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .dialog-footer .el-button {
+    width: 100%;
+  }
 }
 </style>
