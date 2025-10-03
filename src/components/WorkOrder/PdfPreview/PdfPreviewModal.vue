@@ -88,7 +88,7 @@
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
-import WorkOrderPdf from '../WorkOrderPdf.vue'
+import WorkOrderPdf from '../Reports/WorkOrderPdf.vue'
 import { Printer, Download, View, ArrowLeft, ArrowRight, ZoomIn, ZoomOut } from '@element-plus/icons-vue'
 
 // Props

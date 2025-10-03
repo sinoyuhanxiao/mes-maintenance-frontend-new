@@ -110,7 +110,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { MoreFilled, Edit, View, Delete, Flag, Picture } from '@element-plus/icons-vue'
-import StartWorkOrderAction from '@/components/WorkOrder/StartWorkOrderAction.vue'
+import StartWorkOrderAction from '@/components/WorkOrder/Actions/StartWorkOrderAction.vue'
 import { convertToLocalTime } from '@/utils/datetime'
 
 // Props
@@ -174,9 +174,9 @@ const getPriorityTagType = priority => {
     case 'Urgent':
       return 'danger'
     case 'High':
-      return 'warning'
-    case 'Medium':
       return 'primary'
+    case 'Medium':
+      return 'warning'
     case 'Low':
       return 'info'
     default:

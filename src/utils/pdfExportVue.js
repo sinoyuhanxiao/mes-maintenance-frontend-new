@@ -1,5 +1,5 @@
 import { createApp } from 'vue'
-import WorkOrderPdf from '@/components/WorkOrder/WorkOrderPdf.vue'
+import WorkOrderPdf from '@/components/WorkOrder/Reports/WorkOrderPdf.vue'
 
 /**
  * Vue Component-based PDF Export Service for CMMS Work Orders

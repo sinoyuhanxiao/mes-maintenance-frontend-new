@@ -158,8 +158,8 @@ import WorkOrderDetail from './WorkOrderDetail.vue'
 import WorkOrderCreate from './WorkOrderCreate.vue'
 import WorkOrderEdit from './WorkOrderEdit.vue'
 import PdfPreviewModal from '../PdfPreview/PdfPreviewModal.vue'
-import WorkOrderExecution from '@/components/WorkOrder/WorkOrderExecution.vue'
-import StandardsConfirmDialog from '@/components/WorkOrder/StandardsConfirmDialog.vue'
+import WorkOrderExecution from '@/components/WorkOrder/Execution/WorkOrderExecution.vue'
+import StandardsConfirmDialog from '@/components/WorkOrder/Modals/StandardsConfirmDialog.vue'
 import { useWorkOrderDraftStore } from '@/store/modules/workOrderDraft'
 
 // Props

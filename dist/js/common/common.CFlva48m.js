@@ -1,0 +1,1 @@
+import{h as t}from"../../assets/index-CE-d1vf_.js";const o=()=>t.request({method:"get",url:"/common/work-type"}),s=()=>t.request({method:"get",url:"/common/state"}),m=()=>t.request({method:"get",url:"/common/priority"}),n=()=>t.request({method:"get",url:"/common/category"}),u=(e=1)=>t.request({method:"get",url:`/common/unit_type/${e}`});export{n as a,o as b,m as c,u as d,s as g};
