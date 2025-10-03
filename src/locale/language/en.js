@@ -528,6 +528,7 @@ export default {
     team : 'Team',
     department : 'Department',
     shift : 'Shift',
+    approval : 'Approval',
     myAccount : 'My Account',
     nested : 'Nested Routes',
     menu1 : 'Menu 1',

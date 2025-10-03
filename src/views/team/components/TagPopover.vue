@@ -12,11 +12,11 @@
     <div class="popover-container">
       <!-- Search -->
       <el-input
-          v-model="search"
-          :placeholder="`Search ${pluralLabel}...`"
-          clearable
-          size="small"
-          class="popover-search"
+        v-model="search"
+        :placeholder="`Search ${pluralLabel}...`"
+        clearable
+        size="small"
+        class="popover-search"
       >
         <template #prefix>
           <el-icon><Search /></el-icon>
@@ -25,11 +25,7 @@
 
       <!-- Scrollable tags -->
       <div class="popover-tags">
-        <slot
-            v-for="item in filteredItems"
-            :key="itemKey(item)"
-            :item="item"
-        />
+        <slot v-for="item in filteredItems" :key="itemKey(item)" :item="item" />
       </div>
     </div>
   </el-popover>
@@ -58,7 +54,7 @@ const props = defineProps( {
   },
   itemKey : {
     type : Function,
-    default : ( item ) => item.id ?? item.name
+    default : item => item.id ?? item.name
   },
   width : {
     type : [String, Number],

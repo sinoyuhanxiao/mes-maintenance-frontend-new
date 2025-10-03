@@ -70,7 +70,9 @@
         <el-table-column prop="description" :label="t('common.description')" sortable="custom" align="center" />
         <el-table-column :label="t('common.actions')" fixed="right" align="center" width="200">
           <template #default="scope">
-            <el-button :icon="Edit" size="small"  type="primary" @click="handleEdit(scope.row)">{{ t('common.edit') }}</el-button>
+            <el-button :icon="Edit" size="small" type="primary" @click="handleEdit(scope.row)">{{
+              t('common.edit')
+            }}</el-button>
             <el-button :icon="Delete" size="small" type="danger" @click="handleDeactivate(scope.row.id)">
               {{ t('common.delete') }}
             </el-button>

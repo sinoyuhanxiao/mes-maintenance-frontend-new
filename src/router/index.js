@@ -272,6 +272,12 @@ export const asyncRoutes = [
         meta : { title : 'router.shift', icon : 'users', noCache : true }
       },
       {
+        path : 'approval-management',
+        component : () => import( '@/views/approval/index.vue' ),
+        name : 'ApprovalManagement',
+        meta : { title : 'router.approval', icon : 'users', noCache : true }
+      },
+      {
         path : 'my-account',
         component : () => import( '@/views/userCenter/index.vue' ),
         name : 'MyAccount',

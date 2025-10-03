@@ -124,17 +124,31 @@ function formatDate( iso ) {
   display: flex;
   flex-direction: column;
 }
-.part-image { width: 150px; height: 150px; border-radius: 8px; overflow: hidden; }
+.part-image {
+  width: 150px;
+  height: 150px;
+  border-radius: 8px;
+  overflow: hidden;
+}
 
 /* unified fallback */
 .image-slot {
-  width: 150px; height: 150px;
-  display: flex; align-items: center; justify-content: center; flex-direction: column;
+  width: 150px;
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
   color: var(--el-text-color-secondary);
-  border-radius: 8px; gap: 6px;
+  border-radius: 8px;
+  gap: 6px;
 }
-.image-slot .el-icon { font-size: 24px; }
-.image-viewer-slot { background: var(--el-fill-color-light); }
+.image-slot .el-icon {
+  font-size: 24px;
+}
+.image-viewer-slot {
+  background: var(--el-fill-color-light);
+}
 
 .viewer-error {
   color: var(--el-text-color-primary);

@@ -52,13 +52,12 @@
         <el-text>{{ 'Permission List' }}: {{ role.permission_list?.length || '-' }}</el-text>
       </div>
       <div>
-        <el-text>{{ 'Associated Department List' }}:
+        <el-text
+          >{{ 'Associated Department List' }}:
           <template v-if="role.department_list && role.department_list?.length">
             {{ role.department_list.map(dep => dep.name).join(', ') }}
           </template>
-          <template v-else>
-            -
-          </template>
+          <template v-else> - </template>
         </el-text>
       </div>
     </template>
