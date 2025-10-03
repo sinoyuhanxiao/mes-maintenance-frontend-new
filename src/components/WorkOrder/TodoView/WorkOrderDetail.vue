@@ -238,11 +238,20 @@
       </div>
       <div class="progress-section">
         <div class="progress-bar-container">
-          <el-progress
-            :percentage="workOrderProgress.percentage"
-            :stroke-width="12"
-            :status="workOrderProgress.percentage === 100 ? 'success' : 'primary'"
-          />
+          <div class="custom-progress-bar">
+            <div
+              class="progress-segment completed"
+              :style="{ width: `${(workOrderProgress.completed / workOrderProgress.total) * 100}%` }"
+            ></div>
+            <div
+              class="progress-segment failed"
+              :style="{ width: `${(workOrderProgress.failed / workOrderProgress.total) * 100}%` }"
+            ></div>
+            <div
+              class="progress-segment remaining"
+              :style="{ width: `${(workOrderProgress.remaining / workOrderProgress.total) * 100}%` }"
+            ></div>
+          </div>
           <div class="progress-text">
             {{ workOrderProgress.completed }} of {{ workOrderProgress.total }} tasks completed
           </div>
@@ -327,23 +336,77 @@
 
     <!-- Time & Cost Tracking Card -->
     <div class="detail-section time-cost-tracking-card">
-      <el-divider />
-      <h3 class="section-title">Tracking</h3>
-
       <!-- Tracking Tabs -->
       <el-tabs v-model="activeTrackingTab" class="tracking-tabs">
         <!-- Tasks Tab -->
         <el-tab-pane label="Tasks" name="tasks">
           <div class="tab-content">
             <div class="tasks-container" :class="{ 'no-tasks': !taskEntries.length }">
-              <div v-if="taskEntries.length" class="tasks-list">
+              <!-- Filter Bar -->
+              <div v-if="taskEntries.length" class="tasks-filter-bar">
+                <el-input
+                  v-model="searchInput"
+                  placeholder="Search by task name or code"
+                  clearable
+                  class="filter-search"
+                  size="default"
+                  @input="handleSearchInput"
+                >
+                  <template #prefix>
+                    <el-icon><Search /></el-icon>
+                  </template>
+                </el-input>
+                <el-select
+                  v-model="taskFilters.state"
+                  placeholder="State"
+                  clearable
+                  class="filter-select"
+                  size="default"
+                >
+                  <el-option label="Not started" value="Not started" />
+                  <el-option label="In progress" value="In progress" />
+                  <el-option label="Completed" value="Completed" />
+                  <el-option label="Failed" value="Failed" />
+                </el-select>
+                <el-select
+                  v-model="taskFilters.assignee"
+                  placeholder="Personnel"
+                  clearable
+                  class="filter-select"
+                  size="default"
+                >
+                  <el-option
+                    v-for="assignee in uniqueAssignees"
+                    :key="assignee"
+                    :label="assignee"
+                    :value="assignee"
+                  />
+                </el-select>
+                <el-select
+                  v-model="taskFilters.timeSpent"
+                  placeholder="Time spent"
+                  clearable
+                  class="filter-select"
+                  size="default"
+                >
+                  <el-option label="Less than 15 min" value="lt15" />
+                  <el-option label="15 - 30 min" value="15to30" />
+                  <el-option label="More than 30 min" value="gt30" />
+                </el-select>
+              </div>
+
+              <!-- Tasks List -->
+              <div v-if="filteredTaskEntries.length" class="tasks-list">
                 <WorkOrderTaskCard
-                  v-for="(task, index) in taskEntries"
+                  v-for="(task, index) in filteredTaskEntries"
                   :key="task.id || index"
                   :task="task"
                   @preview="handleTaskPreview"
                   class="task-card"
                 />
+              </div>
+              <div v-else-if="taskEntries.length && !filteredTaskEntries.length" class="no-data-placeholder">
+                <el-empty description="No tasks match the filters" :image-size="120" />
               </div>
               <div v-else class="no-data-placeholder">
                 <el-empty description="No Tasks" :image-size="120" />
@@ -386,13 +449,13 @@
         </el-tab-pane>
 
         <!-- Costs Tab -->
-        <el-tab-pane label="Costs" name="costs">
-          <div class="tab-content">
-            <div class="no-data-placeholder">
-              <el-empty description="No Cost Data" :image-size="120" />
-            </div>
-          </div>
-        </el-tab-pane>
+<!--        <el-tab-pane label="Costs" name="costs">-->
+<!--          <div class="tab-content">-->
+<!--            <div class="no-data-placeholder">-->
+<!--              <el-empty description="No Cost Data" :image-size="120" />-->
+<!--            </div>-->
+<!--          </div>-->
+<!--        </el-tab-pane>-->
       </el-tabs>
     </div>
 
@@ -474,25 +537,43 @@
   <!-- Task Preview Dialog -->
   <el-dialog
     v-model="showTaskPreviewDialog"
-    :title="`Task Preview: ${
+    :title="`Task Details: ${
       selectedTaskForPreview?.task_name ||
       selectedTaskForPreview?.name ||
       selectedTaskForPreview?.taskListText ||
-      'Task Details'
+      'Task'
     }`"
-    width="700px"
+    width="750px"
     :before-close="handleTaskPreviewClose"
     class="task-preview-modal"
-    top="4vh"
+    top="10vh"
+    style="height: 75vh"
   >
-    <StepsPreview
-      v-if="showTaskPreviewDialog"
-      :key="selectedTaskTemplateId || selectedTaskForPreview?.id || 'task-preview'"
-      :template-id="selectedTaskTemplateId"
-      :steps="selectedTaskSteps"
-      :interactive="false"
-      :show-mode-switch="false"
-    />
+    <!-- Tabs for Logs and Steps -->
+    <el-tabs v-model="activeTaskPreviewTab" class="task-preview-tabs">
+      <!-- Logs Tab -->
+      <el-tab-pane label="Logs" name="logs">
+        <TaskLogsView
+          v-if="showTaskPreviewDialog && selectedTaskForPreview?.id"
+          :task-entry-id="selectedTaskForPreview.id"
+          :task="selectedTaskForPreview"
+        />
+      </el-tab-pane>
+
+      <!-- Steps Tab -->
+      <el-tab-pane label="Steps" name="steps">
+        <StepsPreview
+          v-if="showTaskPreviewDialog"
+          :key="selectedTaskTemplateId || selectedTaskForPreview?.id || 'task-preview'"
+          :template-id="selectedTaskTemplateId"
+          :steps="selectedTaskSteps"
+          :interactive="false"
+          :show-mode-switch="false"
+          style="height: 53vh !important; overflow-y: auto"
+        />
+      </el-tab-pane>
+    </el-tabs>
+
     <template #footer>
       <div class="preview-dialog-footer">
         <el-button @click="handleTaskPreviewClose">Close</el-button>
@@ -611,7 +692,8 @@ import {
   VideoCamera,
   Microphone,
   ArrowDown,
-  DocumentCopy
+  DocumentCopy,
+  Search
 } from '@element-plus/icons-vue'
 import { convertToLocalTime } from '@/utils/datetime'
 import { exportTimeline as exportTimelineData, generateTimestampedFilename } from '@/utils/timelineExport'
@@ -626,6 +708,7 @@ import WorkOrderTaskCard from './WorkOrderTaskCard.vue'
 import StepsPreview from '@/components/TaskLibrary/StepsPreview.vue'
 import StandardsPreview from '@/components/TaskLibrary/StandardsPreview.vue'
 import StartWorkOrderAction from '@/components/WorkOrder/StartWorkOrderAction.vue'
+import TaskLogsView from '@/components/WorkOrder/Logs/TaskLogsView.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 // Router
@@ -676,6 +759,21 @@ const standalonePreviewTab = ref( 'general' )
 
 // Timeline events data - Populated from recurring work orders
 const timelineEvents = ref( [] )
+
+// Task filters
+const taskFilters = ref( {
+  search : '',
+  state : '',
+  assignee : '',
+  timeSpent : ''
+} )
+
+// Task preview tab state
+const activeTaskPreviewTab = ref( 'logs' )
+
+// Search input with debounce
+const searchInput = ref( '' )
+let searchDebounceTimer = null
 
 // Computed
 const isIncomplete = computed( () => {
@@ -768,6 +866,94 @@ const validEquipmentList = computed( () => {
 
 const hasValidEquipment = computed( () => {
   return validEquipmentList.value.length > 0
+} )
+
+// Unique assignees for filter dropdown
+const uniqueAssignees = computed( () => {
+  const assigneesSet = new Set()
+
+  taskEntries.value.forEach( task => {
+    const personnel = task?.personnel
+    if ( !personnel ) return
+
+    if ( Array.isArray( personnel ) ) {
+      personnel.forEach( p => {
+        if ( typeof p === 'string' && p ) assigneesSet.add( p )
+        if ( typeof p === 'object' && p.name ) assigneesSet.add( p.name )
+      } )
+    } else if ( typeof personnel === 'object' && personnel.name ) {
+      assigneesSet.add( personnel.name )
+    } else if ( typeof personnel === 'string' && personnel ) {
+      assigneesSet.add( personnel )
+    }
+  } )
+
+  return Array.from( assigneesSet ).sort()
+} )
+
+// Filtered task entries
+const filteredTaskEntries = computed( () => {
+  let filtered = taskEntries.value
+
+  // Filter by search
+  if ( taskFilters.value.search ) {
+    const searchLower = taskFilters.value.search.toLowerCase()
+    filtered = filtered.filter( task => {
+      const name = task.name || task.task_name || task.label || task.taskListText || ''
+      const id = task.id || ''
+      return name.toLowerCase().includes( searchLower ) || String( id ).toLowerCase().includes( searchLower )
+    } )
+  }
+
+  // Filter by state
+  if ( taskFilters.value.state ) {
+    filtered = filtered.filter( task => {
+      const stateName = task?.state?.name || ''
+      return stateName.toLowerCase() === taskFilters.value.state.toLowerCase()
+    } )
+  }
+
+  // Filter by assignee
+  if ( taskFilters.value.assignee ) {
+    filtered = filtered.filter( task => {
+      const personnel = task?.personnel
+      if ( !personnel ) return false
+
+      if ( Array.isArray( personnel ) ) {
+        return personnel.some( p => {
+          const name = typeof p === 'string' ? p : p?.name || ''
+          return name === taskFilters.value.assignee
+        } )
+      } else if ( typeof personnel === 'object' && personnel.name ) {
+        return personnel.name === taskFilters.value.assignee
+      } else if ( typeof personnel === 'string' ) {
+        return personnel === taskFilters.value.assignee
+      }
+
+      return false
+    } )
+  }
+
+  // Filter by time spent
+  if ( taskFilters.value.timeSpent ) {
+    filtered = filtered.filter( task => {
+      const timeTakenSec = task?.time_taken_sec || 0
+      const minutes = Math.round( timeTakenSec / 60 )
+
+      switch ( taskFilters.value.timeSpent ) {
+        case 'lt15':
+          return minutes < 15
+        case '15to30':
+          return minutes >= 15 && minutes <= 30
+        case 'gt30':
+          return minutes > 30
+        default:
+          return true
+      }
+    } )
+  }
+
+  return filtered
 } )
 
 // Process file list to match equipment details pattern
@@ -1259,6 +1445,7 @@ const handleTaskPreviewClose = () => {
   selectedTaskTemplateId.value = ''
   taskPreviewLoading.value = false
   selectedTaskSteps.value = []
+  activeTaskPreviewTab.value = 'logs' // Reset to default tab
 }
 
 // Standard preview handlers
@@ -1369,6 +1556,17 @@ const handleEquipmentClick = equipment => {
     path : '/maintenance/equipment',
     query : { equipmentId : equipment.id }
   } )
+}
+
+// Handle search input with debounce (300ms)
+const handleSearchInput = value => {
+  if ( searchDebounceTimer ) {
+    clearTimeout( searchDebounceTimer )
+  }
+
+  searchDebounceTimer = setTimeout( () => {
+    taskFilters.value.search = value
+  }, 300 )
 }
 
 defineOptions( {
@@ -1761,6 +1959,7 @@ defineOptions( {
 
 // Time & Cost Tracking Card
 .time-cost-tracking-card {
+  margin-top: 36px;
   .tracking-tabs {
     :deep(.el-tabs__header) {
       margin: 0 0 16px 0;
@@ -1868,7 +2067,7 @@ defineOptions( {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin: 30px 0px;
   flex-wrap: wrap;
   gap: 16px;
 
@@ -1913,11 +2112,38 @@ defineOptions( {
 
 .progress-section {
   .progress-bar-container {
+    margin: 20px 0;
+
+    .custom-progress-bar {
+      display: flex;
+      height: 12px;
+      border-radius: 100px;
+      overflow: hidden;
+      background-color: var(--el-fill-color-light);
+
+      .progress-segment {
+        height: 100%;
+        transition: width 0.3s ease;
+
+        &.completed {
+          background-color: var(--el-color-primary);
+        }
+
+        &.failed {
+          background-color: var(--el-color-danger);
+        }
+
+        &.remaining {
+          background-color: var(--el-fill-color-light);
+        }
+      }
+    }
+
     .progress-text {
       text-align: center;
-      font-size: 13px;
+      font-size: 15px;
       color: var(--el-text-color-secondary);
-      margin-top: 8px;
+      margin: 24px 0;
     }
   }
 }
@@ -1927,7 +2153,7 @@ defineOptions( {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 16px;
-  margin-bottom: 36px;
+  margin-bottom: 48px;
 
   .equipment-card {
     display: flex;
@@ -2425,6 +2651,27 @@ defineOptions( {
 
 // Task Preview Modal
 .task-preview-modal {
+  :deep(.el-dialog__body) {
+    padding: 20px;
+    max-height: 70vh;
+    overflow-y: auto;
+  }
+
+  .task-preview-tabs {
+    :deep(.el-tabs__header) {
+      margin: 0 0 16px 0;
+    }
+
+    :deep(.el-tabs__nav-wrap::after) {
+      height: 1px;
+    }
+
+    :deep(.el-tabs__item) {
+      font-size: 14px;
+      font-weight: 500;
+    }
+  }
+
   .preview-dialog-footer {
     display: flex;
     justify-content: flex-end;
@@ -2437,12 +2684,6 @@ defineOptions( {
     }
   }
 
-  :deep(.el-dialog__body) {
-    padding: 20px;
-    max-height: 70vh;
-    overflow-y: auto;
-  }
-
   :deep(.steps-preview-container) {
     padding: 0;
   }
@@ -2452,6 +2693,35 @@ defineOptions( {
 .tasks-container {
   min-height: 120px;
   flex: 1;
+}
+
+.tasks-filter-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.filter-search {
+  flex: 1;
+  min-width: 200px;
+}
+
+.filter-select {
+  width: 150px;
+}
+
+@media (max-width: 768px) {
+  .tasks-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-search,
+  .filter-select {
+    width: 100%;
+  }
 }
 
 .standards-container {
@@ -2466,9 +2736,11 @@ defineOptions( {
   flex-direction: column;
 }
 
-.task-card,
+.task-card {
+  transition: all 0.2s ease;
+}
+
 .standard-card {
-  width: 99%;
   cursor: pointer;
   transition: all 0.2s ease;
 }
