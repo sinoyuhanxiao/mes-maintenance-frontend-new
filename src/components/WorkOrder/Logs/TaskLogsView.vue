@@ -49,12 +49,12 @@
                 <span class="log-value">{{ log.change || '-' }}</span>
               </div>
               <div class="log-row">
-                <span class="log-label">User:</span>
+                <span class="log-label">Workers:</span>
                 <span class="log-value">{{ log.user || '-' }}</span>
               </div>
               <div class="log-row">
                 <span class="log-label">Time:</span>
-                <span class="log-value">{{ formatTimestamp(log.time) }}</span>
+                <span class="log-value">{{ formatTaskTime(log) }}</span>
               </div>
             </div>
           </div>
@@ -154,13 +154,31 @@ const fetchLogs = async() => {
   }
 }
 
-// Format timestamp to readable format
+// Format timestamp to readable format (legacy, for log.time if needed)
 const formatTimestamp = timestamp => {
   if ( !timestamp ) return '-'
 
   // Convert Unix timestamp (seconds) to ISO string for convertToLocalTime
   const date = new Date( timestamp * 1000 )
   return convertToLocalTime( date.toISOString() )
+}
+
+// Format task time from log.task.created_at
+const formatTaskTime = log => {
+  if ( !log ) return '-'
+
+  // Prefer task.created_at, fallback to log.time
+  const createdAt = log.task?.created_at
+  if ( createdAt ) {
+    return convertToLocalTime( createdAt )
+  }
+
+  // Fallback to log.time if task.created_at is not available
+  if ( log.time ) {
+    return formatTimestamp( log.time )
+  }
+
+  return '-'
 }
 
 // Handle log item click
@@ -291,21 +309,33 @@ defineOptions( {
 }
 
 .failure-alert {
+  :deep(.el-alert) {
+    padding: 8px 12px;
+  }
+
   :deep(.el-alert__content) {
     width: 100%;
+    padding: 0;
+  }
+
+  :deep(.el-alert__icon) {
+    font-size: 16px;
   }
 }
 
 .failure-title {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
+  margin-bottom: 4px;
 }
 
 .failure-content {
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 12px;
+  line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
+  max-height: 60px;
+  overflow-y: auto;
 }
 
 .log-item {

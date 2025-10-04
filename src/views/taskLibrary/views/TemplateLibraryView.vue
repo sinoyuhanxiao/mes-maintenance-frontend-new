@@ -1782,6 +1782,7 @@ defineOptions( {
 /* Desktop-style preview (borrowed from PreviewDialog, simplified) */
 .step-search-bar {
   padding: 0px 0px 12px 0px;
+  height: 8%;
 }
 
 .procedure-preview {

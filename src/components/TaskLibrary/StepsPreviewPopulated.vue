@@ -327,9 +327,13 @@ defineOptions( {
 }
 
 .step-search-bar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   padding: 0px 0px 12px 0px;
   flex-shrink: 0;
   width: 100%;
+  background: white;
 }
 
 .procedure-preview {

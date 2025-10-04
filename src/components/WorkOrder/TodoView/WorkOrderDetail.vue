@@ -545,9 +545,8 @@
     }`"
     width="1000px"
     :before-close="handleTaskPreviewClose"
-    class="task-preview-modal"
+    class="task-preview-modal task-preview-responsive"
     top="10vh"
-    style="height: 75vh"
   >
     <!-- Tabs for Logs and Steps -->
     <el-tabs v-model="activeTaskPreviewTab" class="task-preview-tabs">
@@ -557,6 +556,7 @@
           v-if="showTaskPreviewDialog && selectedTaskForPreview?.id"
           :task-entry-id="selectedTaskForPreview.id"
           :task="selectedTaskForPreview"
+          style="height: 53vh !important; overflow-y: auto"
         />
       </el-tab-pane>
 
@@ -569,7 +569,7 @@
           :steps="selectedTaskSteps"
           :interactive="false"
           :show-mode-switch="false"
-          style="height: 53vh !important; overflow-y: auto"
+          style="height: 54vh !important;"
         />
       </el-tab-pane>
     </el-tabs>
@@ -2670,6 +2670,15 @@ defineOptions( {
       font-size: 14px;
       font-weight: 500;
     }
+
+    :deep(.el-tabs__item.is-top) {
+      font-size: 16px;
+      width: 50%;
+    }
+
+    :deep(.el-tabs__nav.is-top) {
+      width: 100%;
+    }
   }
 
   .preview-dialog-footer {
@@ -2964,6 +2973,17 @@ defineOptions( {
 
   .description-text::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
+  }
+}
+
+/* Responsive height for task preview dialog */
+.task-preview-responsive {
+  height: 75vh;
+}
+
+@media (max-width: 1600px) {
+  .task-preview-responsive {
+    height: 85vh;
   }
 }
 </style>

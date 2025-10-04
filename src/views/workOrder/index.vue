@@ -254,7 +254,7 @@ const handleViewChange = async view => {
 const handleRefresh = async() => {
   try {
     await fetchWorkOrders()
-    showSuccess( t( 'workOrder.messages.refreshSuccess' ) )
+    showSuccess( 'Refreshed!' )
   } catch ( error ) {
     console.error( 'Refresh failed:', error )
   }

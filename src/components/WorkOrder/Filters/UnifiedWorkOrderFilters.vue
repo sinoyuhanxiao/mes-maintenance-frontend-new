@@ -909,6 +909,9 @@ defineOptions( {
 }
 
 .drawer-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   padding: 12px 0 16px 0;
   border-bottom: 1px solid var(--el-border-color-lighter);
   margin-bottom: 16px;

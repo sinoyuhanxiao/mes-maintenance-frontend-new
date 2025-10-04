@@ -11,7 +11,7 @@
     </div>
 
     <!-- Content -->
-    <div v-else>
+    <div style="height: 100%" v-else>
       <!-- Step Search Bar -->
       <div class="step-search-bar">
         <el-input v-model="stepSearchQuery" placeholder="Search steps by name..." clearable @input="handleStepSearch">
@@ -532,6 +532,7 @@ watch(
   padding: 0px 0px 4px 0px;
   flex-shrink: 0;
   width: 98.5%;
+  height: 8%;
 }
 
 .procedure-preview {
@@ -541,6 +542,7 @@ watch(
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  height: 92%;
 }
 
 .preview-main {
