@@ -753,6 +753,7 @@ export default {
     enableTagsView : 'Enable TagsView',
     fixedHeader : 'Fixed Header',
     sidebarLogo : 'Sidebar Logo',
+    failedWorkOrderEffect : 'Failed Work Order Visual Effect',
     switchOn : 'On',
     switchOff : 'Off',
     layoutModes : {

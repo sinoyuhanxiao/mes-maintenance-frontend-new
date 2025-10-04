@@ -228,7 +228,7 @@
             :placeholder="$t('workOrder.create.startDatePlaceholder')"
             style="width: 100%"
             format="MM/DD/YYYY HH:mm"
-            value-format="YYYY-MM-DDTHH:mm:ss"
+            value-format="YYYY-MM-DD[T]HH:mm:ss"
             :disabled-date="disabledStartDates"
           />
         </el-form-item>
@@ -243,7 +243,7 @@
             placeholder="Select end date"
             style="width: 100%"
             format="MM/DD/YYYY HH:mm"
-            value-format="YYYY-MM-DDTHH:mm:ss"
+            value-format="YYYY-MM-DD[T]HH:mm:ss"
             :disabled-date="disabledDueDates"
           />
         </el-form-item>

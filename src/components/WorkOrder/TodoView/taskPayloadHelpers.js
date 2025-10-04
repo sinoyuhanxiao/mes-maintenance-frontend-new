@@ -1,7 +1,7 @@
 import { transformTemplateForBackend, transformStepForBackend } from '@/views/taskLibrary/utils/templateTransforms'
 import { transformApiStepToDesignerStep } from '@/views/taskLibrary/utils/stepTransforms'
 
-export const DEFAULT_TASK_STATE = 1
+export const DEFAULT_TASK_STATE = 5
 
 let taskLocalCounter = 0
 

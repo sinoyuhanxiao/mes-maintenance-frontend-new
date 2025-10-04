@@ -363,7 +363,7 @@
                   class="filter-select"
                   size="default"
                 >
-                  <el-option label="Not started" value="Not started" />
+                  <el-option label="Ready" value="Ready" />
                   <el-option label="In progress" value="In progress" />
                   <el-option label="Completed" value="Completed" />
                   <el-option label="Failed" value="Failed" />
@@ -543,7 +543,7 @@
       selectedTaskForPreview?.taskListText ||
       'Task'
     }`"
-    width="750px"
+    width="1000px"
     :before-close="handleTaskPreviewClose"
     class="task-preview-modal"
     top="10vh"
@@ -561,7 +561,7 @@
       </el-tab-pane>
 
       <!-- Steps Tab -->
-      <el-tab-pane label="Steps" name="steps">
+      <el-tab-pane label="Steps Template" name="steps">
         <StepsPreview
           v-if="showTaskPreviewDialog"
           :key="selectedTaskTemplateId || selectedTaskForPreview?.id || 'task-preview'"
