@@ -80,9 +80,9 @@
             {{ getPriorityName(workOrder.priority?.name) }}
           </el-tag>
 
-<!--          <el-tag v-if="isIncomplete" type="danger" size="small" effect="dark">-->
-<!--            {{ $t('workOrder.status.incomplete') }}-->
-<!--          </el-tag>-->
+          <!--          <el-tag v-if="isIncomplete" type="danger" size="small" effect="dark">-->
+          <!--            {{ $t('workOrder.status.incomplete') }}-->
+          <!--          </el-tag>-->
         </div>
       </div>
 
@@ -246,28 +246,19 @@ defineOptions( {
   &.failed-effect {
     position: relative;
     overflow: hidden;
-    background: linear-gradient(135deg,
-      rgba(245, 108, 108, 0.18),
-      rgba(255, 77, 79, 0.12),
-      rgba(0, 0, 0, 0.08)
-    );
+    background: linear-gradient(135deg, rgba(245, 108, 108, 0.18), rgba(255, 77, 79, 0.12), rgba(0, 0, 0, 0.08));
     border: 3px solid transparent;
     background-clip: padding-box;
 
     // FAILURE warning stripes
-    background-image:
-      repeating-linear-gradient(
+    background-image: repeating-linear-gradient(
         45deg,
         transparent,
         transparent 10px,
         rgba(245, 108, 108, 0.08) 10px,
         rgba(245, 108, 108, 0.08) 20px
       ),
-      linear-gradient(135deg,
-        rgba(245, 108, 108, 0.18),
-        rgba(255, 77, 79, 0.12),
-        rgba(0, 0, 0, 0.08)
-      );
+      linear-gradient(135deg, rgba(245, 108, 108, 0.18), rgba(255, 77, 79, 0.12), rgba(0, 0, 0, 0.08));
 
     // Aggressive animated danger border with red dominance
     &::before {
@@ -276,7 +267,8 @@ defineOptions( {
       inset: 0;
       border-radius: 8px;
       padding: 3px;
-      background: linear-gradient(90deg,
+      background: linear-gradient(
+        90deg,
         var(--el-color-danger),
         rgba(245, 108, 108, 0.9),
         #ff0000,
@@ -295,29 +287,18 @@ defineOptions( {
 
     // Strong danger-dominant glows - immediate "FAILURE" recognition
     &:hover {
-      box-shadow:
-        0 0 40px var(--el-color-danger),
-        0 0 80px rgba(245, 108, 108, 0.9),
-        0 0 120px rgba(255, 77, 79, 0.6),
+      box-shadow: 0 0 40px var(--el-color-danger), 0 0 80px rgba(245, 108, 108, 0.9), 0 0 120px rgba(255, 77, 79, 0.6),
         inset 0 0 40px rgba(245, 108, 108, 0.3);
     }
 
     &.selected {
-      box-shadow:
-        0 0 50px var(--el-color-danger),
-        0 0 100px rgba(245, 108, 108, 1),
-        0 0 150px rgba(255, 77, 79, 0.7),
-        0 0 30px rgba(64, 158, 255, 0.4),
-        inset 0 0 50px rgba(245, 108, 108, 0.4);
+      box-shadow: 0 0 50px var(--el-color-danger), 0 0 100px rgba(245, 108, 108, 1), 0 0 150px rgba(255, 77, 79, 0.7),
+        0 0 30px rgba(64, 158, 255, 0.4), inset 0 0 50px rgba(245, 108, 108, 0.4);
     }
 
     // Card header - full danger mode
     .card-header {
-      background: linear-gradient(90deg,
-        var(--el-color-danger),
-        rgba(245, 108, 108, 0.8),
-        var(--el-color-danger)
-      );
+      background: linear-gradient(90deg, var(--el-color-danger), rgba(245, 108, 108, 0.8), var(--el-color-danger));
       background-size: 200% 100%;
       animation: headerDangerFlow 3s linear infinite;
       margin: -16px -16px 12px -16px;
@@ -328,9 +309,7 @@ defineOptions( {
       .card-id {
         color: #fff;
         font-weight: 700;
-        text-shadow:
-          0 0 10px rgba(255, 255, 255, 0.8),
-          0 0 20px rgba(245, 108, 108, 1);
+        text-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 20px rgba(245, 108, 108, 1);
         font-size: 16px;
         letter-spacing: 1px;
       }
@@ -342,9 +321,7 @@ defineOptions( {
       color: var(--el-color-danger) !important;
       font-weight: 700 !important;
       animation: failureGlitch 3s infinite;
-      text-shadow:
-        0 0 10px rgba(245, 108, 108, 0.8),
-        0 0 20px rgba(255, 77, 79, 0.6);
+      text-shadow: 0 0 10px rgba(245, 108, 108, 0.8), 0 0 20px rgba(255, 77, 79, 0.6);
       letter-spacing: 0.5px;
       text-transform: uppercase;
       filter: contrast(1.2);
@@ -361,11 +338,7 @@ defineOptions( {
     .card-badges {
       .el-tag {
         position: relative;
-        background: linear-gradient(135deg,
-          var(--el-color-danger),
-          #ff0000,
-          var(--el-color-danger)
-        ) !important;
+        background: linear-gradient(135deg, var(--el-color-danger), #ff0000, var(--el-color-danger)) !important;
         background-size: 200% 200%;
         border: 2px solid #ff0000 !important;
         color: #fff !important;
@@ -373,9 +346,7 @@ defineOptions( {
         text-transform: uppercase;
         letter-spacing: 1.5px;
         padding: 6px 16px !important;
-        box-shadow:
-          0 0 15px rgba(245, 108, 108, 0.9),
-          0 0 30px rgba(255, 77, 79, 0.7),
+        box-shadow: 0 0 15px rgba(245, 108, 108, 0.9), 0 0 30px rgba(255, 77, 79, 0.7),
           inset 0 0 10px rgba(255, 255, 255, 0.3);
         animation: dangerBadgePulse 1.5s ease-in-out infinite, badgeGlitch 4s infinite;
         filter: saturate(1.5) brightness(1.1);
@@ -456,35 +427,30 @@ defineOptions( {
 
 // Strong failure glitch effect
 @keyframes failureGlitch {
-  0%, 85%, 100% {
+  0%,
+  85%,
+  100% {
     text-shadow: 0 0 10px rgba(245, 108, 108, 0.8);
     transform: translate(0, 0);
   }
   87% {
-    text-shadow:
-      3px 0 0 var(--el-color-danger),
-      -3px 0 0 rgba(255, 0, 0, 0.8),
-      0 0 15px rgba(245, 108, 108, 1);
+    text-shadow: 3px 0 0 var(--el-color-danger), -3px 0 0 rgba(255, 0, 0, 0.8), 0 0 15px rgba(245, 108, 108, 1);
     transform: translate(-2px, 0);
   }
   89% {
-    text-shadow:
-      -3px 0 0 var(--el-color-danger),
-      3px 0 0 rgba(255, 0, 0, 0.8),
-      0 0 15px rgba(245, 108, 108, 1);
+    text-shadow: -3px 0 0 var(--el-color-danger), 3px 0 0 rgba(255, 0, 0, 0.8), 0 0 15px rgba(245, 108, 108, 1);
     transform: translate(2px, 0);
   }
   91% {
-    text-shadow:
-      2px 0 0 var(--el-color-danger),
-      -2px 0 0 rgba(255, 0, 0, 0.8);
+    text-shadow: 2px 0 0 var(--el-color-danger), -2px 0 0 rgba(255, 0, 0, 0.8);
     transform: translate(1px, 0);
   }
 }
 
 // Badge pulse for extra attention
 @keyframes badgePulse {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 10px rgba(245, 108, 108, 0.6);
   }
   50% {
@@ -494,18 +460,14 @@ defineOptions( {
 
 // Danger badge intense pulse
 @keyframes dangerBadgePulse {
-  0%, 100% {
-    box-shadow:
-      0 0 15px rgba(245, 108, 108, 0.9),
-      0 0 30px rgba(255, 77, 79, 0.7),
+  0%,
+  100% {
+    box-shadow: 0 0 15px rgba(245, 108, 108, 0.9), 0 0 30px rgba(255, 77, 79, 0.7),
       inset 0 0 10px rgba(255, 255, 255, 0.3);
     transform: translateY(0);
   }
   50% {
-    box-shadow:
-      0 0 25px rgba(245, 108, 108, 1),
-      0 0 50px rgba(255, 77, 79, 0.9),
-      0 0 75px rgba(255, 0, 0, 0.5),
+    box-shadow: 0 0 25px rgba(245, 108, 108, 1), 0 0 50px rgba(255, 77, 79, 0.9), 0 0 75px rgba(255, 0, 0, 0.5),
       inset 0 0 15px rgba(255, 255, 255, 0.5);
     transform: translateY(-1px);
   }
@@ -513,7 +475,9 @@ defineOptions( {
 
 // Badge glitch effect
 @keyframes badgeGlitch {
-  0%, 90%, 100% {
+  0%,
+  90%,
+  100% {
     background-position: 0% 50%;
   }
   92% {

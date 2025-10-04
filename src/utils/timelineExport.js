@@ -24,6 +24,7 @@ import { downloadByData } from '@/utils/files'
  * @returns {Array} Formatted data array
  */
 export function formatTimelineData( timelineEvents, options = {} ) {
+  // eslint-disable-next-line no-unused-vars
   const { includeHeaders = true, dateFormat = 'YYYY-MM-DD HH:mm:ss' } = options
 
   if ( !Array.isArray( timelineEvents ) || timelineEvents.length === 0 ) {

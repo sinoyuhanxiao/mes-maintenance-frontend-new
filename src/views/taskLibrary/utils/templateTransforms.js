@@ -13,10 +13,7 @@ function isTemporaryId( id ) {
 
   // Frontend-generated IDs typically start with these prefixes
   return (
-    idStr.startsWith( 'step-' ) ||
-    idStr.startsWith( 'new-' ) ||
-    idStr.startsWith( 'temp-' ) ||
-    idStr.startsWith( 'local-' )
+    idStr.startsWith( 'step-' ) || idStr.startsWith( 'new-' ) || idStr.startsWith( 'temp-' ) || idStr.startsWith( 'local-' )
   )
 }
 

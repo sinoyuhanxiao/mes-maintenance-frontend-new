@@ -638,7 +638,6 @@ import {
   updateRecurrenceWorkOrders
 } from '@/api/work-order'
 import { getTaskEntryById } from '@/api/task-entry'
-import { getTaskTemplateById } from '@/api/task-library'
 import { useRouter, useRoute } from 'vue-router'
 import { useTaskLibraryStore } from '@/store/modules/taskLibrary'
 import { useWorkOrderDraftStore } from '@/store/modules/workOrderDraft'
@@ -826,10 +825,10 @@ const hasTemplateAssociation = task => {
   if ( !task || typeof task !== 'object' ) return false
   return Boolean(
     task.templateId ||
-    task.template_id ||
-    task.payload?.template_id ||
-    task.rawTemplate?.template_id ||
-    task.rawTemplate?.id
+      task.template_id ||
+      task.payload?.template_id ||
+      task.rawTemplate?.template_id ||
+      task.rawTemplate?.id
   )
 }
 
@@ -927,9 +926,7 @@ const syncOriginalTaskEntrySteps = ( task, steps, entryId = null ) => {
 
 const ensureStandaloneTaskEntryData = async task => {
   if ( !needsStandaloneEntryFetch( task ) ) {
-    const existingSteps = Array.isArray( task?.steps ) && task.steps.length > 0
-      ? task.steps
-      : task?.payload?.steps || []
+    const existingSteps = Array.isArray( task?.steps ) && task.steps.length > 0 ? task.steps : task?.payload?.steps || []
     return { steps : existingSteps }
   }
 
@@ -985,17 +982,9 @@ const isTaskModified = ( currentTask, originalTask ) => {
   if ( !originalTask ) return false
 
   // Check task-level metadata changes
-  const metadataProps = [
-    'name',
-    'description',
-    'estimated_minutes',
-    'category_id',
-    'equipment_node_id'
-  ]
+  const metadataProps = ['name', 'description', 'estimated_minutes', 'category_id', 'equipment_node_id']
 
-  const metadataChanged = metadataProps.some(
-    prop => currentTask[prop] !== originalTask[prop]
-  )
+  const metadataChanged = metadataProps.some( prop => currentTask[prop] !== originalTask[prop] )
 
   if ( metadataChanged ) return true
 
@@ -1010,13 +999,14 @@ const isTaskModified = ( currentTask, originalTask ) => {
   // For template tasks, use __originalTemplateSteps (fetched before navigation)
   // For standalone tasks that were edited, use __originalSteps (from updateTasksWithTemplate)
   // Otherwise fall back to originalTask.steps
-  const originalSteps = currentTask.__originalTemplateSteps
-    || currentTask.__originalSteps
-    || currentTask.payload?.__originalTemplateSteps
-    || currentTask.payload?.__originalSteps
-    || originalTask.steps
-    || originalTask.payload?.steps
-    || []
+  const originalSteps =
+    currentTask.__originalTemplateSteps ||
+    currentTask.__originalSteps ||
+    currentTask.payload?.__originalTemplateSteps ||
+    currentTask.payload?.__originalSteps ||
+    originalTask.steps ||
+    originalTask.payload?.steps ||
+    []
 
   return hasAnyStepChanged( currentSteps, originalSteps )
 }
@@ -1103,7 +1093,9 @@ const calculateTaskChanges = () => {
 
     if ( !currentTask ) {
       // Task was deleted
-      taskChanges.deleted.push( originalTask.id || originalTask.task_id || originalTask.template_id || originalTask.templateId )
+      taskChanges.deleted.push(
+        originalTask.id || originalTask.task_id || originalTask.template_id || originalTask.templateId
+      )
     }
   } )
 }
@@ -1644,11 +1636,12 @@ const handlePreviewTask = async taskData => {
     null
 
   if ( isStandaloneTaskRecord( freshestTask ) || !templateId ) {
-    const steps = Array.isArray( freshestTask.steps ) && freshestTask.steps.length > 0
-      ? freshestTask.steps
-      : Array.isArray( freshestTask.payload?.steps )
-        ? freshestTask.payload.steps
-        : []
+    const steps =
+      Array.isArray( freshestTask.steps ) && freshestTask.steps.length > 0
+        ? freshestTask.steps
+        : Array.isArray( freshestTask.payload?.steps )
+          ? freshestTask.payload.steps
+          : []
 
     if ( !Array.isArray( steps ) || steps.length === 0 ) {
       ElMessage.warning( 'No steps available to preview for this task.' )
@@ -2564,7 +2557,9 @@ const hydrateFormFromDraft = () => {
   const draftTasks = workOrderDraftStore.draftForm?.tasks || []
   const draftStandards = workOrderDraftStore.draftForm?.standards || []
 
+  // eslint-disable-next-line no-unused-vars
   let addedCount = 0
+  // eslint-disable-next-line no-unused-vars
   let updatedCount = 0
 
   // Process tasks from draft - completely replace the array to ensure reactivity
@@ -2757,11 +2752,12 @@ const applyStandaloneTaskReturn = returnedTaskData => {
   }
 
   const existingTask = form.tasks[taskIndex]
-  const updatedStepsSource = Array.isArray( returnedTaskData.steps ) && returnedTaskData.steps.length > 0
-    ? clonePayload( returnedTaskData.steps )
-    : Array.isArray( returnedTaskData.payload?.steps ) && returnedTaskData.payload.steps.length > 0
-      ? clonePayload( returnedTaskData.payload.steps )
-      : existingTask.steps
+  const updatedStepsSource =
+    Array.isArray( returnedTaskData.steps ) && returnedTaskData.steps.length > 0
+      ? clonePayload( returnedTaskData.steps )
+      : Array.isArray( returnedTaskData.payload?.steps ) && returnedTaskData.payload.steps.length > 0
+        ? clonePayload( returnedTaskData.payload.steps )
+        : existingTask.steps
 
   const mergedTask = {
     ...existingTask,

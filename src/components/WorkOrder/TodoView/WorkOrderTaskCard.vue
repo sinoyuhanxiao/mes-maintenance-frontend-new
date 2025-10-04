@@ -13,9 +13,9 @@
           </el-icon>
         </div>
         <div class="right-badges">
-<!--          <el-tag v-if="categoryLabel" size="small" class="tag-item">-->
-<!--            {{ categoryLabel }}-->
-<!--          </el-tag>-->
+          <!--          <el-tag v-if="categoryLabel" size="small" class="tag-item">-->
+          <!--            {{ categoryLabel }}-->
+          <!--          </el-tag>-->
           <div v-if="taskCode" class="task-code-badge">{{ taskCode }}</div>
         </div>
       </div>
@@ -125,8 +125,10 @@ const taskLabel = computed( () => {
   return 'Task'
 } )
 
+// eslint-disable-next-line no-unused-vars
 const stepsCount = computed( () => props.task?.total_steps || 0 )
 
+// eslint-disable-next-line no-unused-vars
 const categoryLabel = computed( () => {
   const category = props.task?.category
   if ( !category ) return ''
@@ -134,12 +136,14 @@ const categoryLabel = computed( () => {
   return typeof category === 'object' ? category.name : category
 } )
 
+// eslint-disable-next-line no-unused-vars
 const equipmentLabel = computed( () => {
   const equipment = props.task?.equipment_node
   if ( !equipment ) return ''
   return typeof equipment === 'object' ? equipment.name : equipment
 } )
 
+// eslint-disable-next-line no-unused-vars
 const timeEstimate = computed( () => {
   const task = props.task
   if ( task?.time_estimate_sec ) {
@@ -162,11 +166,13 @@ const assignedPersonnel = computed( () => {
 
   // Handle array of personnel
   if ( Array.isArray( personnel ) ) {
-    const names = personnel.map( p => {
-      if ( typeof p === 'string' ) return p
-      if ( typeof p === 'object' && p.name ) return p.name
-      return ''
-    } ).filter( Boolean )
+    const names = personnel
+      .map( p => {
+        if ( typeof p === 'string' ) return p
+        if ( typeof p === 'object' && p.name ) return p.name
+        return ''
+      } )
+      .filter( Boolean )
     return names.length > 0 ? names.join( ', ' ) : '-'
   }
 

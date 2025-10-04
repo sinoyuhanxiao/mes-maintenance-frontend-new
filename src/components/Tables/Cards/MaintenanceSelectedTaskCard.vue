@@ -78,7 +78,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { ElMessageBox } from 'element-plus'
 import { MoreFilled, View, User } from '@element-plus/icons-vue'
 
@@ -133,6 +133,7 @@ const hasAssignees = computed( () => {
   return assignedUsers.value.length > 0
 } )
 
+// eslint-disable-next-line no-unused-vars
 const availableUsers = computed( () => {
   return props.assigneeOptions || []
 } )

@@ -91,7 +91,12 @@
             multiple
             style="width: 100%"
           >
-            <el-option v-for="assignee in assigneeOptions" :key="assignee.id" :label="assignee.name" :value="assignee.id" />
+            <el-option
+              v-for="assignee in assigneeOptions"
+              :key="assignee.id"
+              :label="assignee.name"
+              :value="assignee.id"
+            />
           </el-select>
         </el-form-item>
       </div>
@@ -632,8 +637,7 @@ const isTaskInteractive = ref( false )
 const standalonePreviewTab = ref( 'general' )
 
 // Centralized payload logging
-const { currentPayload, showJsonDisplayer, logPayload, closeDebugDrawer } = usePayloadLogger()
-
+const { currentPayload, showJsonDisplayer, logPayload } = usePayloadLogger()
 
 const handleAddStandard = () => {
   showAddStandardDialog.value = true
@@ -866,9 +870,7 @@ const onAddStandards = selectedStandards => {
   syncStandards()
 
   // Show success message
-  ElMessage.success(
-    `${selectedStandards.length} standard${selectedStandards.length > 1 ? 's' : ''} added successfully`
-  )
+  ElMessage.success( `${selectedStandards.length} standard${selectedStandards.length > 1 ? 's' : ''} added successfully` )
 
   // Close the dialog
   closeAddStandardDialog()
@@ -1493,24 +1495,25 @@ const uploadFilesToServer = async() => {
 }
 
 // Helper function to check if the form has meaningful changes
-const hasFormChanges = () => [
-  form.name?.trim(),
-  form.description?.trim(),
-  form.tasks.length,
-  form.standards.length,
-  form.category_ids?.length,
-  form.equipment_node_ids?.length,
-  form.assignee_ids?.length,
-  form.approved_by_id,
-  form.work_type_id,
-  form.priority_id,
-  form.state_id !== 1,
-  form.start_date,
-  form.due_date,
-  form.vendor_ids?.length,
-  form.image_list?.length,
-  form.file_list?.length
-].some( Boolean )
+const hasFormChanges = () =>
+  [
+    form.name?.trim(),
+    form.description?.trim(),
+    form.tasks.length,
+    form.standards.length,
+    form.category_ids?.length,
+    form.equipment_node_ids?.length,
+    form.assignee_ids?.length,
+    form.approved_by_id,
+    form.work_type_id,
+    form.priority_id,
+    form.state_id !== 1,
+    form.start_date,
+    form.due_date,
+    form.vendor_ids?.length,
+    form.image_list?.length,
+    form.file_list?.length
+  ].some( Boolean )
 
 const handleBackToDetail = () => {
   if ( !hasFormChanges() ) {
@@ -1813,7 +1816,7 @@ const submitForm = async() => {
     }
 
     // Prepare properly formatted dates for backend (convert to UTC Z)
-    const formattedDueDate = toUtcIso( form.due_date )
+    toUtcIso( form.due_date )
     const formattedStartDate = toUtcIso( form.start_date )
 
     // Ensure start_date_time is set for recurrence

@@ -130,7 +130,6 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { ElMessage } from 'element-plus'
 import { Flag } from '@element-plus/icons-vue'
 import { convertToLocalTime } from '@/utils/datetime'
 import { getPriorityColor } from '@/utils/general'

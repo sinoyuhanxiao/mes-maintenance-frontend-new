@@ -47,10 +47,7 @@
                 </div>
 
                 <!-- Bottom section for uploaded images or files -->
-                <div
-                  v-if="step.uploaded_images && step.uploaded_images.length > 0"
-                  class="preview-bottom-section"
-                >
+                <div v-if="step.uploaded_images && step.uploaded_images.length > 0" class="preview-bottom-section">
                   <div class="uploaded-images-section">
                     <h4>Uploaded Images</h4>
                     <div class="image-list">
@@ -62,10 +59,7 @@
                 </div>
 
                 <!-- Tools List (if applicable) -->
-                <div
-                  v-if="step.relevant_tools && step.relevant_tools.length > 0"
-                  class="desktop-tools-list"
-                >
+                <div v-if="step.relevant_tools && step.relevant_tools.length > 0" class="desktop-tools-list">
                   <div class="tools-list-header">
                     <h4>Required Tools</h4>
                   </div>

@@ -21,12 +21,7 @@
       <div class="left-pane">
         <!-- Failure Reason Alert (Top Priority) -->
         <div v-if="failureReason" class="failure-reason-container">
-          <el-alert
-            type="error"
-            :closable="false"
-            show-icon
-            class="failure-alert"
-          >
+          <el-alert type="error" :closable="false" show-icon class="failure-alert">
             <template #title>
               <div class="failure-title">Failure Reason</div>
             </template>
@@ -67,32 +62,21 @@
           <h3 class="preview-title">{{ selectedLog.task?.name || 'Task Snapshot' }}</h3>
         </div>
         <div class="right-pane-content">
-          <StepsPreviewPopulated
-            v-if="selectedLog.task?.steps"
-            :steps="selectedLog.task.steps"
-          />
-          <el-empty
-            v-else
-            description="No step data available"
-            :image-size="80"
-          />
+          <StepsPreviewPopulated v-if="selectedLog.task?.steps" :steps="selectedLog.task.steps" />
+          <el-empty v-else description="No step data available" :image-size="80" />
         </div>
       </div>
 
       <!-- Placeholder when no log selected -->
       <div v-else class="right-pane right-pane-placeholder">
-        <el-empty
-          description="Select a log entry to view step details"
-          :image-size="100"
-        />
+        <el-empty description="Select a log entry to view step details" :image-size="100" />
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
-import { Close } from '@element-plus/icons-vue'
+import { ref, computed, watch } from 'vue'
 import { getTaskLogsByTaskId } from '@/api/task-entry'
 import { convertToLocalTime } from '@/utils/datetime'
 import { ElMessage } from 'element-plus'
@@ -191,6 +175,7 @@ const handleLogClick = log => {
 }
 
 // Clear selection
+// eslint-disable-next-line no-unused-vars
 const clearSelection = () => {
   selectedLog.value = null
 }
@@ -319,18 +304,17 @@ defineOptions( {
   }
 
   :deep(.el-alert__icon) {
-    font-size: 16px;
+    font-size: 26px;
   }
 }
 
 .failure-title {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  margin-bottom: 4px;
 }
 
 .failure-content {
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;

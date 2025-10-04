@@ -185,7 +185,7 @@ style="font-size: 14px"
 
 <script setup>
 import { computed } from 'vue'
-import { Edit, Plus, Delete, Sort, Right, Check, Close, InfoFilled } from '@element-plus/icons-vue'
+import { Edit, Plus, Delete, Sort, Right, Check, InfoFilled } from '@element-plus/icons-vue'
 
 // Props
 const props = defineProps( {

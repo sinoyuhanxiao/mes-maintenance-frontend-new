@@ -375,12 +375,7 @@
                   class="filter-select"
                   size="default"
                 >
-                  <el-option
-                    v-for="assignee in uniqueAssignees"
-                    :key="assignee"
-                    :label="assignee"
-                    :value="assignee"
-                  />
+                  <el-option v-for="assignee in uniqueAssignees" :key="assignee" :label="assignee" :value="assignee" />
                 </el-select>
                 <el-select
                   v-model="taskFilters.timeSpent"
@@ -449,13 +444,13 @@
         </el-tab-pane>
 
         <!-- Costs Tab -->
-<!--        <el-tab-pane label="Costs" name="costs">-->
-<!--          <div class="tab-content">-->
-<!--            <div class="no-data-placeholder">-->
-<!--              <el-empty description="No Cost Data" :image-size="120" />-->
-<!--            </div>-->
-<!--          </div>-->
-<!--        </el-tab-pane>-->
+        <!--        <el-tab-pane label="Costs" name="costs">-->
+        <!--          <div class="tab-content">-->
+        <!--            <div class="no-data-placeholder">-->
+        <!--              <el-empty description="No Cost Data" :image-size="120" />-->
+        <!--            </div>-->
+        <!--          </div>-->
+        <!--        </el-tab-pane>-->
       </el-tabs>
     </div>
 
@@ -569,7 +564,7 @@
           :steps="selectedTaskSteps"
           :interactive="false"
           :show-mode-switch="false"
-          style="height: 54vh !important;"
+          style="height: 54vh !important"
         />
       </el-tab-pane>
     </el-tabs>
@@ -1529,20 +1524,6 @@ const getFileTypeFromName = fileName => {
 
 const viewRequest = request => {
   ElMessage.info( `Navigation to request ${request.name} will be implemented` )
-}
-
-const scrollToScheduleSection = () => {
-  if ( scheduleSection.value ) {
-    scheduleSection.value.scrollIntoView( { behavior : 'smooth', block : 'start' } )
-  } else {
-    // Fallback: try to find the schedule section by class
-    const scheduleElement = document.querySelector( '.schedule-conditions-section .schedule-header' )
-    if ( scheduleElement ) {
-      scheduleElement.scrollIntoView( { behavior : 'smooth', block : 'start' } )
-    } else {
-      console.warn( 'Schedule section not found for scrolling' )
-    }
-  }
 }
 
 const handleEquipmentClick = equipment => {
@@ -2707,9 +2688,14 @@ defineOptions( {
 .tasks-filter-bar {
   display: flex;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 4px;
   align-items: center;
   flex-wrap: wrap;
+  top: 0;
+  background: var(--el-bg-color);
+  z-index: 5;
+  padding: 12px 0;
+  margin-top: -12px;
 }
 
 .filter-search {

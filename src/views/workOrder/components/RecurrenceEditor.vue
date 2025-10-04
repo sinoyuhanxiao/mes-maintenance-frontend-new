@@ -655,6 +655,7 @@ const showTimeValidationError = computed( () => {
   return calculateTimeDuration() === 0
 } )
 
+// eslint-disable-next-line vue/no-dupe-keys
 const recurrenceSetting = computed( () => {
   const setting = {}
 

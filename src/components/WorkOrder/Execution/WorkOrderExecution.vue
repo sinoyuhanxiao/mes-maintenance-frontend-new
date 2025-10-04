@@ -80,11 +80,10 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ArrowLeft } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
-import { OfflineStorageService } from '../OfflineStorageService'
 import TaskExecutionSummary from './TaskExecutionSummary.vue'
 import StepsPreview from '@/components/TaskLibrary/StepsPreview.vue'
 import { getTaskEntryById } from '@/api/task-entry'
-import { JsonDebugDrawer, usePayloadLogger, clonePayload } from '@/utils/logs'
+import { JsonDebugDrawer, usePayloadLogger } from '@/utils/logs'
 
 const props = defineProps( {
   workOrder : {
@@ -103,8 +102,9 @@ const handleBackToDetail = () => {
   console.log( '🔄 WorkOrderExecution: back-to-detail event emitted' )
 }
 
+// eslint-disable-next-line no-unused-vars
 const { t } = useI18n()
-const { currentPayload, showJsonDisplayer, logPayload, closeDebugDrawer } = usePayloadLogger()
+const { currentPayload, showJsonDisplayer, logPayload } = usePayloadLogger()
 
 const draftsLoaded = ref( false )
 const taskCards = reactive( [] )
@@ -144,29 +144,14 @@ const buildTaskList = () => {
 const hasDrafts = computed( () =>
   taskCards.some( card => card.progress.status === 'in_progress' && card.progress.updated_at )
 )
-const completedCount = computed( () => taskCards.filter( card => card.progress.status === 'completed' ).length )
-const draftCount = computed(
-  () => taskCards.filter( card => card.progress.status === 'in_progress' && card.progress.updated_at ).length
-)
+computed( () => taskCards.filter( card => card.progress.status === 'completed' ).length )
+computed( () => taskCards.filter( card => card.progress.status === 'in_progress' && card.progress.updated_at ).length )
 const displayCards = computed( () => taskCards.slice( 0, 3 ) )
 const drawerTitle = computed( () => activeTask.value?.name || 'Task Details' )
 
-const workOrderKey = computed( () => String( props.workOrder?.id ?? props.workOrder?.name ?? 'unknown' ) )
-
 const loadDrafts = async() => {
-  const drafts = await OfflineStorageService.getDrafts( workOrderKey.value )
+  // TODO: Offline storage will be implemented later
   draftsLoaded.value = true
-  drafts.forEach( draft => {
-    const target = taskCards.find( card => String( card.id ) === String( draft.taskId ) )
-    if ( target ) {
-      target.progress = {
-        status : draft.status === 'draft' ? 'in_progress' : draft.status,
-        time_spent : { ...draft.time_spent },
-        step_progress : { ...draft.step_progress },
-        updated_at : draft.updated_at
-      }
-    }
-  } )
 }
 
 const openTaskDrawer = async task => {

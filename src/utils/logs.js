@@ -60,7 +60,7 @@ export const clonePayload = payload => {
 
   const cloned = {}
   for ( const key in payload ) {
-    if ( payload.hasOwnProperty( key ) ) {
+    if ( Object.prototype.hasOwnProperty.call( payload, key ) ) {
       cloned[key] = clonePayload( payload[key] )
     }
   }

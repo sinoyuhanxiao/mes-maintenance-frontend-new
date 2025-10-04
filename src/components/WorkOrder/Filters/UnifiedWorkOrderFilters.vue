@@ -346,7 +346,7 @@
 import { reactive, computed, watch, ref, nextTick, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
-import { Search, Operation, View, Plus, Star, Setting, EditPen, Download, Refresh, Grid } from '@element-plus/icons-vue'
+import { Search, Operation, Star, Setting, EditPen, Download, Refresh, Grid } from '@element-plus/icons-vue'
 import { useCommonDataStore } from '@/store/modules/commonData'
 
 // Props
