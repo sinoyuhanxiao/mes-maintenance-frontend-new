@@ -22,6 +22,7 @@ export const createEmptyWorkOrderForm = () => ( {
   task_list : [],
   image_list : [],
   file_list : [],
+  existing_image_list : [],
   standard_list : [],
   tasks : [],
   standards : []

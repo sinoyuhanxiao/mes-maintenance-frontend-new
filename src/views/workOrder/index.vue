@@ -367,11 +367,54 @@ const handleExitRecurrenceView = () => {
   showSuccess( t( 'workOrder.messages.recurrenceViewDisabled' ) )
 }
 
+// Handle creating work order from maintenance request
+const handleCreateFromRequest = async() => {
+  if ( route.query.action !== 'create' || !route.query.requestId ) return
+
+  // Switch to todo view if not already there
+  if ( currentView.value !== 'todo' ) {
+    currentView.value = 'todo'
+  }
+
+  // Import the API function and load request data
+  const { getMaintenanceRequestById } = await import( '@/api/maintenance-requests' )
+  const requestId = Number( route.query.requestId )
+
+  try {
+    const response = await getMaintenanceRequestById( requestId )
+    const requestData = response.data
+
+    // Wait for TodoView to be ready, then pass the request data
+    await nextTick()
+    if ( todoViewRef.value ) {
+      todoViewRef.value.showCreateFormWithRequestData( requestData )
+    }
+
+    // Clear query params after processing
+    const { action, requestId : rid, ...rest } = route.query
+    router.replace( { path : route.path, query : { ...rest }} )
+  } catch ( error ) {
+    console.error( 'Failed to load maintenance request data:', error )
+    ElMessage.error( 'Failed to load maintenance request data' )
+  }
+}
+
+// Watch for route changes to handle creating work order from maintenance request
+watch(
+  () => route.query,
+  async() => {
+    await handleCreateFromRequest()
+  }
+)
+
 // Lifecycle
 onMounted( async() => {
   try {
     await initializeCommonData()
     await fetchWorkOrders()
+
+    // Handle query parameters for creating work order from maintenance request
+    await handleCreateFromRequest()
   } catch ( error ) {
     console.error( 'Failed to initialize work order page:', error )
   }
