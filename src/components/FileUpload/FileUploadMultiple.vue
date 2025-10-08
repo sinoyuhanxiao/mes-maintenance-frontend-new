@@ -38,7 +38,9 @@
       </el-upload>
 
       <!-- Image count display -->
-      <div v-if="maxImages > 0" class="upload-count">Images: {{ combinedImageList.length }}/{{ maxImages }}</div>
+      <div v-if="maxImages > 0" class="upload-count">
+        {{ maxImages === 1 ? 'Image' : 'Images' }}: {{ combinedImageList.length }}/{{ maxImages }}
+      </div>
 
       <el-dialog v-model="dialogVisible" :width="'80%'" :top="'5vh'" append-to-body destroy-on-close>
         <div class="image-wrapper">
@@ -116,7 +118,7 @@ const props = defineProps( {
     type : Number,
     default : 0 // 0 means no limit
   },
-  titleLabelPosition : { type : String, default : 'right' }
+  titleLabelPosition : { type : String, default : 'top' }
 } )
 
 const emit = defineEmits( [

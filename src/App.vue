@@ -13,7 +13,7 @@ import zh from 'element-plus/es/locale/lang/zh-cn'
 import en from 'element-plus/es/locale/lang/en'
 import { useAppStore } from '@/store'
 // import { useI18n } from 'vue-i18n'
-import ChatbotFloating from '@/views/aiChatbot/ChatbotFloating.vue'
+import ChatbotFloating from '@/components/aiChatbot/ChatbotFloating.vue'
 import { useChatbotStore } from '@/store/modules/ai-chatbot'
 
 export default defineComponent( {

@@ -26,7 +26,11 @@
           <EquipmentDetailsTab :equipmentId="props.node.id" :key="`details-${refreshKey}`" />
         </el-tab-pane>
         <el-tab-pane label="Sub Items" name="subItems">
-          <SubItemsTab :key="`subitems-${refreshKey}`" />
+          <SubItems
+            :equipment-id="props.node.id"
+            :key="`subitems-${refreshKey}-${props.node.id}`"
+            @request-select-node="onSubItemSelect"
+          />
         </el-tab-pane>
         <el-tab-pane label="Work Orders" name="workOrders">
           <WorkOrderTab :key="`workorders-${refreshKey}`" />
@@ -46,11 +50,11 @@
       </el-tabs>
     </div>
 
-    <el-dialog v-model="showAddDialog" title="Add New Tier 3" width="600px" :before-close="handleCloseDialog">
+    <el-dialog v-model="showAddDialog" title="Add New Tier 3" width="600px" :before-close="handleCloseDialog" draggable>
       <AddEquipment v-if="showAddDialog" @close="closeAddDialog" @success="handleAddSuccess" :parentId="parentId" />
     </el-dialog>
 
-    <el-dialog v-model="showEditDialog" title="Edit Tier 3" width="600px" :before-close="handleCloseDialog">
+    <el-dialog v-model="showEditDialog" title="Edit Tier 3" width="600px" :before-close="handleCloseDialog" draggable>
       <EditEquipment
         v-if="showEditDialog"
         :key="`edit-${props.node.id}-${editDialogKey}`"
@@ -60,7 +64,7 @@
       />
     </el-dialog>
 
-    <el-dialog v-model="showDeactivateDialog" title="Delete Tier 3" width="600px" :before-close="handleCloseDialog">
+    <el-dialog v-model="showDeactivateDialog" title="Delete Tier 3" width="600px" :before-close="handleCloseDialog" draggable>
       <DeactivateNode
         v-if="showDeactivateDialog"
         @close="closeDeactivateDialog"
@@ -76,7 +80,7 @@
 import { ref, computed } from 'vue'
 import { MoreFilled } from '@element-plus/icons-vue'
 import EquipmentDetailsTab from './Details.vue'
-import SubItemsTab from './SubItems.vue'
+import SubItems from '../equipmentGroup/SubItems.vue'
 import WorkOrderTab from './WorkOrders.vue'
 import TasksTab from './Tasks.vue'
 import PersonnelTab from './Personnel.vue'
@@ -97,7 +101,7 @@ const props = defineProps( {
   }
 } )
 
-const emit = defineEmits( ['refresh-tree', 'refresh-data', 'after-delete'] )
+const emit = defineEmits( ['refresh-tree', 'refresh-data', 'after-delete', 'request-select-node'] )
 
 const parentId = computed( () => {
   const validBreadcrumbItems = props.breadcrumb.filter( ( item, index ) => {
@@ -173,6 +177,11 @@ const handleDeleteSuccess = deletedEquipmentId => {
 
 const handleRefreshTree = () => {
   emit( 'refresh-tree' )
+}
+
+function onSubItemSelect( id ) {
+  // bubble up so the parent can navigate to Tier 4
+  emit( 'request-select-node', Number( id ) )
 }
 
 defineExpose( { openDeactivateDialog } )

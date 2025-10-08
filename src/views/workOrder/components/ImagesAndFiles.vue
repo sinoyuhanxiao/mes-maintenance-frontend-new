@@ -14,7 +14,7 @@
                   :key="index"
                   :src="img"
                   style="width: 100px; height: 100px; margin-right: 10px"
-                  fit="cover"
+                  fit="contain"
                   :preview-src-list="imageListUrlComputed"
                 />
               </template>

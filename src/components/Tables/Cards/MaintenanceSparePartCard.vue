@@ -5,7 +5,7 @@
         <el-image
           :src="item.imageUrl || defaultImageUrl"
           :alt="item.title || 'Spare part'"
-          fit="cover"
+          fit="contain"
           class="part-image"
         >
           <template #error>

@@ -29,6 +29,25 @@
       <el-divider />
       <div class="image">
         <el-descriptions :column="1" direction="vertical">
+          <el-descriptions-item label="Exploded View">
+            <div v-if="equipmentData.exploded_view_drawing" class="image-gallery">
+              <el-image
+                :src="equipmentData.exploded_view_drawing"
+                :preview-src-list="[equipmentData.exploded_view_drawing]"
+                :hide-on-click-modal="true"
+                fit="contain"
+                class="equipment-image"
+              />
+            </div>
+            <div v-else class="no-images">
+              <el-text>No exploded view available</el-text>
+            </div>
+          </el-descriptions-item>
+        </el-descriptions>
+      </div>
+      <el-divider />
+      <div class="image">
+        <el-descriptions :column="1" direction="vertical">
           <el-descriptions-item label="Images">
             <div v-if="equipmentData.image_list && equipmentData.image_list.length > 0" class="image-gallery">
               <el-image
@@ -36,12 +55,13 @@
                 :key="index"
                 :src="imagePath"
                 :preview-src-list="equipmentData.image_list"
-                fit="cover"
+                hide-on-click-modal="true"
+                fit="contain"
                 class="equipment-image"
               />
             </div>
             <div v-else class="no-images">
-              <el-text>No equipment images available</el-text>
+              <el-text>No images available</el-text>
             </div>
           </el-descriptions-item>
         </el-descriptions>
@@ -65,7 +85,7 @@
       </div>
     </template>
 
-    <div v-else-if="loading" class="loading-state" v-loading="true" element-loading-text="Loading equipment details...">
+    <div v-else-if="loading" class="loading-state" v-loading="true">
       <div style="height: 200px"></div>
     </div>
 

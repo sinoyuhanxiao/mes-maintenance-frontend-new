@@ -35,11 +35,7 @@
       </el-tabs>
     </div>
 
-    <el-dialog v-model="showAddDialog" title="Add New Tier 4" width="600px" :before-close="handleCloseDialog">
-      <AddSubEquipment v-if="showAddDialog" @close="closeAddDialog" @success="handleAddSuccess" :parentId="parentId" />
-    </el-dialog>
-
-    <el-dialog v-model="showEditDialog" title="Edit Tier 4" width="600px" :before-close="handleCloseDialog">
+    <el-dialog v-model="showEditDialog" title="Edit Tier 4" width="600px" :before-close="handleCloseDialog" draggable>
       <EditSubEquipment
         v-if="showEditDialog"
         :key="`edit-${props.node.id}-${editDialogKey}`"
@@ -49,7 +45,7 @@
       />
     </el-dialog>
 
-    <el-dialog v-model="showDeactivateDialog" title="Delete Tier 4" width="600px" :before-close="handleCloseDialog">
+    <el-dialog v-model="showDeactivateDialog" title="Delete Tier 4" width="600px" :before-close="handleCloseDialog" draggable>
       <DeactivateNode
         v-if="showDeactivateDialog"
         @close="closeDeactivateDialog"
@@ -59,7 +55,13 @@
       />
     </el-dialog>
 
-    <el-dialog v-model="showAddTier5Dialog" title="Add Tier 5" width="720px" :before-close="handleCloseDialog">
+    <el-dialog
+      v-model="showAddTier5Dialog"
+      title="Add New Tier 5"
+      width="720px"
+      :before-close="handleCloseDialog"
+      draggable
+    >
       <AddTier5Form
         v-if="showAddTier5Dialog"
         :tier4-id="props.node.id"
@@ -77,7 +79,6 @@ import { MoreFilled } from '@element-plus/icons-vue'
 import SubEquipmentDetailsTab from './Details.vue'
 import SubItemsTab from './SubItems.vue'
 import MaintenanceHistory from './MaintenanceHistory.vue'
-import AddSubEquipment from './components/AddSubEquipment.vue'
 import EditSubEquipment from './components/EditSubEquipment.vue'
 import DeactivateNode from '../common/DeactivateNode.vue'
 import AddTier5Form from './components/AddTier5Form.vue'
@@ -108,7 +109,6 @@ const parentId = computed( () => {
 } )
 
 const activeTab = ref( 'details' )
-const showAddDialog = ref( false )
 const showEditDialog = ref( false )
 const showDeactivateDialog = ref( false )
 const showAddTier5Dialog = ref( false )
@@ -120,10 +120,6 @@ const openAddTier5Dialog = () => {
 }
 const closeAddTier5Dialog = () => {
   showAddTier5Dialog.value = false
-}
-
-const closeAddDialog = () => {
-  showAddDialog.value = false
 }
 
 const openEditDialog = () => {
@@ -157,11 +153,6 @@ const handleTier5Created = () => {
   }, 120 )
 }
 
-const handleAddSuccess = newEquipment => {
-  closeAddDialog()
-  emit( 'refresh-tree' )
-}
-
 const handleEditSuccess = updatedEquipment => {
   closeEditDialog()
   emit( 'refresh-tree' )
@@ -171,19 +162,18 @@ const handleEditSuccess = updatedEquipment => {
   }, 100 )
 }
 
-const refreshViewData = () => {
-  refreshKey.value += 1
-  emit( 'refresh-data', props.node.id )
-}
-
 const handleDeleteSuccess = deletedEquipmentId => {
   closeDeactivateDialog()
   emit( 'refresh-tree' )
   emit( 'after-delete', { parentId : parentId.value, deletedId : props.node.id } )
 }
-
 const handleRefreshTree = () => {
   emit( 'refresh-tree' )
+}
+
+const refreshViewData = () => {
+  refreshKey.value += 1
+  emit( 'refresh-data', props.node.id )
 }
 
 defineExpose( { openDeactivateDialog } )

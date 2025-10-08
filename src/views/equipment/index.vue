@@ -24,6 +24,7 @@
             :breadcrumb="breadcrumbPath"
             @refresh-tree="handleRefreshTree"
             @after-delete="onT2AfterDelete"
+            @request-select-node="selectNodeFromAnywhere"
           />
           <!-- Tier 3 -->
           <Equipment
@@ -33,8 +34,8 @@
             :breadcrumb="breadcrumbPath"
             @refresh-tree="handleRefreshTree"
             @after-delete="onT3AfterDelete"
+            @request-select-node="selectNodeFromAnywhere"
           />
-          <!-- Tier 4 -->
           <SubEquipment
             v-else-if="isTier4"
             ref="t4Ref"
@@ -42,6 +43,7 @@
             :breadcrumb="breadcrumbPath"
             @refresh-tree="handleRefreshTree"
             @after-delete="onT4AfterDelete"
+            @request-select-node="selectNodeFromAnywhere"
           />
           <div v-else>Select a node to see details</div>
         </template>
@@ -52,7 +54,7 @@
       <!-- ================= Add Dialogs ================= -->
 
       <!-- Add Tier 2 -->
-      <el-dialog v-model="showAddT2" title="Add New Tier 2" width="600px">
+      <el-dialog v-model="showAddT2" title="Add New Tier 2" width="600px" destroy-on-close draggable>
         <AddEquipmentGroup
           v-if="showAddT2"
           :parentId="addParentId"
@@ -65,7 +67,7 @@
       </el-dialog>
 
       <!-- Add Tier 3 -->
-      <el-dialog v-model="showAddT3" title="Add New Tier 3" width="600px">
+      <el-dialog v-model="showAddT3" title="Add New Tier 3" width="600px" destroy-on-close draggable>
         <AddEquipment
           v-if="showAddT3"
           :parentId="addParentId"
@@ -78,7 +80,7 @@
       </el-dialog>
 
       <!-- Add Tier 4 -->
-      <el-dialog v-model="showAddT4" title="Add New Tier 4" width="600px">
+      <el-dialog v-model="showAddT4" title="Add New Tier 4" width="600px" destroy-on-close draggable>
         <AddSubEquipment
           v-if="showAddT4"
           :parentId="addParentId"
@@ -122,6 +124,26 @@ function onNodeClick( node, breadcrumb ) {
   breadcrumbPath.value = breadcrumb ?? []
 }
 
+/** 🔑 Select a node in the left tree when a sub-item card requests it */
+async function selectNodeFromAnywhere( id ) {
+  const targetId = Number( id )
+  if ( !targetId || !tree.value ) return
+
+  // If your EquipmentTree exposes a convenience API:
+  if ( typeof tree.value.focusNode === 'function' ) {
+    await tree.value.focusNode( targetId ) // should expand/select + emit node-click
+    return
+  }
+
+  // Fallback: manual get/set + call existing onNodeClick
+  const node = tree.value.getNode?.( targetId )
+  if ( node ) {
+    tree.value.setCurrentKey?.( targetId )
+    // Reuse your existing synchronization logic:
+    onNodeClick( node.data ?? node, node.breadcrumb ?? breadcrumbPath.value )
+  }
+}
+
 /** Delete requested from left tree: route to the correct right-pane dialog */
 async function onRequestDelete( { level, node, breadcrumb } ) {
   selectedNode.value = node
@@ -143,7 +165,6 @@ async function onRequestDelete( { level, node, breadcrumb } ) {
     t3Ref.value?.openDeactivateDialog?.()
   }
   if ( level === 4 ) {
-    // BEFORE delete: remember index among T4 siblings
     const t3Id = breadcrumb?.at( -2 )?.id
     const siblings = tree.value?.getChildrenOf?.( t3Id ) ?? []
     const idx = siblings.findIndex( s => s.id === node.id )
@@ -153,79 +174,16 @@ async function onRequestDelete( { level, node, breadcrumb } ) {
 }
 
 async function onT2AfterDelete( { parentId /* T1 id */, deletedId } ) {
-  await handleRefreshTree()
-  await nextTick()
-
-  const ctx = pendingDeleteCtx.value
+  tree.value?.removeNodeAndSelectNext( { deletedId, fallbackParentId : parentId } )
   pendingDeleteCtx.value = null
-
-  // if context missing/mismatch, just focus the T1
-  if ( !ctx || ctx.type !== 't2' || ctx.parentId !== parentId ) {
-    tree.value?.focusNode?.( parentId ) // T1
-    return
-  }
-
-  const remaining = tree.value?.getChildrenOf?.( parentId ) ?? [] // T2 list under T1
-  if ( !remaining.length ) {
-    tree.value?.focusNode?.( parentId ) // no T2 left -> focus T1
-    return
-  }
-
-  const pick = Math.min( ctx.originalIndex, remaining.length - 1 )
-  tree.value?.focusNode?.( remaining[pick].id ) // focus neighbor T2
 }
-
 async function onT3AfterDelete( { parentId /* T2 id */, deletedId } ) {
-  await handleRefreshTree()
-  await nextTick()
-
-  const ctx = pendingDeleteCtx.value
+  tree.value?.removeNodeAndSelectNext( { deletedId, fallbackParentId : parentId } )
   pendingDeleteCtx.value = null
-
-  if ( !ctx || ctx.type !== 't3' || ctx.parentId !== parentId ) {
-    tree.value?.focusNode?.( parentId ) // T2
-    return
-  }
-
-  const remaining = tree.value?.getChildrenOf?.( parentId ) ?? [] // T3 list under T2
-  if ( !remaining.length ) {
-    tree.value?.focusNode?.( parentId ) // no T3 left -> focus T2
-    return
-  }
-
-  const pick = Math.min( ctx.originalIndex, remaining.length - 1 )
-  tree.value?.focusNode?.( remaining[pick].id ) // focus neighbor T3
 }
-
-async function onT4AfterDelete( { parentId, deletedId } ) {
-  await handleRefreshTree() // reload tree
-  await nextTick()
-
-  const ctx = pendingDeleteCtx.value
+async function onT4AfterDelete( { parentId /* T3 id */, deletedId } ) {
+  tree.value?.removeNodeAndSelectNext( { deletedId, fallbackParentId : parentId } )
   pendingDeleteCtx.value = null
-
-  // if we didn't remember anything, just show T3
-  if ( !ctx || ctx.type !== 't4' || ctx.parentId !== parentId ) {
-    tree.value?.focusNode?.( parentId )
-    return
-  }
-
-  // what T4s remain under this T3?
-  const remaining = tree.value?.getChildrenOf?.( parentId ) ?? []
-  if ( !remaining.length ) {
-    // none → select T3
-    tree.value?.focusNode?.( parentId )
-    return
-  }
-
-  // pick the same slot if possible; otherwise the last available (i.e., previous)
-  const pickIndex = Math.min( ctx.originalIndex, remaining.length - 1 )
-  const nextId = remaining[pickIndex]?.id
-  if ( nextId ) {
-    tree.value?.focusNode?.( nextId )
-  } else {
-    tree.value?.focusNode?.( parentId )
-  }
 }
 
 /** Refresh the left tree after right-side actions */
@@ -253,22 +211,33 @@ function cleanLabel( label = '' ) {
 function onRequestAdd( { nextLevel, parentId, breadcrumb } ) {
   addParentId.value = parentId
 
-  // derive T1 (production line) from breadcrumb regardless of which level was clicked
   const t1 = getT1FromBreadcrumb( breadcrumb )
   prefilledProductionLineId.value = t1?.id ?? null
   prefilledProductionLineName.value = t1 ? cleanLabel( t1.label ) : ''
 
-  // open the correct dialog
   showAddT2.value = nextLevel === 2
   showAddT3.value = nextLevel === 3
   showAddT4.value = nextLevel === 4
 }
 
-function handleAddSuccess() {
+/** Called when any Add dialog succeeds. */
+async function handleAddSuccess( payload ) {
   showAddT2.value = false
   showAddT3.value = false
   showAddT4.value = false
-  handleRefreshTree()
+
+  await handleRefreshTree()
+  await nextTick()
+
+  const newId = payload?.id != null ? Number( payload.id ) : null
+  if ( newId ) {
+    if ( tree.value?.clearFilter ) {
+      try {
+        tree.value.clearFilter()
+      } catch {}
+    }
+    await tree.value?.focusNode?.( newId )
+  }
 }
 </script>
 

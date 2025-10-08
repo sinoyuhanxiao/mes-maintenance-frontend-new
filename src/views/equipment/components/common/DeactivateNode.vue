@@ -38,7 +38,7 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { deactivateEquipmentNode, getEquipmentById, getEquipmentSubtree } from '@/api/equipment.js'
 
 const props = defineProps( {
@@ -58,7 +58,6 @@ const childrenCount = ref( 0 )
 // Fetch equipment data to show in confirmation
 const fetchEquipmentData = async() => {
   if ( !props.equipmentId ) return
-
   try {
     const response = await getEquipmentById( props.equipmentId )
     nodeData.value = response.data
@@ -71,7 +70,6 @@ const fetchEquipmentData = async() => {
 // Fetch children count
 const fetchChildrenCount = async() => {
   if ( !props.equipmentId ) return
-
   try {
     const response = await getEquipmentSubtree( props.equipmentId )
     const children = response.data?.children || []
@@ -82,7 +80,7 @@ const fetchChildrenCount = async() => {
   }
 }
 
-// Handle confirm deletion
+// Handle confirm deletion (single confirmation via checkbox)
 const handleConfirm = async() => {
   if ( !confirmDeletion.value ) {
     ElMessage.warning( 'Please confirm that you understand this action is permanent' )
@@ -90,42 +88,22 @@ const handleConfirm = async() => {
   }
 
   try {
-    // Double confirmation with message box
-    await ElMessageBox.confirm(
-      'This will permanently delete the equipment node and all associated data. Continue?',
-      'Final Confirmation',
-      {
-        confirmButtonText : 'Delete',
-        cancelButtonText : 'Cancel',
-        type : 'warning',
-        confirmButtonClass : 'el-button--danger'
-      }
-    )
-
     submitting.value = true
 
-    // Call the deactivate API with detailed logging
     console.log( 'Calling deactivateEquipmentNode with ID:', props.equipmentId )
     const response = await deactivateEquipmentNode( props.equipmentId )
     console.log( 'API response:', response )
 
     ElMessage.success( 'Equipment node deleted successfully!' )
-
     emit( 'success', props.equipmentId )
     emit( 'close' )
   } catch ( error ) {
-    if ( error === 'cancel' ) {
-      // User cancelled the confirmation dialog
-      return
-    }
-
     console.error( 'Full error object:', error )
     console.error( 'Error response:', error.response )
     console.error( 'Error message:', error.message )
     console.error( 'Error status:', error.response?.status )
     console.error( 'Error data:', error.response?.data )
 
-    // More specific error message
     const errorMessage = error.response?.data?.message || error.message || 'Unknown error'
     ElMessage.error( `Failed to delete equipment node: ${errorMessage}` )
   } finally {
@@ -133,7 +111,6 @@ const handleConfirm = async() => {
   }
 }
 
-// Handle cancel
 const handleCancel = () => {
   emit( 'close' )
 }
@@ -143,17 +120,13 @@ onMounted( () => {
   fetchChildrenCount()
 } )
 
-// Watch for equipmentId changes and refetch data
 watch(
   () => props.equipmentId,
   ( newId, oldId ) => {
     if ( newId && newId !== oldId ) {
-      // Reset data first
       nodeData.value = null
       childrenCount.value = 0
       confirmDeletion.value = false
-
-      // Fetch new data
       fetchEquipmentData()
       fetchChildrenCount()
     }

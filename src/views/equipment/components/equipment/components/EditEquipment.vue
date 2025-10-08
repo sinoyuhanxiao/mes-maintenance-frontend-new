@@ -31,6 +31,7 @@
             </el-form-item>
           </el-col>
         </el-row>
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="Model" prop="serialNumber">
@@ -43,6 +44,7 @@
             </el-form-item>
           </el-col>
         </el-row>
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item
@@ -75,9 +77,11 @@
             </el-form-item>
           </el-col>
         </el-row>
+
         <el-form-item label="Description" prop="description">
           <el-input v-model="formData.description" type="textarea" :rows="3" />
         </el-form-item>
+
         <el-form-item
           label="Location"
           prop="selectedLocationId"
@@ -115,6 +119,7 @@
             </el-tree>
           </div>
         </el-form-item>
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item
@@ -134,6 +139,7 @@
               </el-select>
             </el-form-item>
           </el-col>
+
           <el-col :span="12">
             <el-form-item
               label="Sequence Order"
@@ -148,6 +154,26 @@
           </el-col>
         </el-row>
       </el-form>
+
+      <!-- Exploded view (single image UI, but submit as array) -->
+      <el-divider />
+      <div class="file-upload">
+        <el-descriptions :column="1" direction="vertical">
+          <el-descriptions-item>
+            <FileUploadMultiple
+              upload-type="images"
+              :max-images="1"
+              :existingImageList="formData.explodedViewDrawing ? [formData.explodedViewDrawing] : []"
+              @update:imageList="handleExplosionUpdate"
+              @update:removedExistingImages="handleExplosionRemoved"
+              image-label="Upload Exploded View"
+              title-label-position="top"
+            />
+          </el-descriptions-item>
+        </el-descriptions>
+      </div>
+
+      <!-- Regular images/files -->
       <el-divider />
       <div class="file-upload">
         <FileUploadMultiple
@@ -162,6 +188,7 @@
           :existingFileList="formData.filesList"
         />
       </div>
+
       <div class="dialog-footer">
         <el-button @click="handleCancel">Cancel</el-button>
         <el-button type="primary" @click="handleConfirm" :loading="submitLoading">Update</el-button>
@@ -199,6 +226,11 @@ const removedFiles = ref( [] )
 const newImageUrls = ref( [] )
 const newFileUrls = ref( [] )
 
+// Exploded view (single image in UI)
+const newExplosion = ref( [] ) // Files selected (max 1)
+const removedExplosion = ref( [] ) // Removed existing URLs
+const newExplosionUrl = ref( '' ) // Uploaded URL
+
 const props = defineProps( {
   equipmentId : {
     type : [Number, String],
@@ -232,7 +264,8 @@ const formData = reactive( {
   selectedLocationId : null,
   sequenceOrder : 1,
   imageList : [],
-  filesList : []
+  filesList : [],
+  explodedViewDrawing : '' // single string locally
 } )
 
 const treeProps = {
@@ -247,64 +280,46 @@ const resetFileState = () => {
   removedFiles.value = []
   newImageUrls.value = []
   newFileUrls.value = []
+
+  newExplosion.value = []
+  removedExplosion.value = []
+  newExplosionUrl.value = ''
 }
 
 const setCurrentTreeNode = async locationId => {
-  if ( !treeRef.value || !locationId ) {
-    return
-  }
-
+  if ( !treeRef.value || !locationId ) return
   try {
     await nextTick()
-
-    if ( treeData.value.length === 0 ) {
-      return
-    }
-
+    if ( treeData.value.length === 0 ) return
     treeRef.value.setCurrentKey( locationId )
-
     const node = treeRef.value.getNode( locationId )
-    if ( !node ) {
-      return
-    }
-
+    if ( !node ) return
     let parentNode = node.parent
     while ( parentNode && parentNode.key !== undefined ) {
       parentNode.expanded = true
       parentNode = parentNode.parent
     }
-
     formData.selectedLocationId = locationId
-
     if ( formRef.value ) {
       await nextTick()
       formRef.value.clearValidate( 'selectedLocationId' )
     }
-  } catch ( error ) {
-    // Silent error handling
-  }
+  } catch {}
 }
 
 const formatDateForDisplay = dateString => {
   if ( !dateString ) return null
-
   try {
-    // Handle ISO datetime string (e.g., "2025-08-03T00:00:00Z")
     const date = new Date( dateString )
-
-    // Check if date is valid
     if ( isNaN( date.getTime() ) ) return null
-
-    // Format as YYYY-MM-DD for the date picker
     return date.toISOString().split( 'T' )[0]
-  } catch ( error ) {
+  } catch {
     return null
   }
 }
 
 const fetchEquipmentData = async() => {
   if ( !props.equipmentId ) return
-
   dataLoading.value = true
   try {
     const response = await getEquipmentById( props.equipmentId )
@@ -326,8 +341,13 @@ const fetchEquipmentData = async() => {
     formData.imageList = actualData.image_list || []
     formData.filesList = actualData.file_list || []
 
-    selectedNodeId.value = actualData.location?.id || actualData.location_id
+    // Normalize exploded view coming from backend (string or array) -> single string locally
+    {
+      const ev = actualData.exploded_view_drawing
+      formData.explodedViewDrawing = Array.isArray( ev ) ? ev[0] || '' : ev || ''
+    }
 
+    selectedNodeId.value = actualData.location?.id || actualData.location_id
     return actualData
   } catch ( err ) {
     ElMessage.error( 'Failed to load equipment details' )
@@ -342,18 +362,11 @@ const fetchLocationTree = async() => {
   error.value = null
   try {
     const response = await getLocationTree()
-
     let dataArray
-    if ( response.data?.data ) {
-      dataArray = response.data.data
-    } else if ( Array.isArray( response.data ) ) {
-      dataArray = response.data
-    } else if ( response.data ) {
-      dataArray = [response.data]
-    } else {
-      dataArray = []
-    }
-
+    if ( response.data?.data ) dataArray = response.data.data
+    else if ( Array.isArray( response.data ) ) dataArray = response.data
+    else if ( response.data ) dataArray = [response.data]
+    else dataArray = []
     treeData.value = dataArray
     return dataArray
   } catch ( err ) {
@@ -365,17 +378,11 @@ const fetchLocationTree = async() => {
   }
 }
 
-const initializeTreeSelection = async equipmentData => {
-  if ( !equipmentData ) return
-
-  const locationId = equipmentData.location?.id || equipmentData.location_id
-  if ( !locationId ) return
-
-  await nextTick()
-
-  if ( treeRef.value && treeData.value.length > 0 ) {
-    await setCurrentTreeNode( locationId )
-  }
+function handleExplosionUpdate( files ) {
+  newExplosion.value = files || []
+}
+function handleExplosionRemoved( urls ) {
+  removedExplosion.value = urls || []
 }
 
 const handleFileUpdate = ( type, data ) => {
@@ -383,19 +390,15 @@ const handleFileUpdate = ( type, data ) => {
     case 'imageList':
       newImages.value = data
       break
-
     case 'filesList':
       newFiles.value = data
       break
-
     case 'removeImage':
       removedImages.value = data
       break
-
     case 'removeFile':
       removedFiles.value = data
       break
-
     default:
       break
   }
@@ -407,37 +410,49 @@ const uploadFilesToServer = async() => {
       const imageRes = await uploadMultipleToMinio( newImages.value )
       newImageUrls.value = imageRes.data.uploadedFiles?.map( file => file.url ) || []
     }
-
     if ( newFiles.value.length > 0 ) {
       const fileRes = await uploadMultipleToMinio( newFiles.value )
       newFileUrls.value = fileRes.data.uploadedFiles?.map( file => file.url ) || []
     }
-  } catch ( err ) {
+    // exploded single
+    if ( newExplosion.value.length > 0 ) {
+      const expRes = await uploadMultipleToMinio( newExplosion.value )
+      const up = expRes?.data?.uploadedFiles || []
+      newExplosionUrl.value = up[0]?.url || ''
+    }
+  } catch {
     throw new Error( 'File upload failed' )
   }
 }
 
 const handleConfirm = async() => {
   if ( !formRef.value ) return
-
   const isValid = await formRef.value.validate()
   if ( !isValid ) return
 
   submitLoading.value = true
-
   try {
     let finalImageList = formData.imageList || []
     let finalFilesList = formData.filesList || []
+    let finalExploded = formData.explodedViewDrawing || '' // keep single locally
 
-    if ( newImages.value.length > 0 || newFiles.value.length > 0 ) {
+    if ( newImages.value.length > 0 || newFiles.value.length > 0 || newExplosion.value.length > 0 ) {
       await uploadFilesToServer()
     }
 
     finalImageList = [...( finalImageList || [] ), ...( newImageUrls.value || [] )]
     finalFilesList = [...( finalFilesList || [] ), ...( newFileUrls.value || [] )]
 
-    finalImageList = finalImageList.filter( imageUrl => !removedImages.value.includes( imageUrl ) )
-    finalFilesList = finalFilesList.filter( fileUrl => !removedFiles.value.includes( fileUrl ) )
+    finalImageList = finalImageList.filter( url => !removedImages.value.includes( url ) )
+    finalFilesList = finalFilesList.filter( url => !removedFiles.value.includes( url ) )
+
+    // exploded: remove or replace
+    if ( removedExplosion.value?.length && finalExploded && removedExplosion.value.includes( finalExploded ) ) {
+      finalExploded = ''
+    }
+    if ( newExplosionUrl.value ) {
+      finalExploded = newExplosionUrl.value
+    }
 
     const submissionData = {
       name : formData.name,
@@ -451,33 +466,30 @@ const handleConfirm = async() => {
       location_id : formData.selectedLocationId,
       sequence_order : Number( formData.sequenceOrder ),
       image_list : finalImageList,
-      file_list : finalFilesList
+      file_list : finalFilesList,
+      // Backend expects List<String> — even if single URL
+      exploded_view_drawing : finalExploded ? [finalExploded] : []
     }
 
     const response = await editEquipmentNode( props.equipmentId, submissionData )
     ElMessage.success( 'Equipment updated successfully!' )
 
-    if ( removedImages.value.length > 0 || removedFiles.value.length > 0 ) {
-      const removedUrls = [...removedImages.value, ...removedFiles.value]
-
+    if ( removedImages.value.length > 0 || removedFiles.value.length > 0 || removedExplosion.value.length > 0 ) {
+      const removedUrls = [...removedImages.value, ...removedFiles.value, ...removedExplosion.value]
       Promise.resolve().then( async() => {
         try {
           const deleteResponse = await deleteObjectList( {
             bucketName : 'sv-file-bucket',
             objectUrls : removedUrls
           } )
-
           if ( deleteResponse.status === 0 ) {
             ElMessage.success( 'Old files deleted successfully!' )
           }
-        } catch ( error ) {
-          // Silent fail
-        }
+        } catch {}
       } )
     }
 
     resetFileState()
-
     emit( 'close' )
     emit( 'success', response.data )
   } catch ( error ) {
@@ -494,16 +506,12 @@ const handleCancel = () => {
 }
 
 const fetchProductionLines = async() => {
-  if ( !formData.parentId ) {
-    return
-  }
-
+  if ( !formData.parentId ) return
   productionLineLoading.value = true
   try {
     const productionLinesResponse = await getEquipmentNodes( 1, 100, 'sequenceOrder', 'ASC', {
       node_type_ids : [4]
     } )
-
     const productionLinesContent = productionLinesResponse.data?.content || []
     productionLines.value = productionLinesContent
 
@@ -511,17 +519,13 @@ const fetchProductionLines = async() => {
       node_type_ids : [5],
       parent_ids : [formData.parentId]
     } )
-
     const equipmentContent = equipmentResponse.data?.content || []
-
     const otherEquipment = equipmentContent.filter( item => item.id !== parseInt( props.equipmentId ) )
-
     const sequenceOrdersArray = otherEquipment
       .map( item => item.sequence_order )
       .filter( order => order !== null && order !== undefined && !isNaN( order ) )
-
     sequenceOrders.value = sequenceOrdersArray
-  } catch ( err ) {
+  } catch {
     ElMessage.error( 'Failed to load production lines' )
   } finally {
     productionLineLoading.value = false
@@ -545,9 +549,7 @@ const filterNode = ( value, data ) => {
 const handleNodeClick = async( data, node ) => {
   selectedNodeId.value = data.id
   formData.selectedLocationId = data.id
-
   await nextTick()
-
   if ( formRef.value ) {
     formRef.value.validateField( 'selectedLocationId' )
   }
@@ -575,7 +577,6 @@ watch(
   async( newLocationId, oldLocationId ) => {
     if ( newLocationId && newLocationId !== oldLocationId ) {
       selectedNodeId.value = newLocationId
-
       if ( treeData.value.length > 0 ) {
         await nextTick()
         await setCurrentTreeNode( newLocationId )
@@ -587,27 +588,31 @@ watch(
 onMounted( async() => {
   try {
     resetFileState()
-
     const [equipmentData] = await Promise.all( [fetchEquipmentData(), fetchLocationTree()] )
-
     if ( equipmentData ) {
       await initializeTreeSelection( equipmentData )
-
       if ( equipmentData.parent_id || equipmentData.parent_equipment_node_id ) {
         await fetchProductionLines()
       }
     }
-  } catch ( error ) {
-    // Silent error handling
-  }
+  } catch {}
 } )
+
+const initializeTreeSelection = async equipmentData => {
+  if ( !equipmentData ) return
+  const locationId = equipmentData.location?.id || equipmentData.location_id
+  if ( !locationId ) return
+  await nextTick()
+  if ( treeRef.value && treeData.value.length > 0 ) {
+    await setCurrentTreeNode( locationId )
+  }
+}
 
 watch(
   () => props.equipmentId,
   ( newId, oldId ) => {
     if ( newId && newId !== oldId ) {
       resetFileState()
-
       Object.assign( formData, {
         name : '',
         code : '',
@@ -620,10 +625,10 @@ watch(
         selectedLocationId : null,
         sequenceOrder : 1,
         imageList : [],
-        filesList : []
+        filesList : [],
+        explodedViewDrawing : ''
       } )
       selectedNodeId.value = null
-
       fetchEquipmentData()
     }
   },

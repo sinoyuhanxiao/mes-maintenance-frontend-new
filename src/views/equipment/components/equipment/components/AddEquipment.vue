@@ -159,6 +159,7 @@
           image-label="Upload Exploded View"
           upload-type="images"
           :max-images="1"
+          title-label-position="top"
         />
       </div>
 

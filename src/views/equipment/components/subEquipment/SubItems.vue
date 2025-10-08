@@ -1,83 +1,96 @@
+<!-- src/views/equipment/components/subEquipment/SubItems.vue (Tier 4) -->
 <template>
-  <div class="sub-items">
+  <div class="t4-subitems">
     <!-- Loading overlay -->
     <div v-if="loading" class="loading-state" v-loading="loading" />
 
-    <!-- Content once loading is done -->
+    <!-- TOP / BOTTOM layout (always vertical) -->
     <template v-else>
-      <el-descriptions v-if="showImage" :column="1" direction="vertical" class="top-desc">
-        <el-descriptions-item label="Tier 4 Image" />
-      </el-descriptions>
+      <div class="t4-split">
+        <!-- TOP: Image / Exploded View -->
+        <section class="t4-top">
+          <el-descriptions :column="1" direction="vertical" class="top-desc">
+            <el-descriptions-item label="Tier 4 Exploded View">
+              <template v-if="showImage">
+                <div class="image-container">
+                  <el-image
+                    :key="(imageSrc || '') + '-' + previewImages.length"
+                    :src="imageSrc"
+                    :alt="props.imageAlt"
+                    fit="contain"
+                    :preview-src-list="previewImages"
+                    :hide-on-click-modal="true"
+                    preview-teleported
+                    :z-index="4000"
+                    class="equipment-image"
+                    title="T4 Image"
+                  >
+                    <template #error>
+                      <div class="image-slot t4-slot image-viewer-slot">
+                        <el-icon><IconPicture /></el-icon>
+                      </div>
+                    </template>
+                    <template #viewer-error="{ activeIndex, src }">
+                      <div class="image-slot viewer-error">
+                        <el-icon><IconPicture /></el-icon>
+                        <span> image not available (index: {{ activeIndex }}) • {{ src }} </span>
+                      </div>
+                    </template>
+                  </el-image>
+                </div>
+              </template>
+              <template v-else>
+                <span>No exploded view available</span>
+              </template>
+            </el-descriptions-item>
+          </el-descriptions>
+        </section>
 
-      <div class="image-container" v-if="showImage">
-        <el-image
-          :key="(imageSrc || '') + '-' + previewImages.length"
-          :src="imageSrc"
-          :alt="props.imageAlt"
-          fit="contain"
-          :preview-src-list="previewImages"
-          preview-teleported
-          :z-index="4000"
-          class="equipment-image"
-          title="T4 Image"
-          show-progress
-        >
-          <template #error>
-            <div class="image-slot t4-slot image-viewer-slot">
-              <el-icon><IconPicture /></el-icon>
-            </div>
-          </template>
-          <template #viewer-error="{ activeIndex, src }">
-            <div class="image-slot viewer-error">
-              <el-icon><IconPicture /></el-icon>
-              <span> image not available (index: {{ activeIndex }}) • {{ src }} </span>
-            </div>
-          </template>
-        </el-image>
+        <!-- BOTTOM: Tier 5 Spare Parts -->
+        <section class="t4-bottom">
+          <div class="spare-parts-table">
+            <el-descriptions :column="1" direction="vertical" class="top-desc">
+              <el-descriptions-item v-if="sparePartsData.length > 0" label="Tier 5 Spare Parts" />
+              <el-descriptions-item v-else label="Tier 5 Spare Parts">
+                No tier 5 spare parts available.
+              </el-descriptions-item>
+            </el-descriptions>
+
+            <template v-if="sparePartsData.length > 0">
+              <!-- Cards list (fill the column width) -->
+              <div class="card-list" v-if="pagedRows.length > 0">
+                <SparePartCard v-for="it in pagedRows" :key="it.id" :item="it" @edit="onEdit" @delete="onDelete" />
+              </div>
+
+              <div class="pagination-wrapper">
+                <el-pagination
+                  background
+                  layout="prev, pager, next"
+                  :current-page="listQuery.page"
+                  :page-size="listQuery.limit"
+                  :total="filteredRows.length"
+                  :pager-count="5"
+                  @current-change="handleCurrentChange"
+                />
+              </div>
+            </template>
+          </div>
+        </section>
       </div>
 
-      <el-divider v-if="showImage" />
-      <div class="spare-parts-table">
-        <el-descriptions :column="1" direction="vertical" class="top-desc">
-          <el-descriptions-item v-if="sparePartsData.length > 0" label="Tier 5 Spare Parts"> </el-descriptions-item>
-
-          <el-descriptions-item v-else label="Tier 5 Spare Parts">
-            No tier 5 spare parts available.
-          </el-descriptions-item>
-        </el-descriptions>
-
-        <template v-if="sparePartsData.length > 0">
-          <!-- Cards list (always 1 per row) -->
-          <div class="card-list" v-if="pagedRows.length > 0">
-            <SparePartCard v-for="it in pagedRows" :key="it.id" :item="it" @edit="onEdit" @delete="onDelete" />
-          </div>
-
-          <div class="pagination-wrapper">
-            <el-pagination
-              background
-              layout="prev, pager, next"
-              :current-page="listQuery.page"
-              :page-size="listQuery.limit"
-              :total="filteredRows.length"
-              :pager-count="5"
-              @current-change="handleCurrentChange"
-            />
-          </div>
-        </template>
-
-        <el-dialog v-model="editDialog.visible" title="Edit Tier 5 Spare Part" width="720px" destroy-on-close>
-          <AddTier5Form
-            v-if="editDialog.visible"
-            :key="'t5-edit-' + (editDialog.initial?.id ?? 0)"
-            :tier4-id="resolveTier4Id()"
-            :parent-id="resolveTier4Id()"
-            mode="edit"
-            :initial="editDialog.initial"
-            @success="onEditSuccess"
-            @close="editDialog.visible = false"
-          />
-        </el-dialog>
-      </div>
+      <!-- Dialog lives outside split so it overlays nicely -->
+      <el-dialog v-model="editDialog.visible" title="Edit Tier 5 Spare Part" width="720px" destroy-on-close draggable>
+        <AddTier5Form
+          v-if="editDialog.visible"
+          :key="'t5-edit-' + (editDialog.initial?.id ?? 0)"
+          :tier4-id="resolveTier4Id()"
+          :parent-id="resolveTier4Id()"
+          mode="edit"
+          :initial="editDialog.initial"
+          @success="onEditSuccess"
+          @close="editDialog.visible = false"
+        />
+      </el-dialog>
     </template>
   </div>
 </template>
@@ -183,9 +196,8 @@ async function loadNodeImage( id ) {
     const resp = await getEquipmentById( id )
     const node = resp?.data?.data ?? resp?.data ?? resp
 
-    const list = Array.isArray( node?.image_list ) ? node.image_list.filter( Boolean ) : []
     const exploded = node?.exploded_view_drawing || null
-    const candidates = [...list, exploded].filter( Boolean )
+    const candidates = exploded ? [exploded] : []
 
     const valid = await filterReachableImages( candidates )
     if ( valid.length ) {
@@ -429,10 +441,11 @@ watch(
 </script>
 
 <style scoped>
-.sub-items {
-  flex: 1;
+/* Namespaced root to avoid collisions with other tiers */
+.t4-subitems {
   display: flex;
   flex-direction: column;
+  width: 100%;
 }
 
 /* Loading area height so spinner doesn’t collapse */
@@ -441,45 +454,40 @@ watch(
   height: 320px;
 }
 
-/* T4 image */
+/* Force TOP/BOTTOM layout (immune to other tier styles) */
+.t4-split {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px;
+  width: 100%;
+}
+
+/* Ensure sections can shrink properly */
+.t4-top,
+.t4-bottom {
+  min-width: 0;
+}
+
+/* TOP: image area with responsive height */
+/* TOP: image area with responsive height */
 .image-container {
-  height: 300px;
+  /* min 240px, scales with viewport height, max 55vh */
+  height: clamp(240px, 45vh, 55vh);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 30px;
+  margin-bottom: 6px;
+  max-width: 100%;
 }
+
 .equipment-image {
   width: 100%;
   height: 100%;
 }
-
-/* table area */
-.spare-parts-table {
-  flex: 1 1 auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-}
-.top-desc {
-  margin-bottom: 8px;
-}
-.search-bar {
-  display: flex;
-  flex-direction: column;
-}
-.table-search {
-  max-width: 520px;
-}
-
-.schedule-table {
+.equipment-image :deep(img) {
   width: 100%;
-}
-
-.pagination-wrapper {
-  margin-top: 10px;
-  display: flex;
-  justify-content: center;
+  height: 100%;
+  object-fit: contain;
 }
 
 /* unified icon fallback */
@@ -498,23 +506,77 @@ watch(
 .image-slot .el-icon {
   font-size: 24px;
 }
-
-/* a bit tighter for 64x64 thumbs */
-.thumb-slot {
-  width: 64px;
-  height: 64px;
-}
-
 .viewer-error {
   color: var(--el-text-color-primary);
 }
-
 :deep(.el-image-viewer__wrapper) {
   z-index: 4000;
 }
+
+/* BOTTOM: cards/table section */
+.spare-parts-table {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden; /* contain internal scrollers */
+}
+
+/* cards list always fits container, no horizontal scroll */
 .card-list {
   display: grid;
-  grid-template-columns: 1fr; /* always one card per row */
-  gap: 12px;
+  grid-template-columns: 1fr; /* single column */
+  gap: 10px;
+  overflow-y: auto; /* vertical scroll if too many */
+  overflow-x: hidden; /* prevent sideways scroll */
+  padding-right: 4px;
+  min-width: 0; /* prevent card overflow */
+}
+
+/* make each card fill full width */
+.card-list :deep(.el-card) {
+  width: 100% !important;
+  min-width: 0;
+}
+
+/* actions row inside SparePartCard (buttons closer together) */
+:deep(.spare-part-card-actions) {
+  display: flex;
+  justify-content: flex-end; /* align to right */
+  gap: 6px; /* small gap between edit/delete */
+}
+
+/* tighter buttons */
+:deep(.spare-part-card-actions .el-button) {
+  padding: 4px 8px;
+  font-size: 13px;
+}
+
+/* pagination centered under list */
+.pagination-wrapper {
+  margin-top: 10px;
+  display: flex;
+  justify-content: center;
+}
+
+/* Descriptions tighten a little */
+.top-desc :deep(.el-descriptions__label) {
+  font-weight: 600;
+}
+
+/* Narrow screens — keep vertical stack, adjust heights */
+@media (max-width: 900px) {
+  .image-container {
+    height: 48vh;
+    min-height: 240px;
+  }
+}
+@media (max-width: 560px) {
+  .image-container {
+    height: 42vh;
+    min-height: 200px;
+  }
+  .spare-parts-table {
+    overflow: visible;
+  } /* let page scroll */
 }
 </style>

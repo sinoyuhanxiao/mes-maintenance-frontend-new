@@ -27,7 +27,7 @@
       <template #default="{ node, data }">
         <div class="node-row" :class="{ 'is-view': !isEditMode }">
           <div class="node-content">
-            <el-icon class="node-icon">
+            <el-icon v-if="getIconForLevel(data.level)" class="node-icon">
               <component :is="getIconForLevel(data.level)" />
             </el-icon>
             <span class="node-label" :title="data.label">{{ data.label }}</span>
@@ -62,16 +62,10 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, nextTick, h } from 'vue'
+import { ref, watch, onMounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
-import { OfficeBuilding, Setting, Tools, Folder } from '@element-plus/icons-vue'
+import { OfficeBuilding } from '@element-plus/icons-vue'
 import { getEquipmentTree } from '@/api/equipment.js'
-
-import productionLineUrl from '@/icons/svg/production-line.svg?url'
-import equipmentGroupUrl from '@/icons/svg/equipment-group.svg?url'
-
-const ProductionLineIcon = () => h( 'img', { src : productionLineUrl, alt : '', class : 'node-icon-img' } )
-const EquipmentGroupIcon = () => h( 'img', { src : equipmentGroupUrl, alt : '', class : 'node-icon-img' } )
 
 const emit = defineEmits( ['node-click', 'request-delete', 'request-add'] )
 
@@ -92,20 +86,8 @@ const defaultProps = { children : 'children', label : 'label' }
 
 /* ---------- icons ---------- */
 const getIconForLevel = level => {
-  switch ( level ) {
-    case 0:
-      return OfficeBuilding
-    case 1:
-      return ProductionLineIcon
-    case 2:
-      return EquipmentGroupIcon
-    case 3:
-      return Setting
-    case 4:
-      return Tools
-    default:
-      return Folder
-  }
+  if ( level === 0 ) return OfficeBuilding
+  return null
 }
 
 /* ---------- transform + fetch ---------- */
@@ -217,7 +199,7 @@ function canShowActions( item ) {
   return ( item.level ?? 0 ) >= 1
 }
 
-/* ---------- delete/add: emit to parent ---------- */
+/* ---------- breadcrumbs helper for any node ctx ---------- */
 function collectBreadcrumbFromNodeCtx( nodeCtx ) {
   const bc = []
   let cur = nodeCtx
@@ -228,9 +210,28 @@ function collectBreadcrumbFromNodeCtx( nodeCtx ) {
   return bc
 }
 
+/* ---------- NEW: expand the clicked node’s ancestor path (accordion-safe) ---------- */
+function expandPathForNodeCtx( nodeCtx ) {
+  const pathIds = []
+  let cur = nodeCtx
+  while ( cur ) {
+    pathIds.unshift( cur.data.id )
+    cur = cur.parent
+  }
+  // Keep ancestors expanded (exclude leaf itself) so caret is visible & branch open.
+  const expandIds = pathIds.slice( 0, -1 )
+  expandedKeys.value = expandIds
+  treeRef.value?.setExpandedKeys?.( expandIds )
+}
+
+/* ---------- delete/add: emit to parent ---------- */
 function addNode( target, nodeCtx ) {
   const nextLevel = ( target.level ?? 0 ) + 1
   if ( nextLevel > 4 ) return ElMessage.warning( 'Reached deepest level.' )
+
+  // Ensure the clicked node’s branch is open immediately (works with accordion)
+  expandPathForNodeCtx( nodeCtx )
+
   emit( 'request-add', {
     nextLevel, // 2 | 3 | 4
     parentId : target.id, // new child’s parent
@@ -278,10 +279,16 @@ function getChildrenOf( parentId ) {
   return Array.isArray( p?.children ) ? p.children : []
 }
 
+/**
+ * Programmatically expand all ancestors and select the node.
+ * Call this from the parent after a successful "create" with the new node id:
+ *   $refs.leftTree.focusNode(newId)
+ */
 function focusNode( id ) {
   const pathNodes = buildPathNodesTo( id )
   if ( !pathNodes ) return
   const expandIds = pathNodes.slice( 0, -1 ).map( n => n.id )
+
   expandedKeys.value = expandIds
   treeRef.value?.setExpandedKeys?.( expandIds )
 
@@ -300,7 +307,74 @@ function focusNode( id ) {
   }
 }
 
-defineExpose( { refreshTree, getChildrenOf, focusNode } )
+// ADD inside <script setup> of the tree component
+async function removeNodeAndSelectNext( { deletedId, fallbackParentId = null } ) {
+  const elTree = treeRef.value
+  if ( !elTree ) return null
+
+  const del = elTree.getNode?.( deletedId )
+
+  // If already gone, try fallback parent
+  if ( !del ) {
+    if ( fallbackParentId != null ) {
+      const p = elTree.getNode?.( fallbackParentId )
+      if ( p ) {
+        expandPathForNodeCtx( p ) // keep ancestors open (accordion-safe)
+        currentKey.value = fallbackParentId
+        elTree.setCurrentKey?.( fallbackParentId )
+        emit( 'node-click', p.data, collectBreadcrumbFromNodeCtx( p ) )
+        return fallbackParentId
+      }
+    }
+    return null
+  }
+
+  // Decide next selection BEFORE removal: next sib -> prev sib -> parent
+  const parent = del.parent
+  let nextKey = null
+  if ( parent && Array.isArray( parent.childNodes ) ) {
+    const sibs = parent.childNodes.filter( n => n.key !== deletedId )
+    if ( sibs.length ) {
+      const idx = parent.childNodes.findIndex( n => n.key === deletedId )
+      const candidate = sibs[idx] || sibs[idx - 1] || sibs[0]
+      nextKey = candidate?.key ?? null
+    } else {
+      nextKey = parent.key
+    }
+  } else if ( fallbackParentId != null ) {
+    nextKey = fallbackParentId
+  }
+
+  // Remove in place (no rebuild → no collapse)
+  elTree.remove?.( del )
+
+  // Reselect + re-expand ancestor path (works with accordion)
+  if ( nextKey != null ) {
+    await nextTick()
+    const nextEl = elTree.getNode?.( nextKey )
+    if ( nextEl ) {
+      expandPathForNodeCtx( nextEl ) // opens ancestors; accordion keeps one per level
+      currentKey.value = nextKey
+      elTree.setCurrentKey?.( nextKey )
+      emit( 'node-click', nextEl.data, collectBreadcrumbFromNodeCtx( nextEl ) )
+      return nextKey
+    }
+  }
+
+  // Fallback to parent if needed
+  if ( parent ) {
+    await nextTick()
+    expandPathForNodeCtx( parent )
+    currentKey.value = parent.key
+    elTree.setCurrentKey?.( parent.key )
+    emit( 'node-click', parent.data, collectBreadcrumbFromNodeCtx( parent ) )
+    return parent.key
+  }
+
+  return null
+}
+
+defineExpose( { refreshTree, getChildrenOf, focusNode, removeNodeAndSelectNext } )
 </script>
 
 <style scoped>

@@ -26,15 +26,24 @@
         <el-tab-pane label="Details" name="details">
           <DetailsTab :equipmentId="props.node.id" :key="`details-${refreshKey}`" />
         </el-tab-pane>
+
         <el-tab-pane label="Sub Items" name="subItems">
-          <SubItemsTab :key="`subitems-${refreshKey}`" />
+          <!-- 🔑 listen and bubble up -->
+          <SubItemsTab
+            :equipmentId="props.node.id"
+            :key="`subitems-${refreshKey}`"
+            @request-select-node="handleSelectFromCard"
+          />
         </el-tab-pane>
+
         <el-tab-pane label="Work Orders" name="workOrders">
           <WorkOrderTab :key="`workorders-${refreshKey}`" />
         </el-tab-pane>
+
         <el-tab-pane label="Tasks" name="tasks">
           <TasksTab :key="`tasks-${refreshKey}`" />
         </el-tab-pane>
+
         <el-tab-pane label="Personnel" name="personnel">
           <PersonnelTab :key="`personnel-${refreshKey}`" />
         </el-tab-pane>
@@ -42,7 +51,7 @@
     </div>
 
     <!-- Add -->
-    <el-dialog v-model="showAddDialog" title="Add New Tier 2" width="600px" :before-close="handleCloseDialog">
+    <el-dialog v-model="showAddDialog" title="Add New Tier 2" width="600px" :before-close="handleCloseDialog" draggable>
       <AddEquipmentGroup
         v-if="showAddDialog"
         @close="closeAddDialog"
@@ -52,7 +61,7 @@
     </el-dialog>
 
     <!-- Edit -->
-    <el-dialog v-model="showEditDialog" title="Edit Tier 2" width="600px" :before-close="handleCloseDialog">
+    <el-dialog v-model="showEditDialog" title="Edit Tier 2" width="600px" :before-close="handleCloseDialog" draggable>
       <EditEquipmentGroup
         v-if="showEditDialog"
         :key="`edit-${props.node.id}-${editDialogKey}`"
@@ -63,7 +72,7 @@
     </el-dialog>
 
     <!-- Delete -->
-    <el-dialog v-model="showDeactivateDialog" title="Delete Tier 2" width="600px" :before-close="handleCloseDialog">
+    <el-dialog v-model="showDeactivateDialog" title="Delete Tier 2" width="600px" :before-close="handleCloseDialog" draggable>
       <DeactivateNode
         v-if="showDeactivateDialog"
         @close="closeDeactivateDialog"
@@ -92,7 +101,8 @@ const props = defineProps( {
   breadcrumb : { type : Array, default : () => [] }
 } )
 
-const emit = defineEmits( ['refresh-tree', 'refresh-data', 'after-delete'] )
+/* 🔔 Also bubble the select event upward */
+const emit = defineEmits( ['refresh-tree', 'refresh-data', 'after-delete', 'request-select-node'] )
 
 const parentId = computed( () => {
   const validBreadcrumbItems = props.breadcrumb.filter( ( item, index ) => {
@@ -158,6 +168,11 @@ const refreshViewData = () => {
 }
 const handleRefreshTree = () => {
   emit( 'refresh-tree' )
+}
+
+/* 🔑 Re-emit up to the container that owns <EquipmentTree> */
+function handleSelectFromCard( id ) {
+  emit( 'request-select-node', Number( id ) )
 }
 
 /* Expose opener so parent can trigger Delete dialog */

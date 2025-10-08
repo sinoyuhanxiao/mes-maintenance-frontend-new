@@ -1,91 +1,139 @@
 <template>
   <div class="t2-sub-items">
+    <!-- LEFT: Image -->
     <div class="image">
-      <el-image :src="imageUrl" :alt="imageAlt" fit="cover" :preview-src-list="[imageUrl]">
+      <el-image
+        :src="imageUrl"
+        :alt="imageAlt"
+        fit="contain"
+        :preview-src-list="[imageUrl]"
+        :hide-on-click-modal="true"
+      >
         <template #error>
           <div class="image-slot">
             <el-icon><Picture /></el-icon>
-            <span>No Image</span>
           </div>
         </template>
       </el-image>
     </div>
+
+    <!-- RIGHT: Cards -->
     <div class="label-cards">
-      <el-row :gutter="0">
-        <el-col v-for="(item, index) in items" :key="item.id" :xs="24" :sm="24" :md="24" :lg="24">
-          <EquipmentSubItemCard
-            :number="index + 1"
-            :text="item.text"
-            :text-type="item.textType || 'default'"
-            :text-size="item.textSize || 'default'"
-            :circle-color="item.circleColor"
-          />
-        </el-col>
-      </el-row>
+      <div v-for="(item, index) in items" :key="item.id" class="card-wrapper" @click="onCardClick(item.id)">
+        <EquipmentSubItemCard
+          :number="index + 1"
+          :text="item.text"
+          :text-type="item.textType || 'default'"
+          :text-size="item.textSize || 'default'"
+          :circle-color="item.circleColor"
+        />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
+import { ref, onMounted, watch } from 'vue'
 import { Picture } from '@element-plus/icons-vue'
 import EquipmentSubItemCard from './components/EquipmentSubItemCard.vue'
-import defaultImageUrl from '@/assets/imgs/default-image.png' // ✅ import first
+import defaultImageUrl from '@/assets/imgs/default-image.png'
+import { getEquipmentById, getEquipmentSubtree } from '@/api/equipment.js'
 
-defineProps( {
-  imageUrl : {
-    type : String,
-    default : defaultImageUrl
-  },
-  imageAlt : {
-    type : String,
-    default : 'Equipment image'
-  },
-  items : {
-    type : Array,
-    default : () => [
-      { id : 1, text : 'Primary safety features included', textType : 'default' },
-      { id : 2, text : 'Requires regular maintenance', textType : 'default' },
-      { id : 3, text : 'High performance rating achieved', textType : 'default' },
-      { id : 4, text : 'Temperature monitoring system', textType : 'default' },
-      { id : 5, text : 'Emergency shutdown capability', textType : 'default' },
-      { id : 6, text : 'Energy efficient operation mode', textType : 'default' },
-      { id : 7, text : 'User-friendly interface design', textType : 'default' },
-      { id : 8, text : 'Automated diagnostic functions', textType : 'default' },
-      { id : 9, text : 'Backup power supply available', textType : 'default' },
-      { id : 10, text : 'Compliance with safety standards', textType : 'default' },
-      { id : 11, text : 'Advanced monitoring capabilities', textType : 'default' },
-      { id : 12, text : 'Remote control functionality', textType : 'default' },
-      { id : 13, text : 'Predictive maintenance alerts', textType : 'default' },
-      { id : 14, text : 'Quality assurance protocols', textType : 'default' }
-    ]
-  }
+const props = defineProps( {
+  equipmentId : { type : [Number, String], required : true }
 } )
+
+const emit = defineEmits( ['request-select-node'] )
+
+const imageUrl = ref( defaultImageUrl )
+const imageAlt = ref( 'Equipment image' )
+const items = ref( [] )
+
+const BLUE = 'var(--el-color-primary)'
+const unwrap = resp => resp?.data?.data ?? resp?.data ?? resp ?? {}
+
+async function load() {
+  if ( !props.equipmentId ) return
+  try {
+    const d = unwrap( await getEquipmentById( props.equipmentId ) ) || {}
+    imageUrl.value = d.exploded_view_drawing ?? d.explodedViewDrawing ?? d.exploded_view ?? defaultImageUrl
+    imageAlt.value = d.name ? `Exploded view of ${d.name}` : 'Equipment image'
+
+    const root = unwrap( await getEquipmentSubtree( props.equipmentId ) ) || {}
+    const children = Array.isArray( root.children ) ? root.children : []
+    items.value = children.map( ( c, i ) => ( {
+      id : c.id,
+      text : c.name || c.label || `Item ${i + 1}`,
+      textType : 'default',
+      textSize : 'default',
+      circleColor : BLUE
+    } ) )
+  } catch {
+    imageUrl.value = defaultImageUrl
+    items.value = []
+  }
+}
+
+function onCardClick( id ) {
+  emit( 'request-select-node', Number( id ) )
+}
+
+onMounted( load )
+watch( () => props.equipmentId, load, { immediate : false } )
 </script>
 
 <style scoped>
+/* Base: smaller screens use ~55% viewport height */
 .t2-sub-items {
-  flex: 1;
   display: flex;
-  flex-direction: row;
-  gap: 10px;
-  min-height: 400px;
+  width: 100%;
+  height: 56svh; /* smaller devices */
+  overflow: hidden; /* keep tab body from scrolling */
 }
 
+/* Large monitors: bump to ~70% viewport height */
+@media (min-width: 1920px) {
+  .t2-sub-items {
+    height: 68dvh; /* desktops/monitors */
+  }
+}
+
+/* Let both columns shrink when space is tight */
+.t2-sub-items > .image,
+.t2-sub-items > .label-cards {
+  min-width: 0;
+}
+
+/* Image column */
 .image {
-  height: calc(100vh - 280px);
-  align-content: center;
-}
-
-.image-slot {
   flex: 1;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
+/* Cards column — responsive width */
 .label-cards {
-  flex: 0 0 300px;
-  height: calc(100vh - 280px);
+  width: clamp(170px, 24vw, 320px);
+  border-left: 1px solid #eee;
   overflow-y: auto;
-  padding-right: 5px;
+  padding: 0 12px;
+  background: #fff;
+}
+
+/* Optional: make it a bit tighter on tablets */
+@media (max-width: 900px) {
+  .label-cards {
+    width: clamp(160px, 28vw, 220px);
+  }
+}
+
+.card-wrapper {
+  cursor: pointer;
+  transition: transform 0.15s ease;
+  margin-bottom: 10px; /* spacing between cards */
+}
+.card-wrapper:hover {
+  transform: translateY(-2px);
 }
 </style>

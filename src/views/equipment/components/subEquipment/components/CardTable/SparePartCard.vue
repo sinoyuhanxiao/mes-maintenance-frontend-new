@@ -7,26 +7,22 @@
             :key="item.imageUrl + '-' + item.id"
             :src="item.imageUrl"
             :preview-src-list="[item.imageUrl]"
-            fit="cover"
+            hide-on-click-modal="true"
+            fit="contain"
             class="part-image"
             preview-teleported
             :z-index="4000"
           >
-            <!-- use the same fallback while loading -->
             <template #placeholder>
               <div class="image-slot image-viewer-slot">
                 <el-icon><Picture /></el-icon>
               </div>
             </template>
-
-            <!-- error: same fallback -->
             <template #error>
               <div class="image-slot image-viewer-slot">
                 <el-icon><Picture /></el-icon>
               </div>
             </template>
-
-            <!-- viewer modal error -->
             <template #viewer-error="{ activeIndex, src }">
               <div class="image-slot viewer-error">
                 <el-icon><Picture /></el-icon>
@@ -36,7 +32,6 @@
           </el-image>
         </template>
 
-        <!-- no URL: same fallback -->
         <template v-else>
           <div class="image-slot image-viewer-slot part-image">
             <el-icon><Picture /></el-icon>
@@ -46,21 +41,34 @@
 
       <div class="info-section">
         <div class="info-section-header">
-          <el-text tag="b" size="large">{{ item.title || '—' }}</el-text>
+          <el-text tag="b" size="default">{{ item.title || '—' }}</el-text>
           <el-text>({{ item.partNumber || '—' }})</el-text>
+
           <div class="spacer"></div>
 
-          <el-tooltip content="Edit" placement="top">
-            <el-button type="text" :icon="Edit" @click="$emit('edit', item)" />
-          </el-tooltip>
-          <el-tooltip content="Delete" placement="top">
-            <el-button type="text" :icon="Delete" @click="$emit('delete', item)" />
-          </el-tooltip>
+          <!-- actions grouped tightly -->
+          <div class="sp-actions">
+            <!-- Option A: two buttons with margin reset -->
+            <el-tooltip content="Edit" placement="top">
+              <el-button class="sp-action-btn" size="small" type="text" :icon="Edit" @click="$emit('edit', item)" />
+            </el-tooltip>
+            <el-tooltip content="Delete" placement="top">
+              <el-button class="sp-action-btn" size="small" type="text" :icon="Delete" @click="$emit('delete', item)" />
+            </el-tooltip>
+
+            <!--
+            // Option B (alternate): use a button group instead (comment out A)
+            <el-button-group>
+              <el-button class="sp-action-btn" size="small" type="text" :icon="Edit" @click="$emit('edit', item)" />
+              <el-button class="sp-action-btn" size="small" type="text" :icon="Delete" @click="$emit('delete', item)" />
+            </el-button-group>
+            -->
+          </div>
         </div>
 
         <el-divider />
 
-        <el-descriptions :column="3" direction="vertical">
+        <el-descriptions :column="3">
           <el-descriptions-item label="Position Code">{{ item.deviceTagPositionCode || '—' }}</el-descriptions-item>
           <el-descriptions-item label="Quantity">{{ item.deviceQuantity || '—' }}</el-descriptions-item>
           <el-descriptions-item label="Vendor Suggested Service Days">{{
@@ -90,7 +98,7 @@ defineProps( { item : { type : Object, required : true }} )
 function formatDays( n ) {
   if ( n == null || Number.isNaN( Number( n ) ) ) return '—'
   const v = Number( n )
-  return v === 1 ? '1 Day' : `${v} Days`
+  return v === 1 ? '1' : `${v}`
 }
 function formatDate( iso ) {
   if ( !iso ) return '—'
@@ -108,6 +116,7 @@ function formatDate( iso ) {
   transition: box-shadow 0.2s ease, transform 0.15s ease;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12), 0 0 6px rgba(0, 0, 0, 0.04);
   background: #fff;
+  min-width: 0; /* prevent overflow */
 }
 .card-item:hover {
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
@@ -118,6 +127,7 @@ function formatDate( iso ) {
   display: flex;
   gap: 12px;
   align-items: center;
+  min-width: 0; /* prevent overflow */
 }
 .image-section {
   width: 150px;
@@ -158,13 +168,47 @@ function formatDate( iso ) {
   flex: 1;
   display: flex;
   flex-direction: column;
+  min-width: 0; /* prevent long text causing horizontal scroll */
 }
 .info-section-header {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 .spacer {
   flex: 1;
+}
+
+/* actions: tight grouping on the right */
+.sp-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px; /* your intended spacing */
+}
+
+/* kill Element Plus default +12px left margin between adjacent buttons */
+:deep(.sp-actions .el-button + .el-button) {
+  margin-left: 0 !important;
+}
+
+/* make icon text buttons tighter */
+.sp-action-btn {
+  padding: 2px 6px !important;
+  min-height: 0;
+  line-height: 1;
+}
+
+/* Reduce spacing around divider */
+:deep(.info-section > .el-divider) {
+  margin: 12px 0;
+}
+
+/* only bump icon size on big monitors */
+@media (min-width: 1440px) {
+  .sp-action-btn :deep(.el-icon) {
+    font-size: 16px !important;
+  }
 }
 </style>
