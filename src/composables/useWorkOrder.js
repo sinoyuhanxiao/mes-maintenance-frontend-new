@@ -40,6 +40,7 @@ export function useWorkOrder() {
     workType : undefined,
     status : undefined,
     search : undefined,
+    work_order_id : undefined,
     dueDate : undefined,
     customDateRange : undefined,
     recurrence : undefined,
@@ -65,6 +66,7 @@ export function useWorkOrder() {
       if ( listQuery.workType ) filters.workType = listQuery.workType
       if ( listQuery.status ) filters.status = listQuery.status
       if ( listQuery.search ) filters.search = listQuery.search
+      if ( listQuery.work_order_id ) filters.work_order_id = listQuery.work_order_id
       if ( listQuery.dueDate ) filters.dueDate = listQuery.dueDate
       if ( listQuery.customDateRange ) filters.customDateRange = listQuery.customDateRange
       if ( listQuery.recurrence ) filters.recurrence = listQuery.recurrence
@@ -380,7 +382,6 @@ export function useWorkOrder() {
     const q = listQuery
 
     const payload = {
-      keyword : q.search || null,
       work_type_ids : q.workType ? [q.workType] : [],
       priority_ids : q.priority ? [q.priority] : [],
       state_ids : q.state ? [q.state] : [],
@@ -390,6 +391,13 @@ export function useWorkOrder() {
       start_date_from : q.start_date_from,
       end_date_to : q.end_date_to
       // TODO: add more supported filter param later (equipment_node, approved/finished at)
+    }
+
+    // Only include one of keyword or work_order_id, not both
+    if ( q.work_order_id ) {
+      payload.work_order_id = q.work_order_id
+    } else if ( q.search ) {
+      payload.keyword = q.search
     }
 
     const dueDateObj = processDueDateOptions()

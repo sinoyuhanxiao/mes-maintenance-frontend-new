@@ -303,6 +303,7 @@
           <FileUploadMultiple
             @update:imageList="handleImageListUpdate"
             @update:filesList="handleFilesListUpdate"
+            :existing-image-list="form.existing_image_list || []"
             :image-label="$t('workOrder.create.imageUpload')"
             :file-label="$t('workOrder.create.fileUpload')"
             upload-type="both"
@@ -1014,6 +1015,14 @@ const handleEditTask = async taskData => {
   }
 }
 
+// Props
+const props = defineProps( {
+  initialRequestData : {
+    type : Object,
+    default : null
+  }
+} )
+
 // Emits
 const emit = defineEmits( ['back-to-detail', 'work-order-created'] )
 
@@ -1058,8 +1067,19 @@ onMounted( () => {
   // Set create mode context before any operations
   workOrderDraftStore.setCreateMode()
 
-  hydrateFormFromDraft()
+  // Only hydrate from draft if we don't have request data to pre-fill
+  if ( !props.initialRequestData ) {
+    hydrateFormFromDraft()
+  }
+
   loadFormData()
+
+  // If we have request data, pre-fill after form data is loaded
+  if ( props.initialRequestData ) {
+    nextTick( () => {
+      preFillFromRequestData( props.initialRequestData )
+    } )
+  }
 
   // Register template update listener
   taskLibraryStore.addTemplateUpdateListener( handleTemplateUpdate )
@@ -1190,6 +1210,63 @@ const hydrateFormFromDraft = () => {
     workOrderDraftStore.saveContextAwareDraft( form, 'create' )
   } )
 }
+
+// Helper function to convert image_list to array
+const parseImageList = imageList => {
+  if ( !imageList ) return []
+  if ( Array.isArray( imageList ) ) return imageList
+  if ( typeof imageList === 'string' ) {
+    return imageList.split( ',' ).filter( Boolean )
+  }
+  return []
+}
+
+// Pre-fill form from maintenance request data
+const preFillFromRequestData = requestData => {
+  if ( !requestData ) return
+
+  isHydratingForm = true
+
+  // Pre-fill basic fields
+  if ( requestData.name ) {
+    form.name = requestData.name
+  }
+
+  if ( requestData.description ) {
+    form.description = requestData.description
+  }
+
+  // Pre-fill equipment (convert single ID to array for tree-select)
+  if ( requestData.equipment_node_id ) {
+    form.equipment_node_ids = [requestData.equipment_node_id]
+  }
+
+  // Pre-fill existing images
+  const existingImages = parseImageList( requestData.image_list )
+  if ( existingImages.length > 0 ) {
+    form.existing_image_list = existingImages
+  }
+
+  // Pre-fill request_id to link work order with maintenance request
+  if ( requestData.id ) {
+    form.request_id = requestData.id
+  }
+
+  nextTick( () => {
+    isHydratingForm = false
+  } )
+}
+
+// Watch for initialRequestData changes and pre-fill form
+// Note: Initial pre-fill is handled in onMounted after loadFormData
+watch(
+  () => props.initialRequestData,
+  newRequestData => {
+    if ( newRequestData ) {
+      preFillFromRequestData( newRequestData )
+    }
+  }
+)
 
 watch(
   () => form.tasks,

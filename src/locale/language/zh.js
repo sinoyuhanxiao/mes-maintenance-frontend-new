@@ -92,7 +92,9 @@ export default {
       refresh : '刷新',
       backToDetail : '返回详情',
       reset : '重置',
-      update : '更新'
+      update : '更新',
+      approve : '批准',
+      reject : '拒绝'
     },
 
     // Status values
@@ -289,7 +291,11 @@ export default {
       equipment : '设备',
       recurrence : '重复',
       search : '搜索',
-      searchFiltersPlaceholder : '搜索筛选项'
+      searchFiltersPlaceholder : '搜索筛选项',
+      limitReached : '您最多只能选择 {max} 个筛选器。请取消选中一个以添加另一个。',
+      autoDeselected : '{count} 个筛选器已自动取消选择以适应新屏幕大小。',
+      noSpace : '已达筛选器限制。请取消选择一个筛选器以添加新的。',
+      noActiveFilters : '暂无筛选条件'
     },
 
     // Tabs

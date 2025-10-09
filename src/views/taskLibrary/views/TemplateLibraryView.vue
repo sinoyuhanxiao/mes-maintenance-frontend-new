@@ -178,6 +178,10 @@
                       <el-icon><DocumentCopy /></el-icon>
                       Duplicate
                     </el-dropdown-item>
+                    <el-dropdown-item command="createWorkOrder">
+                      <el-icon><Calendar /></el-icon>
+                      Create Work Order
+                    </el-dropdown-item>
 
                     <el-dropdown-item command="delete" divided class="delete-dropdown-item">
                       <el-icon><Delete /></el-icon>
@@ -402,14 +406,6 @@
               </div>
             </div>
           </div>
-        </div>
-
-        <!-- Floating Action Button -->
-        <div class="floating-action">
-          <el-button type="primary" class="fab-button" @click="createNewWorkOrder" size="large">
-            <el-icon style="margin: 0px 8px 2px 0px; font-size: 16px"><Calendar /></el-icon>
-            Create Work Order from Template
-          </el-button>
         </div>
       </div>
     </div>
@@ -1062,6 +1058,10 @@ const handleHeaderAction = command => {
       handleTemplateDuplicate()
       break
 
+    case 'createWorkOrder':
+      createNewWorkOrder()
+      break
+
     case 'delete':
       handleTemplateDelete( selectedTemplate.value )
       break
@@ -1106,6 +1106,9 @@ const createNewWorkOrder = async() => {
       }
       // If user chose "Add Here", we continue with the existing logic below
     }
+
+    // Set context to create mode BEFORE appending task
+    workOrderDraftStore.setCreateMode()
 
     // Convert the selected template to a task format
     const taskFromTemplate = buildDisplayTaskFromTemplate( selectedTemplate.value )
@@ -1538,6 +1541,7 @@ defineOptions( {
 }
 
 .action-button {
+  font-size: 20px;
   padding: 8px;
 }
 
@@ -1749,23 +1753,6 @@ defineOptions( {
 .step-type-count {
   font-size: 12px;
   color: #909399;
-}
-
-.floating-action {
-  position: fixed;
-  bottom: 24px;
-  right: 24%;
-  z-index: 1000;
-}
-
-.fab-button {
-  border-radius: 50px;
-  padding: 12px 20px;
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
-}
-
-.fab-button:hover {
-  box-shadow: 0 6px 16px rgba(64, 158, 255, 0.4);
 }
 
 .steps-preview {

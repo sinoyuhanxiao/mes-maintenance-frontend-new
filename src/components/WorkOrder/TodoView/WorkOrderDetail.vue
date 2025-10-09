@@ -21,7 +21,9 @@
         </el-col>
         <el-col :span="4">
           <div class="header-actions">
+            <!-- Edit Button (shown when approval buttons should NOT be shown) -->
             <el-button
+              v-if="!shouldShowApprovalButtons"
               class="edit-button"
               type="primary"
               plain
@@ -32,6 +34,33 @@
               <el-icon style="margin-right: 4px"><Edit /></el-icon>
               {{ $t('workOrder.actions.edit') }}
             </el-button>
+
+            <!-- Approve and Reject Buttons (shown when all tasks are finished) -->
+            <template v-if="shouldShowApprovalButtons">
+              <el-button
+                class="approve-button"
+                type="success"
+                plain
+                size="default"
+                @click="handleApprove"
+                :aria-label="$t('workOrder.actions.approve')"
+              >
+                <el-icon style="margin-right: 4px"><Select /></el-icon>
+                {{ $t('workOrder.actions.approve') }}
+              </el-button>
+              <el-button
+                class="reject-button"
+                type="danger"
+                plain
+                size="default"
+                @click="handleReject"
+                :aria-label="$t('workOrder.actions.reject')"
+              >
+                <el-icon style="margin-right: 4px"><CloseBold /></el-icon>
+                {{ $t('workOrder.actions.reject') }}
+              </el-button>
+            </template>
+
             <el-dropdown trigger="click" @command="handleHeaderAction">
               <el-button type="text" size="default" class="action-button">
                 <el-icon class="rotated-icon"><MoreFilled /></el-icon>
@@ -93,11 +122,6 @@
         </el-descriptions-item>
         <el-descriptions-item v-if="workOrder.vendor_ids?.length" label="Vendors">
           <span class="detail-value">{{ workOrder.vendor_ids.join(', ') }}</span>
-        </el-descriptions-item>
-        <el-descriptions-item v-if="workOrder.request" label="Related Request">
-          <span class="detail-value linked-value" @click="viewRequest(workOrder.request)">
-            {{ workOrder.request.name }}
-          </span>
         </el-descriptions-item>
       </el-descriptions>
     </div>
@@ -162,53 +186,146 @@
       <div v-if="loadingEquipment" class="loading-container">
         <el-skeleton :rows="2" animated />
       </div>
-      <div v-else-if="hasValidEquipment" class="equipment-grid">
+      <div v-else-if="hasValidEquipment" class="request-grid">
         <el-tooltip
           v-for="equipment in validEquipmentList"
           :key="`equipment-${equipment.id}-${equipment.name}`"
           effect="light"
           placement="top"
-          popper-class="equipment-tooltip-popper"
+          popper-class="request-tooltip-popper"
         >
           <template #content>
-            <div class="equipment-tooltip">
+            <div class="request-tooltip">
+              <div>
+                <strong>Name:</strong> {{ equipment.name || `Equipment ${equipment.id}` }}
+              </div>
               <div v-if="equipment.manufacturer"><strong>Manufacturer:</strong> {{ equipment.manufacturer.name }}</div>
               <div v-if="equipment.location?.name"><strong>Location:</strong> {{ equipment.location.name }}</div>
               <div v-if="equipment.person_in_charge">
                 <strong>Person in Charge:</strong> {{ equipment.person_in_charge }}
               </div>
-              <div v-if="!equipment.manufacturer && !equipment.location?.name && !equipment.person_in_charge">
-                No additional details available
-              </div>
             </div>
           </template>
-          <div class="equipment-card" @click="handleEquipmentClick(equipment)">
-            <div class="equipment-image">
+          <div class="request-card" @click="handleEquipmentClick(equipment)">
+            <div class="request-image">
               <el-image
                 v-if="equipment.image_list?.length"
                 :src="equipment.image_list[0]"
                 fit="cover"
-                class="equipment-thumbnail"
+                class="request-thumbnail"
               >
                 <template #error>
-                  <div class="equipment-icon">
+                  <div class="request-icon">
                     <el-icon><Tools /></el-icon>
                   </div>
                 </template>
               </el-image>
-              <div v-else class="equipment-icon">
+              <div v-else class="request-icon">
                 <el-icon><Tools /></el-icon>
               </div>
             </div>
-            <div class="equipment-info">
-              <div class="equipment-name">{{ equipment.name || `Equipment ${equipment.id}` }}</div>
-              <div class="equipment-code">Code : {{ equipment.code }}</div>
+            <div class="request-info">
+              <div class="request-name">{{ equipment.name || `Equipment ${equipment.id}` }}</div>
+              <div class="request-code">Code : {{ equipment.code }}</div>
             </div>
           </div>
         </el-tooltip>
       </div>
       <div v-else class="no-equipment">
         <el-empty description="No equipment details available" :image-size="60" />
+      </div>
+    </div>
+
+    <!-- Related Request Section -->
+    <div class="detail-section" v-if="workOrder.request">
+      <el-divider />
+      <h3 class="section-title">Related Request</h3>
+      <div class="request-grid">
+        <el-tooltip effect="light" placement="top" popper-class="request-tooltip-popper">
+          <template #content>
+            <div class="request-tooltip">
+              <div>
+                <strong>Name:</strong> {{ workOrder.request.name || `Request ${workOrder.request.id}` }}
+              </div>
+              <div v-if="workOrder.request.equipment_node">
+                <strong>Equipment:</strong> {{ workOrder.request.equipment_node.name }}
+              </div>
+              <div v-if="workOrder.request.created_by">
+                <strong>Created By:</strong> {{ workOrder.request.created_by }}
+              </div>
+              <div v-if="workOrder.request.status !== undefined">
+                <strong>Status:</strong> {{ getRequestStatusLabel(workOrder.request.status) }}
+              </div>
+            </div>
+          </template>
+          <div class="request-card" @click="handleRequestClick(workOrder.request)">
+            <div class="request-image">
+              <el-image
+                v-if="workOrder.request.image_list"
+                :src="getFirstRequestImage(workOrder.request.image_list)"
+                fit="cover"
+                class="request-thumbnail"
+              >
+                <template #error>
+                  <div class="request-icon workorder-request-icon">
+                    <el-icon><Document /></el-icon>
+                  </div>
+                </template>
+              </el-image>
+              <div v-else class="request-icon workorder-request-icon">
+                <el-icon><Document /></el-icon>
+              </div>
+            </div>
+            <div class="request-info">
+              <div class="request-name">{{ workOrder.request.name || `Request ${workOrder.request.id}` }}</div>
+              <div class="request-code">ID: #{{ workOrder.request.id }}</div>
+            </div>
+          </div>
+        </el-tooltip>
+      </div>
+    </div>
+
+    <!-- Attachments Section - Following equipment details pattern -->
+    <div class="detail-section" v-if="hasAttachments || hasFileAttachments">
+      <el-divider />
+
+      <!-- Images Section -->
+      <div v-if="hasAttachments" class="images-section">
+        <el-descriptions :column="1">
+          <el-descriptions-item label="Images">
+            <div class="image-gallery">
+              <el-image
+                v-for="(imagePath, index) in workOrder.image_list"
+                :key="index"
+                :src="imagePath"
+                :preview-src-list="workOrder.image_list"
+                fit="cover"
+                class="workorder-image"
+              >
+                <template #error>
+                  <div class="image-slot">
+                    <el-icon><Picture /></el-icon>
+                  </div>
+                </template>
+              </el-image>
+            </div>
+          </el-descriptions-item>
+        </el-descriptions>
+      </div>
+
+      <!-- Files Section -->
+      <div v-if="hasFileAttachments" class="files-section">
+        <el-descriptions :column="1" direction="vertical">
+          <el-descriptions-item label="Files">
+            <div class="file-list">
+              <div v-for="file in processedFileList" :key="file.id || file.name" class="file-item">
+                <el-link :href="file.url" target="_blank" :icon="getFileIcon(file.type)" class="file-link">
+                  {{ file.name }}
+                </el-link>
+              </div>
+            </div>
+          </el-descriptions-item>
+        </el-descriptions>
       </div>
     </div>
 
@@ -256,50 +373,6 @@
             {{ workOrderProgress.completed }} of {{ workOrderProgress.total }} tasks completed
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- Attachments Section - Following equipment details pattern -->
-    <div class="detail-section" v-if="hasAttachments || hasFileAttachments">
-      <el-divider />
-
-      <!-- Images Section -->
-      <div v-if="hasAttachments" class="images-section">
-        <el-descriptions :column="1">
-          <el-descriptions-item label="Images">
-            <div class="image-gallery">
-              <el-image
-                v-for="(imagePath, index) in workOrder.image_list"
-                :key="index"
-                :src="imagePath"
-                :preview-src-list="workOrder.image_list"
-                fit="cover"
-                class="workorder-image"
-              >
-                <template #error>
-                  <div class="image-slot">
-                    <el-icon><Picture /></el-icon>
-                  </div>
-                </template>
-              </el-image>
-            </div>
-          </el-descriptions-item>
-        </el-descriptions>
-      </div>
-
-      <!-- Files Section -->
-      <div v-if="hasFileAttachments" class="files-section">
-        <el-descriptions :column="1" direction="vertical">
-          <el-descriptions-item label="Files">
-            <div class="file-list">
-              <div v-for="file in processedFileList" :key="file.id || file.name" class="file-item">
-                <el-link :href="file.url" target="_blank" :icon="getFileIcon(file.type)" class="file-link">
-                  {{ file.name }}
-                </el-link>
-              </div>
-            </div>
-          </el-descriptions-item>
-        </el-descriptions>
       </div>
     </div>
 
@@ -670,7 +743,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   Edit,
@@ -688,12 +761,14 @@ import {
   Microphone,
   ArrowDown,
   DocumentCopy,
-  Search
+  Search,
+  Select,
+  CloseBold
 } from '@element-plus/icons-vue'
 import { convertToLocalTime } from '@/utils/datetime'
 import { exportTimeline as exportTimelineData, generateTimestampedFilename } from '@/utils/timelineExport'
 import { getEquipmentById } from '@/api/equipment'
-import { deleteIndividualWorkOrder, deleteRecurrenceWorkOrders, getWorkOrdersByRecurrence } from '@/api/work-order'
+import { deleteIndividualWorkOrder, deleteRecurrenceWorkOrders, getWorkOrdersByRecurrence, updateWorkOrder } from '@/api/work-order'
 import { getTaskEntryById } from '@/api/task-entry'
 import PriorityTag from '../Display/PriorityTag.vue'
 import WorkTypeTag from '../Display/WorkTypeTag.vue'
@@ -728,7 +803,8 @@ const emit = defineEmits( [
   'view-procedure',
   'add-comment',
   'delete',
-  'start-work-order'
+  'start-work-order',
+  'refresh'
 ] )
 
 // State
@@ -769,6 +845,10 @@ const activeTaskPreviewTab = ref( 'logs' )
 // Search input with debounce
 const searchInput = ref( '' )
 let searchDebounceTimer = null
+
+// Dynamic min-height for lists
+const listsMinHeight = ref( '800px' )
+const headerElement = ref( null )
 
 // Computed
 const isIncomplete = computed( () => {
@@ -846,6 +926,15 @@ const workOrderProgress = computed( () => {
     percentage,
     remaining : total - completed - failed
   }
+} )
+
+const shouldShowApprovalButtons = computed( () => {
+  if ( !props.workOrder ) return false
+
+  const state = props.workOrder.state
+
+  // Show approve/reject buttons only when state is Pending Approval (state.id === 14)
+  return state?.id === 14
 } )
 
 const hasFileAttachments = computed( () => {
@@ -1138,6 +1227,30 @@ watch(
   }
 )
 
+// Calculate dynamic min-height for lists
+const calculateListsMinHeight = () => {
+  nextTick( () => {
+    try {
+      // Get the right-panel container from parent
+      const rightPanel = document.querySelector( '.todo-view-container .todo-view .right-panel' )
+      // Get the header element
+      const header = document.querySelector( '.work-order-detail .detail-header' )
+
+      if ( rightPanel && header ) {
+        const rightPanelHeight = rightPanel.offsetHeight
+        const headerHeight = header.offsetHeight
+        const calculatedMinHeight = rightPanelHeight - headerHeight - 100
+
+        // Set minimum of 400px to prevent too small lists
+        listsMinHeight.value = `${Math.max( calculatedMinHeight, 400 )}px`
+      }
+    } catch ( error ) {
+      console.warn( 'Failed to calculate lists min-height:', error )
+      // Keep default value on error
+    }
+  } )
+}
+
 // Methods
 const formatDate = ( dateString, use25HourFormat = false ) => {
   if ( !dateString ) return '-'
@@ -1165,6 +1278,68 @@ const formatDate = ( dateString, use25HourFormat = false ) => {
 
 const handleStartWorkOrder = () => {
   emit( 'start-work-order', props.workOrder )
+}
+
+const handleApprove = async () => {
+  try {
+    await ElMessageBox.confirm(
+      'Are you sure you want to approve this work order?',
+      'Confirm Approval',
+      {
+        confirmButtonText : 'Approve',
+        cancelButtonText : 'Cancel',
+        type : 'success'
+      }
+    )
+
+    await updateWorkOrder( props.workOrder.id, { state_id : 7 } )
+    ElMessage.success( 'Work order approved successfully' )
+    emit( 'refresh' )
+  } catch ( error ) {
+    if ( error !== 'cancel' ) {
+      console.error( 'Error approving work order:', error )
+      ElMessage.error( 'Failed to approve work order' )
+    }
+  }
+}
+
+const handleReject = async () => {
+  try {
+    // Check if due date has passed
+    const dueDate = props.workOrder?.due_date ? new Date( props.workOrder.due_date ) : null
+    const now = new Date()
+    const isDueDatePassed = dueDate && dueDate < now
+
+    // Prepare confirmation message
+    let confirmMessage = 'Are you sure you want to reject this work order?'
+    if ( isDueDatePassed ) {
+      confirmMessage += '\n\nNote: The due date has passed. This work order will be marked as Incomplete.'
+    }
+
+    await ElMessageBox.confirm(
+      confirmMessage,
+      'Confirm Rejection',
+      {
+        confirmButtonText : 'Reject',
+        cancelButtonText : 'Cancel',
+        type : 'warning',
+        dangerouslyUseHTMLString : false,
+        confirmButtonClass : 'el-button--danger'
+      }
+    )
+
+    // Set state based on due date
+    const stateId = isDueDatePassed ? 6 : 5
+
+    await updateWorkOrder( props.workOrder.id, { state_id : stateId } )
+    ElMessage.success( 'Work order rejected successfully' )
+    emit( 'refresh' )
+  } catch ( error ) {
+    if ( error !== 'cancel' ) {
+      console.error( 'Error rejecting work order:', error )
+      ElMessage.error( 'Failed to reject work order' )
+    }
+  }
 }
 
 const handleHeaderAction = action => {
@@ -1522,8 +1697,38 @@ const getFileTypeFromName = fileName => {
   return 'document'
 }
 
-const viewRequest = request => {
-  ElMessage.info( `Navigation to request ${request.name} will be implemented` )
+const handleRequestClick = request => {
+  if ( !request?.id ) {
+    ElMessage.warning( 'Request information is not available' )
+    return
+  }
+
+  // Navigate to maintenance requests page with request ID as query parameter
+  router.push( {
+    path : '/maintenance-requests',
+    query : { requestId : request.id }
+  } )
+}
+
+const getRequestStatusLabel = status => {
+  const statusMap = {
+    0 : 'Pending',
+    1 : 'Rejected',
+    2 : 'Approved'
+  }
+  return statusMap[status] || 'Unknown'
+}
+
+const getFirstRequestImage = imageList => {
+  if ( !imageList ) return null
+  if ( Array.isArray( imageList ) && imageList.length > 0 ) {
+    return imageList[0]
+  }
+  if ( typeof imageList === 'string' ) {
+    const images = imageList.split( ',' ).filter( Boolean )
+    return images.length > 0 ? images[0] : null
+  }
+  return null
 }
 
 const handleEquipmentClick = equipment => {
@@ -1550,6 +1755,20 @@ const handleSearchInput = value => {
   }, 300 )
 }
 
+// Lifecycle hooks
+onMounted( () => {
+  // Calculate initial min-height
+  calculateListsMinHeight()
+
+  // Add resize listener to recalculate on window resize
+  window.addEventListener( 'resize', calculateListsMinHeight )
+} )
+
+onUnmounted( () => {
+  // Clean up resize listener
+  window.removeEventListener( 'resize', calculateListsMinHeight )
+} )
+
 defineOptions( {
   name : 'WorkOrderDetail'
 } )
@@ -1560,13 +1779,14 @@ defineOptions( {
   background: var(--el-bg-color);
   border-radius: 8px;
   margin-top: 24px;
-  padding: 0 24px 24px 24px;
+  padding: 0 21px 24px 21px;
   height: 100%;
   overflow-y: auto;
   position: relative;
 }
 
 .detail-header {
+  width: 100% !important;
   padding-bottom: 16px;
   border-bottom: 1px solid var(--el-border-color-light);
   position: sticky;
@@ -1600,7 +1820,7 @@ defineOptions( {
 
     .meta-info {
       display: flex;
-      gap: 16px;
+      gap: 38px;
       font-size: 14px;
       color: var(--el-text-color-secondary);
       flex-wrap: wrap;
@@ -1637,14 +1857,17 @@ defineOptions( {
     justify-content: flex-end;
     align-items: center;
 
-    .edit-button {
+    .edit-button,
+    .approve-button,
+    .reject-button {
       display: inline-flex;
       align-items: center;
       gap: 4px;
     }
 
     .action-button {
-      padding: 4px;
+      font-size: 20px;
+      padding: 8px;
       color: var(--el-text-color-secondary);
 
       &:hover {
@@ -1799,6 +2022,8 @@ defineOptions( {
 }
 
 .description-content {
+  margin-top: 10px;
+  width: 90%;
   p {
     margin: 0;
     line-height: 1.6;
@@ -2129,14 +2354,14 @@ defineOptions( {
   }
 }
 
-// Equipment Grid Styles
-.equipment-grid {
+// Request Grid Styles
+.request-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   gap: 16px;
   margin-bottom: 48px;
 
-  .equipment-card {
+  .request-card {
     display: flex;
     align-items: center;
     padding: 16px;
@@ -2152,8 +2377,8 @@ defineOptions( {
       transform: translateY(-1px);
     }
 
-    .equipment-image,
-    .equipment-icon {
+    .request-image,
+    .request-icon {
       width: 40px;
       height: 40px;
       border-radius: 8px;
@@ -2163,33 +2388,45 @@ defineOptions( {
       overflow: hidden;
     }
 
-    .equipment-icon {
+    .request-icon {
       background: var(--el-color-primary-light-9);
 
       .el-icon {
         font-size: 20px;
         color: var(--el-color-primary);
       }
+
+      &.workorder-request-icon {
+        background: var(--el-color-success-light-9);
+
+        .el-icon {
+          color: var(--el-color-success);
+        }
+      }
     }
 
-    .equipment-thumbnail {
+    .request-thumbnail {
       width: 100%;
       height: 100%;
       border-radius: 8px;
     }
 
-    .equipment-info {
+    .request-info {
       flex: 1;
       margin-left: 12px;
+      min-width: 0;
 
-      .equipment-name {
+      .request-name {
         font-size: 14px;
         font-weight: 500;
         color: var(--el-text-color-primary);
         margin-bottom: 4px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
 
-      .equipment-code {
+      .request-code {
         font-size: 12px;
         color: var(--el-text-color-secondary);
       }
@@ -2197,8 +2434,8 @@ defineOptions( {
   }
 }
 
-// Equipment Tooltip Styles
-.equipment-tooltip {
+// Request Tooltip Styles
+.request-tooltip {
   padding: 6px 12px;
   background: white !important;
   border-radius: 8px;
@@ -2283,6 +2520,7 @@ defineOptions( {
 // Standards and Tasks Lists
 .standards-list,
 .tasks-list {
+  min-height: v-bind(listsMinHeight) !important;
   .standard-item,
   .task-item {
     border: 1px solid var(--el-border-color-light);
@@ -2377,7 +2615,7 @@ defineOptions( {
   justify-content: center;
   align-items: center;
   padding: 40px 20px;
-  min-height: 200px;
+  min-height: v-bind(listsMinHeight) !important;
 }
 
 .loading-container {
@@ -2426,8 +2664,8 @@ defineOptions( {
   }
 }
 
-// Global tooltip styles for equipment tooltips
-:deep(.equipment-tooltip-popper) {
+// Global tooltip styles for request tooltips
+:deep(.request-tooltip-popper) {
   background: white !important;
   border: 1px solid var(--el-border-color) !important;
   border-radius: 8px !important;

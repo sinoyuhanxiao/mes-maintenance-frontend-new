@@ -7,7 +7,7 @@ export const createEmptyWorkOrderForm = () => ( {
   work_type_id : null,
   equipment_node_ids : [],
   vendor_ids : [],
-  assignee_ids : [],
+  assignee_ids : [84], // Default to "System"
   approved_by_id : null,
   time_zone : Intl.DateTimeFormat().resolvedOptions().timeZone,
   start_date : null,
@@ -22,9 +22,11 @@ export const createEmptyWorkOrderForm = () => ( {
   task_list : [],
   image_list : [],
   file_list : [],
+  existing_image_list : [],
   standard_list : [],
   tasks : [],
-  standards : []
+  standards : [],
+  request_id : null
 } )
 
 export const cloneWorkOrderForm = form => JSON.parse( JSON.stringify( form ) )

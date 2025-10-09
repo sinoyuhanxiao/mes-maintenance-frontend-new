@@ -106,12 +106,14 @@
         @view-procedure="handleViewProcedure"
         @add-comment="handleAddComment"
         @start-work-order="handleStartWorkOrder"
+        @refresh="handleRefresh"
       />
 
       <!-- Work Order Create View -->
       <WorkOrderCreate
         :key="computedCreatePanelKey"
         v-else-if="currentRightPanelView === 'create'"
+        :initial-request-data="requestDataForCreate"
         @back-to-detail="showDetailView"
         @work-order-created="handleWorkOrderCreated"
         ref="workOrderCreateRef"
@@ -211,6 +213,7 @@ const sortBy = ref( 'priority-desc' )
 const currentRightPanelView = ref( 'detail' ) // 'detail', 'create', 'edit', or 'execution'
 const workOrderToEdit = ref( null )
 const isLoadingWorkOrder = ref( false )
+const requestDataForCreate = ref( null ) // Holds maintenance request data for pre-filling create form
 
 // Screen width tracking for responsive pager count
 const screenWidth = ref( window.innerWidth )
@@ -271,8 +274,8 @@ const scrollToTasksSection = () => {
   }
 }
 
-// Dynamic pager count based on screen width
-const pagerCount = computed( () => ( screenWidth.value > 1800 ? 7 : 3 ) )
+// Fixed pager count to prevent overflow (matches StandardsLibraryView pattern)
+const pagerCount = 3
 
 // Server handles all filtering, sorting, and pagination
 // Use work orders directly from props - no client-side processing needed
@@ -727,10 +730,38 @@ const selectWorkOrderById = workOrderId => {
   return false
 }
 
+const showCreateFormWithRequestData = requestData => {
+  requestDataForCreate.value = requestData
+  currentRightPanelView.value = 'create'
+  selectedWorkOrder.value = null
+}
+
+const handleRefresh = async () => {
+  // Emit refresh to parent to reload work orders list
+  emit( 'refresh' )
+
+  // Reload the currently selected work order to show updated state
+  if ( selectedWorkOrder.value?.id ) {
+    try {
+      isLoadingWorkOrder.value = true
+      const response = await getWorkOrderById( selectedWorkOrder.value.id )
+      if ( response && response.data ) {
+        selectedWorkOrder.value = response.data
+      }
+    } catch ( error ) {
+      console.error( 'Failed to refresh work order:', error )
+      ElMessage.error( 'Failed to refresh work order details' )
+    } finally {
+      isLoadingWorkOrder.value = false
+    }
+  }
+}
+
 defineExpose( {
   showCreateForm,
   showDetailView,
-  selectWorkOrderById
+  selectWorkOrderById,
+  showCreateFormWithRequestData
 } )
 
 onMounted( () => {

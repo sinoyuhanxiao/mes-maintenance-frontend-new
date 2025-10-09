@@ -94,7 +94,9 @@ export default {
       refresh : 'Refresh',
       backToDetail : 'Back to Detail',
       reset : 'Reset',
-      update : 'Update'
+      update : 'Update',
+      approve : 'Approve',
+      reject : 'Reject'
     },
 
     // Status values
@@ -253,7 +255,8 @@ export default {
       searchFiltersPlaceholder : 'Search filters',
       limitReached : 'You can only select up to {max} filters. Please uncheck one to add another.',
       autoDeselected : '{count} filter(s) have been automatically deselected to fit the new screen size.',
-      noSpace : 'Filter limit reached. Please deselect a filter to add a new one.'
+      noSpace : 'Filter limit reached. Please deselect a filter to add a new one.',
+      noActiveFilters : 'No active filters'
     },
 
     // Tabs

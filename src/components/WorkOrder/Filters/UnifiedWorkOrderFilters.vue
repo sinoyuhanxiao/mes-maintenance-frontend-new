@@ -192,17 +192,28 @@
           <!-- Search Input (optional) -->
           <div v-if="isFilterVisible('search')" class="filter-item search-item">
             <el-input
-              v-model="localFilters.search"
-              :placeholder="$t('workOrder.placeholder.search')"
+              v-model="searchQuery"
+              :placeholder="searchByIdMode ? 'Search work order ID...' : $t('workOrder.placeholder.search')"
               style="width: 200px"
               size="default"
-              clearable
               :class="{ 'highlight-animation': animatingFilters.search }"
-              @keyup.enter="handleFilterChange"
+              @input="handleSearchInput"
               @clear="handleFilterChange"
             >
               <template #prefix>
                 <el-icon><Search /></el-icon>
+              </template>
+              <template #suffix>
+                <div class="search-suffix-icons">
+                  <el-tooltip :content="searchByIdMode ? 'Search by Name' : 'Search by ID'" placement="bottom">
+                    <el-icon
+                      :class="['search-mode-toggle', { 'is-active': searchByIdMode }]"
+                      @click.stop="toggleSearchMode"
+                    >
+                      #
+                    </el-icon>
+                  </el-tooltip>
+                </div>
               </template>
             </el-input>
           </div>
@@ -225,29 +236,13 @@
           </div>
         </div>
 
-        <!-- Filter Customization Menu -->
+        <!-- Filter Customization Button -->
         <div class="filter-item customization-item">
-          <el-dropdown trigger="click" @command="handleCustomizationCommand">
-            <el-button type="text" class="customization-button">
+          <el-tooltip :content="$t('workOrder.filters.filterSetting')" placement="bottom">
+            <el-button type="text" class="customization-button" @click="drawerVisible = true">
               <el-icon><Operation /></el-icon>
             </el-button>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="addFilter">
-                  <el-icon><Setting /></el-icon>
-                  {{ $t('workOrder.filters.filterSetting') }}
-                </el-dropdown-item>
-                <el-dropdown-item divided command="savePreset">
-                  <el-icon><Star /></el-icon>
-                  {{ $t('workOrder.filters.savePreset') }}
-                </el-dropdown-item>
-                <el-dropdown-item command="managePresets">
-                  <el-icon><Setting /></el-icon>
-                  {{ $t('workOrder.filters.managePresets') }}
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
+          </el-tooltip>
         </div>
       </div>
     </div>
@@ -276,8 +271,10 @@
           </el-input>
         </div>
 
-        <!-- Basic Filters Section -->
-        <div class="filter-section">
+        <!-- Scrollable Filter Sections -->
+        <div class="filter-sections-container">
+          <!-- Basic Filters Section -->
+          <div class="filter-section">
           <h4 class="section-title">
             <el-icon><Grid /></el-icon>
             {{ $t('workOrder.filters.basicFilters') }}
@@ -337,6 +334,46 @@
             </div>
           </div>
         </div>
+        </div>
+
+        <!-- Active Filters Summary -->
+        <div v-if="activeFilterTags.length > 0" class="active-filters-summary">
+          <div class="summary-header">
+            <h4 class="summary-title">
+              <el-icon><Filter /></el-icon>
+              {{ $t('workOrder.filters.activeFilters') || 'Active Filters' }}
+            </h4>
+            <el-tooltip :content="$t('workOrder.filters.clearAll') || 'Clear all filters'" placement="top">
+              <el-button
+                type="text"
+                size="small"
+                class="clear-all-button"
+                @click="handleClearAllFilters"
+              >
+                <el-icon><CircleClose /></el-icon>
+              </el-button>
+            </el-tooltip>
+          </div>
+          <div class="summary-content">
+            <el-tag
+              v-for="tag in activeFilterTags"
+              :key="tag.key"
+              type="info"
+              size="small"
+              closable
+              @close="handleRemoveFilter(tag.key)"
+              class="filter-tag"
+            >
+              {{ tag.label }}
+            </el-tag>
+          </div>
+        </div>
+        <div v-else class="active-filters-summary empty">
+          <div class="empty-state">
+            <el-icon class="empty-icon"><Filter /></el-icon>
+            <span class="empty-text">{{ $t('workOrder.filters.noActiveFilters') || 'No active filters' }}</span>
+          </div>
+        </div>
       </div>
     </el-drawer>
   </div>
@@ -346,7 +383,7 @@
 import { reactive, computed, watch, ref, nextTick, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
-import { Search, Operation, Star, Setting, EditPen, Download, Refresh, Grid } from '@element-plus/icons-vue'
+import { Search, Operation, Setting, EditPen, Download, Refresh, Grid, Filter, CircleClose } from '@element-plus/icons-vue'
 import { useCommonDataStore } from '@/store/modules/commonData'
 
 // Props
@@ -374,6 +411,11 @@ const emit = defineEmits( ['update:modelValue', 'filter-change', 'create', 'expo
 const { t } = useI18n()
 const commonDataStore = useCommonDataStore()
 
+// Search mode state
+const searchQuery = ref( '' )
+const searchByIdMode = ref( false )
+let searchDebounceTimer = null
+
 // Local filters state
 const localFilters = reactive( {
   assignedTo : props.modelValue.assignedTo || null,
@@ -383,6 +425,7 @@ const localFilters = reactive( {
   state : props.modelValue.state || null,
   category : props.modelValue.category || null,
   search : props.modelValue.search || '',
+  work_order_id : props.modelValue.work_order_id || null,
   latest_per_recurrence : props.currentView !== 'calendar',
   status : props.modelValue.status || null,
   equipment : props.modelValue.equipment || null,
@@ -411,6 +454,10 @@ onMounted( () => {
 
 onUnmounted( () => {
   window.removeEventListener( 'resize', updateScreenWidth )
+  // Clear search debounce timer if exists
+  if ( searchDebounceTimer ) {
+    clearTimeout( searchDebounceTimer )
+  }
 } )
 
 // Watch for screen width changes to handle filter limits
@@ -605,7 +652,7 @@ const filteredAdvancedFilters = computed( () => {
 } )
 
 // Active filters
-computed( () => {
+const activeFilterTags = computed( () => {
   const tags = []
 
   if ( localFilters.assignedTo ) {
@@ -668,19 +715,18 @@ computed( () => {
     } )
   }
 
+  if ( localFilters.work_order_id ) {
+    tags.push( {
+      key : 'work_order_id',
+      label : `Work Order ID: ${localFilters.work_order_id}`
+    } )
+  }
+
   if ( localFilters.status ) {
     const status = statusOptions.value.find( s => s.id === localFilters.status )
     tags.push( {
       key : 'status',
       label : `${t( 'workOrder.filters.status' )}: ${status?.name || localFilters.status}`
-    } )
-  }
-
-  if ( localFilters.category ) {
-    const category = categoryOptions.value.find( c => c.id === localFilters.category )
-    tags.push( {
-      key : 'category',
-      label : `${t( 'workOrder.filters.category' )}: ${category?.name || localFilters.category}`
     } )
   }
 
@@ -710,26 +756,58 @@ computed( () => {
 
   return tags
 } )
+
 // Methods
-const handleFilterChange = async() => {
-  emit( 'update:modelValue', { ...localFilters } )
+const handleSearchInput = () => {
+  // Clear any existing debounce timer
+  if ( searchDebounceTimer ) {
+    clearTimeout( searchDebounceTimer )
+  }
+
+  // Update the appropriate filter based on search mode
+  if ( searchByIdMode.value ) {
+    localFilters.work_order_id = searchQuery.value ? parseInt( searchQuery.value, 10 ) : null
+    localFilters.search = null
+  } else {
+    localFilters.search = searchQuery.value
+    localFilters.work_order_id = null
+  }
+
+  // Debounce the filter change by 300ms
+  searchDebounceTimer = setTimeout( () => {
+    handleFilterChange()
+  }, 300 )
 }
 
-const handleCustomizationCommand = command => {
-  switch ( command ) {
-    case 'addFilter':
-      drawerVisible.value = true
-      break
-    case 'savePreset':
-      // Save current filter configuration as preset
-      break
-    case 'managePresets':
-      // Open preset management dialog
-      break
-    default:
-      // Handle other customization commands
-      break
+const toggleSearchMode = () => {
+  const hasSearchContent = searchQuery.value && searchQuery.value.trim() !== ''
+
+  searchByIdMode.value = !searchByIdMode.value
+
+  if ( hasSearchContent ) {
+    // If there's content, apply it as a filter using the new mode
+    if ( searchByIdMode.value ) {
+      // Switched TO ID mode
+      localFilters.work_order_id = parseInt( searchQuery.value, 10 )
+      localFilters.search = null
+    } else {
+      // Switched TO Name mode
+      localFilters.search = searchQuery.value
+      localFilters.work_order_id = null
+    }
+    handleFilterChange()
+  } else {
+    // If no content, just clear the alternative filter
+    if ( searchByIdMode.value ) {
+      localFilters.search = null
+    } else {
+      localFilters.work_order_id = null
+    }
   }
+}
+
+const handleFilterChange = async() => {
+  emit( 'update:modelValue', { ...localFilters } )
 }
 
 const closeFilterDrawer = () => {
@@ -776,6 +854,35 @@ const triggerFilterHighlightAnimation = async filterKey => {
 
 const isFilterVisible = filterKey => {
   return availableFilters[filterKey]?.visible || false
+}
+
+const handleRemoveFilter = filterKey => {
+  // Clear the filter value
+  localFilters[filterKey] = null
+
+  // If removing search or work_order_id, also clear the search query
+  if ( filterKey === 'search' || filterKey === 'work_order_id' ) {
+    searchQuery.value = ''
+  }
+
+  // Emit the change to parent
+  handleFilterChange()
+}
+
+const handleClearAllFilters = () => {
+  // Clear all filter values except latest_per_recurrence
+  Object.keys( localFilters ).forEach( key => {
+    if ( key !== 'latest_per_recurrence' ) {
+      localFilters[key] = null
+    }
+  } )
+
+  // Clear search-related state
+  searchQuery.value = ''
+  searchByIdMode.value = false
+
+  // Emit the change to parent
+  handleFilterChange()
 }
 
 // Watch for external changes
@@ -908,6 +1015,31 @@ defineOptions( {
   flex-direction: column;
 }
 
+.filter-sections-container {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+
+  // Custom scrollbar
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--el-fill-color-lighter);
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--el-fill-color-dark);
+    border-radius: 3px;
+
+    &:hover {
+      background: var(--el-fill-color-darker);
+    }
+  }
+}
+
 .drawer-header {
   position: sticky;
   top: 0;
@@ -1012,6 +1144,125 @@ defineOptions( {
 
 :deep(.el-drawer__body) {
   padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+// Active Filters Summary Section
+.active-filters-summary {
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  padding: 16px 0 0 0;
+  border-top: 1px solid var(--el-border-color-lighter);
+  background: var(--el-bg-color);
+
+  &.empty {
+    padding: 12px 0 0 0;
+
+    .empty-state {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px;
+      background: var(--el-fill-color-lighter);
+      border-radius: 6px;
+
+      .empty-icon {
+        font-size: 16px;
+        color: var(--el-text-color-secondary);
+      }
+
+      .empty-text {
+        font-size: 13px;
+        color: var(--el-text-color-secondary);
+      }
+    }
+  }
+
+  .summary-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+
+    .summary-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--el-text-color-primary);
+
+      .el-icon {
+        color: var(--el-color-primary);
+        font-size: 16px;
+      }
+    }
+
+    .clear-all-button {
+      padding: 4px;
+      color: var(--el-text-color-secondary);
+      transition: all 0.2s ease;
+
+      .el-icon {
+        font-size: 18px;
+      }
+
+      &:hover {
+        color: var(--el-color-danger);
+        background: var(--el-color-danger-light-9);
+        border-radius: 4px;
+      }
+
+      &:active {
+        color: var(--el-color-danger-dark-2);
+      }
+    }
+  }
+
+  .summary-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    max-height: 120px;
+    overflow-y: auto;
+    padding: 2px;
+
+    // Custom scrollbar for summary content
+    &::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: var(--el-fill-color-lighter);
+      border-radius: 2px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: var(--el-fill-color-dark);
+      border-radius: 2px;
+
+      &:hover {
+        background: var(--el-fill-color-darker);
+      }
+    }
+
+    .filter-tag {
+      max-width: 100%;
+      font-size: 12px;
+
+      :deep(.el-tag__content) {
+        display: inline-block;
+        max-width: 280px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+  }
 }
 
 // Drawer responsive design
@@ -1051,6 +1302,29 @@ defineOptions( {
       }
     }
   }
+}
+
+// Search toggle styles
+.search-suffix-icons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.search-mode-toggle {
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 16px;
+  color: #909399;
+  transition: color 0.2s ease;
+}
+
+.search-mode-toggle:hover {
+  color: var(--el-color-primary);
+}
+
+.search-mode-toggle.is-active {
+  color: var(--el-color-primary);
 }
 
 @media (max-width: 768px) {

@@ -6,6 +6,7 @@
       incomplete: isIncomplete,
       'high-priority': isHighPriority,
       'failed-effect': isFailed && settingsStore.failedWorkOrderEffect,
+      'pending-approval': isPendingApproval,
     }"
     @click="$emit('select', workOrder)"
   >
@@ -67,17 +68,16 @@
         <!-- Status and Priority Badges -->
         <div class="card-badges">
           <el-tag
-            :type="getStatusTagType(workOrder.state?.name)"
-            size="small"
-            :effect="workOrder.state?.name === 'Incomplete' ? 'dark' : 'plain'"
+            :type="isPendingApproval ? 'success' : getStatusTagType(workOrder.state?.name)"
+            :effect="workOrder.state?.name === 'Incomplete' || isPendingApproval ? 'dark' : 'plain'"
           >
             {{ getStatusName(workOrder.state?.name) }}
           </el-tag>
-          <el-tag :type="getPriorityTagType(workOrder.priority?.name)" size="small" effect="plain">
-            <el-icon style="margin-right: 4px">
+          <el-tag :type="getPriorityTagType(workOrder.priority?.name)" effect="plain">
+            <el-icon style="margin: 0 0 4px 0">
               <Flag />
             </el-icon>
-            {{ getPriorityName(workOrder.priority?.name) }}
+              {{ getPriorityName(workOrder.priority?.name) }}
           </el-tag>
 
           <!--          <el-tag v-if="isIncomplete" type="danger" size="small" effect="dark">-->
@@ -144,6 +144,10 @@ const isFailed = computed( () => {
 
 const isHighPriority = computed( () => {
   return props.workOrder.priority?.name === 'High' || props.workOrder.priority?.name === 'Urgent'
+} )
+
+const isPendingApproval = computed( () => {
+  return props.workOrder.state?.id === 14
 } )
 
 // Methods
@@ -548,7 +552,7 @@ defineOptions( {
     min-width: 0; // Prevents flex item from overflowing
 
     .card-title {
-      font-size: 16px;
+      font-size: 17px;
       font-weight: 500;
       color: var(--el-text-color-primary);
       margin: 0 0 12px 0;

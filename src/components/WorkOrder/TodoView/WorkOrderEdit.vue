@@ -326,13 +326,15 @@
           <FileUploadMultiple
             @update:imageList="handleImageListUpdate"
             @update:filesList="handleFilesListUpdate"
+            @update:removedExistingImages="handleRemovedExistingImages"
+            @update:removedExistingFiles="handleRemovedExistingFiles"
             :image-label="$t('workOrder.create.imageUpload')"
             :file-label="$t('workOrder.create.fileUpload')"
             upload-type="both"
             :max-images="5"
             :max-files="10"
-            :existing-images="existingImages"
-            :existing-files="existingFiles"
+            :existing-image-list="existingImages"
+            :existing-file-list="existingFiles"
           />
         </div>
       </div>
@@ -1357,6 +1359,12 @@ const normalizeExistingTasks = ( taskList, workOrderId ) => {
 const existingImages = ref( [] )
 const existingFiles = ref( [] )
 
+// New file tracking - separate File objects from URLs
+const newImages = ref( [] )
+const newFiles = ref( [] )
+const newImageUrls = ref( [] )
+const newFileUrls = ref( [] )
+
 // Options data
 const assigneeOptions = ref( [
   { id : 84, name : 'System' },
@@ -2043,23 +2051,32 @@ const handleDeleteAllStandards = () => {
 
 // File handling methods
 const handleImageListUpdate = imageList => {
-  form.image_list = imageList
+  newImages.value = imageList
 }
 
 const handleFilesListUpdate = filesList => {
-  form.file_list = filesList
+  newFiles.value = filesList
+}
+
+const handleRemovedExistingImages = removedImageUrls => {
+  form.removed_image_urls = removedImageUrls
+}
+
+const handleRemovedExistingFiles = removedFileUrls => {
+  form.removed_file_urls = removedFileUrls
 }
 
 const uploadFilesToServer = async() => {
   try {
-    const allFiles = [...form.image_list, ...form.file_list]
-    if ( allFiles.length === 0 ) return
+    if ( newImages.value.length > 0 ) {
+      const imageRes = await uploadMultipleToMinio( newImages.value )
+      newImageUrls.value = imageRes.data.uploadedFiles?.map( file => file.url ) || []
+    }
 
-    const uploadResults = await uploadMultipleToMinio( allFiles )
-
-    // Update form with uploaded file URLs
-    form.image_list = uploadResults.images || []
-    form.file_list = uploadResults.files || []
+    if ( newFiles.value.length > 0 ) {
+      const fileRes = await uploadMultipleToMinio( newFiles.value )
+      newFileUrls.value = fileRes.data.uploadedFiles?.map( file => file.url ) || []
+    }
   } catch ( error ) {
     throw new Error( 'File upload failed. Please try again.' )
   }
@@ -2160,9 +2177,9 @@ const populateFormFromWorkOrder = workOrder => {
     form.work_type_id = workOrder.work_type?.id || workOrder.work_type_id || null
     form.approved_by_id = workOrder.approved_by?.id || workOrder.approved_by_id || null
 
-    if ( ( !Array.isArray( form.assignee_ids ) || form.assignee_ids.length === 0 ) && assigneeOptions.value.length > 0 ) {
-      const randomAssignee = pickRandomOptionId( assigneeOptions.value )
-      form.assignee_ids = randomAssignee ? [randomAssignee] : []
+    if ( !Array.isArray( form.assignee_ids ) || form.assignee_ids.length === 0 ) {
+      // Default to "System" (ID 84)
+      form.assignee_ids = [84]
     }
 
     if ( ( form.approved_by_id == null || form.approved_by_id === '' ) && supervisorOptions.value.length > 0 ) {
@@ -2489,10 +2506,22 @@ const submitForm = async() => {
 
     loading.value = true
 
-    // Upload files to MinIO first if there are any new files
-    if ( form.image_list.length > 0 || form.file_list.length > 0 ) {
+    // Upload new files to MinIO and get URLs
+    if ( newImages.value.length > 0 || newFiles.value.length > 0 ) {
       await uploadFilesToServer()
     }
+
+    // Merge existing URLs with newly uploaded URLs
+    let finalImageList = [...( existingImages.value || [] ), ...( newImageUrls.value || [] )]
+    let finalFileList = [...( existingFiles.value || [] ), ...( newFileUrls.value || [] )]
+
+    // Filter out removed files
+    finalImageList = finalImageList.filter( imageUrl => !form.removed_image_urls?.includes( imageUrl ) )
+    finalFileList = finalFileList.filter( fileUrl => !form.removed_file_urls?.includes( fileUrl ) )
+
+    // Update form with final URLs
+    form.image_list = finalImageList
+    form.file_list = finalFileList
 
     // Ensure recurrence settings are properly populated
     const formattedStartDate = toUtcIso( form.start_date )
@@ -2526,6 +2555,12 @@ const submitForm = async() => {
       // Update individual work order (includes "Does not repeat" cases)
       response = await updateWorkOrder( props.workOrder.id, finalPayload )
     }
+
+    // Reset file state after successful update
+    newImages.value = []
+    newFiles.value = []
+    newImageUrls.value = []
+    newFileUrls.value = []
 
     // Emit the updated work order
     const updatedWorkOrder = Array.isArray( response.data ) ? response.data[0] : response.data

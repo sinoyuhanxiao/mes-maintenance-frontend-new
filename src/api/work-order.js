@@ -213,3 +213,27 @@ export const deleteRecurrenceWorkOrders = recurrenceId => {
     url : `/work-order/delete-recurrence/${recurrenceId}`
   } )
 }
+
+/**
+ * Approve a work order by its ID.
+ * @param {number} id - The ID of the work order to approve.
+ * @returns {Promise} API response from the server.
+ */
+export const approveWorkOrder = id => {
+  return http.request( {
+    method : 'patch',
+    url : `/work-order/${id}/approve`
+  } )
+}
+
+/**
+ * Reject a work order by its ID.
+ * @param {number} id - The ID of the work order to reject.
+ * @returns {Promise} API response from the server.
+ */
+export const rejectWorkOrder = id => {
+  return http.request( {
+    method : 'patch',
+    url : `/work-order/${id}/reject`
+  } )
+}

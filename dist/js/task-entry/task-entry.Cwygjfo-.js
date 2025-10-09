@@ -1,1 +1,0 @@
-import{h as r}from"../../assets/index-CE-d1vf_.js";const a=t=>r.request({method:"get",url:`/task/entry/${t}`}),o=(t,s=null)=>r.request({method:"get",url:`/task/logs/task/${t}`,params:s?{change:s}:{}});export{a,o as g};

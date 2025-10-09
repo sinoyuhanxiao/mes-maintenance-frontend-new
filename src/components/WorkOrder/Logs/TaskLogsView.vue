@@ -58,9 +58,6 @@
 
       <!-- Right Pane: Populated Steps Preview -->
       <div v-if="selectedLog" class="right-pane">
-        <div class="right-pane-header">
-          <h3 class="preview-title">{{ selectedLog.task?.name || 'Task Snapshot' }}</h3>
-        </div>
         <div class="right-pane-content">
           <StepsPreviewPopulated v-if="selectedLog.task?.steps" :steps="selectedLog.task.steps" />
           <el-empty v-else description="No step data available" :image-size="80" />
@@ -246,30 +243,6 @@ defineOptions( {
   display: flex;
   justify-content: center;
   align-items: center;
-}
-
-.right-pane-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--el-border-color-light);
-  margin-bottom: 12px;
-}
-
-.preview-title {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-}
-
-.close-preview-btn {
-  padding: 4px;
-
-  &:hover {
-    color: var(--el-color-danger);
-  }
 }
 
 .right-pane-content {

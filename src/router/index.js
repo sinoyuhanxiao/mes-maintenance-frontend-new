@@ -183,17 +183,17 @@ export const asyncRoutes = [
     ]
   },
   {
-    path : '/request',
-    name : 'RequestsLayout',
+    path : '/maintenance-requests',
+    name : 'MaintenanceRequestsLayout',
     component : Layout,
-    redirect : '/request',
-    meta : { title : 'router.request', icon : 'message', noCache : true },
+    redirect : '/maintenance-requests',
+    meta : { title : 'router.request', icon : 'message', noCache : false },
     children : [
       {
         path : '',
-        component : () => import( '@/views/request/index.vue' ),
-        name : 'Requests',
-        meta : { title : 'router.request', noCache : true }
+        component : () => import( '@/views/maintenanceRequests/index.vue' ),
+        name : 'MaintenanceRequests',
+        meta : { title : 'router.request', noCache : false }
       }
     ]
   },
