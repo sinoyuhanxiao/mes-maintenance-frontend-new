@@ -1,5 +1,4 @@
 # Stage 1: Construction
-# Base Image: Alpine variant with the official Node.js LTS version
 FROM node:20-alpine AS builder
 
 # 1. Define the construction parameter BUILD_MODE
@@ -11,17 +10,15 @@ ENV BUILD_COMMAND="npm run build:${BUILD_MODE}"
 # Set the Working Directory
 WORKDIR /app
 
-# 2. Copy the environment file
+# 2. Copy dependency files ONLY to enable caching of npm install
 COPY package.json package-lock.json ./
 
-# Install Dependencies
+# Install Dependencies (Cached if package.json does not change)
 RUN npm install --registry=https://registry.npmmirror.com
 
-# Copy the environment file and the project code
+# 3. Copy all remaining files (project code, .env files, nginx.conf)
+# This step's cache will only break if code/config changes, NOT dependency list.
 COPY .env* .
-
-# Copy all project files
-COPY nginx.conf ./
 COPY . .
 
 # Run the build command

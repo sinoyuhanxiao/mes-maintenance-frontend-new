@@ -72,7 +72,13 @@
     </el-dialog>
 
     <!-- Delete -->
-    <el-dialog v-model="showDeactivateDialog" title="Delete Tier 2" width="600px" :before-close="handleCloseDialog" draggable>
+    <el-dialog
+      v-model="showDeactivateDialog"
+      title="Delete Tier 2"
+      width="600px"
+      :before-close="handleCloseDialog"
+      draggable
+    >
       <DeactivateNode
         v-if="showDeactivateDialog"
         @close="closeDeactivateDialog"
