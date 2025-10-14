@@ -286,7 +286,10 @@ function getChildrenOf( parentId ) {
  */
 function focusNode( id ) {
   const pathNodes = buildPathNodesTo( id )
-  if ( !pathNodes ) return
+  if ( !pathNodes ) {
+    console.warn( `Equipment with ID ${id} not found in tree` )
+    return false
+  }
   const expandIds = pathNodes.slice( 0, -1 ).map( n => n.id )
 
   expandedKeys.value = expandIds
@@ -304,7 +307,9 @@ function focusNode( id ) {
       cur = cur.parent
     }
     emit( 'node-click', elNode.data, breadcrumb )
+    return true
   }
+  return false
 }
 
 // ADD inside <script setup> of the tree component

@@ -54,7 +54,6 @@ export function useTaskLibrary() {
   const updateTemplate = async( templateId, templateData ) => {
     try {
       const updatedTemplate = await store.updateTemplateById( templateId, templateData )
-      ElMessage.success( 'Template updated successfully' )
       return updatedTemplate
     } catch ( error ) {
       ElMessage.error( 'Failed to update template' )

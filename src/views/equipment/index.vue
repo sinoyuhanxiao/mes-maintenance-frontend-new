@@ -93,7 +93,8 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, watch, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 
 import EquipmentTree from './components/equipmentTree/index.vue'
 import EquipmentGroup from './components/equipmentGroup/index.vue' // Tier 2 view
@@ -105,6 +106,7 @@ import AddEquipmentGroup from './components/equipmentGroup/components/AddEquipme
 import AddEquipment from './components/equipment/components/AddEquipment.vue' // Add T3
 import AddSubEquipment from './components/subEquipment/components/AddSubEquipment.vue' // Add T4
 
+const route = useRoute()
 const tree = ref( null )
 const t2Ref = ref( null )
 const t3Ref = ref( null )
@@ -239,6 +241,57 @@ async function handleAddSuccess( payload ) {
     await tree.value?.focusNode?.( newId )
   }
 }
+
+// Function to attempt equipment selection with retries
+const selectEquipmentById = async( equipmentId, maxRetries = 10, delay = 300 ) => {
+  if ( !equipmentId || !tree.value ) return false
+
+  const id = Number( equipmentId )
+  let attempts = 0
+
+  const attemptSelection = async() => {
+    attempts++
+    const success = tree.value?.focusNode?.( id )
+
+    if ( success ) {
+      console.log( `Successfully selected equipment ${id} on attempt ${attempts}` )
+      return true
+    }
+
+    if ( attempts < maxRetries ) {
+      console.log( `Equipment ${id} not found, retrying in ${delay}ms... (attempt ${attempts}/${maxRetries})` )
+      await new Promise( resolve => setTimeout( resolve, delay ) )
+      return attemptSelection()
+    }
+
+    console.warn( `Failed to select equipment ${id} after ${maxRetries} attempts` )
+    return false
+  }
+
+  return attemptSelection()
+}
+
+// Watch for equipmentId query parameter to auto-select equipment
+watch(
+  () => route.query.equipmentId,
+  async equipmentId => {
+    if ( equipmentId && tree.value ) {
+      await nextTick()
+      selectEquipmentById( equipmentId )
+    }
+  }
+)
+
+// Handle initial equipment selection on mount
+onMounted( async() => {
+  const equipmentId = route.query.equipmentId
+  if ( equipmentId ) {
+    // Wait a bit for the tree to load, then attempt selection
+    setTimeout( () => {
+      selectEquipmentById( equipmentId )
+    }, 1000 )
+  }
+} )
 </script>
 
 <style scoped>

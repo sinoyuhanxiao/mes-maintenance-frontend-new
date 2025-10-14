@@ -15,9 +15,6 @@
             class="date-range-picker"
           />
         </div>
-        <el-button type="primary" size="small" @click="applyTimelineFilter" class="apply-filter-btn">
-          {{ $t('workOrder.timeline.apply') }}
-        </el-button>
       </div>
 
       <div class="metrics-group">
@@ -39,19 +36,28 @@
           v-for="event in filteredTimelineEvents"
           :key="event.id"
           :timestamp="event.timestamp"
-          :type="event.type"
-          :color="event.color"
+          :type="isCurrentWorkOrder(event) ? 'success' : event.type"
+          :color="isCurrentWorkOrder(event) ? 'var(--el-color-success)' : event.color"
           :icon="event.icon"
           placement="top"
           :hollow="event.hollow"
           size="large"
+          :class="{ 'current-work-order': isCurrentWorkOrder(event) }"
         >
-          <div class="event-card">
+          <div class="event-card" :class="{ 'current-work-order-card': isCurrentWorkOrder(event) }">
             <div class="event-header">
-              <h5 class="event-title">{{ event.title }}</h5>
+              <div class="title-section">
+                <h5 class="event-title">{{ event.title }}</h5>
+                <el-tag v-if="isCurrentWorkOrder(event)" type="success" size="small" class="current-badge" plain>
+                  {{ $t('workOrder.timeline.current') }}
+                </el-tag>
+              </div>
               <div class="event-badges">
                 <el-tag :type="getStatusTagType(event.status)" size="small">
                   {{ event.status }}
+                </el-tag>
+                <el-tag v-if="event.taskCount !== undefined" type="success" size="small">
+                  {{ event.taskCount }} {{ $t('workOrder.timeline.tasks') }}
                 </el-tag>
                 <el-tag v-if="isEventOverdue(event)" type="danger" size="small" class="overdue-badge">
                   {{ $t('workOrder.timeline.overdue') }}
@@ -62,26 +68,56 @@
             <p class="event-description">{{ event.description }}</p>
 
             <div class="event-details">
-              <div class="detail-item" v-if="event.duration">
-                <span class="detail-label">{{ $t('workOrder.timeline.duration') }}:</span>
-                <span class="detail-value">{{ event.duration }}</span>
+              <div class="detail-column">
+                <div class="detail-item" v-if="event.dueDate">
+                  <span class="detail-label">{{ $t('workOrder.table.dueDate') }}:</span>
+                  <span class="detail-value" :class="{ 'overdue-text': event.isOverdue }">
+                    {{ formatDateTime(event.dueDate) }}
+                  </span>
+                </div>
+
+                <div class="detail-item" v-if="event.category">
+                  <span class="detail-label">{{ $t('workOrder.table.category') }}:</span>
+                  <span class="detail-value">{{ getCategoryName(event.category) }}</span>
+                </div>
+
+                <div class="detail-item" v-if="event.assignees && event.assignees.length > 0">
+                  <span class="detail-label">{{ $t('workOrder.timeline.assignees') }}:</span>
+                  <div class="assignees-list">
+                    <el-avatar
+                      v-for="assignee in event.assignees.slice(0, 2)"
+                      :key="assignee.id"
+                      :size="24"
+                      :src="assignee.avatar"
+                      class="assignee-avatar"
+                    >
+                      {{ assignee.name ? assignee.name.charAt(0).toUpperCase() : '?' }}
+                    </el-avatar>
+                    <span v-if="event.assignees.length > 2" class="overflow-indicator">
+                      +{{ event.assignees.length - 2 }}
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              <div class="detail-item" v-if="event.assignees && event.assignees.length > 0">
-                <span class="detail-label">{{ $t('workOrder.timeline.assignees') }}:</span>
-                <div class="assignees-list">
-                  <el-avatar
-                    v-for="assignee in event.assignees.slice(0, 2)"
-                    :key="assignee.id"
-                    :size="24"
-                    :src="assignee.avatar"
-                    class="assignee-avatar"
+              <div class="detail-column">
+                <div class="detail-item" v-if="event.priority">
+                  <span class="detail-label">{{ $t('workOrder.table.priority') }}:</span>
+                  <span
+                    class="detail-value priority-tag"
+                    :class="getPriorityClass(event.priority)"
+                    :style="{ color: getPriorityColor(event.priority?.name) }"
                   >
-                    {{ assignee.name.charAt(0) }}
-                  </el-avatar>
-                  <span v-if="event.assignees.length > 2" class="overflow-indicator">
-                    +{{ event.assignees.length - 2 }}
+                    <el-icon :style="{ color: getPriorityColor(event.priority?.name), marginRight: '4px' }">
+                      <Flag />
+                    </el-icon>
+                    {{ getPriorityName(event.priority) }}
                   </span>
+                </div>
+
+                <div class="detail-item" v-if="event.duration">
+                  <span class="detail-label">{{ $t('workOrder.timeline.duration') }}:</span>
+                  <span class="detail-value">{{ event.duration }}</span>
                 </div>
               </div>
             </div>
@@ -94,13 +130,19 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { ElMessage } from 'element-plus'
+import { Flag } from '@element-plus/icons-vue'
+import { convertToLocalTime } from '@/utils/datetime'
+import { getPriorityColor } from '@/utils/general'
 
 // Props
 const props = defineProps( {
   timelineEvents : {
     type : Array,
     default : () => []
+  },
+  currentWorkOrderId : {
+    type : [String, Number],
+    default : null
   }
 } )
 
@@ -141,10 +183,6 @@ const averageTimeConsumed = computed( () => {
   return `${hours}h ${mins}m`
 } )
 
-const applyTimelineFilter = () => {
-  ElMessage.success( 'Timeline filter applied' )
-}
-
 const getStatusTagType = status => {
   const statusMap = {
     Completed : 'success',
@@ -157,6 +195,38 @@ const getStatusTagType = status => {
 const isEventOverdue = event => {
   if ( !event.plannedEnd || !event.actualEnd ) return false
   return new Date( event.actualEnd ) > new Date( event.plannedEnd )
+}
+
+const formatDateTime = dateString => {
+  return dateString ? convertToLocalTime( dateString ) : '-'
+}
+
+const getCategoryName = category => {
+  if ( !category ) return '-'
+  if ( typeof category === 'string' ) return category
+  if ( category.name ) return category.name
+  return category.id ? `Category ${category.id}` : '-'
+}
+
+const getPriorityName = priority => {
+  if ( !priority ) return '-'
+  if ( typeof priority === 'string' ) return priority
+  if ( priority.name ) return priority.name
+  return priority.id ? `Priority ${priority.id}` : '-'
+}
+
+const getPriorityClass = priority => {
+  const name = priority?.name?.toLowerCase()
+  return {
+    'priority-urgent' : name === 'urgent',
+    'priority-high' : name === 'high',
+    'priority-medium' : name === 'medium',
+    'priority-low' : name === 'low'
+  }
+}
+
+const isCurrentWorkOrder = event => {
+  return props.currentWorkOrderId && event.id && String( event.id ) === String( props.currentWorkOrderId )
 }
 
 defineOptions( {
@@ -186,6 +256,7 @@ defineOptions( {
 
         .filter-label {
           font-size: 14px;
+          margin-right: 6px;
           color: var(--el-text-color-primary);
           font-weight: 500;
           white-space: nowrap;
@@ -231,7 +302,8 @@ defineOptions( {
   .timeline-body {
     .work-order-timeline {
       padding: 24px;
-      max-height: 500px;
+      height: 45vh;
+      max-height: 50vh;
       overflow-y: auto;
 
       :deep(.el-timeline-item__timestamp) {
@@ -242,6 +314,17 @@ defineOptions( {
 
       :deep(.el-timeline-item__node) {
         border-width: 3px;
+
+        .el-icon {
+          font-size: 18px;
+        }
+      }
+
+      // Larger icon for current work order
+      :deep(.current-work-order .el-timeline-item__node) {
+        .el-icon {
+          font-size: 20px;
+        }
       }
 
       :deep(.el-timeline-item__wrapper) {
@@ -262,27 +345,54 @@ defineOptions( {
           transform: translateY(-2px);
         }
 
+        &.current-work-order-card {
+          border: 1px solid var(--el-color-success);
+          box-shadow: 0 2px 8px rgba(103, 194, 58, 0.15);
+
+          &:hover {
+            box-shadow: 0 4px 16px rgba(103, 194, 58, 0.25);
+          }
+        }
+
         .event-header {
           display: flex;
           justify-content: space-between;
-          align-items: flex-start;
+          align-items: center;
           margin-bottom: 12px;
+          gap: 16px;
 
-          .event-title {
-            margin: 0;
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--el-text-color-primary);
+          .title-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             flex: 1;
+            min-width: 0;
+
+            .event-title {
+              margin: 0;
+              font-size: 16px;
+              font-weight: 600;
+              color: var(--el-text-color-primary);
+              white-space: nowrap;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              min-width: 0;
+            }
+
+            .current-badge {
+              flex-shrink: 0;
+              font-weight: 500;
+            }
           }
 
           .event-badges {
             display: flex;
             gap: 8px;
             flex-shrink: 0;
+            align-items: center;
 
             .overdue-badge {
-              margin-left: 4px;
+              margin-left: 0;
             }
           }
         }
@@ -295,9 +405,15 @@ defineOptions( {
         }
 
         .event-details {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 20px;
+
+          .detail-column {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+          }
 
           .detail-item {
             display: flex;
@@ -315,6 +431,34 @@ defineOptions( {
               font-size: 13px;
               color: var(--el-text-color-primary);
               font-weight: 500;
+
+              &.overdue-text {
+                color: var(--el-color-danger);
+                font-weight: 600;
+              }
+
+              &.priority-tag {
+                display: flex;
+                align-items: center;
+                font-weight: 400;
+                font-size: 13px;
+
+                &.priority-urgent {
+                  color: #f56c6c;
+                }
+
+                &.priority-high {
+                  color: #409eff;
+                }
+
+                &.priority-medium {
+                  color: #e6a23c;
+                }
+
+                &.priority-low {
+                  color: #909399;
+                }
+              }
             }
 
             .assignees-list {

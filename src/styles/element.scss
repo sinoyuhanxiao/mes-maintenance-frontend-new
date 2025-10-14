@@ -2,3 +2,71 @@
   height: 40px !important;
   //line-height: 40px;
 }
+
+// Delete Recurrence Dialog Styling
+.delete-recurrence-dialog {
+  .el-message-box__header {
+    background: var(--el-color-warning-light-9);
+    border-bottom: 1px solid var(--el-border-color-light);
+    padding: 20px 24px;
+
+    .el-message-box__title {
+      color: var(--el-color-warning-dark-2);
+      font-size: 18px;
+      font-weight: 600;
+    }
+
+    .el-message-box__headerbtn {
+      .el-message-box__close {
+        color: var(--el-color-warning-dark-2);
+
+        &:hover {
+          color: var(--el-color-warning);
+        }
+      }
+    }
+  }
+
+  .el-message-box__content {
+    .el-message-box__container {
+      .el-message-box__status {
+        color: var(--el-color-warning);
+        font-size: 32px;
+      }
+
+      .el-message-box__message {
+        font-size: 14px;
+        color: var(--el-text-color-regular);
+        line-height: 1.5;
+      }
+    }
+  }
+
+  .el-message-box__btns {
+    .el-button {
+      padding: 12px 20px;
+      font-weight: 500;
+
+      &.el-button--primary {
+        background-color: var(--el-color-danger);
+        border-color: var(--el-color-danger);
+
+        &:hover {
+          background-color: var(--el-color-danger-dark-2);
+          border-color: var(--el-color-danger-dark-2);
+        }
+      }
+
+      &.el-button--default {
+        background-color: var(--el-color-warning);
+        border-color: var(--el-color-warning);
+        color: white;
+
+        &:hover {
+          background-color: var(--el-color-warning-dark-2);
+          border-color: var(--el-color-warning-dark-2);
+        }
+      }
+    }
+  }
+}

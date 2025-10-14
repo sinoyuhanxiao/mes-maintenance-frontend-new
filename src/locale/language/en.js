@@ -16,7 +16,7 @@ export default {
       name : 'Work Order Name',
       id : 'ID',
       code : 'Work Order Code',
-      dueDate : 'Due Date',
+      dueDate : 'Due Date Time',
       preview : 'Preview Image',
       priority : 'Priority',
       workType : 'Work Type',
@@ -94,7 +94,10 @@ export default {
       refresh : 'Refresh',
       backToDetail : 'Back to Detail',
       reset : 'Reset',
-      update : 'Update'
+      update : 'Update',
+      approve : 'Approve',
+      reject : 'Reject',
+      recreate : 'Recreate Work Order'
     },
 
     // Status values
@@ -104,7 +107,8 @@ export default {
       inProgress : 'In Progress',
       pending : 'Pending',
       overdue : 'Overdue',
-      cancelled : 'Cancelled'
+      cancelled : 'Cancelled',
+      incomplete : 'Incomplete'
     },
 
     // Priority values
@@ -143,6 +147,8 @@ export default {
       month : 'th month',
       startDateTime : 'Start Date Time',
       endDateTime : 'End Date Time',
+      startTime : 'Start Time',
+      endTime : 'End Time',
       selectStartTime : 'Select start time',
       selectEndTime : 'Select end time'
     },
@@ -174,7 +180,11 @@ export default {
       loadingData : 'Loading data...',
       noData : 'No data available',
       formReset : 'Form has been reset',
-      validationFailed : 'Please fix validation errors'
+      validationFailed : 'Please fix validation errors',
+      statusChanged : 'Status Changed',
+      recurrenceViewEnabled : 'Viewing all work orders for this recurrence',
+      recurrenceViewDisabled : 'Returned to normal view',
+      loadingFailed : 'Failed to load work orders'
     },
 
     // Validation messages
@@ -200,6 +210,12 @@ export default {
       calendar : 'Calendar View'
     },
 
+    // Recurrence view
+    recurrenceView : {
+      title : 'Viewing recurring work orders for',
+      exitView : 'Back to All Work Orders'
+    },
+
     // Filters
     filters : {
       assignedToMe : 'Assigned to Me',
@@ -211,6 +227,7 @@ export default {
       custom : 'Custom',
       highPriority : 'High Priority',
       addFilter : 'Add Filter',
+      filterSetting : 'Filter Setting',
       dueDate : 'Due Date',
       location : 'Location',
       priority : 'Priority',
@@ -234,8 +251,13 @@ export default {
       status : 'Status',
       category : 'Category',
       equipment : 'Equipment',
+      recurrence : 'Recurrence',
       search : 'Search',
-      searchFiltersPlaceholder : 'Search filters'
+      searchFiltersPlaceholder : 'Search filters',
+      limitReached : 'You can only select up to {max} filters. Please uncheck one to add another.',
+      autoDeselected : '{count} filter(s) have been automatically deselected to fit the new screen size.',
+      noSpace : 'Filter limit reached. Please deselect a filter to add a new one.',
+      noActiveFilters : 'No active filters'
     },
 
     // Tabs
@@ -316,7 +338,10 @@ export default {
       avgTimeConsumed : 'Avg. Time Consumed',
       duration : 'Duration',
       assignees : 'Assignees',
-      overdue : 'Overdue'
+      overdue : 'Overdue',
+      taskCount : 'Task Count',
+      tasks : 'Tasks',
+      current : 'Current'
     },
 
     // Activity Panel
@@ -404,14 +429,15 @@ export default {
       procedurePlaceholder : 'Create or attach task procedure for workers',
       addProcedure : 'Add Procedure',
       assignTo : 'Assign to',
-      assigneePlaceholder : 'Type name, email or phone number',
+      assigneePlaceholder : 'Type name',
       estimatedTime : 'Estimated Time',
       hours : 'Hours',
       minutes : 'Minutes',
       dueDate : 'Due Date',
-      dueDatePlaceholder : 'mm/dd/yyyy',
+      dueDateTime : 'Due Date Time',
+      dueDatePlaceholder : 'Due Date Time',
       startDate : 'Start Date',
-      startDatePlaceholder : 'mm/dd/yyyy',
+      startDatePlaceholder : 'Start Date Time',
       recurrence : 'Recurrence',
       recurrencePlaceholder : 'Does not repeat',
       recurrenceSettings : 'Recurrence Settings',
@@ -757,6 +783,7 @@ export default {
     enableTagsView : 'Enable TagsView',
     fixedHeader : 'Fixed Header',
     sidebarLogo : 'Sidebar Logo',
+    failedWorkOrderEffect : 'Failed Work Order Visual Effect',
     switchOn : 'On',
     switchOff : 'Off',
     layoutModes : {

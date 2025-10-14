@@ -11,13 +11,15 @@ const useSettingsStore = defineStore( {
     const localTagsView = localStorageHandle.getItem( 'tagsView' )
     const localFixedHeader = localStorageHandle.getItem( 'fixedHeader' )
     const localSidebarLogo = localStorageHandle.getItem( 'sidebarLogo' )
+    const localFailedWorkOrderEffect = localStorageHandle.getItem( 'failedWorkOrderEffect' )
     return {
       theme : variables.theme,
       showSettings,
       tagsView : localTagsView ? !!+localTagsView : tagsView,
       fixedHeader : localFixedHeader ? !!+localFixedHeader : fixedHeader,
       sidebarLogo : localSidebarLogo ? !!+localSidebarLogo : sidebarLogo,
-      layoutMod : localStorageHandle.getItem( 'layoutMod' ) == 'horizontal' ? 'horizontal' : 'vertical'
+      layoutMod : localStorageHandle.getItem( 'layoutMod' ) == 'horizontal' ? 'horizontal' : 'vertical',
+      failedWorkOrderEffect : localFailedWorkOrderEffect !== null ? !!+localFailedWorkOrderEffect : true
     }
   },
   actions : {

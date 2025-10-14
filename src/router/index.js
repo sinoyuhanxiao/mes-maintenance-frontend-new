@@ -5,7 +5,7 @@ import {
 } from 'vue-router'
 
 import Layout from '@/layout/index.vue'
-import nested from './modules/nested'
+// import nested from './modules/nested'
 import taskLibraryRoutes from './modules/taskLibrary'
 
 const isAllowAll = import.meta.env.VITE_ALL_PERMISSION === 'true'
@@ -16,13 +16,13 @@ export const constantRoutes = [
     path : '/callback',
     name : 'Callback',
     component : () => import( '@/views/callback/index.vue' ),
-    meta : { requiresAuth : false }
+    meta : { requiresAuth : false, hidden : true }
   },
   {
     path : '/logout-success',
     name : 'LogoutSuccess',
     component : () => import( '@/views/logout/index.vue' ),
-    meta : { requiresAuth : false }
+    meta : { requiresAuth : false, hidden : true }
   },
   {
     path : '/redirect',
@@ -99,40 +99,40 @@ export const asyncRoutes = [
       }
     ]
   },
-  {
-    path : '/icon',
-    name : 'Icon',
-    component : Layout,
-    meta : {
-      title : 'router.icons'
-    },
-    children : [
-      {
-        path : 'index',
-        component : () => import( '@/views/icons/index.vue' ),
-        name : 'Icons',
-        meta : { title : 'router.icons', icon : 'image', noCache : true }
-      }
-    ]
-  },
+  // {
+  //   path : '/icon',
+  //   name : 'Icon',
+  //   component : Layout,
+  //   meta : {
+  //     title : 'router.icons'
+  //   },
+  //   children : [
+  //     {
+  //       path : 'index',
+  //       component : () => import( '@/views/icons/index.vue' ),
+  //       name : 'Icons',
+  //       meta : { title : 'router.icons', icon : 'image', noCache : true }
+  //     }
+  //   ]
+  // },
 
-  {
-    path : '/directive',
-    name : 'Directive',
-    component : Layout,
-    meta : {
-      title : 'router.directive'
-    },
-    children : [
-      {
-        path : 'index',
-        component : () => import( '@/views/directive/index.vue' ),
-        name : 'Index',
-        meta : { title : 'router.directive', icon : 'directive', noCache : true }
-      }
-    ]
-  },
-  nested,
+  // {
+  //   path : '/directive',
+  //   name : 'Directive',
+  //   component : Layout,
+  //   meta : {
+  //     title : 'router.directive'
+  //   },
+  //   children : [
+  //     {
+  //       path : 'index',
+  //       component : () => import( '@/views/directive/index.vue' ),
+  //       name : 'Index',
+  //       meta : { title : 'router.directive', icon : 'directive', noCache : true }
+  //     }
+  //   ]
+  // },
+  // nested,
   {
     path : '/work-order',
     name : 'Table',
@@ -181,33 +181,33 @@ export const asyncRoutes = [
       }
     ]
   },
+  // {
+  //   path : '/task',
+  //   name : 'Task',
+  //   component : Layout,
+  //   redirect : '/task',
+  //   meta : { title : 'router.task', icon : 'list', noCache : true },
+  //   children : [
+  //     {
+  //       path : '',
+  //       component : () => import( '@/views/task/index.vue' ),
+  //       name : 'Task Management',
+  //       meta : { title : 'router.taskManagement', noCache : true }
+  //     }
+  //   ]
+  // },
   {
-    path : '/task',
-    name : 'Task',
+    path : '/maintenance-requests',
+    name : 'MaintenanceRequestsLayout',
     component : Layout,
-    redirect : '/task',
-    meta : { title : 'router.task', icon : 'list', noCache : true },
+    redirect : '/maintenance-requests',
+    meta : { title : 'router.request', icon : 'message', noCache : false },
     children : [
       {
         path : '',
-        component : () => import( '@/views/task/index.vue' ),
-        name : 'Task Management',
-        meta : { title : 'router.taskManagement', noCache : true }
-      }
-    ]
-  },
-  {
-    path : '/request',
-    name : 'RequestsLayout',
-    component : Layout,
-    redirect : '/request',
-    meta : { title : 'router.request', icon : 'message', noCache : true },
-    children : [
-      {
-        path : '',
-        component : () => import( '@/views/request/index.vue' ),
-        name : 'Requests',
-        meta : { title : 'router.request', noCache : true }
+        component : () => import( '@/views/maintenanceRequests/index.vue' ),
+        name : 'MaintenanceRequests',
+        meta : { title : 'router.request', noCache : false }
       }
     ]
   },

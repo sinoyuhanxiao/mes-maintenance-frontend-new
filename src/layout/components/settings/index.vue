@@ -37,6 +37,16 @@
               :inactive-text="$t('settings.switchOff')"
             />
           </div>
+          <div class="drawer-item">
+            <span>{{ $t('settings.failedWorkOrderEffect') }}</span>
+            <el-switch
+              v-model="set.failedWorkOrderEffect"
+              inline-prompt
+              class="drawer-switch"
+              :active-text="$t('settings.switchOn')"
+              :inactive-text="$t('settings.switchOff')"
+            />
+          </div>
 
           <el-divider content-position="center">{{ $t('settings.layoutMode') }}</el-divider>
 
@@ -128,6 +138,17 @@ const set = reactive( {
     set( val ) {
       settingStore.CHANGE_SETTING( {
         key : 'sidebarLogo',
+        value : val
+      } )
+    }
+  } ),
+  failedWorkOrderEffect : computed( {
+    get() {
+      return settingStore.failedWorkOrderEffect
+    },
+    set( val ) {
+      settingStore.CHANGE_SETTING( {
+        key : 'failedWorkOrderEffect',
         value : val
       } )
     }

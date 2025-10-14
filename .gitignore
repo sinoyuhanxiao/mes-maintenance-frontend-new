@@ -1,6 +1,6 @@
 .DS_Store
 node_modules/
-#dist/
+dist/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -25,6 +25,13 @@ selenium-debug.log
 *.sln
 *.local
 docs/*
+
+# Debug components (development only)
+#src/components/WorkOrder/TodoView/JsonDebugDrawer.vue
+#src/components/WorkOrder/TodoView/JsonTreeItem.vue
+
+# Centralized logging utilities (development only)
+#src/utils/logs/
 
 #package-lock.json
 #yarn.lock
