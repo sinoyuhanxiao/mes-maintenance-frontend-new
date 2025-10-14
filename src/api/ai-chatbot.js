@@ -1,10 +1,11 @@
 // src/api/ai-chatbot.js
 import axios from 'axios'
+import ENV_CONFIG from '@/utils/env'
 
 export const DEFAULT_JOB_NUMBER = 'rms_71112'
 
 const client = axios.create( {
-  baseURL : 'http://3.135.193.170:5000',
+  baseURL : ENV_CONFIG.CHATBOT_URL,
   headers : { 'Content-Type' : 'application/json' },
   withCredentials : false,
   transformRequest : [data => JSON.stringify( data )],
