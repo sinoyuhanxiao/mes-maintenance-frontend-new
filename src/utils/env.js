@@ -30,6 +30,9 @@ export const ENV_CONFIG = {
   // User Client Configuration
   USER_CLIENT_URL : env.VITE_USER_CLIENT_URL,
 
+  // Chatbot Client Configuration
+  CHATBOT_URL : env.VITE_CHATBOT_BASE_URL,
+
   // Build Configuration
   LEGACY : env.VITE_LEGACY === 'true' || env.VITE_LEGACY === true,
   DEBUG : env.VITE_DEBUG === 'true' || env.VITE_DEBUG === true,
@@ -157,6 +160,7 @@ export const {
   PROXY_DOMAIN_REAL,
   MINIO_URL,
   DEFAULT_BUCKET_NAME,
+  CHATBOT_URL,
   LEGACY,
   DEBUG,
   MODE,
