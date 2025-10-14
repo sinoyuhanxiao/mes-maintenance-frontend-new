@@ -85,6 +85,33 @@ export const createWorkOrder = data => {
 }
 
 /**
+ * Update an individual work order by its ID.
+ * @param {number} id - The ID of the work order to update.
+ * @param {Object} data - The request payload containing updated work order info.
+ * @returns {Promise} API response from the server.
+ */
+export const updateWorkOrder = ( id, data ) => {
+  return http.request( {
+    method : 'patch',
+    url : `/work-order/${id}`,
+    data
+  } )
+}
+
+/**
+ * Update all work orders associated with a recurrence UUID.
+ * @param {Object} data - The request payload containing updated work order info and recurrence_uuid.
+ * @returns {Promise} API response from the server.
+ */
+export const updateRecurrenceWorkOrders = data => {
+  return http.request( {
+    method : 'patch',
+    url : '/work-order/recurrence',
+    data
+  } )
+}
+
+/**
  * Fetch a work order by its ID.
  * @param {string} id - The ID of the work order to fetch.
  * @returns {Promise} API response containing the work order data.
@@ -153,17 +180,6 @@ export const getAllRecurrenceTypes = () => {
 }
 
 /**
- * Fetch all location node trees.
- * @returns {Promise} API response with location node trees.
- */
-export const getLocationNodeTrees = () => {
-  return http.request( {
-    method : 'get',
-    url : '/location/node-trees'
-  } )
-}
-
-/**
  * Fetch all equipment node trees.
  * @returns {Promise} API response with equipment node trees.
  */
@@ -171,5 +187,53 @@ export const getEquipmentNodeTrees = () => {
   return http.request( {
     method : 'get',
     url : '/equipment/node-trees'
+  } )
+}
+
+/**
+ * Delete an individual work order by its ID.
+ * @param {number} id - The ID of the work order to delete.
+ * @returns {Promise} API response containing the deleted work order data.
+ */
+export const deleteIndividualWorkOrder = id => {
+  return http.request( {
+    method : 'delete',
+    url : `/work-order/delete-individual/${id}`
+  } )
+}
+
+/**
+ * Delete all work orders associated with a recurrence ID.
+ * @param {string} recurrenceId - The recurrence UUID to identify the group of work orders to delete.
+ * @returns {Promise} API response containing the list of deleted work orders.
+ */
+export const deleteRecurrenceWorkOrders = recurrenceId => {
+  return http.request( {
+    method : 'delete',
+    url : `/work-order/delete-recurrence/${recurrenceId}`
+  } )
+}
+
+/**
+ * Approve a work order by its ID.
+ * @param {number} id - The ID of the work order to approve.
+ * @returns {Promise} API response from the server.
+ */
+export const approveWorkOrder = id => {
+  return http.request( {
+    method : 'patch',
+    url : `/work-order/${id}/approve`
+  } )
+}
+
+/**
+ * Reject a work order by its ID.
+ * @param {number} id - The ID of the work order to reject.
+ * @returns {Promise} API response from the server.
+ */
+export const rejectWorkOrder = id => {
+  return http.request( {
+    method : 'patch',
+    url : `/work-order/${id}/reject`
   } )
 }

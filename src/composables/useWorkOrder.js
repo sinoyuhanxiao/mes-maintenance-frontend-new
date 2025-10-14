@@ -5,7 +5,13 @@
 import { ref, reactive, computed } from 'vue'
 import { ElMessage, ElNotification } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import { searchWorkOrders, getWorkOrdersByRecurrence, searchWorkOrdersByList } from '@/api/work-order'
+import {
+  searchWorkOrders,
+  getWorkOrdersByRecurrence,
+  searchWorkOrdersByList,
+  deleteIndividualWorkOrder,
+  deleteRecurrenceWorkOrders
+} from '@/api/work-order'
 import { useCommonDataStore } from '@/store/modules/commonData'
 
 export function useWorkOrder() {
@@ -17,6 +23,8 @@ export function useWorkOrder() {
   const list = ref( [] )
   const total = ref( 0 )
   const expandedRows = ref( new Set() )
+  const recurrenceViewMode = ref( false )
+  const currentRecurrenceId = ref( null )
 
   // Query parameters - Fixed to match filter properties used in fetchWorkOrders
   const listQuery = reactive( {
@@ -32,8 +40,10 @@ export function useWorkOrder() {
     workType : undefined,
     status : undefined,
     search : undefined,
+    work_order_id : undefined,
     dueDate : undefined,
     customDateRange : undefined,
+    recurrence : undefined,
     sort : 'created_at_desc' // Use consistent created_at desc sorting for most recent first
   } )
 
@@ -56,8 +66,10 @@ export function useWorkOrder() {
       if ( listQuery.workType ) filters.workType = listQuery.workType
       if ( listQuery.status ) filters.status = listQuery.status
       if ( listQuery.search ) filters.search = listQuery.search
+      if ( listQuery.work_order_id ) filters.work_order_id = listQuery.work_order_id
       if ( listQuery.dueDate ) filters.dueDate = listQuery.dueDate
       if ( listQuery.customDateRange ) filters.customDateRange = listQuery.customDateRange
+      if ( listQuery.recurrence ) filters.recurrence = listQuery.recurrence
 
       let response
       let data
@@ -91,6 +103,42 @@ export function useWorkOrder() {
     } finally {
       loading.value = false
     }
+  }
+
+  // Fetch all work orders for a specific recurrence
+  const fetchRecurringWorkOrders = async( recurrenceId, additionalFilters = {} ) => {
+    loading.value = true
+    try {
+      recurrenceViewMode.value = true
+      currentRecurrenceId.value = recurrenceId
+
+      const response = await getWorkOrdersByRecurrence(
+        recurrenceId,
+        listQuery.page,
+        listQuery.limit,
+        'createdAt',
+        'DESC'
+      )
+
+      list.value = response.data.content || []
+      total.value = response.data.totalElements || 0
+
+      // No need for children expansion in recurrence view since we're showing all
+      list.value = list.value.map( item => ( { ...item, hasChildren : false } ) )
+    } catch ( error ) {
+      console.error( 'Failed to fetch recurring work orders:', error )
+      ElMessage.error( t( 'workOrder.messages.loadingFailed' ) )
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // Switch back to normal view (latest per recurrence)
+  const exitRecurrenceView = () => {
+    recurrenceViewMode.value = false
+    currentRecurrenceId.value = null
+    listQuery.page = 1
+    fetchWorkOrders()
   }
 
   const loadChildren = async( row, treeNode, resolve ) => {
@@ -137,12 +185,22 @@ export function useWorkOrder() {
   const handleSizeChange = val => {
     listQuery.limit = val
     listQuery.page = 1 // Reset to first page when changing page size
-    fetchWorkOrders()
+
+    if ( recurrenceViewMode.value && currentRecurrenceId.value ) {
+      fetchRecurringWorkOrders( currentRecurrenceId.value )
+    } else {
+      fetchWorkOrders()
+    }
   }
 
   const handleCurrentChange = val => {
     listQuery.page = val
-    fetchWorkOrders()
+
+    if ( recurrenceViewMode.value && currentRecurrenceId.value ) {
+      fetchRecurringWorkOrders( currentRecurrenceId.value )
+    } else {
+      fetchWorkOrders()
+    }
   }
 
   const toggleRowHighlight = ( row, expanded ) => {
@@ -165,17 +223,82 @@ export function useWorkOrder() {
 
   const handleDelete = async( row, index ) => {
     try {
-      // Implement actual delete API call
-      ElNotification( {
-        title : t( 'common.success' ),
-        message : t( 'workOrder.messages.deleteSuccess' ),
-        type : 'success',
-        duration : 2000
-      } )
-      list.value.splice( index, 1 )
+      // Check if this is a recurring work order (not "Does not repeat")
+      const isRecurring = row.recurrence_type && row.recurrence_type.id !== 1 && row.recurrence_uuid
+
+      if ( isRecurring ) {
+        // For recurring work orders, show confirmation dialog with two options
+        const { ElMessageBox } = await import( 'element-plus' )
+
+        const action = await ElMessageBox.confirm(
+          'This is a recurring work order. Choose which work orders you want to delete:',
+          'Delete Work Order',
+          {
+            confirmButtonText : 'Delete Recurrence',
+            cancelButtonText : 'Delete Individual',
+            distinguishCancelAndClose : true,
+            type : 'warning',
+            customClass : 'delete-recurrence-dialog'
+          }
+        ).catch( action => {
+          if ( action === 'cancel' ) {
+            return 'individual'
+          }
+          throw new Error( 'User cancelled' )
+        } )
+
+        if ( action === 'confirm' ) {
+          // Delete entire recurrence
+          await deleteRecurrenceWorkOrders( row.recurrence_uuid )
+          ElNotification( {
+            title : t( 'common.success' ),
+            message : 'All recurring work orders deleted successfully',
+            type : 'success',
+            duration : 3000
+          } )
+
+          // Remove all work orders with the same recurrence UUID from the list
+          const indicesToRemove = []
+          list.value.forEach( ( item, idx ) => {
+            if ( item.recurrence_uuid === row.recurrence_uuid ) {
+              indicesToRemove.push( idx )
+            }
+          } )
+
+          // Remove from highest index to lowest to maintain array integrity
+          indicesToRemove.reverse().forEach( idx => {
+            list.value.splice( idx, 1 )
+          } )
+        } else {
+          // Delete individual work order
+          await deleteIndividualWorkOrder( row.id )
+          ElNotification( {
+            title : t( 'common.success' ),
+            message : t( 'workOrder.messages.deleteSuccess' ),
+            type : 'success',
+            duration : 2000
+          } )
+          list.value.splice( index, 1 )
+        }
+      } else {
+        // For non-recurring work orders, delete individual
+        await deleteIndividualWorkOrder( row.id )
+        ElNotification( {
+          title : t( 'common.success' ),
+          message : t( 'workOrder.messages.deleteSuccess' ),
+          type : 'success',
+          duration : 2000
+        } )
+        list.value.splice( index, 1 )
+      }
+
+      // Update total count
+      total.value = Math.max( 0, total.value - 1 )
     } catch ( error ) {
       console.error( 'Delete failed:', error )
-      ElMessage.error( t( 'workOrder.messages.deleteFailed' ) )
+      if ( error.message !== 'User cancelled' ) {
+        ElMessage.error( t( 'workOrder.messages.deleteFailed' ) )
+      }
     }
   }
 
@@ -259,15 +382,23 @@ export function useWorkOrder() {
     const q = listQuery
 
     const payload = {
-      keyword : q.search || null,
       work_type_ids : q.workType ? [q.workType] : [],
       priority_ids : q.priority ? [q.priority] : [],
       state_ids : q.state ? [q.state] : [],
       category_ids : q.category ? [q.category] : [],
+      recurrence_type_id : q.recurrence || null,
       latest_per_recurrence : q.latest_per_recurrence,
       start_date_from : q.start_date_from,
       end_date_to : q.end_date_to
-      // TODO: add more supported filter param later (equipment_node, recurrence_type_id, approved/finished at)
+      // TODO: add more supported filter param later (equipment_node, approved/finished at)
+    }
+
+    // Only include one of keyword or work_order_ids, not both
+    if ( q.work_order_id ) {
+      // Convert single ID to array format for backend
+      payload.work_order_ids = [q.work_order_id]
+    } else if ( q.search ) {
+      payload.keyword = q.search
     }
 
     const dueDateObj = processDueDateOptions()
@@ -291,6 +422,8 @@ export function useWorkOrder() {
     total,
     listQuery,
     expandedRows,
+    recurrenceViewMode,
+    currentRecurrenceId,
 
     // Computed
     hasData,
@@ -298,6 +431,8 @@ export function useWorkOrder() {
 
     // Methods
     fetchWorkOrders,
+    fetchRecurringWorkOrders,
+    exitRecurrenceView,
     loadChildren,
     handleFilter,
     updateFilters,

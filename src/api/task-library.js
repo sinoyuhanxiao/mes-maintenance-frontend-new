@@ -162,7 +162,7 @@ export const updateStandard = async( id, data ) => {
     const response = await http.request( {
       method : 'put',
       url : '/library/standard',
-      data : { _id : id, ...data }
+      data : { standard_id : id, ...data }
     } )
     return { data : response.data }
   } catch ( error ) {

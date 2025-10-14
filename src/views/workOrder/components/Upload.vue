@@ -114,8 +114,6 @@ const handleFileRemove = file => {
   if ( index !== -1 ) {
     fileFileList.value.splice( index, 1 )
     fileFileList.value = JSON.parse( JSON.stringify( fileFileList.value ) ) // Trigger reactivity
-  } else {
-    console.error( 'File not found in fileFileList.' )
   }
 }
 
@@ -123,8 +121,6 @@ const handlePictureCardPreview = file => {
   if ( file.url ) {
     dialogImageUrl.value = file.url
     dialogVisible.value = true
-  } else {
-    console.error( 'Invalid image URL. Please check the file object:', file )
   }
 }
 
@@ -134,8 +130,6 @@ const handleRemove = file => {
     fileList.value.splice( index, 1 )
     // Trigger reactivity properly
     fileList.value = JSON.parse( JSON.stringify( fileList.value ) )
-  } else {
-    console.error( 'File not found in fileList.' )
   }
 }
 
@@ -173,8 +167,6 @@ const handleDownload = file => {
     document.body.appendChild( link )
     link.click()
     document.body.removeChild( link )
-  } else {
-    console.error( 'File URL not available for download.' )
   }
 }
 

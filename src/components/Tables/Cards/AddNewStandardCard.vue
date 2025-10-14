@@ -1,19 +1,29 @@
 <template>
-  <div class="standard-card">
+  <div class="standard-card" :class="{ focused: focused }" @click="handleCardClick">
     <div class="card-content">
       <!-- Row 1: Checkbox + Title -->
       <div class="row-1">
         <el-checkbox v-model="checked" class="card-checkbox" @change="handleCheckboxChange" />
-        <el-text class="card-title" :title="template.name" truncated>
+        <el-text class="card-title" :title="template.name" style="width: 200px" truncated>
           {{ template.name }}
         </el-text>
       </div>
 
-      <!-- Row 2: Tags + Rules -->
-      <div class="row-2 card-tags">
+      <!-- Row 2: Description -->
+      <!--      <div class="row-2" v-if="template.description">-->
+      <!--        <p class="card-description">{{ template.description }}</p>-->
+      <!--      </div>-->
+
+      <!-- Row 3: Tags + Rules -->
+      <div class="row-3 card-tags">
         <div class="tags-left">
-          <el-tag v-if="template.category" size="small" class="tag-item">
-            {{ template.category }}
+          <el-tag
+            v-if="categoryLabel"
+            :type="template.category === 'general' ? 'primary' : 'warning'"
+            size="small"
+            class="tag-item"
+          >
+            {{ categoryLabel }}
           </el-tag>
         </div>
 
@@ -34,6 +44,10 @@ const props = defineProps( {
   selected : {
     type : Boolean,
     default : false
+  },
+  focused : {
+    type : Boolean,
+    default : false
   }
 } )
 
@@ -42,6 +56,13 @@ const emit = defineEmits( ['selection'] )
 const checked = ref( props.selected )
 
 const rulesCount = computed( () => props.template?.items?.length || 0 )
+
+const categoryLabel = computed( () => {
+  const category = props.template?.category
+  if ( !category ) return ''
+  // Handle both string and object formats
+  return typeof category === 'object' ? category.name : category
+} )
 
 // Watch for external changes to selected prop
 watch(
@@ -74,6 +95,14 @@ const handleUncheck = () => {
     data : props.template
   } )
 }
+
+const handleCardClick = () => {
+  emit( 'selection', {
+    id : props.template.id,
+    action : 'focus',
+    data : props.template
+  } )
+}
 </script>
 
 <style scoped>
@@ -94,6 +123,12 @@ const handleUncheck = () => {
   border-color: #409eff;
   box-shadow: 0 2px 8px 0 rgba(64, 158, 255, 0.15);
   transform: translateY(-1px);
+}
+
+.standard-card.focused {
+  border-color: var(--el-color-primary);
+  background: var(--el-color-primary-light-9);
+  box-shadow: 0 2px 8px 0 rgba(64, 158, 255, 0.15);
 }
 
 .card-checkbox {
@@ -127,6 +162,22 @@ const handleUncheck = () => {
 }
 
 .row-2 {
+  margin: 4px 0;
+}
+
+.card-description {
+  margin: 0;
+  color: #606266;
+  font-size: 13px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.row-3 {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -149,5 +200,9 @@ const handleUncheck = () => {
 
 .tag-item {
   --el-tag-border-color: #e4e7ed;
+}
+
+:deep(.el-text.is-truncated) {
+  max-width: 80%;
 }
 </style>

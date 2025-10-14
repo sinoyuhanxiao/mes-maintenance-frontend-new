@@ -178,10 +178,6 @@ style="font-size: 14px"
           <el-icon><Check /></el-icon>
           Save Changes
         </el-button>
-        <el-button v-else type="primary" @click="handleCancel">
-          <el-icon><Close /></el-icon>
-          Close
-        </el-button>
       </div>
     </template>
   </el-dialog>
@@ -189,7 +185,7 @@ style="font-size: 14px"
 
 <script setup>
 import { computed } from 'vue'
-import { Edit, Plus, Delete, Sort, Right, Check, Close, InfoFilled } from '@element-plus/icons-vue'
+import { Edit, Plus, Delete, Sort, Right, Check, InfoFilled } from '@element-plus/icons-vue'
 
 // Props
 const props = defineProps( {

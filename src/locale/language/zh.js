@@ -16,7 +16,7 @@ export default {
       name : '工单名称',
       id : 'ID',
       code : '工单号',
-      dueDate : '截止日期',
+      dueDate : '截止日',
       preview : '工单预览图',
       priority : '优先级',
       workType : '维护类型',
@@ -92,7 +92,10 @@ export default {
       refresh : '刷新',
       backToDetail : '返回详情',
       reset : '重置',
-      update : '更新'
+      update : '更新',
+      approve : '批准',
+      reject : '拒绝',
+      recreate : '重创工单'
     },
 
     // Status values
@@ -102,7 +105,8 @@ export default {
       inProgress : '进行中',
       pending : '待处理',
       overdue : '已逾期',
-      cancelled : '已取消'
+      cancelled : '已取消',
+      incomplete : '未完成'
     },
 
     // Priority values
@@ -141,6 +145,8 @@ export default {
       month : '月',
       startDateTime : '开始时间',
       endDateTime : '结束时间',
+      startTime : '开始时间',
+      endTime : '结束时间',
       selectStartTime : '选择开始时间',
       selectEndTime : '选择结束时间'
     },
@@ -172,7 +178,11 @@ export default {
       loadingData : '加载数据中...',
       noData : '暂无数据',
       formReset : '表单已重置',
-      validationFailed : '请修正验证错误'
+      validationFailed : '请修正验证错误',
+      statusChanged : '状态已更改',
+      recurrenceViewEnabled : '正在查看此重复设置的所有工单',
+      recurrenceViewDisabled : '已返回到正常视图',
+      loadingFailed : '加载工单失败'
     },
 
     // Create form specific
@@ -192,10 +202,11 @@ export default {
       estimatedTime : '预估时间',
       hours : '小时',
       minutes : '分钟',
-      dueDate : '截止日期',
-      dueDatePlaceholder : 'mm/dd/yyyy',
+      dueDate : '截止日',
+      dueDateTime : '截止日期',
+      dueDatePlaceholder : '选择截止日期',
       startDate : '开始日期',
-      startDatePlaceholder : 'mm/dd/yyyy',
+      startDatePlaceholder : '选择开始日期',
       recurrence : '重复',
       recurrencePlaceholder : '不重复',
       recurrenceSettings : '重复设置',
@@ -238,6 +249,12 @@ export default {
       calendar : '计划视图'
     },
 
+    // Recurrence view
+    recurrenceView : {
+      title : '正在查看重复工单组',
+      exitView : '返回所有工单'
+    },
+
     // Filters
     filters : {
       assignedToMe : '分配给我',
@@ -249,6 +266,7 @@ export default {
       custom : '自定义',
       highPriority : '高优先级',
       addFilter : '添加筛选',
+      filterSetting : '筛选设置',
       dueDate : '截止日期',
       location : '位置',
       priority : '优先级',
@@ -272,8 +290,13 @@ export default {
       status : '状态',
       category : '类别',
       equipment : '设备',
+      recurrence : '重复',
       search : '搜索',
-      searchFiltersPlaceholder : '搜索筛选项'
+      searchFiltersPlaceholder : '搜索筛选项',
+      limitReached : '您最多只能选择 {max} 个筛选器。请取消选中一个以添加另一个。',
+      autoDeselected : '{count} 个筛选器已自动取消选择以适应新屏幕大小。',
+      noSpace : '已达筛选器限制。请取消选择一个筛选器以添加新的。',
+      noActiveFilters : '暂无筛选条件'
     },
 
     // Tabs
@@ -354,7 +377,10 @@ export default {
       avgTimeConsumed : '平均耗时',
       duration : '持续时间',
       assignees : '分配人员',
-      overdue : '逾期'
+      overdue : '逾期',
+      taskCount : '任务数量',
+      tasks : '任务',
+      current : '当前'
     },
 
     // Activity Panel

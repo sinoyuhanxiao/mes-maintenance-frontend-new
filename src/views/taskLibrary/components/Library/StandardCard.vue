@@ -90,7 +90,7 @@ const rulesCount = computed( () => props.standard?.items?.length || 0 )
 .card-title {
   margin: 0;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 500;
   color: #303133;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -110,7 +110,7 @@ const rulesCount = computed( () => props.standard?.items?.length || 0 )
 
 .card-description {
   margin: 0;
-  color: #606266;
+  color: #5d5f61;
   font-size: 13px;
   line-height: 1.4;
   overflow: hidden;

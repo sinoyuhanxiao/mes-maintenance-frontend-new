@@ -118,6 +118,7 @@
               v-model:current-page="currentPage"
               v-model:page-size="pageSize"
               :total="pagination.total || 0"
+              :pager-count="3"
               :page-sizes="[10, 20, 50]"
               layout="total, prev, pager, next, jumper"
               @current-change="handlePageChange"
@@ -178,6 +179,10 @@
                       <el-icon><DocumentCopy /></el-icon>
                       Duplicate
                     </el-dropdown-item>
+                    <el-dropdown-item command="createWorkOrder">
+                      <el-icon><Calendar /></el-icon>
+                      Create Work Order
+                    </el-dropdown-item>
 
                     <el-dropdown-item command="delete" divided class="delete-dropdown-item">
                       <el-icon><Delete /></el-icon>
@@ -223,7 +228,10 @@
                       </span>
                     </el-descriptions-item>
                     <el-descriptions-item width="33%" label="Total Steps">
-                      <span class="info-value highlight">{{ selectedTemplate.steps?.length || 0 }} steps</span>
+                      <span class="info-value highlight clickable-steps"
+@click="navigateToStepsTab"
+                        >{{ selectedTemplate.steps?.length || 0 }} steps</span
+                      >
                     </el-descriptions-item>
                     <el-descriptions-item label="Created On">{{
                       formatDate(selectedTemplate.created_at)
@@ -400,14 +408,6 @@
             </div>
           </div>
         </div>
-
-        <!-- Floating Action Button -->
-        <div class="floating-action">
-          <el-button type="primary" class="fab-button" @click="createNewWorkOrder" size="large">
-            <el-icon style="margin: 0px 8px 2px 0px; font-size: 16px"><Calendar /></el-icon>
-            Create Work Order from Template
-          </el-button>
-        </div>
       </div>
     </div>
 
@@ -472,6 +472,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useTaskLibrary } from '@/composables/designer/useTaskLibrary'
 import { getEquipmentTree } from '@/api/equipment.js'
 import { getAllCategories } from '@/api/common.js'
+import { useWorkOrderDraftStore } from '@/store/modules/workOrderDraft'
+import { buildDisplayTaskFromTemplate } from '@/components/WorkOrder/TodoView/taskPayloadHelpers'
 import TemplateCard from '../components/Library/TemplateCard.vue'
 // Preview components reused from Procedure Designer
 import InspectionStepPreview from '../components/Designer/StepCards/InspectionStepPreview.vue'
@@ -485,6 +487,7 @@ import { transformLimitsFromBackend } from '../utils/stepTransforms'
 const router = useRouter()
 const route = useRoute()
 const settingsStore = useSettingsStore()
+const workOrderDraftStore = useWorkOrderDraftStore()
 const {
   loading,
   templateDetailLoading,
@@ -1056,6 +1059,10 @@ const handleHeaderAction = command => {
       handleTemplateDuplicate()
       break
 
+    case 'createWorkOrder':
+      createNewWorkOrder()
+      break
+
     case 'delete':
       handleTemplateDelete( selectedTemplate.value )
       break
@@ -1073,9 +1080,66 @@ const createNewTemplate = () => {
   router.push( { name : 'TaskDesigner' } )
 }
 
-const createNewWorkOrder = () => {
-  // TODO: Implement work order creation functionality
-  ElMessage.success( 'Thanks for clicking! Work Order Creation will come soon!' )
+const createNewWorkOrder = async() => {
+  if ( !selectedTemplate.value ) {
+    ElMessage.error( 'No template selected. Please select a template first.' )
+    return
+  }
+
+  try {
+    // Check if there's already an unfinished work order
+    if ( workOrderDraftStore.hasDraft ) {
+      // Show confirmation dialog
+      const result = await ElMessageBox.confirm(
+        'You have an unfinished work order. Add this task there?',
+        'Unfinished Work Order',
+        {
+          confirmButtonText : 'Yes',
+          cancelButtonText : 'Cancel',
+          type : 'warning',
+          customClass : 'work-order-confirmation-dialog'
+        }
+      )
+
+      if ( result === 'cancel' ) {
+        // User chose to discard the existing draft
+        workOrderDraftStore.clearDraft()
+      }
+      // If user chose "Add Here", we continue with the existing logic below
+    }
+
+    // Set context to create mode BEFORE appending task
+    workOrderDraftStore.setCreateMode()
+
+    // Convert the selected template to a task format
+    const taskFromTemplate = buildDisplayTaskFromTemplate( selectedTemplate.value )
+
+    // Add the task to the work order draft
+    workOrderDraftStore.appendTask( taskFromTemplate )
+
+    // Set flag to automatically open the create panel
+    workOrderDraftStore.setShouldOpenCreatePanel( true )
+
+    // Navigate to work order view in todo mode
+    router.push( {
+      path : '/work-order',
+      query : { view : 'todo' }
+    } )
+
+    ElMessage.success( `Template "${selectedTemplate.value.name}" added to work order creation` )
+  } catch ( error ) {
+    // Handle user cancellation (when clicking X or pressing Esc)
+    if ( error === 'cancel' || error === 'close' ) {
+      return // User cancelled, no error message needed
+    }
+
+    console.error( 'Failed to create work order from template:', error )
+    ElMessage.error( 'Failed to add template to work order. Please try again.' )
+  }
+}
+
+const navigateToStepsTab = () => {
+  activeTab.value = 'steps'
 }
 
 // Helper functions
@@ -1478,6 +1542,7 @@ defineOptions( {
 }
 
 .action-button {
+  font-size: 20px;
   padding: 8px;
 }
 
@@ -1593,6 +1658,16 @@ defineOptions( {
   font-weight: 600;
 }
 
+.clickable-steps {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clickable-steps:hover {
+  color: #409eff !important;
+  text-decoration: underline;
+}
+
 /* Description Card */
 .description-text {
   color: #303133;
@@ -1681,23 +1756,6 @@ defineOptions( {
   color: #909399;
 }
 
-.floating-action {
-  position: fixed;
-  bottom: 24px;
-  right: 24%;
-  z-index: 1000;
-}
-
-.fab-button {
-  border-radius: 50px;
-  padding: 12px 20px;
-  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.3);
-}
-
-.fab-button:hover {
-  box-shadow: 0 6px 16px rgba(64, 158, 255, 0.4);
-}
-
 .steps-preview {
   margin-bottom: 24px;
 }
@@ -1712,6 +1770,7 @@ defineOptions( {
 /* Desktop-style preview (borrowed from PreviewDialog, simplified) */
 .step-search-bar {
   padding: 0px 0px 12px 0px;
+  height: 8%;
 }
 
 .procedure-preview {

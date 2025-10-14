@@ -296,42 +296,15 @@
       </template>
     </el-dialog>
 
-    <!-- standard Form Dialog -->
-    <el-dialog
-      :model-value="formDialogVisible"
-      @update:model-value="val => (formDialogVisible = val)"
-      :title="isEditMode ? 'Edit standard' : 'Create standard'"
-      width="600px"
-      :before-close="handleFormCancel"
-    >
-      <el-form :model="formData" :rules="formRules" ref="standardForm" label-width="120px">
-        <el-form-item label="Title" prop="name">
-          <el-input v-model="formData.name" placeholder="Enter standard title" />
-        </el-form-item>
-        <el-form-item label="Description" prop="description">
-          <el-input
-            v-model="formData.description"
-            type="textarea"
-            :rows="3"
-            placeholder="Enter detailed description of the standard"
-          />
-        </el-form-item>
-        <el-form-item label="Category" prop="category">
-          <el-select v-model="formData.category" placeholder="Select a category" style="width: 100%">
-            <el-option label="Food Safety" value="food-safety" />
-            <el-option label="General" value="general" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="handleFormCancel">Cancel</el-button>
-          <el-button type="primary" @click="handleFormSubmit" :loading="formLoading" :disabled="!isFormValid">
-            {{ isEditMode ? 'Update' : 'Create' }}
-          </el-button>
-        </span>
-      </template>
-    </el-dialog>
+    <!-- Standard Form Dialog -->
+    <CreateStandardDialog
+      :visible="formDialogVisible"
+      :is-edit-mode="isEditMode"
+      :initial-data="formData"
+      :loading="formLoading"
+      @close="handleFormCancel"
+      @submit="handleFormSubmit"
+    />
   </div>
 </template>
 
@@ -354,6 +327,7 @@ import {
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useStandards } from '@/composables/designer/useStandards'
 import standardCard from '../components/Library/StandardCard.vue'
+import CreateStandardDialog from '@/components/TaskLibrary/CreateStandardDialog.vue'
 
 const settingsStore = useSettingsStore()
 const {
@@ -395,8 +369,6 @@ const activeTab = ref( 'general' )
 const formDialogVisible = ref( false )
 const formLoading = ref( false )
 const isEditMode = ref( false )
-const standardForm = ref( null )
-const isFormValid = ref( false )
 const formData = ref( {
   name : '',
   description : '',
@@ -404,17 +376,9 @@ const formData = ref( {
   items : []
 } )
 
-// Rule editing state
+// Rule editing state (for detail view)
 const editingRuleIndex = ref( null )
 const editingRuleText = ref( '' )
-
-const formRules = {
-  name : [
-    { required : true, message : 'Please enter standard title', trigger : 'blur' },
-    { min : 2, max : 100, message : 'Title should be between 2 and 100 characters', trigger : 'blur' }
-  ],
-  category : [{ required : true, message : 'Please choose a category', trigger : 'blur' }]
-}
 
 // Dynamic height calculation state
 const navbarHeight = ref( 50 )
@@ -595,34 +559,44 @@ const handleFormCancel = () => {
   }
 }
 
-const handleFormSubmit = async() => {
-  if ( !standardForm.value ) return
-  await standardForm.value.validate( async valid => {
-    if ( valid ) {
-      formLoading.value = true
-      try {
-        const payload = { ...formData.value, module : 200 }
-        if ( isEditMode.value ) {
-          await updateStandard( selectedstandardId.value, payload )
-          ElMessage.success( 'Safety measure updated successfully' )
-        } else {
-          await createStandard( payload )
-          ElMessage.success( 'Safety measure created successfully' )
-        }
-        formDialogVisible.value = false
-        await loadstandards()
-      } catch ( error ) {
-        ElMessage.error( isEditMode.value ? 'Failed to update standard' : 'Failed to create standard' )
-      } finally {
-        formLoading.value = false
+const handleFormSubmit = async submittedFormData => {
+  formLoading.value = true
+  try {
+    const payload = { ...submittedFormData, module : 200 }
+    if ( isEditMode.value ) {
+      // Validate ID before update
+      const currentId = selectedstandardId.value
+      if ( !currentId ) {
+        ElMessage.error( 'Standard ID is missing. Please refresh and try again.' )
+        return
       }
+      await updateStandard( currentId, payload )
+      ElMessage.success( 'Standard updated successfully' )
+
+      // Preserve selection after reload
+      await loadstandards()
+      selectedstandardId.value = currentId
+    } else {
+      await createStandard( payload )
+      ElMessage.success( 'Standard created successfully' )
+      await loadstandards()
     }
-  } )
+    formDialogVisible.value = false
+  } catch ( error ) {
+    ElMessage.error( isEditMode.value ? 'Failed to update standard' : 'Failed to create standard' )
+  } finally {
+    formLoading.value = false
+  }
 }
 
 // Rule management
 const addNewRule = () => {
   if ( !selectedstandard.value ) return
+
+  // Don't add empty rule if there's already an empty rule being edited
+  if ( editingRuleIndex.value !== null ) {
+    return
+  }
 
   editingRuleIndex.value = selectedstandard.value.items.length
   editingRuleText.value = ''
@@ -637,11 +611,11 @@ const editRule = ( index, rule ) => {
 const cancelEdit = () => {
   if ( editingRuleIndex.value === null ) return
 
-  const isNewRule = editingRuleIndex.value === selectedstandard.value.items.length - 1
-  const isNewRuleEmpty = selectedstandard.value.items[editingRuleIndex.value] === ''
+  const isEmptyRule = selectedstandard.value.items[editingRuleIndex.value] === ''
 
-  if ( isNewRule && isNewRuleEmpty ) {
-    selectedstandard.value.items.pop()
+  if ( isEmptyRule ) {
+    // Remove empty rule completely
+    selectedstandard.value.items.splice( editingRuleIndex.value, 1 )
   }
 
   editingRuleIndex.value = null
@@ -652,14 +626,28 @@ const saveRule = async index => {
   if ( !selectedstandard.value ) return
 
   if ( editingRuleText.value.trim() === '' ) {
-    // User is trying to save an empty rule.
-    const isNewRule = index === selectedstandard.value.items.length - 1
-    const isOriginalRuleEmpty = selectedstandard.value.items[index] === ''
+    // Remove empty rule completely
+    try {
+      const items = [...selectedstandard.value.items]
+      items.splice( index, 1 )
+      const payload = { ...selectedstandard.value, items, module : 200 }
 
-    if ( isNewRule && isOriginalRuleEmpty ) {
-      // This was a new rule that the user didn't fill out. Remove it.
-      selectedstandard.value.items.pop()
+      // Validate ID before update
+      const currentId = selectedstandardId.value
+      if ( !currentId ) {
+        ElMessage.error( 'Standard ID is missing. Please refresh and try again.' )
+        return
+      }
+
+      await updateStandard( currentId, payload )
+
+      // Preserve selection after reload
+      await loadstandards()
+      selectedstandardId.value = currentId
+    } catch ( error ) {
+      ElMessage.error( 'Failed to remove empty rule' )
     }
+
     editingRuleIndex.value = null
     editingRuleText.value = ''
     return
@@ -670,8 +658,18 @@ const saveRule = async index => {
     items[index] = editingRuleText.value.trim()
     const payload = { ...selectedstandard.value, items, module : 200 }
 
-    await updateStandard( selectedstandardId.value, payload )
+    // Validate that we have a valid ID before attempting update
+    const currentId = selectedstandardId.value
+    if ( !currentId ) {
+      ElMessage.error( 'Standard ID is missing. Please refresh and try again.' )
+      return
+    }
+
+    await updateStandard( currentId, payload )
+
+    // Preserve selection after reload
     await loadstandards()
+    selectedstandardId.value = currentId
 
     editingRuleIndex.value = null
     editingRuleText.value = ''
@@ -694,8 +692,19 @@ const deleteRule = async index => {
     items.splice( index, 1 )
     const payload = { ...selectedstandard.value, items, module : 200 }
 
-    await updateStandard( selectedstandardId.value, payload )
+    // Validate ID before update
+    const currentId = selectedstandardId.value
+    if ( !currentId ) {
+      ElMessage.error( 'Standard ID is missing. Please refresh and try again.' )
+      return
+    }
+
+    await updateStandard( currentId, payload )
+
+    // Preserve selection after reload
     await loadstandards()
+    selectedstandardId.value = currentId
+
     ElMessage.success( 'Rule deleted successfully' )
   } catch ( error ) {
     if ( error !== 'cancel' ) {
@@ -724,35 +733,6 @@ const calculateDynamicHeights = () => {
 const handleResize = () => {
   calculateDynamicHeights()
 }
-
-watch( formDialogVisible, newValue => {
-  if ( newValue ) {
-    if ( isEditMode.value ) {
-      isFormValid.value = true
-    } else {
-      isFormValid.value = false
-      // Reset validation on open for new forms
-      nextTick( () => {
-        standardForm.value?.clearValidate()
-      } )
-    }
-  }
-} )
-
-watch(
-  formData,
-  async() => {
-    if ( standardForm.value ) {
-      try {
-        await standardForm.value.validate()
-        isFormValid.value = true
-      } catch ( error ) {
-        isFormValid.value = false
-      }
-    }
-  },
-  { deep : true }
-)
 
 watch(
   () => settingsStore.tagsView,
@@ -967,6 +947,7 @@ defineOptions( {
 }
 
 .action-button {
+  font-size: 20px;
   padding: 8px;
 }
 
@@ -1087,6 +1068,7 @@ defineOptions( {
   border-radius: 8px;
   background: #fafafa;
   transition: all 0.3s ease;
+  justify-content: space-evenly;
 }
 
 .rule-item:hover {

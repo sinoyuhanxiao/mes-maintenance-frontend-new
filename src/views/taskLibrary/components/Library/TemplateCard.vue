@@ -53,7 +53,10 @@ const props = defineProps( {
 // eslint-disable-next-line no-unused-vars
 const emit = defineEmits( ['select', 'edit', 'duplicate', 'delete'] )
 
-const stepsCount = computed( () => props.template?.steps?.length || 0 )
+const stepsCount = computed( () => {
+  // Use new backend format total_steps if available, fallback to old format
+  return props.template?.total_steps ?? props.template?.steps?.length ?? 0
+} )
 
 const categoryLabel = computed( () => {
   const category = props.template?.category

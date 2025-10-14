@@ -157,9 +157,9 @@ import { ElPopover } from 'element-plus'
 import { CircleCheck, CircleClose, Refresh, Picture } from '@element-plus/icons-vue'
 import { convertToLocalTime } from '@/utils/datetime'
 import { useAppStore } from '@/store'
-import PriorityTag from '@/components/WorkOrder/PriorityTag.vue'
-import CategoryTag from '@/components/WorkOrder/CategoryTag.vue'
-import StatusTag from '@/components/WorkOrder/StatusTag.vue'
+import PriorityTag from '@/components/WorkOrder/Display/PriorityTag.vue'
+import CategoryTag from '@/components/WorkOrder/Display/CategoryTag.vue'
+import StatusTag from '@/components/WorkOrder/Display/StatusTag.vue'
 
 const fullCalendarRef = ref( null )
 const events = ref( [] )
@@ -493,7 +493,7 @@ const temporaryUserList = [
 //     const calendarApi = fullCalendarRef.value?.getApi()
 //     calendarApi?.addEventSource(events)
 //   } catch (e) {
-//     console.error(`Failed to load events for ${start_date_from}`, e)
+//     // Error handling
 //   }
 // }
 //

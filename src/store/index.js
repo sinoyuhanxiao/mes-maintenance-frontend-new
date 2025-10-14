@@ -6,6 +6,7 @@ import useSettingsStore from './modules/settings'
 import usePermissionStore from './modules/permission'
 import { useTaskLibraryStore } from './modules/taskLibrary'
 import { useTemplateDesignerStore } from './modules/templateDesigner'
+import { useWorkOrderDraftStore } from './modules/workOrderDraft'
 
 const store = createPinia()
 
@@ -20,7 +21,8 @@ export {
   useSettingsStore,
   usePermissionStore,
   useTaskLibraryStore,
-  useTemplateDesignerStore
+  useTemplateDesignerStore,
+  useWorkOrderDraftStore
 }
 
 export default store

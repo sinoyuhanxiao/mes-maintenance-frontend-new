@@ -239,7 +239,6 @@ const uploadFilesToServer = async() => {
     }
     showSuccess( t( 'workOrder.messages.uploadSuccess' ) )
   } catch ( err ) {
-    console.error( '❌ File upload failed:', err )
     throw new Error( t( 'workOrder.messages.uploadFailed' ) )
   }
 }
@@ -274,7 +273,6 @@ const submitForm = async() => {
       }
     )
   } catch ( error ) {
-    console.error( '❌ Work order creation failed:', error )
     loading.value = false
   }
 }
@@ -298,7 +296,7 @@ onMounted( async() => {
       // commonDataStore.fetchProductionLines()
     ] )
   } catch ( error ) {
-    console.error( 'Failed to initialize form data:', error )
+    // Error handled by individual fetch functions
   }
 } )
 
