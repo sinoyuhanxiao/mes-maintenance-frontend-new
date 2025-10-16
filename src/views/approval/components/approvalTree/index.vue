@@ -18,10 +18,22 @@
     >
       <template #default="{ node, data }">
         <div class="custom-tree-node">
-          <span>{{ node.label }}</span>
-          <div v-if="isEditMode">
-            <el-button v-if="node.level === 1" type="primary" link @click.stop="append(data)"> Add </el-button>
-            <el-button style="margin-left: 4px" type="danger" link @click.stop="remove(node, data)"> Delete </el-button>
+          <el-tooltip :content="node.label" placement="top" :disabled="node.label.length < 30">
+            <span class="tree-node-label">{{ node.label }}</span>
+          </el-tooltip>
+          <div v-if="isEditMode" class="tree-node-actions">
+            <!-- Add button only on level 2 (Approval Type) -->
+            <el-button v-if="node.level === 2" type="primary" link @click.stop="append(data)"> Add </el-button>
+            <!-- Delete button only on level 3 (Approval Template) -->
+            <el-button
+              v-if="node.level === 3"
+              style="margin-left: 4px"
+              type="danger"
+              link
+              @click.stop="remove(node, data)"
+            >
+              Delete
+            </el-button>
           </div>
         </div>
       </template>
@@ -29,15 +41,19 @@
 
     <!-- Approval Hierarchy Dialog -->
     <el-dialog
+      v-if="dialogVisible"
       v-model="dialogVisible"
-      title="Create Approval Hierarchy"
+      title="Create Approval Template"
       width="900px"
-      height="300px"
+      top="5vh"
+      append-to-body
+      destroy-on-close
       :close-on-click-modal="false"
       @close="handleDialogClose"
     >
       <AddApprovalType
-        :selected-department-id="selectedDepartmentId"
+        :selected-approval-type-id="selectedApprovalTypeId"
+        :approval-type-info="selectedApprovalTypeInfo"
         @submit="handleFormSubmit"
         @cancel="handleFormCancel"
       />
@@ -47,8 +63,9 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { searchDepartments } from '@/api/department'
+import { getApprovalTree, deleteApprovalTemplate } from '@/api/approval'
 import AddApprovalType from '../approvalDesigner/components/addApprovalType.vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 // Define emits
 const emit = defineEmits( ['node-selected'] )
@@ -56,8 +73,11 @@ const emit = defineEmits( ['node-selected'] )
 const handleNodeClick = data => {
   if ( !isEditMode.value ) {
     console.log( 'Selected node:', data )
-    emit( 'node-selected', data.id )
-    console.log( 'Emitted node-selected with ID:', data.id )
+    // Only emit if it's an approval template (level 3)
+    if ( data.type === 'approval_template' ) {
+      emit( 'node-selected', data.originalId )
+      console.log( 'Emitted approval template ID:', data.originalId )
+    }
   }
 }
 
@@ -66,7 +86,10 @@ const isEditMode = ref( false )
 const loading = ref( false )
 const treeData = ref( [] )
 const dialogVisible = ref( false )
-const selectedDepartmentId = ref( null )
+const selectedApprovalTypeId = ref( null )
+const selectedApprovalTypeInfo = ref( null )
+
+// let id = 1000
 
 const defaultProps = {
   children : 'children',
@@ -77,22 +100,61 @@ const defaultProps = {
  * Add a new child node - opens dialog
  */
 const append = data => {
-  selectedDepartmentId.value = data.id
-  dialogVisible.value = true
+  // Extract the approval type ID when adding to an approval type node
+  if ( data.type === 'approval_type' ) {
+    selectedApprovalTypeId.value = data.originalId
+    selectedApprovalTypeInfo.value = {
+      approvalType : data.label,
+      departmentId : data.departmentId,
+      departmentName : getDepartmentName( data.departmentId )
+    }
+    dialogVisible.value = true
+  }
+}
+
+/**
+ * Get department name from tree data by ID
+ */
+const getDepartmentName = departmentId => {
+  const dept = treeData.value.find( d => d.originalId === departmentId )
+  return dept ? dept.name : 'Unknown Department'
 }
 
 /**
  * Remove a node
  */
-const remove = ( node, data ) => {
-  const parent = node.parent
-  const children = parent?.data.children || parent?.data
-  const index = children.findIndex( d => d.id === data.id )
-  children.splice( index, 1 )
-  treeData.value = [...treeData.value]
+const remove = async( _node, data ) => {
+  // Only allow deleting approval templates (level 3)
+  if ( data.type !== 'approval_template' ) {
+    ElMessage.warning( 'Only approval templates can be deleted' )
+    return
+  }
 
-  // TODO: Call API to delete department
-  // deleteDepartment(data.id)
+  try {
+    await ElMessageBox.confirm(
+      `Are you sure you want to delete "${data.label}"? This action cannot be undone.`,
+      'Confirm Delete',
+      {
+        confirmButtonText : 'Delete',
+        cancelButtonText : 'Cancel',
+        type : 'warning',
+        confirmButtonClass : 'el-button--danger'
+      }
+    )
+
+    // Call API to delete the approval template
+    await deleteApprovalTemplate( data.originalId )
+
+    ElMessage.success( 'Approval template deleted successfully' )
+
+    // Refresh the tree to reflect the deletion
+    await fetchApprovalTree()
+  } catch ( error ) {
+    if ( error !== 'cancel' ) {
+      console.error( 'Failed to delete approval template:', error )
+      ElMessage.error( 'Failed to delete approval template' )
+    }
+  }
 }
 
 /**
@@ -100,20 +162,10 @@ const remove = ( node, data ) => {
  */
 const handleFormSubmit = async formData => {
   console.log( 'Form submitted:', formData )
-
-  // TODO: Call API to create approval hierarchy
-  // try {
-  //   await createApprovalHierarchy(formData)
-  //   ElMessage.success('Approval hierarchy created successfully')
-  //   dialogVisible.value = false
-  //   // Optionally refresh the tree or update specific node
-  // } catch (error) {
-  //   console.error('Failed to create approval hierarchy:', error)
-  //   ElMessage.error('Failed to create approval hierarchy')
-  // }
-
-  // For now, just close the dialog
+  // Close the dialog
   dialogVisible.value = false
+  // Refresh the tree to show the new template
+  await fetchApprovalTree()
 }
 
 /**
@@ -127,59 +179,77 @@ const handleFormCancel = () => {
  * Handle dialog close
  */
 const handleDialogClose = () => {
-  selectedDepartmentId.value = null
+  // Reset immediately to prevent stacking
+  selectedApprovalTypeId.value = null
+  selectedApprovalTypeInfo.value = null
 }
 
 /**
- * Transform flat department list into hierarchical tree structure
+ * Transform API response into hierarchical tree structure
+ * Structure: Department > Approval Type > Approval Template
  */
 const buildTree = departments => {
-  const map = {}
-  const roots = []
-
-  departments.forEach( dept => {
-    map[dept.id] = {
-      ...dept,
+  return departments.map( dept => {
+    const deptNode = {
+      id : `dept-${dept.id}`,
       label : dept.name,
-      children : []
+      name : dept.name,
+      code : dept.code,
+      type : 'department',
+      originalId : dept.id
     }
-  } )
 
-  departments.forEach( dept => {
-    if ( dept.parentId && map[dept.parentId] ) {
-      map[dept.parentId].children.push( map[dept.id] )
-    } else {
-      roots.push( map[dept.id] )
+    // Add approval types as children
+    if ( dept.approval_types && dept.approval_types.length > 0 ) {
+      deptNode.children = dept.approval_types.map( approvalType => {
+        const typeNode = {
+          id : `type-${approvalType.id}`,
+          label : approvalType.approval_type,
+          type : 'approval_type',
+          originalId : approvalType.id,
+          departmentId : dept.id
+        }
+
+        // Add approval templates as children of approval type
+        if ( approvalType.approval_templates && approvalType.approval_templates.length > 0 ) {
+          typeNode.children = approvalType.approval_templates.map( template => ( {
+            id : `template-${template.id}`,
+            label : template.name,
+            type : 'approval_template',
+            originalId : template.id,
+            approvalTypeId : approvalType.id,
+            departmentId : dept.id,
+            ...template
+          } ) )
+        }
+
+        return typeNode
+      } )
     }
+
+    return deptNode
   } )
-
-  const cleanTree = nodes => {
-    nodes.forEach( node => {
-      if ( node.children.length === 0 ) {
-        delete node.children
-      } else {
-        cleanTree( node.children )
-      }
-    } )
-  }
-  cleanTree( roots )
-
-  return roots
 }
 
 /**
- * Fetch departments from API
+ * Fetch approval tree from API
  */
-const fetchDepartments = async() => {
+const fetchApprovalTree = async() => {
   loading.value = true
   try {
-    const searchPayload = filterText.value ? { name : filterText.value } : {}
-    const response = await searchDepartments( searchPayload, 1, 1000, 'name', 'ASC' )
+    const response = await getApprovalTree()
 
-    const departments = response.data?.content || response.data || []
+    // Handle the response structure from the API
+    let departments = []
+    if ( Array.isArray( response.data ) ) {
+      departments = response.data
+    } else if ( response.data?.data && Array.isArray( response.data.data ) ) {
+      departments = response.data.data
+    }
+
     treeData.value = buildTree( departments )
   } catch ( error ) {
-    console.error( 'Failed to fetch departments:', error )
+    console.error( 'Failed to fetch approval tree:', error )
     treeData.value = []
   } finally {
     loading.value = false
@@ -191,13 +261,13 @@ let searchTimeout
 watch( filterText, newVal => {
   clearTimeout( searchTimeout )
   searchTimeout = setTimeout( () => {
-    fetchDepartments()
+    fetchApprovalTree()
   }, 300 )
 } )
 
 // Initial load
 onMounted( () => {
-  fetchDepartments()
+  fetchApprovalTree()
 } )
 </script>
 
@@ -237,12 +307,22 @@ onMounted( () => {
   justify-content: space-between;
   font-size: 14px;
   padding-right: 8px;
+  gap: 8px;
+  min-width: 0;
 }
 
-/* Dialog content styling */
-:deep(.el-dialog__body) {
-  padding: 10px;
-  max-height: 60vh;
-  overflow-y: auto;
+.tree-node-label {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.tree-node-actions {
+  display: flex;
+  flex-shrink: 0;
+  gap: 4px;
 }
 </style>

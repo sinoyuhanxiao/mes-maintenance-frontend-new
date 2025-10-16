@@ -1,26 +1,31 @@
 <template>
   <div class="approval-designer">
+    <div class="approval-designer-header">
+      <el-button :icon="ArrowLeft" @click="handleBack">Back</el-button>
+      <el-text size="large">Edit Approval Hierarchy</el-text>
+      <div></div>
+    </div>
+    <el-divider></el-divider>
+
     <el-form ref="formRef" :model="formData" :rules="formRules" label-width="140px" label-position="top">
       <div class="approval-designer-info">
-        <el-form-item label="Department">
-          <el-input :value="approvalTypeInfo.departmentName || 'N/A'" disabled />
+        <el-form-item label="Department" prop="departmentId">
+          <el-input v-model="formData.departmentName" disabled placeholder="Department name" />
         </el-form-item>
 
-        <el-form-item label="Approval Type">
-          <el-input :value="approvalTypeInfo.approvalType || 'N/A'" disabled />
+        <el-form-item label="Approval Type" prop="approvalType">
+          <el-input
+            v-model="formData.approvalType"
+            placeholder="Enter approval type (e.g., Work Order, Purchase Request)"
+          />
         </el-form-item>
 
-        <el-form-item label="Template Name" prop="title">
-          <el-input v-model="formData.title" placeholder="Enter approval template name" />
+        <el-form-item label="Title" prop="title">
+          <el-input v-model="formData.title" placeholder="Enter approval flow title" />
         </el-form-item>
 
         <el-form-item label="Description" prop="description">
-          <el-input
-            v-model="formData.description"
-            type="textarea"
-            :rows="3"
-            placeholder="Enter description (optional)"
-          />
+          <el-input v-model="formData.description" type="textarea" :rows="3" placeholder="Enter description" />
         </el-form-item>
       </div>
 
@@ -31,6 +36,7 @@
           <el-text size="default" style="font-weight: 500">Approval Steps</el-text>
           <el-button type="primary" size="small" @click="addApprovalStep"> Add Step </el-button>
         </div>
+
         <!-- Live Preview -->
         <div v-if="formData.approvalSteps.length > 0" class="steps-preview">
           <el-steps :key="stepsKey" :active="activeStepIndex" align-center>
@@ -38,7 +44,7 @@
               v-for="(step, index) in formData.approvalSteps"
               :key="step.id"
               :title="`Step ${index + 1}`"
-              :description="getStepDescription(step)"
+              :description="step.approvingRole || 'No role assigned'"
             />
           </el-steps>
         </div>
@@ -69,30 +75,26 @@
 
       <div class="approval-designer-actions">
         <el-button @click="handleCancel">Cancel</el-button>
-        <el-button type="primary" @click="handleSubmit"> Create Approval Template </el-button>
+        <el-button type="primary" @click="handleSubmit"> Update Approval Hierarchy </el-button>
       </div>
     </el-form>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { ArrowLeft } from '@element-plus/icons-vue'
 import approvalStepCard from './approvalStepCardAdd.vue'
 import { ElMessage } from 'element-plus'
-import { createApprovalTemplate } from '@/api/approval'
 
 const props = defineProps( {
-  selectedApprovalTypeId : {
+  approvalHierarchyId : {
     type : [String, Number],
-    default : null
-  },
-  approvalTypeInfo : {
-    type : Object,
-    default : () => ( {} )
+    required : true
   }
 } )
 
-const emit = defineEmits( ['submit', 'cancel'] )
+const emit = defineEmits( ['back', 'submit', 'cancel'] )
 
 // Form reference
 const formRef = ref( null )
@@ -100,9 +102,15 @@ const formRef = ref( null )
 // Steps key for forcing re-render
 const stepsKey = ref( 0 )
 
+// Loading state
+const loading = ref( false )
+
 // Form data
 const formData = reactive( {
-  approvalTypeId : props.selectedApprovalTypeId || null,
+  id : null,
+  departmentId : null,
+  departmentName : '',
+  approvalType : '',
   title : '',
   description : '',
   approvalSteps : []
@@ -110,9 +118,14 @@ const formData = reactive( {
 
 // Form validation rules
 const formRules = {
+  departmentId : [{ required : true, message : 'Please select a department', trigger : 'change' }],
+  approvalType : [
+    { required : true, message : 'Please enter approval type', trigger : 'blur' },
+    { min : 2, max : 50, message : 'Approval type should be between 2 and 50 characters', trigger : 'blur' }
+  ],
   title : [
-    { required : true, message : 'Please enter a template name', trigger : 'blur' },
-    { min : 3, max : 100, message : 'Template name should be between 3 and 100 characters', trigger : 'blur' }
+    { required : true, message : 'Please enter a title', trigger : 'blur' },
+    { min : 3, max : 100, message : 'Title should be between 3 and 100 characters', trigger : 'blur' }
   ],
   description : [{ max : 500, message : 'Description should not exceed 500 characters', trigger : 'blur' }]
 }
@@ -122,20 +135,65 @@ const activeStepIndex = computed( () => {
   return formData.approvalSteps.length
 } )
 
-// Get step description including approver name and threshold value
-const getStepDescription = step => {
-  const approverName = step.approverName || 'No approver assigned'
-
-  if ( step.requiresApproval && step.approvalAmount ) {
-    return `${approverName} (≥ $${step.approvalAmount})`
-  }
-
-  return approverName
-}
-
 // Step counter for unique IDs
 let stepIdCounter = 0
 
+// Load existing approval hierarchy data
+const loadApprovalHierarchy = async() => {
+  loading.value = true
+  try {
+    // Mock data for now
+    const data = {
+      id : props.approvalHierarchyId,
+      departmentId : 1,
+      departmentName : 'Engineering Department',
+      approvalType : 'Work Order',
+      title : 'Work Order Approval Flow',
+      description : 'This is a sample approval flow for work orders.',
+      approvalSteps : [
+        {
+          id : 1,
+          stepName : 'Step 1',
+          approverType : 'role',
+          approverId : 1,
+          approverName : 'Team Lead',
+          requiresApproval : true,
+          approvalAmount : '1000',
+          description : 'Team lead approval'
+        },
+        {
+          id : 2,
+          stepName : 'Step 2',
+          approverType : 'individual',
+          approverId : 102,
+          approverName : 'Jane Smith',
+          requiresApproval : true,
+          approvalAmount : '5000',
+          description : 'Manager approval'
+        }
+      ]
+    }
+
+    // Populate form data
+    formData.id = data.id
+    formData.departmentId = data.departmentId
+    formData.departmentName = data.departmentName
+    formData.approvalType = data.approvalType
+    formData.title = data.title
+    formData.description = data.description
+    formData.approvalSteps = data.approvalSteps
+
+    // Set counter to highest ID
+    stepIdCounter = Math.max( ...data.approvalSteps.map( s => s.id ), 0 )
+  } catch ( error ) {
+    console.error( 'Failed to load approval hierarchy:', error )
+    ElMessage.error( 'Failed to load approval hierarchy data' )
+  } finally {
+    loading.value = false
+  }
+}
+
+// Add a new approval step
 const addApprovalStep = () => {
   formData.approvalSteps.push( {
     id : ++stepIdCounter,
@@ -149,7 +207,6 @@ const addApprovalStep = () => {
   } )
   stepsKey.value++
 }
-
 // Update a step
 const updateStep = ( index, updatedData ) => {
   formData.approvalSteps[index] = { ...formData.approvalSteps[index], ...updatedData }
@@ -192,35 +249,15 @@ const handleSubmit = async() => {
       return
     }
 
-    // Transform form data to API format
-    const requestBody = {
-      name : formData.title,
-      description : formData.description || '',
-      approval_type_id : formData.approvalTypeId,
-      approval_steps : formData.approvalSteps.map( ( step, index ) => ( {
-        sequence : index + 1,
-        type : step.approverType, // 'role' or 'individual'
-        role_id : step.approverType === 'role' ? step.approverId : null,
-        user_id : step.approverType === 'individual' ? step.approverId : null,
-        threshold : step.requiresApproval && step.approvalAmount ? Number( step.approvalAmount ) : null,
-        approved : false,
-        signature : ''
-      } ) )
-    }
+    // TODO: Call API to update approval hierarchy
+    // await updateApprovalHierarchy(formData.id, formData)
 
-    console.log( 'Submitting approval template:', requestBody )
+    // Emit the form data to parent component
+    emit( 'submit', formData )
 
-    // Call the API
-    const response = await createApprovalTemplate( requestBody )
-    console.log( 'API Response:', response )
-
-    ElMessage.success( 'Approval template created successfully' )
-
-    // Emit success to parent component
-    emit( 'submit', response.data )
+    ElMessage.success( 'Approval hierarchy updated successfully' )
   } catch ( error ) {
-    console.error( 'Failed to create approval template:', error )
-    ElMessage.error( error.message || 'Failed to create approval template' )
+    ElMessage.error( 'Please fill in all required fields' )
   }
 }
 
@@ -228,6 +265,16 @@ const handleSubmit = async() => {
 const handleCancel = () => {
   emit( 'cancel' )
 }
+
+// Handle back button
+const handleBack = () => {
+  emit( 'back' )
+}
+
+// Load data on mount
+onMounted( () => {
+  loadApprovalHierarchy()
+} )
 </script>
 
 <style scoped>
@@ -241,6 +288,7 @@ const handleCancel = () => {
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
+  height: 20px;
 }
 
 .approval-designer-info {
