@@ -1,5 +1,5 @@
 <template>
-  <MesLayout :title="t('team.teamManagement')" :view-mode="'table'">
+  <MesLayout :title="'Work Group Management'" :view-mode="'table'">
     <template #viewMode> </template>
 
     <template #head>
@@ -14,43 +14,43 @@
               multiple
               collapse-tags
               collapse-tags-tooltip
-              :max-collapse-tags="2"
               filterable
               size="default"
               style="width: 200px"
               @change="handleFilterChange"
             >
-              <el-option
-                v-for="user in userOptions"
-                :key="user.id"
-                :label="user.first_name + ' ' + user.last_name"
-                :value="user.id"
-              />
+              <el-option v-for="user in userOptions" :key="user.id" :label="formatUserLabel(user)" :value="user.id">
+                <template #default>
+                  <div class="user-option-row">
+                    <span class="user-name">{{ user.first_name }} {{ user.last_name }}</span>
+                  </div>
+                </template>
+              </el-option>
             </el-select>
           </div>
 
+          <!--          <div class="filter-item">-->
+          <!--            <el-select-->
+          <!--              v-model="localFilters.department_ids"-->
+          <!--              :placeholder="t('common.filterByDepartmentPlaceholder')"-->
+          <!--              clearable-->
+          <!--              multiple-->
+          <!--              collapse-tags-->
+          <!--              collapse-tags-tooltip-->
+          <!--              size="default"-->
+          <!--              style="width: 200px"-->
+          <!--              @change="handleFilterChange"-->
+          <!--            >-->
+          <!--              <el-option v-for="d in departmentOptions" :key="d.id" :label="d.name" :value="d.id" />-->
+          <!--            </el-select>-->
+          <!--          </div>-->
+
           <div class="filter-item">
-            <el-select
-              v-model="localFilters.department_ids"
-              :placeholder="t('common.filterByDepartmentPlaceholder')"
-              clearable
-              multiple
-              collapse-tags
-              collapse-tags-tooltip
-              size="default"
-              style="width: 200px"
-              @change="handleFilterChange"
-            >
-              <el-option v-for="d in departmentOptions" :key="d.id" :label="d.name" :value="d.id" />
-            </el-select>
+            <LocationTreeSelect v-model="localFilters.location_ids" :width="'450px'" />
           </div>
 
           <div class="filter-item">
-            <LocationTreeSelect v-model="localFilters.location_ids" />
-          </div>
-
-          <div class="filter-item">
-            <EquipmentTreeSelect v-model="localFilters.equipment_node_ids" />
+            <EquipmentTreeSelect v-model="localFilters.equipment_node_ids" :width="'450px'" />
           </div>
 
           <div class="filter-item">
@@ -90,25 +90,38 @@
       <el-table
         v-loading="loading"
         :data="teamsTableData"
+        row-key="id"
+        default-expand-all
+        :tree-props="{ children: 'children' }"
         style="width: 100%"
-        border
         fit
         highlight-current-row
+        :row-class-name="getRowClassName"
         :height="tableHeight"
         :empty-text="t('common.noData')"
         @sort-change="handleSortChange"
+        :cell-style="indentCellStyle"
       >
-        <el-table-column prop="id" :label="'ID'" width="100" sortable="custom" align="center" fixed="left" />
-
-        <el-table-column prop="name" :label="t('team.name')" width="220" sortable="custom" align="center" fixed="left">
+        <el-table-column
+          prop="name"
+          :label="'Group Name'"
+          show-overflow-tooltip
+          width="300"
+          sortable="custom"
+          fixed="left"
+        >
           <template #default="scope">
-            <el-text tag="b">{{ scope.row.name }}</el-text>
+            <el-link @click="handleView(scope.row)">
+              {{ scope.row.name }}
+            </el-link>
           </template>
         </el-table-column>
 
-        <el-table-column prop="leader_id" :label="t('team.leader')" width="180" align="center">
+        <el-table-column prop="id" :label="'ID'" width="130" sortable="custom" fixed="left" />
+
+        <el-table-column prop="leader_id" :label="t('team.leader')" width="180">
           <template #default="scope">
-            <template v-if="scope.row.leader_id?.length > 0">
+            <template v-if="scope.row.leader_id">
               <UserTag
                 v-if="userMap[scope.row.leader_id]"
                 :user="userMap[scope.row.leader_id]"
@@ -122,147 +135,161 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="team_members_id" :label="t('team.members')" align="center" width="200">
-          <template #default="scope">
-            <template v-if="scope.row.team_members_id && scope.row.team_members_id.length">
-              <!--              <el-popover trigger="click" placement="top" width="300">-->
-              <!--                <template #reference>-->
-              <!--                  <el-button :type="'info'" plain :size="'small'">-->
-              <!--                    {{ scope.row.team_members_id.length }}-->
-              <!--                    {{ scope.row.team_members_id.length === 1 ? 'member' : 'members' }}-->
-              <!--                  </el-button>-->
-              <!--                </template>-->
-
-              <!--                <div class="tag-list">-->
-              <!--                  <UserTag v-for="id in scope.row.team_members_id" :key="id" :user="userMap[id]" :department-options="departmentOptions" />-->
-              <!--                </div>-->
-              <!--              </el-popover>-->
-
-              <TagPopover
-                :items="scope.row.team_members_id"
-                singular-label="member"
-                plural-label="members"
-                :search-key="userId => (userMap[userId]?.first_name || '') + ' ' + (userMap[userId]?.last_name || '')"
-                :item-key="m => m"
-              >
-                <template #default="{ item }">
-                  <UserTag :user="userMap[item]" :department-options="departmentOptions" />
-                </template>
-              </TagPopover>
-            </template>
-            <template v-else>
-              <span>-</span>
-            </template>
+        <!-- Members count column -->
+        <el-table-column prop="team_members_id" :label="t('team.members')" width="150" align="center">
+          <template #default="{ row }">
+            <el-button
+              v-if="row.team_members_id?.length"
+              type="info"
+              size="small"
+              plain
+              @click="handleView(row, 'members')"
+            >
+              {{ row.team_members_id.length + ' members' }}
+            </el-button>
+            <span v-else>-</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="team_locations_id" :label="t('team.assignedLocation')" align="center" width="200">
-          <template #default="scope">
-            <template v-if="scope.row.team_locations_id && scope.row.team_locations_id.length">
-              <TagPopover
-                :items="scope.row.team_locations_id"
-                singular-label="location"
-                plural-label="locations"
-                :search-key="lid => locationMap[String(lid)]?.name || ''"
-                :item-key="lid => lid"
-              >
-                <template #default="{ item }">
-                  <LocationTag :location="locationMap[String(item)] || null" />
-                </template>
-              </TagPopover>
-              <!--              <el-popover trigger="click" placement="top" width="300">-->
-              <!--                <template #reference>-->
-              <!--                  <el-button :type="'info'" plain :size="'small'">-->
-              <!--                    {{ scope.row.team_locations_id.length }}-->
-              <!--                    {{ scope.row.team_locations_id.length === 1 ? 'location' : 'locations' }}-->
-              <!--                  </el-button>-->
-              <!--                </template>-->
-
-              <!--                <div class="tag-list">-->
-              <!--                  <LocationTag-->
-              <!--                    v-for="id in scope.row.team_locations_id"-->
-              <!--                    :key="id"-->
-              <!--                    :location="locationMap[String(id)] || null"-->
-              <!--                  />-->
-              <!--                </div>-->
-              <!--              </el-popover>-->
-            </template>
-            <template v-else>
-              <span>-</span>
-            </template>
+        <!-- Equipment count column -->
+        <el-table-column prop="team_equipment_nodes_id" :label="t('team.assignedEquipment')" width="180" align="center">
+          <template #default="{ row }">
+            <el-button
+              v-if="row.team_equipment_nodes_id?.length"
+              type="info"
+              size="small"
+              plain
+              @click="handleView(row, 'equipment')"
+            >
+              {{ row.team_equipment_nodes_id.length + ' equipments' }}
+            </el-button>
+            <span v-else>-</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="team_equipment_nodes_id" :label="t('team.assignedEquipment')" align="center" width="200">
-          <template #default="scope">
-            <template v-if="scope.row.team_equipment_nodes_id && scope.row.team_equipment_nodes_id.length">
-              <TagPopover
-                :items="scope.row.team_equipment_nodes_id"
-                singular-label="equipment"
-                plural-label="equipments"
-                :search-key="eid => equipmentMap[String(eid)]?.name || ''"
-                :item-key="eid => eid"
-              >
-                <template #default="{ item }">
-                  <EquipmentTag :equipment="equipmentMap[String(item)] || null" />
-                </template>
-              </TagPopover>
-
-              <!--              <el-popover trigger="click" placement="top" width="300">-->
-              <!--                <template #reference>-->
-              <!--                  <el-button :type="'info'" plain :size="'small'">-->
-              <!--                    {{ scope.row.team_equipment_nodes_id.length }}-->
-              <!--                    {{ scope.row.team_equipment_nodes_id.length === 1 ? 'equipment' : 'equipments' }}-->
-              <!--                  </el-button>-->
-              <!--                </template>-->
-
-              <!--                <div class="tag-list">-->
-              <!--                  <EquipmentTag-->
-              <!--                    v-for="id in scope.row.team_equipment_nodes_id"-->
-              <!--                    :key="id"-->
-              <!--                    :equipment="equipmentMap[String(id)] || null"-->
-              <!--                  />-->
-              <!--                </div>-->
-              <!--              </el-popover>-->
-            </template>
-            <template v-else>
-              <span>-</span>
-            </template>
+        <!-- Locations count column -->
+        <el-table-column prop="team_locations_id" :label="t('team.assignedLocation')" width="180" align="center">
+          <template #default="{ row }">
+            <el-button
+              v-if="row.team_locations_id?.length"
+              type="info"
+              size="small"
+              plain
+              @click="handleView(row, 'locations')"
+            >
+              {{ row.team_locations_id.length + ' locations' }}
+            </el-button>
+            <span v-else>-</span>
           </template>
         </el-table-column>
 
-        <el-table-column :label="t('user.department')" prop="department" width="250" align="center">
+        <!--        <el-table-column :label="t('user.department')" prop="department" width="250" align="center">-->
+        <!--          <template #default="scope">-->
+        <!--            <template v-if="scope.row.department">-->
+        <!--              <DepartmentTag :department="scope.row.department" />-->
+        <!--            </template>-->
+        <!--            <template v-else>-->
+        <!--              <span>-</span>-->
+        <!--            </template>-->
+        <!--          </template>-->
+        <!--        </el-table-column>-->
+
+        <el-table-column prop="code" :label="t('team.code')" width="200" sortable="custom" />
+
+        <el-table-column prop="description" :label="t('common.description')" width="400" sortable="custom">
           <template #default="scope">
-            <template v-if="scope.row.department">
-              <DepartmentTag :department="scope.row.department" />
-            </template>
-            <template v-else>
-              <span>-</span>
-            </template>
+            <el-tooltip
+              effect="dark"
+              :content="scope.row.description"
+              placement="top"
+              :disabled="!scope.row.description"
+            >
+              <span class="ellipsis-text">
+                {{ scope.row.description || '-' }}
+              </span>
+            </el-tooltip>
           </template>
         </el-table-column>
 
-        <el-table-column prop="code" :label="t('team.code')" width="150" sortable="custom" align="center" />
+        <!-- Commented as its not supported yet in backend -->
+        <!--        <el-table-column prop="shift_id" label="Assigned Shift" width="350">-->
+        <!--          <template #default="scope">-->
+        <!--            <el-text>-->
+        <!--              {{-->
+        <!--                shiftMap[scope.row.shift_id]-->
+        <!--                  ? `${shiftMap[scope.row.shift_id].name} (${shiftMap[scope.row.shift_id].displayTime})`-->
+        <!--                  : '-'-->
+        <!--              }}-->
+        <!--            </el-text>-->
+        <!--          </template>-->
+        <!--        </el-table-column>-->
+
+        <el-table-column prop="type" :label="'Approval Enabled'" width="250">
+          <template #default="scope">
+            <el-switch :model-value="scope.row.type === 'department'" disabled />
+          </template>
+        </el-table-column>
 
         <el-table-column
-          prop="description"
-          :label="t('common.description')"
-          width="400"
-          sortable="custom"
-          align="center"
-        />
-
-        <el-table-column :label="t('common.actions')" fixed="right" align="center" header-align="center" width="200">
+            prop="created_at"
+            label="Created At"
+            min-width="180"
+            show-overflow-tooltip
+        >
           <template #default="scope">
-            <el-button :icon="Edit" type="primary" size="small" @click="handleEdit(scope.row)">{{
+            <el-text>
+              {{ formatAsLocalDateTimeString(scope.row.created_at) }}
+            </el-text>
+          </template>
+        </el-table-column>
+
+        <el-table-column
+            prop="updated_at"
+            label="Updated At"
+            min-width="180"
+            show-overflow-tooltip
+        >
+          <template #default="scope">
+            <el-text>
+              {{ formatAsLocalDateTimeString(scope.row.updated_at) }}
+            </el-text>
+          </template>
+        </el-table-column>
+
+        <el-table-column :label="t('common.actions')" fixed="right" align="center" header-align="center" width="400">
+          <template #default="scope">
+            <el-button :icon="View" type="success" size="small" @click="handleView(scope.row)">
+              {{ t('common.view') }}
+            </el-button>
+
+            <el-button :icon="EditPen" type="primary" size="small" @click="handleNewChildTeam(scope.row)">{{
+              t('team.newChildTeam')
+            }}</el-button>
+
+            <el-button :icon="Edit" type="info" size="small" @click="handleEdit(scope.row)">{{
               t('common.edit')
             }}</el-button>
+
             <el-button :icon="Delete" type="danger" size="small" @click="handleDelete(scope.row.id)">{{
               t('common.delete')
             }}</el-button>
           </template>
         </el-table-column>
       </el-table>
+
+      <!-- Team Detail Dialog -->
+      <TeamDetail
+        v-model="showTeamDetail"
+        :key="selectedTeam?.id + '-' + selectedTeam?.updated_at"
+        :team="selectedTeam"
+        :initial-tab="initialTab"
+        :user-map="userMap"
+        :equipment-map="equipmentMap"
+        :location-map="locationMap"
+        :shift-map="shiftMap"
+        :team-map="teamMap"
+        @edit="handleEdit"
+      />
 
       <el-dialog
         :title="currentEditingTeam ? t('team.editTeam') : t('team.newTeam')"
@@ -273,8 +300,8 @@
         <div v-loading="isFormProcessing">
           <TeamForm
             :team="currentEditingTeam"
-            :department-options="departmentOptions"
             :user-options="userOptions"
+            :shift-options="shiftOptions"
             @confirm="handleTeamSubmitted"
             @cancel="() => (isDialogVisible = false)"
             @update:loading="isFormProcessing = $event"
@@ -287,35 +314,37 @@
       <el-pagination
         @current-change="handlePageChange"
         @size-change="handleSizeChange"
-        :current-page="currentPage"
         :page-size="pageSize"
         :page-sizes="[10, 20, 50]"
+        :total="teamsTableData.length"
         layout="total, sizes, prev, pager, next"
-        :total="totalElements"
       />
     </template>
   </MesLayout>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch, computed } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MesLayout from 'src/components/MesLayout'
-import { Delete, Edit, EditPen, Remove, Search } from '@element-plus/icons-vue'
+import { Delete, Edit, EditPen, Remove, Search, View } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { searchTeams, deactivateTeam } from '@/api/team.js'
+import { searchTeams, deactivateTeam, getAllTeamTree, getTeamTreeByIds } from '@/api/team.js'
 import { searchUsers } from '@/api/user.js'
 import { searchLocations } from '@/api/location'
 import { searchEquipmentNodes } from '@/api/equipment'
-import { searchDepartments } from '@/api/department'
-import LocationTag from '@/views/team/components/LocationTag.vue'
-import EquipmentTag from '@/views/team/components/EquipmentTag.vue'
+// import LocationTag from '@/views/team/components/LocationTag.vue'
+// import EquipmentTag from '@/views/team/components/EquipmentTag.vue'
 import LocationTreeSelect from '@/views/team/components/LocationTreeSelect.vue'
 import EquipmentTreeSelect from '@/views/team/components/EquipmentTreeSelect.vue'
 import TeamForm from '@/views/team/components/TeamForm.vue'
 import UserTag from '@/views/user/components/UserTag.vue'
-import DepartmentTag from '@/views/department/components/DepartmentTag.vue'
-import TagPopover from '@/views/team/components/TagPopover.vue'
+// import TagPopover from '@/views/team/components/TagPopover.vue'
+import { searchShifts } from '@/api/shift'
+import TeamDetail from '@/views/team/components/TeamDetail.vue'
+import { formatAsLocalDateTimeString } from '../../utils/datetime'
+
+// import { useRouter } from 'vue-router'
 
 const { t } = useI18n()
 const loading = ref( false )
@@ -325,31 +354,73 @@ const teamsTableData = ref( [] )
 const sortSettings = ref( { prop : 'id', order : 'descending' } )
 const currentPage = ref( 1 )
 const pageSize = ref( 20 )
-const totalElements = ref( 0 )
-const totalPages = ref( 0 )
 const tableHeight = ref( window.innerHeight - 250 )
 const userOptions = ref( [] )
+const teamOptions = ref( [] )
+const teamMap = ref( {} )
+const shiftOptions = ref( [] )
 const locationMap = ref( {} )
 const equipmentMap = ref( {} )
 const departmentOptions = ref( [] )
 const currentEditingTeam = ref( null )
 const initialFilters = {
   keyword : '',
-  department_ids : [],
+  // department_ids : [],
   location_ids : [],
   equipment_node_ids : [],
-  member_ids : []
+  member_ids : [],
+  status_ids : [1]
 }
 
 const localFilters = reactive( { ...initialFilters } )
+const matchedTeamIds = ref( new Set() )
 
 const userMap = computed( () => {
   return Object.fromEntries( userOptions.value.map( user => [user.id, user] ) )
 } )
 
+// Build a lookup map once — O(n) preprocessing instead of O(n × m) rendering
+const shiftMap = computed( () => {
+  const map = {}
+  if ( shiftOptions.value && Array.isArray( shiftOptions ) ) {
+    shiftOptions.value.forEach( s => {
+      const start = s.start_time?.trim() ? s.start_time.slice( 0, 5 ) : '-'
+      const end = s.end_time?.trim() ? s.end_time.slice( 0, 5 ) : '-'
+      map[s.id] = {
+        name : s.name,
+        displayTime : `${start} to ${end}`
+      }
+    } )
+  }
+  return map
+} )
+
+// Dialog control
+const showTeamDetail = ref( false )
+const selectedTeam = ref( null )
+const initialTab = ref( 'members' )
+
 function openCreateForm() {
   currentEditingTeam.value = null
   isDialogVisible.value = true
+}
+
+function handleNewChildTeam( team ) {
+  currentEditingTeam.value = {
+    parent_id : team.parent_id
+  }
+
+  isDialogVisible.value = true
+}
+
+function handleView( team, tab = 'members' ) {
+  if ( !team ) {
+    return
+  }
+
+  selectedTeam.value = team
+  initialTab.value = tab
+  showTeamDetail.value = true
 }
 
 function handleEdit( team ) {
@@ -357,24 +428,124 @@ function handleEdit( team ) {
   isDialogVisible.value = true
 }
 
-function handleTeamSubmitted() {
+async function handleTeamSubmitted() {
   isDialogVisible.value = false
-  loadTeams()
+  await loadTeams()
+
+  if ( showTeamDetail.value && selectedTeam.value?.id ) {
+    const updated = teamMap.value[selectedTeam.value?.id]
+    if ( updated ) {
+      // clone to force new reactive reference
+      selectedTeam.value = { ...updated }
+    }
+  }
 }
 
-function handleFilterChange() {
-  try {
-    currentPage.value = 1
+async function handleFilterChange() {
+  // Check if all filters are empty — reset tree
+  const isAllEmpty =
+    !localFilters.keyword &&
+    localFilters.member_ids.length === 0 &&
+    localFilters.location_ids.length === 0 &&
+    localFilters.equipment_node_ids.length === 0
 
-    loadTeams()
+  if ( isAllEmpty ) {
+    try {
+      const res = await getAllTeamTree()
+      const tree = res.data || []
+      matchedTeamIds.value.clear()
+
+      teamsTableData.value = mergeHierarchy( tree )
+      return
+    } catch ( err ) {
+      console.error( 'Failed to fetch all teams:', err )
+      ElMessage.error( t( 'team.message.teamFetchFailed' ) )
+      return
+    }
+  }
+
+  // Otherwise, search through existing tree
+  const matchedIds = new Set()
+
+  function filterTeams( teams, matchedSet ) {
+    // Normalize member filter to a Set of strings
+    const memberFilterSet = new Set( ( localFilters.member_ids || [] ).map( String ) )
+    const locationFilterSet = new Set( ( localFilters.location_ids || [] ).map( String ) )
+    const equipmentFilterSet = new Set( ( localFilters.equipment_node_ids || [] ).map( String ) )
+    const keywordRaw = ( localFilters.keyword || '' ).toString().trim().toLowerCase()
+
+    for ( const team of teams ) {
+      const idStr = String( team.id )
+      const nameLower = ( team.name || '' ).toLowerCase()
+      const codeLower = ( team.code || '' ).toLowerCase()
+
+      // Keyword: match id, name, or code
+      const matchKeyword =
+        keywordRaw && ( idStr.includes( keywordRaw ) || nameLower.includes( keywordRaw ) || codeLower.includes( keywordRaw ) )
+
+      const teamMembers = Array.isArray( team.team_members_id ) ? team.team_members_id.map( String ) : []
+      const teamMembersSet = new Set( teamMembers )
+
+      const matchMember =
+        memberFilterSet.size > 0 &&
+        // any team member is in the filter
+        ( [...memberFilterSet].some( m => teamMembersSet.has( m ) ) ||
+          // OR the leader_id is in the filter
+          ( team.leader_id != null && memberFilterSet.has( String( team.leader_id ) ) ) )
+
+      // Location match
+      const matchLocation =
+        locationFilterSet.size > 0 &&
+        Array.isArray( team.team_locations_id ) &&
+        team.team_locations_id.some( loc => locationFilterSet.has( String( loc ) ) )
+
+      // Equipment match
+      const matchEquipment =
+        equipmentFilterSet.size > 0 &&
+        Array.isArray( team.team_equipment_nodes_id ) &&
+        team.team_equipment_nodes_id.some( eq => equipmentFilterSet.has( String( eq ) ) )
+
+      const isMatched = matchKeyword || matchMember || matchLocation || matchEquipment
+
+      if ( isMatched ) {
+        // when a node matches, skip traversing its children
+        matchedSet.add( team.id )
+        continue
+      }
+
+      // otherwise check children recursively; if any child matches, include this parent
+      if ( Array.isArray( team.children ) && team.children.length > 0 ) {
+        filterTeams( team.children, matchedSet )
+      }
+    }
+  }
+
+  // Perform recursive search
+  filterTeams( teamsTableData.value, matchedIds )
+  matchedTeamIds.value = new Set( matchedIds )
+
+  const resultIds = Array.from( matchedIds )
+
+  // Fetch filtered tree data
+  try {
+    if ( resultIds.length > 0 ) {
+      const res = await getTeamTreeByIds( { team_ids : resultIds } )
+      const tree = res.data || []
+
+      loadPartialTeams( tree )
+    } else {
+      teamsTableData.value = []
+    }
   } catch ( e ) {
+    console.error( 'Error fetching filtered teams:', e )
     ElMessage.error( t( 'team.message.teamFetchFailed' ) )
   }
 }
 
 function clearLocalFilters() {
   Object.assign( localFilters, initialFilters )
-  handleFilterChange()
+  matchedTeamIds.value.clear()
+  loadTeams()
 }
 
 function handlePageChange( val ) {
@@ -393,6 +564,18 @@ function handleSortChange( { prop, order } ) {
   loadTeams()
 }
 
+// Recursively map team object and set up level (for indentation) to matching team tree node
+function mergeHierarchy( treeNodes, level = 1 ) {
+  return treeNodes.map( node => {
+    const fullTeam = teamMap.value[node.id] || {}
+    return {
+      ...fullTeam,
+      level,
+      children : node.children?.length ? mergeHierarchy( node.children, level + 1 ) : []
+    }
+  } )
+}
+
 async function loadTeams() {
   function snakeToCamel( str ) {
     return str.replace( /_([a-z])/g, ( _, char ) => char.toUpperCase() )
@@ -402,38 +585,64 @@ async function loadTeams() {
   try {
     const sortKey = snakeToCamel( sortSettings.value.prop )
 
-    const response = await searchTeams(
-      localFilters,
-      currentPage.value,
-      pageSize.value,
-      sortKey,
-      sortSettings.value.order === 'ascending' ? 'ASC' : 'DESC'
+    // Fetch both data sources
+    const [treeRes, listRes] = await Promise.all( [
+      getAllTeamTree(),
+      searchTeams( localFilters, 1, 1000, sortKey, sortSettings.value.order === 'ascending' ? 'ASC' : 'DESC' )
+    ] )
+
+    const tree = treeRes.data || []
+    teamOptions.value = listRes.data?.content || []
+
+    teamMap.value = Object.fromEntries(
+      teamOptions.value.map( team => {
+        const activeLeaders = team.team_member_list?.filter( m => m.is_leader && m.status === 1 ) || []
+        const leaderId = activeLeaders.length > 0 ? activeLeaders[0].id : null
+
+        return [
+          team.id,
+          {
+            id : team.id || null,
+            name : team.name || null,
+            code : team.code || null,
+            type : team.type || null,
+            parent_id : team.parent_team_id || null,
+            children : team.children_team_ids,
+            description : team.description,
+            leader_id : leaderId,
+            created_at : team.created_at,
+            updated_at : team.updated_at,
+            // shift_id : team.shift_id || null,
+            team_members_id : ( team.team_member_list || [] ).filter( m => !m.is_leader && m.status === 1 ).map( m => m.id ),
+            team_locations_id : ( team.team_location_list || [] ).filter( l => l.status === 1 ).map( l => l.id ),
+            team_equipment_nodes_id : ( team.team_equipment_node_list || [] ).filter( e => e.status === 1 ).map( e => e.id )
+          }
+        ]
+      } )
     )
 
-    const data = response.data
-    const rawTeam = data.content || []
+    // Apply merged tree to UI table data
+    teamsTableData.value = mergeHierarchy( tree )
 
-    // Clean location & equipment ids: only keep if they're still in the corresponding map (status 1)
-    teamsTableData.value = rawTeam.map( team => {
-      return {
-        ...team,
-        leader_id : team.team_member_list
-          .filter( member => member.is_leader && member.status === 1 )
-          .map( member => member.id ),
-        team_members_id : team.team_member_list
-          .filter( member => !member.is_leader && member.status === 1 )
-          .map( member => member.id ),
-        team_locations_id : ( team.team_location_list || [] )
-          .filter( location => location.status === 1 )
-          .map( location => location.id ),
-        team_equipment_nodes_id : ( team.team_equipment_node_list || [] )
-          .filter( equipment => equipment.status === 1 )
-          .map( equipment => equipment.id )
-      }
-    } )
+    // Basic stats
+    // totalElements.value = allTeamsList.length
+    // totalPages.value = 1
+  } catch ( err ) {
+    console.error( 'Failed to load teams:', err )
+    ElMessage.error( t( 'team.message.fetchFailed' ) )
+  } finally {
+    loading.value = false
+  }
+}
 
-    totalPages.value = data.totalPages
-    totalElements.value = data.totalElements
+function loadPartialTeams( tree ) {
+  try {
+    // Apply merged tree to UI table data
+    teamsTableData.value = mergeHierarchy( tree )
+
+    // Basic stats
+    // totalElements.value = allTeams.length
+    // totalPages.value = 1
   } catch ( err ) {
     console.error( 'Failed to load teams:', err )
     ElMessage.error( t( 'team.message.fetchFailed' ) )
@@ -464,6 +673,18 @@ async function handleDelete( id ) {
   }
 }
 
+function indentCellStyle( { column, row } ) {
+  if ( column.property === 'actions' || column.label === t( 'common.actions' ) ) {
+    return {}
+  }
+  const depth = ( row.level || 1 ) - 1
+  return { paddingLeft : `${depth * 16}px` }
+}
+
+function getRowClassName( { row } ) {
+  return matchedTeamIds.value.has( row.id ) ? 'matched-row' : ''
+}
+
 async function loadUsers() {
   // Fetch fixed number of users assuming all user count are less than 1000.
   // TODO: Refactor later on, we could include user data in teams dto, or allow api to fetch all users
@@ -473,6 +694,16 @@ async function loadUsers() {
   } catch ( err ) {
     console.error( 'Failed to load users:', err )
     ElMessage.error( t( 'user.message.errorLoadingUsersData' ) )
+  }
+}
+
+async function loadShifts() {
+  try {
+    const response = await searchShifts( { status_ids : [1] }, 1, 1000, 'id', 'ASC' )
+    shiftOptions.value = response?.data?.content || []
+  } catch ( err ) {
+    console.error( 'Failed to load shifts:', err )
+    ElMessage.error( 'Error loading shift data' )
   }
 }
 
@@ -501,13 +732,20 @@ async function loadEquipments() {
   }
 }
 
-async function loadDepartments() {
-  try {
-    const response = await searchDepartments( {}, 1, 1000 )
-    departmentOptions.value = response.data.content
-  } catch ( e ) {
-    ElMessage.error( e )
-  }
+// async function loadDepartments() {
+//   try {
+//     const response = await searchDepartments( {}, 1, 1000 )
+//     departmentOptions.value = response.data.content
+//   } catch ( e ) {
+//     ElMessage.error( e )
+//   }
+// }
+
+// User select label formatter
+const formatUserLabel = user => {
+  // const roles = user.role_list?.map( r => r.name ).join( ' | ' ) || '-'
+  // return `${user.first_name} ${user.last_name} ${roles}`
+  return `${user.first_name} ${user.last_name}`
 }
 
 // Watch for changes in location or equipment filters and reload
@@ -522,7 +760,9 @@ watch(
 onMounted( async() => {
   try {
     loading.value = true
-    await loadDepartments()
+
+    await loadShifts()
+    // await loadDepartments()
     await loadLocations()
     await loadEquipments()
     await loadUsers()
@@ -558,9 +798,17 @@ onMounted( async() => {
   }
 }
 
-.tag-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
+.ellipsis-text {
+  display: inline-block;
+  max-width: 360px; /* slightly smaller than column width */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+}
+
+:deep(.el-table__row.matched-row) {
+  background-color: rgba(64, 158, 255, 0.12) !important;
+  transition: background-color 0.3s ease;
 }
 </style>

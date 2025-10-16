@@ -44,7 +44,6 @@
       <el-table
         v-loading="loading"
         :data="shiftsTableData"
-        border
         fit
         highlight-current-row
         style="width: 100%"
@@ -52,22 +51,50 @@
         :empty-text="t('common.noData')"
         @sort-change="handleSortChange"
       >
-        <el-table-column prop="id" :label="'ID'" width="100" sortable="custom" align="center" fixed="left" />
         <el-table-column
-          prop="name"
-          :label="t('common.name')"
-          width="300"
-          sortable="custom"
-          align="center"
-          fixed="left"
+            prop="name"
+            :label="t('common.name')"
+            width="200"
+            sortable="custom"
+            align="center"
+            fixed="left"
+            show-overflow-tooltip
         >
           <template #default="scope">
             <el-text tag="b">{{ scope.row.name }}</el-text>
           </template>
         </el-table-column>
+
+        <el-table-column prop="id" :label="'ID'" width="100" sortable="custom" align="center" fixed="left" />
+
         <el-table-column prop="start_time" :label="t('shift.startTime')" width="200" sortable="custom" align="center" />
         <el-table-column prop="end_time" :label="t('shift.endTime')" width="200" sortable="custom" align="center" />
-        <el-table-column prop="description" :label="t('common.description')" sortable="custom" align="center" />
+        <el-table-column prop="description" :label="t('common.description')" show-overflow-tooltip width="400" sortable="custom" align="center" />
+        <el-table-column
+            prop="created_at"
+            label="Created At"
+            min-width="180"
+            show-overflow-tooltip
+        >
+          <template #default="scope">
+            <el-text>
+              {{ formatAsLocalDateTimeString(scope.row.created_at) }}
+            </el-text>
+          </template>
+        </el-table-column>
+
+        <el-table-column
+            prop="updated_at"
+            label="Updated At"
+            min-width="180"
+            show-overflow-tooltip
+        >
+          <template #default="scope">
+            <el-text>
+              {{ formatAsLocalDateTimeString(scope.row.updated_at) }}
+            </el-text>
+          </template>
+        </el-table-column>
         <el-table-column :label="t('common.actions')" fixed="right" align="center" width="200">
           <template #default="scope">
             <el-button :icon="Edit" size="small" type="primary" @click="handleEdit(scope.row)">{{
@@ -122,6 +149,7 @@ import { searchShifts, deactivateShift } from '@/api/shift'
 import { getAllUsers } from '@/api/user'
 // import UserTag from '@/views/user/components/UserTag.vue'
 import ShiftForm from '@/views/shift/components/shiftForm.vue'
+import { formatAsLocalDateTimeString } from '@/utils/datetime'
 // import { convertToLocalTime } from '@/utils/datetime'
 
 const { t } = useI18n()

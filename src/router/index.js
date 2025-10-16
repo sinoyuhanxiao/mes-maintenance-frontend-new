@@ -257,19 +257,19 @@ export const asyncRoutes = [
         path : 'team-management',
         component : () => import( '@/views/team/index.vue' ),
         name : 'TeamManagement',
-        meta : { title : 'router.team', icon : 'users', noCache : true }
-      },
-      {
-        path : 'department-management',
-        component : () => import( '@/views/department/index.vue' ),
-        name : 'DepartmentManagement',
-        meta : { title : 'router.department', icon : 'users', noCache : true }
+        meta : { title : 'router.team', icon : 'users', noCache : false }
       },
       {
         path : 'shift-management',
         component : () => import( '@/views/shift/index.vue' ),
         name : 'ShiftManagement',
         meta : { title : 'router.shift', icon : 'users', noCache : true }
+      },
+      {
+        path : 'role-management',
+        component : () => import( '@/views/rolesAndPermissions/index.vue' ),
+        name : 'RoleManagement',
+        meta : { title : 'Role', icon : 'users', noCache : true }
       },
       {
         path : 'approval-management',
@@ -289,6 +289,12 @@ export const asyncRoutes = [
         name : 'UserDetail',
         meta : { title : 'router.userDetail', icon : 'users', noCache : true, hidden : true }
       }
+      // {
+      //   path : 'team-detail/:id',
+      //   component : () => import( '@/views/team/components/TeamDetail.vue' ),
+      //   name : 'TeamDetail',
+      //   meta : { title : 'Group Detail', icon : 'users', noCache : true, hidden : true }
+      // }
     ]
   },
 

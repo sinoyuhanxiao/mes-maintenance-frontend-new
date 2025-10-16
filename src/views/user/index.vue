@@ -20,21 +20,21 @@
           <!--            </el-select>-->
           <!--          </div>-->
 
-          <div class="filter-item">
-            <el-select
-              v-model="localFilters.department_ids"
-              :placeholder="$t('common.filterByDepartmentPlaceholder')"
-              clearable
-              multiple
-              collapse-tags
-              collapse-tags-tooltip
-              size="default"
-              style="width: 240px"
-              @change="handleFilterChange"
-            >
-              <el-option v-for="d in departmentOptions" :key="d.id" :label="d.name" :value="d.id" />
-            </el-select>
-          </div>
+          <!--          <div class="filter-item">-->
+          <!--            <el-select-->
+          <!--              v-model="localFilters.department_ids"-->
+          <!--              :placeholder="$t('common.filterByDepartmentPlaceholder')"-->
+          <!--              clearable-->
+          <!--              multiple-->
+          <!--              collapse-tags-->
+          <!--              collapse-tags-tooltip-->
+          <!--              size="default"-->
+          <!--              style="width: 240px"-->
+          <!--              @change="handleFilterChange"-->
+          <!--            >-->
+          <!--              <el-option v-for="d in departmentOptions" :key="d.id" :label="d.name" :value="d.id" />-->
+          <!--            </el-select>-->
+          <!--          </div>-->
 
           <div class="filter-item">
             <el-select
@@ -112,10 +112,24 @@
           @sort-change="handleSortChange"
           :empty-text="t('common.noData')"
           :height="tableHeight"
-          border
           fit
           highlight-current-row
         >
+          <el-table-column
+            :label="'Full Name'"
+            prop="full_name"
+            width="200"
+            sortable="custom"
+            align="center"
+            fixed="left"
+          >
+            <template #default="scope">
+              <el-link @click="handleView(scope.row)">
+                {{ scope.row.first_name + ' ' + scope.row.last_name }}
+              </el-link>
+            </template>
+          </el-table-column>
+
           <el-table-column
             :label="t('user.table.id')"
             width="80"
@@ -129,57 +143,35 @@
             </template>
           </el-table-column>
 
-          <el-table-column :label="t('user.table.profileImage')" width="130" prop="image" align="center" fixed="left">
+          <el-table-column prop="image" label="Profile Picture" min-width="150px" align="center">
             <template #default="scope">
-              <el-image
-                v-if="scope.row.image"
-                :src="scope.row.image"
-                fit="cover"
-                :preview-src-list="[scope.row.image]"
-                class="circular-image"
-                :z-index="2000"
-                preview-teleported
-              >
-                <template #error>
-                  <div class="image-slot-circle">
-                    <el-icon><Picture /></el-icon>
-                  </div>
-                </template>
-              </el-image>
-
-              <el-image v-else class="circular-image" fit="cover">
-                <template #error>
-                  <el-tooltip>
-                    <template #content>
-                      <span>{{ t('workOrder.messages.noImagePlaceholder') }}</span>
-                    </template>
+              <div class="profile-picture-cell">
+                <!-- image URL missing -->
+                <template v-if="!scope.row.image">
+                  <el-tooltip content="No image available">
                     <div class="image-slot-circle">
                       <el-icon><Picture /></el-icon>
                     </div>
                   </el-tooltip>
                 </template>
-              </el-image>
-            </template>
-          </el-table-column>
 
-          <el-table-column
-            :label="t('user.firstName')"
-            prop="first_name"
-            width="200"
-            sortable="custom"
-            align="center"
-            fixed="left"
-          >
-            <template #default="scope">
-              <el-link @click="handleView(scope.row)">
-                {{ scope.row.first_name }}
-              </el-link>
-            </template>
-          </el-table-column>
-
-          <el-table-column :label="t('user.lastName')" prop="last_name" width="150" sortable="custom" align="center">
-            <template #default="scope">
-              <el-link @click="handleView(scope.row)">{{ scope.row.last_name }}</el-link>
+                <el-image
+                    v-else
+                    :src="scope.row.image"
+                    fit="cover"
+                    class="image-slot-circle"
+                    :preview-src-list="[scope.row.image]"
+                    preview-teleported
+                >
+                  <template #error>
+                    <el-tooltip content="Image failed to load">
+                      <div class="image-slot-circle">
+                        <el-icon><Picture /></el-icon>
+                      </div>
+                    </el-tooltip>
+                  </template>
+                </el-image>
+              </div>
             </template>
           </el-table-column>
 
@@ -224,63 +216,31 @@
           <!--            </template>-->
           <!--          </el-table-column>-->
 
-          <el-table-column :label="t('user.department')" prop="department_list" width="150" align="center">
+          <!--          <el-table-column :label="t('user.department')" prop="department_list" width="150" align="center">-->
+          <!--            <template #default="scope">-->
+          <!--              <template v-if="scope.row.department_ids && scope.row.department_ids.length">-->
+          <!--                <TagPopover-->
+          <!--                  :items="scope.row.department_ids"-->
+          <!--                  singular-label="department"-->
+          <!--                  plural-label="departments"-->
+          <!--                  :search-key="id => departmentMap[id]?.name || id"-->
+          <!--                  :item-key="id => id"-->
+          <!--                >-->
+          <!--                  <template #default="{ item }">-->
+          <!--                    <DepartmentTag :departmentId="item" />-->
+          <!--                  </template>-->
+          <!--                </TagPopover>-->
+          <!--              </template>-->
+          <!--              <template v-else>-->
+          <!--                <span>-</span>-->
+          <!--              </template>-->
+          <!--            </template>-->
+          <!--          </el-table-column>-->
+
+          <el-table-column :label="t('user.table.role')" prop="role_list" width="200" align="center">
             <template #default="scope">
-              <template v-if="scope.row.department_ids && scope.row.department_ids.length">
-                <!--                <el-popover trigger="click" placement="top" width="200">-->
-                <!--                  <template #reference>-->
-                <!--                    <el-button :type="'info'" plain :size="'small'">-->
-                <!--                      {{ scope.row.department_ids.length }}-->
-                <!--                      {{ scope.row.department_ids.length === 1 ? 'department' : 'departments' }}-->
-                <!--                    </el-button>-->
-                <!--                  </template>-->
-
-                <!--                  <div style="display: flex; flex-wrap: wrap; gap: 6px">-->
-                <!--                    <template v-for="departmentId in scope.row.department_ids" :key="departmentId">-->
-                <!--                      <DepartmentTag :departmentId="departmentId" />-->
-                <!--                    </template>-->
-                <!--                  </div>-->
-                <!--                </el-popover>-->
-
-                <TagPopover
-                  :items="scope.row.department_ids"
-                  singular-label="department"
-                  plural-label="departments"
-                  :search-key="id => departmentMap[id]?.name || id"
-                  :item-key="id => id"
-                >
-                  <template #default="{ item }">
-                    <DepartmentTag :departmentId="item" />
-                  </template>
-                </TagPopover>
-              </template>
-              <template v-else>
-                <span>-</span>
-              </template>
-            </template>
-          </el-table-column>
-
-          <el-table-column :label="t('user.table.role')" prop="role_list" width="150" align="center">
-            <template #default="scope">
-              <template v-if="scope.row.role_list && scope.row.role_list.length">
-                <TagPopover :items="scope.row.role_list" singular-label="role" plural-label="roles" search-key="name">
-                  <template #default="{ item }">
-                    <RoleTag :role="item" />
-                  </template>
-                </TagPopover>
-                <!--                -->
-                <!--                <el-popover trigger="click" placement="top" width="300">-->
-                <!--                  <template #reference>-->
-                <!--                    <el-button :type="'info'" plain :size="'small'">-->
-                <!--                      {{ scope.row.role_list.length }}-->
-                <!--                      {{ scope.row.role_list.length === 1 ? 'role' : 'roles' }}-->
-                <!--                    </el-button>-->
-                <!--                  </template>-->
-
-                <!--                  <div style="display: flex; flex-wrap: wrap; gap: 6px">-->
-                <!--                    <RoleTag v-for="role in scope.row.role_list" :key="role.id" :role="role" />-->
-                <!--                  </div>-->
-                <!--                </el-popover>-->
+              <template v-if="scope.row.role_list && scope.row.role_list.length > 0">
+                <RoleTag :role="scope.row.role_list[0]" />
               </template>
               <template v-else>
                 <span>-</span>
@@ -354,6 +314,30 @@
           </el-table-column>
 
           <el-table-column
+              prop="created_at"
+              label="Created At"
+              min-width="180"
+          >
+            <template #default="scope">
+              <el-text>
+                {{ formatAsLocalDateTimeString(scope.row.created_at) }}
+              </el-text>
+            </template>
+          </el-table-column>
+
+          <el-table-column
+              prop="updated_at"
+              label="Updated At"
+              min-width="180"
+          >
+            <template #default="scope">
+              <el-text>
+                {{ formatAsLocalDateTimeString(scope.row.updated_at) }}
+              </el-text>
+            </template>
+          </el-table-column>
+
+          <el-table-column
             :label="t('user.table.actions')"
             align="center"
             header-align="center"
@@ -361,10 +345,10 @@
             fixed="right"
           >
             <template #default="scope">
-              <el-button :icon="View" type="info" size="small" @click="handleView(scope.row)">
+              <el-button :icon="View" type="success" size="small" @click="handleView(scope.row)">
                 {{ t('common.view') }}
               </el-button>
-              <el-button :icon="Edit" type="primary" size="small" @click="handleEdit(scope.row)">
+              <el-button :icon="Edit" type="info" size="small" @click="handleEdit(scope.row)">
                 {{ t('common.edit') }}
               </el-button>
 
@@ -450,7 +434,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onBeforeUnmount, computed } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
 import MesLayout from 'src/components/MesLayout'
 import { EditPen, Edit, View, Delete, QuestionFilled, Search, Picture, Remove } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
@@ -464,10 +448,11 @@ import { deleteUserById, getUserById, searchUsers } from '@/api/user.js'
 import UserForm from '@/views/user/components/UserForm.vue'
 import { disableUsers, enableUsers, searchRoles } from '@/api/rbac'
 import { searchDepartments } from '@/api/department'
-import DepartmentTag from '@/views/department/components/DepartmentTag.vue'
-import TagPopover from '@/views/team/components/TagPopover.vue'
+// import DepartmentTag from '@/views/department/components/DepartmentTag.vue'
+// import TagPopover from '@/views/team/components/TagPopover.vue'
 import { useUserStore } from '@/store'
 import { emitter } from '@/utils/mitt'
+import { formatAsLocalDateTimeString } from '@/utils/datetime'
 
 defineOptions( {
   name : 'UserManagement'
@@ -504,7 +489,7 @@ const localFilters = reactive( { ...initialFilters } )
 const roleOptions = ref( [] )
 const departmentOptions = ref( [] )
 
-const departmentMap = computed( () => Object.fromEntries( departmentOptions.value.map( d => [d.id, d] ) ) )
+// const departmentMap = computed( () => Object.fromEntries( departmentOptions.value.map( d => [d.id, d] ) ) )
 
 async function openCreateForm() {
   currentEditingUser.value = null
@@ -754,9 +739,28 @@ onBeforeUnmount( () => {
   cursor: pointer;
 }
 
+.profile-picture-cell {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 50px;
+}
+
+//.image-slot-circle {
+//  width: 50px;
+//  height: 50px;
+//  border-radius: 50%;
+//  display: flex;
+//  justify-content: center;
+//  align-items: center;
+//  background-color: var(--el-fill-color-light);
+//  color: var(--el-text-color-secondary);
+//}
+
 .image-slot-circle {
   display: flex;
   justify-content: center;
+  border-radius: 50%;
   align-items: center;
   width: 50px;
   height: 50px;

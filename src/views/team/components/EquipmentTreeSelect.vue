@@ -11,11 +11,11 @@
     :filterable="true"
     :render-after-expand="false"
     :placeholder="t('common.filterByEquipmentPlaceholder')"
-    style="width: 100%"
+    :style="{ width }"
     clearable
     collapse-tags
     collapse-tags-tooltip
-    :max-collapse-tags="2"
+    :max-collapse-tags="maxCollapseTags"
   />
 </template>
 
@@ -32,6 +32,14 @@ const props = defineProps( {
   modelValue : {
     type : Array,
     default : () => []
+  },
+  maxCollapseTags : {
+    type : Number,
+    default : 2
+  },
+  width : {
+    type : String,
+    default : '100%'
   }
 } )
 

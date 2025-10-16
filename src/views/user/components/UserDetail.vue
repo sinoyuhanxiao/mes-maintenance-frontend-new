@@ -52,7 +52,7 @@
           </el-button>
         </div>
 
-        <div>
+        <div v-if="isCurrentUser">
           <el-button :icon="SwitchButton" type="danger" @click="handleLogout">{{ t('userCenter.logout') }}</el-button>
         </div>
       </div>
@@ -93,20 +93,20 @@
             </template>
           </el-descriptions-item>
 
-          <el-descriptions-item :label="t('user.department')" :span="1">
-            <template #default>
-              <div v-if="rawUser?.department_ids && rawUser?.department_ids.length">
-                <div v-for="id in rawUser?.department_ids" :key="id" style="display: flex; align-items: center">
-                  <el-text>
-                    {{ departmentOptions.find(dept => dept.id === id)?.name || '-' }}
-                  </el-text>
-                </div>
-              </div>
-              <div v-else>
-                {{ '-' }}
-              </div>
-            </template>
-          </el-descriptions-item>
+          <!--          <el-descriptions-item :label="t('user.department')" :span="1">-->
+          <!--            <template #default>-->
+          <!--              <div v-if="rawUser?.department_ids && rawUser?.department_ids.length">-->
+          <!--                <div v-for="id in rawUser?.department_ids" :key="id" style="display: flex; align-items: center">-->
+          <!--                  <el-text>-->
+          <!--                    {{ departmentOptions.find(dept => dept.id === id)?.name || '-' }}-->
+          <!--                  </el-text>-->
+          <!--                </div>-->
+          <!--              </div>-->
+          <!--              <div v-else>-->
+          <!--                {{ '-' }}-->
+          <!--              </div>-->
+          <!--            </template>-->
+          <!--          </el-descriptions-item>-->
 
           <el-descriptions-item :label="t('user.table.username')" :span="1">
             <template #default>
@@ -141,6 +141,14 @@
                 </el-text>
               </div>
             </template>
+          </el-descriptions-item>
+
+          <el-descriptions-item label="Created At" min-width="150px">
+            {{ formatAsLocalDateTimeString(rawUser?.created_at) || '-' }}
+          </el-descriptions-item>
+
+          <el-descriptions-item label="Updated At" min-width="150px">
+            {{ formatAsLocalDateTimeString(rawUser?.updated_at) || '-' }}
           </el-descriptions-item>
         </el-descriptions>
       </div>
@@ -250,7 +258,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { getUserById } from '@/api/user.js'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -262,6 +270,7 @@ import { gotoCognitoLogin } from '@/utils/cognito/cognito'
 import { searchDepartments } from '@/api/department'
 import { searchRoles } from '@/api/rbac'
 import { searchTeams } from '@/api/team'
+import { formatAsLocalDateTimeString } from '@/utils/datetime'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -288,6 +297,10 @@ onMounted( async() => {
   } finally {
     loading.value = false
   }
+} )
+
+const isCurrentUser = computed( () => {
+  return userStore?.uid === viewedUserId.value
 } )
 
 function handleEdit( user ) {

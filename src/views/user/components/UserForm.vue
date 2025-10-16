@@ -18,40 +18,69 @@
     </div>
 
     <div class="form-row">
-      <el-form-item :label="t('user.department')" prop="department_list">
+      <!--      <el-form-item :label="t('user.department')" prop="department_list">-->
+      <!--        <el-select-->
+      <!--          v-model="internalUser.department_list"-->
+      <!--          :placeholder="t('user.form.selectDepartmentPlaceHolder')"-->
+      <!--          filterable-->
+      <!--          multiple-->
+      <!--          clearable-->
+      <!--        >-->
+      <!--          <el-option-->
+      <!--            v-for="department in prop.departmentOptions"-->
+      <!--            :key="department.id"-->
+      <!--            :label="department.name"-->
+      <!--            :value="department.id"-->
+      <!--          >-->
+      <!--            <el-tag>{{ department.name }}</el-tag>-->
+      <!--          </el-option>-->
+      <!--        </el-select>-->
+      <!--      </el-form-item>-->
+
+      <el-form-item :label="t('user.form.role')" prop="role_id">
         <el-select
-          v-model="internalUser.department_list"
-          :placeholder="t('user.form.selectDepartmentPlaceHolder')"
+          v-model="internalUser.role_id"
+          collapse-tags
+          collapse-tags-tooltip
+          :max-collapse-tags="3"
+          placeholder="Select a role"
           filterable
-          multiple
           clearable
+          style="width: 100%"
         >
-          <el-option
-            v-for="department in prop.departmentOptions"
-            :key="department.id"
-            :label="department.name"
-            :value="department.id"
-          >
-            <el-tag>{{ department.name }}</el-tag>
+          <template #label="{ label, value }">
+            <span>{{ label }}</span>
+            <el-text> – {{ getRoleModule(value) }} </el-text>
+          </template>
+
+          <!-- Header filter section -->
+          <template #header>
+            <div class="role-filter-header">
+              <div class="filter-title">Filter By Module:</div>
+              <el-checkbox-group v-model="selectedModules" @change="filterRolesByModule">
+                <el-checkbox label="maintenance">Maintenance</el-checkbox>
+                <el-checkbox label="quality control">Quality Control</el-checkbox>
+                <el-checkbox label="production">Production</el-checkbox>
+                <el-checkbox label="inventory">Inventory</el-checkbox>
+              </el-checkbox-group>
+            </div>
+            <el-divider />
+          </template>
+
+          <!-- Filtered Role Options -->
+          <el-option v-for="role in filteredRoleOptions" :key="role.id" :label="role.name" :value="role.id">
+            <div class="role-option-item">
+              <span>{{ role.name }}</span>
+              <el-text type="info" style="margin-left: auto; font-size: 12px">
+                Module: {{ role.module ? capitalize(role.module) : '-' }}
+              </el-text>
+            </div>
           </el-option>
         </el-select>
       </el-form-item>
 
-      <el-form-item :label="t('user.form.role')" prop="role_list">
-        <el-select
-          v-model="internalUser.role_list"
-          multiple
-          collapse-tags
-          collapse-tags-tooltip
-          :max-collapse-tags="2"
-          :placeholder="t('user.form.selectRolePlaceHolder')"
-          filterable
-          :disabled="!internalUser.department_list.length"
-        >
-          <el-option v-for="role in availableRoleOptions" :key="role.id" :label="role.name" :value="role.id">
-            <el-tag>{{ role.name }}</el-tag>
-          </el-option>
-        </el-select>
+      <el-form-item :label="t('user.employeeNumber')" prop="employee_number">
+        <el-input v-model="internalUser.employee_number" @input="val => (internalUser.employee_number = val || null)" />
       </el-form-item>
     </div>
 
@@ -70,12 +99,6 @@
           :input-options="{ showDialCode: true, maxlength: 20 }"
           @blur="handlePhoneBlur"
         />
-      </el-form-item>
-    </div>
-
-    <div class="form-row">
-      <el-form-item :label="t('user.employeeNumber')" prop="employee_number">
-        <el-input v-model="internalUser.employee_number" @input="val => (internalUser.employee_number = val || null)" />
       </el-form-item>
     </div>
 
@@ -256,6 +279,8 @@ watch(
     if ( formRef.value ) {
       formRef.value.clearValidate()
     }
+
+    selectedModules.value = []
   },
   { immediate : true }
 )
@@ -271,7 +296,7 @@ function createEmptyUser() {
     first_name : '',
     last_name : '',
     department_list : [],
-    role_list : [],
+    role_id : null,
     email : '',
     phone_number : '+1',
     enabled : true,
@@ -308,7 +333,7 @@ function transformIncomingUser( user ) {
     ...user,
     user_certificates : ( user.certificate_list || [] ).map( c => transformIncomingCertificate( c ) ),
     department_list : user.department_ids || [],
-    role_list : user.role_list?.map( r => r.id ) || []
+    role_id : user.role_list[0]?.id || null
   }
 }
 
@@ -407,8 +432,8 @@ const userFormValidationRules = computed( () => {
         trigger : 'blur'
       }
     ],
-    department_list : [{ required : true, message : t( 'user.validation.departmentRequired' ), trigger : 'blur' }],
-    role_list : [{ required : true, message : t( 'user.validation.roleRequired' ), trigger : 'blur' }],
+    department_list : [{ required : false, message : t( 'user.validation.departmentRequired' ), trigger : 'blur' }],
+    role_id : [{ required : true, message : t( 'user.validation.roleRequired' ), trigger : 'blur' }],
     phone_number : [
       {
         required : true,
@@ -581,8 +606,8 @@ const buildCreateUserPayload = entry => {
     phone_number : toE164( entry.phone_number ),
     password : entry.confirmPassword,
     employee_number : entry.employee_number,
-    department_list : entry.department_list,
-    role_list : entry.role_list,
+    // department_list : entry.department_list,
+    role_list : [entry.role_id],
     enabled : entry.enabled,
     image : entry.image,
     user_certificates : entry.user_certificates
@@ -618,14 +643,14 @@ const buildUpdateUserPayload = ( entry, original ) => {
     payload.employee_number = entry.employee_number
   }
 
-  const departmentChanged = JSON.stringify( entry.department_list ) !== JSON.stringify( original.department_list )
-  if ( departmentChanged ) {
-    payload.department_list = entry.department_list
-  }
+  // const departmentChanged = JSON.stringify( entry.department_list ) !== JSON.stringify( original.department_list )
+  // if ( departmentChanged ) {
+  //   payload.department_list = entry.department_list
+  // }
 
-  const rolesChanged = JSON.stringify( entry.role_list ) !== JSON.stringify( original.role_list )
+  const rolesChanged = JSON.stringify( entry.role_id ) !== JSON.stringify( original.role_id )
   if ( rolesChanged ) {
-    payload.role_list = entry.role_list
+    payload.role_list = [entry.role_id]
   }
 
   const certificateChanged =
@@ -805,37 +830,43 @@ async function checkUsername() {
 }
 
 // Restrict role selection based on selected department
-const departmentRoleMap = computed( () => {
-  const map = {}
-  prop.departmentOptions.forEach( dep => {
-    map[dep.id] = dep.role_list || []
-  } )
-  return map
+// const departmentRoleMap = computed( () => {
+//   const map = {}
+//   prop.departmentOptions.forEach( dep => {
+//     map[dep.id] = dep.role_list || []
+//   } )
+//   return map
+// } )
+
+const selectedModules = ref( [] )
+
+function filterRolesByModule() {
+  // No explicit logic needed since computed handles it
+}
+
+const filteredRoleOptions = computed( () => {
+  if ( selectedModules.value.length === 0 ) return prop.roleOptions
+  return prop.roleOptions.filter( role => role.module && selectedModules.value.includes( role.module.toLowerCase() ) )
 } )
 
-// Filtered role options based on selected departments
-const availableRoleOptions = computed( () => {
-  if ( !internalUser.value.department_list?.length ) return []
-  const roles = []
-  internalUser.value.department_list.forEach( depId => {
-    const depRoles = departmentRoleMap.value[depId] || []
-    depRoles.forEach( r => {
-      if ( !roles.find( existing => existing.id === r.id ) ) {
-        roles.push( r ) // dedupe across departments
-      }
-    } )
-  } )
-  return roles
-} )
+function getRoleModule( id ) {
+  const role = prop.roleOptions.find( r => r.id === id )
+  return role?.module ? capitalize( role.module ) : '-'
+}
+
+function capitalize( text ) {
+  if ( !text ) return ''
+  return text.charAt( 0 ).toUpperCase() + text.slice( 1 )
+}
 
 // Watch department selection → clear invalid roles
-watch(
-  () => internalUser.value.department_list,
-  newDepartments => {
-    const validRoleIds = newDepartments.flatMap( depId => ( departmentRoleMap.value[depId] || [] ).map( r => r.id ) )
-    internalUser.value.role_list = internalUser.value.role_list.filter( rid => validRoleIds.includes( rid ) )
-  }
-)
+// watch(
+//   () => internalUser.value.department_list,
+//   newDepartments => {
+//     const validRoleIds = newDepartments.flatMap( depId => ( departmentRoleMap.value[depId] || [] ).map( r => r.id ) )
+//     internalUser.value.role_list = internalUser.value.role_list.filter( rid => validRoleIds.includes( rid ) )
+//   }
+// )
 </script>
 
 <style scoped lang="scss">
@@ -895,4 +926,29 @@ watch(
 //:deep(.el-form-item.is-success .vue-tel-input) {
 //  border-color: var(--el-color-success) !important;
 //}
+
+.role-filter-header {
+  padding: 4px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .filter-title {
+    font-weight: 500;
+    font-size: 13px;
+    color: var(--el-text-color-primary);
+  }
+
+  .el-checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+  }
+}
+
+.role-option-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
 </style>
