@@ -1422,6 +1422,7 @@ const performDeleteRecurrence = async() => {
 }
 
 const handleDeleteConfirmation = async type => {
+  // User has already confirmed via the custom dialog, proceed directly
   if ( type === 'individual' ) {
     await performDeleteIndividual()
     deleteDialogVisible.value = false
@@ -1516,7 +1517,8 @@ const transformWorkOrdersToTimeline = workOrders => {
         category : workOrder.category || workOrder.categories,
         priority : workOrder.priority,
         taskCount,
-        duration : workOrder.estimated_minutes ? `${workOrder.estimated_minutes}m` : null,
+        estimatedTime : workOrder.estimated_minutes ? `${workOrder.estimated_minutes} min` : null,
+        actualTimeConsumed : workOrder.actual_time_consumed ? `${workOrder.actual_time_consumed} min` : null,
         plannedEnd : workOrder.due_date,
         actualEnd : workOrder.finished_at,
         assignees : workOrder.created_by
@@ -2178,8 +2180,13 @@ defineOptions( {
     }
 
     :deep(.el-tabs__item) {
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 500;
+      width: 50%;
+    }
+
+    :deep(.el-tabs__nav.is-top) {
+      width: 100%;
     }
 
     .tab-content {

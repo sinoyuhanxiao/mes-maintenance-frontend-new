@@ -351,7 +351,6 @@
             plain
             :loading="isLoggingInProgress"
             :disabled="isLoggingInProgress"
-            v-show="false"
           >
             {{ isLoggingInProgress ? 'Loading...' : 'Logs' }}
           </el-button>

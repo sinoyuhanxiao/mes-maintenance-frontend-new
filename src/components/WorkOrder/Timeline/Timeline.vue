@@ -48,6 +48,7 @@
             <div class="event-header">
               <div class="title-section">
                 <h5 class="event-title">{{ event.title }}</h5>
+                <span class="work-order-id">#{{ event.id }}</span>
                 <el-tag v-if="isCurrentWorkOrder(event)" type="success" size="small" class="current-badge" plain>
                   {{ $t('workOrder.timeline.current') }}
                 </el-tag>
@@ -115,9 +116,14 @@
                   </span>
                 </div>
 
-                <div class="detail-item" v-if="event.duration">
-                  <span class="detail-label">{{ $t('workOrder.timeline.duration') }}:</span>
-                  <span class="detail-value">{{ event.duration }}</span>
+                <div class="detail-item" v-if="event.estimatedTime">
+                  <span class="detail-label">{{ $t('workOrder.table.estimatedTime') }}:</span>
+                  <span class="detail-value">{{ event.estimatedTime }}</span>
+                </div>
+
+                <div class="detail-item" v-if="event.actualTimeConsumed">
+                  <span class="detail-label">Actual Time Consumed:</span>
+                  <span class="detail-value">{{ event.actualTimeConsumed }}</span>
                 </div>
               </div>
             </div>
@@ -379,6 +385,14 @@ defineOptions( {
               min-width: 0;
             }
 
+            .work-order-id {
+              flex-shrink: 0;
+              font-size: 14px;
+              font-weight: 500;
+              color: var(--el-text-color-secondary);
+              margin-left: 8px;
+            }
+
             .current-badge {
               flex-shrink: 0;
               font-weight: 500;
@@ -402,6 +416,11 @@ defineOptions( {
           font-size: 14px;
           color: var(--el-text-color-regular);
           line-height: 1.5;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .event-details {
