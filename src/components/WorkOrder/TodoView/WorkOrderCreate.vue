@@ -488,7 +488,6 @@
             class="logs-button"
             :loading="isLoggingInProgress"
             :disabled="isLoggingInProgress"
-            v-show="false"
           >
             {{ isLoggingInProgress ? 'Loading...' : 'Logs' }}
           </el-button>
@@ -616,6 +615,7 @@ import {
   getEquipmentNodeTrees,
   createWorkOrder
 } from '@/api/work-order'
+import { approveMaintenanceRequest } from '@/api/maintenance-requests'
 import { useRouter, useRoute } from 'vue-router'
 import { useTaskLibraryStore } from '@/store/modules/taskLibrary'
 import { useWorkOrderDraftStore } from '@/store/modules/workOrderDraft'
@@ -2270,6 +2270,18 @@ const submitForm = async() => {
 
     // Call backend API
     const response = await createWorkOrder( finalPayload )
+
+    // If this work order was created from a maintenance request, approve the request
+    if ( finalPayload.request_id ) {
+      try {
+        await approveMaintenanceRequest( finalPayload.request_id )
+        console.log( `Maintenance request ${finalPayload.request_id} approved successfully` )
+      } catch ( approvalError ) {
+        console.error( 'Failed to approve maintenance request:', approvalError )
+        // Don't fail the entire operation if approval fails
+        ElMessage.warning( 'Work order created, but failed to approve the maintenance request' )
+      }
+    }
 
     // Show success message
     ElMessage.success( 'Work order created successfully!' )

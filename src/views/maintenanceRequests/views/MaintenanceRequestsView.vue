@@ -174,7 +174,7 @@
                       <el-icon><DocumentAdd /></el-icon>
                       Create Work Order
                     </el-dropdown-item>
-                    <el-dropdown-item command="delete" v-if="selectedRequest.status === 0" divided class="delete-item">
+                    <el-dropdown-item command="delete" :disabled="selectedRequest.status === 2" divided class="delete-item">
                       <el-icon><Delete /></el-icon>
                       Delete
                     </el-dropdown-item>
@@ -441,9 +441,8 @@ const hasAssociatedWorkOrders = computed( () => {
 
 const hasDropdownActions = computed( () => {
   if ( !selectedRequest.value ) return false
-  const status = selectedRequest.value.status
-  // Show dropdown if: pending (has approve/reject/edit/createWorkOrder) or non-rejected (has createWorkOrder)
-  return status === 0 || status !== 1
+  // Always show dropdown since Delete is available for all statuses (disabled for approved)
+  return true
 } )
 
 // Status helpers
@@ -1130,6 +1129,20 @@ defineOptions( {
 
   &:hover {
     background-color: var(--el-color-danger-light-9) !important;
+  }
+
+  /* Disabled state styling */
+  &.is-disabled {
+    color: var(--el-text-color-disabled) !important;
+    cursor: not-allowed !important;
+
+    .el-icon {
+      color: var(--el-text-color-disabled) !important;
+    }
+
+    &:hover {
+      background-color: transparent !important;
+    }
   }
 }
 

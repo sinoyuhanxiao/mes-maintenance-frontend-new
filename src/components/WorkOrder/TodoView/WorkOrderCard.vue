@@ -80,6 +80,10 @@
             </el-icon>
             {{ getPriorityName(workOrder.priority?.name) }}
           </el-tag>
+          <RecurrenceTag
+            v-if="workOrder.recurrence_type && workOrder.recurrence_type.id !== 1"
+            :recurrence-type="workOrder.recurrence_type"
+          />
 
           <!--          <el-tag v-if="isIncomplete" type="danger" size="small" effect="dark">-->
           <!--            {{ $t('workOrder.status.incomplete') }}-->
@@ -113,6 +117,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { MoreFilled, Edit, View, Delete, Flag, Picture } from '@element-plus/icons-vue'
 import StartWorkOrderAction from '@/components/WorkOrder/Actions/StartWorkOrderAction.vue'
+import RecurrenceTag from '@/components/WorkOrder/Display/RecurrenceTag.vue'
 import { convertToLocalTime } from '@/utils/datetime'
 import { useSettingsStore } from '@/store'
 
