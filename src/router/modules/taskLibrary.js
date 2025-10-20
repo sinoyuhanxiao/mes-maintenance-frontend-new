@@ -19,7 +19,7 @@ const taskLibraryRoutes = {
       name : 'TaskLibrary',
       component : () => import( '@/views/taskLibrary/views/TemplateLibraryView.vue' ),
       meta : {
-        title : 'Task',
+        title : 'Tasks',
         hidden : false,
         noCache : false
       }

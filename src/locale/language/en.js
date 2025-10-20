@@ -534,7 +534,7 @@ export default {
     icons : 'Icons',
     directive : 'Directive',
     workOrderCenter : 'Work Order Center',
-    workOrderManagement : 'Work Order',
+    workOrderManagement : 'Work Orders',
     maintenanceEquipment : 'Equipment',
     workOrderDashboard : 'Work Order Dashboard',
     newWorkOrder : 'New Work Order',
