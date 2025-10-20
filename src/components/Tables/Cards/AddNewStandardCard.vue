@@ -151,6 +151,7 @@ const handleCardClick = () => {
   display: flex;
   align-items: center;
   gap: 12px;
+  margin-bottom: 4px;
 }
 
 .card-title {

@@ -75,7 +75,7 @@
                     <el-icon><Download /></el-icon>
                     {{ $t('workOrder.actions.export') }}
                   </el-dropdown-item>
-                  <StartWorkOrderAction :work-order="workOrder" @start="handleStartWorkOrder" disabled />
+                  <StartWorkOrderAction :work-order="workOrder" @start="handleStartWorkOrder" />
                   <el-dropdown-item v-if="workOrder.state?.id === 12" command="recreate" divided>
                     <el-icon><DocumentCopy /></el-icon>
                     {{ $t('workOrder.actions.recreate') }}

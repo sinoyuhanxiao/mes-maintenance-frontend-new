@@ -43,8 +43,7 @@
             </el-select>
           </div>
 
-          <CardTable
-            :module="7"
+          <WorkOrderStandardSelector
             :data="standardTemplates"
             :maxHeight="'60vh'"
             :totalItems="totalItems"
@@ -52,8 +51,6 @@
             :pageSize="pageSize"
             :showBorder="true"
             :showPagination="true"
-            :showSearch="false"
-            :loading="loading"
             :focusedCardId="focusedCardId"
             :selectedItems="selectedStandards"
             @selection="handleStandardAction"
@@ -111,7 +108,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { Search, ArrowLeft } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import CardTable from '../Tables/CardTable.vue'
+import WorkOrderStandardSelector from '@/components/WorkOrder/Selectors/WorkOrderStandardSelector.vue'
 import StandardsPreview from '@/components/TaskLibrary/StandardsPreview.vue'
 import CreateStandardDialog from '@/components/TaskLibrary/CreateStandardDialog.vue'
 import { searchStandards, createStandard } from '@/api/task-library'

@@ -31,7 +31,6 @@
               <StartWorkOrderAction
                 :work-order="workOrder"
                 @start="() => emit('action', { action: 'start', workOrder })"
-                :disabled="true"
               />
               <el-dropdown-item command="delete" divided>
                 <el-icon><Delete /></el-icon>
