@@ -88,7 +88,7 @@
           <el-descriptions :column="1" direction="horizontal" class="section">
             <el-descriptions-item label="Images">
               <div class="no-images">
-                <el-text>No vendor images available</el-text>
+                <el-text>No images available</el-text>
               </div>
             </el-descriptions-item>
           </el-descriptions>

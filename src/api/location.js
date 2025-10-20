@@ -52,7 +52,9 @@ export const deactivateLocation = id => http.request( { method : 'post', url : `
 
 export const activateLocation = id => http.request( { method : 'post', url : `/location/${id}/activate` } )
 
-export const getLocationTypes = () => http.request( { method : 'get', url : '/location/location-type' } )
+// export const getLocationTypes = () => http.request( { method : 'get', url : '/location/location-type' } )
+// Returns { timestamp, status, message, data: [ { id, name, description, sequence_order, access_tag } ] }
+export const getLocationTypes = () => http.request( { method : 'get', url : '/location/location-types' } )
 
 export const searchLocations = ( search = {}, page = 1, size = 10, sortField = 'createdAt', direction = 'DESC' ) => {
   return http.request( {

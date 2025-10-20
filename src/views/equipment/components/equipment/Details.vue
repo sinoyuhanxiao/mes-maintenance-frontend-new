@@ -5,7 +5,7 @@
         <el-descriptions :column="3" direction="vertical">
           <el-descriptions-item label="Name">{{ equipmentData.name }}</el-descriptions-item>
           <el-descriptions-item label="Code">{{ equipmentData.code }}</el-descriptions-item>
-          <el-descriptions-item label="Model">{{ equipmentData.serial_number || 'N/A' }}</el-descriptions-item>
+          <el-descriptions-item label="Model">{{ equipmentData.serial_number || '--' }}</el-descriptions-item>
           <el-descriptions-item label="PLC">{{ equipmentData.plc }}</el-descriptions-item>
           <el-descriptions-item label="Power">{{ equipmentData.power }}V</el-descriptions-item>
           <el-descriptions-item label="Install Date">{{
@@ -235,7 +235,7 @@ function getFileTypeFromName( fileName ) {
 }
 
 function formatInstallDate( dateString ) {
-  if ( !dateString ) return 'N/A'
+  if ( !dateString ) return '--'
 
   try {
     // Handle ISO datetime string (e.g., "2025-08-03T00:00:00Z")

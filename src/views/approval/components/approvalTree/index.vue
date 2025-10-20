@@ -133,7 +133,7 @@ const remove = async( _node, data ) => {
   try {
     await ElMessageBox.confirm(
       `Are you sure you want to delete "${data.label}"? This action cannot be undone.`,
-      'Confirm Delete',
+      'Confirm',
       {
         confirmButtonText : 'Delete',
         cancelButtonText : 'Cancel',

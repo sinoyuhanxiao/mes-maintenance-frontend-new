@@ -13,8 +13,8 @@
 
     <div v-if="nodeData">
       <el-descriptions :column="1" border>
-        <el-descriptions-item label="Name">{{ nodeData.name || 'N/A' }}</el-descriptions-item>
-        <el-descriptions-item label="Code">{{ nodeData.code || 'N/A' }}</el-descriptions-item>
+        <el-descriptions-item label="Name">{{ nodeData.name || '--' }}</el-descriptions-item>
+        <el-descriptions-item label="Code">{{ nodeData.code || '--' }}</el-descriptions-item>
         <el-descriptions-item label="Children">{{ childrenCount }}</el-descriptions-item>
       </el-descriptions>
     </div>

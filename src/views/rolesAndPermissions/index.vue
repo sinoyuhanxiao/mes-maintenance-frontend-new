@@ -166,11 +166,7 @@
           align="center"
         />
 
-        <el-table-column
-            prop="created_at"
-            label="Created At"
-            min-width="180"
-        >
+        <el-table-column prop="created_at" label="Created At" min-width="180">
           <template #default="scope">
             <el-text>
               {{ formatAsLocalDateTimeString(scope.row.created_at) }}
@@ -178,11 +174,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column
-            prop="updated_at"
-            label="Updated At"
-            min-width="180"
-        >
+        <el-table-column prop="updated_at" label="Updated At" min-width="180">
           <template #default="scope">
             <el-text>
               {{ formatAsLocalDateTimeString(scope.row.updated_at) }}

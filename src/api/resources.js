@@ -165,14 +165,32 @@ export const updateTool = update => {
 }
 
 /**
+ * Delete spare part
+ * @param {number} id - Spare part ID
+ * @returns {Promise} Nothing
+ */
+export const deleteSparePart = id => {
+  return http.request( {
+    method : 'delete',
+    url : `/resource/spare-parts/${id}`
+  } )
+}
+
+/**
  * Delete tool
  * @param {number} - Tool ID
  * @returns {Promise} Nothing
  */
+// api/resources.js
 export const deleteTool = id => {
   return http.request( {
     method : 'delete',
-    url : `/resource/tool/delete/${id}`
+    url : `/resource/tool/delete/${encodeURIComponent( id )}`,
+    headers : { Accept : '*/*' },
+    // 204 returns an empty body — skip any global JSON parsing
+    transformResponse : [data => data],
+    // 200 or 204 are both success
+    validateStatus : s => ( s >= 200 && s < 300 ) || s === 204
   } )
 }
 

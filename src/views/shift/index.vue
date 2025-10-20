@@ -52,13 +52,13 @@
         @sort-change="handleSortChange"
       >
         <el-table-column
-            prop="name"
-            :label="t('common.name')"
-            width="200"
-            sortable="custom"
-            align="center"
-            fixed="left"
-            show-overflow-tooltip
+          prop="name"
+          :label="t('common.name')"
+          width="200"
+          sortable="custom"
+          align="center"
+          fixed="left"
+          show-overflow-tooltip
         >
           <template #default="scope">
             <el-text tag="b">{{ scope.row.name }}</el-text>
@@ -69,13 +69,15 @@
 
         <el-table-column prop="start_time" :label="t('shift.startTime')" width="200" sortable="custom" align="center" />
         <el-table-column prop="end_time" :label="t('shift.endTime')" width="200" sortable="custom" align="center" />
-        <el-table-column prop="description" :label="t('common.description')" show-overflow-tooltip width="400" sortable="custom" align="center" />
         <el-table-column
-            prop="created_at"
-            label="Created At"
-            min-width="180"
-            show-overflow-tooltip
-        >
+          prop="description"
+          :label="t('common.description')"
+          show-overflow-tooltip
+          width="400"
+          sortable="custom"
+          align="center"
+        />
+        <el-table-column prop="created_at" label="Created At" min-width="180" show-overflow-tooltip>
           <template #default="scope">
             <el-text>
               {{ formatAsLocalDateTimeString(scope.row.created_at) }}
@@ -83,12 +85,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column
-            prop="updated_at"
-            label="Updated At"
-            min-width="180"
-            show-overflow-tooltip
-        >
+        <el-table-column prop="updated_at" label="Updated At" min-width="180" show-overflow-tooltip>
           <template #default="scope">
             <el-text>
               {{ formatAsLocalDateTimeString(scope.row.updated_at) }}

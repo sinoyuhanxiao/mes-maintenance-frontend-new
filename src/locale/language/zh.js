@@ -538,6 +538,7 @@ export default {
     locations : '地址',
     vendors : '供应商',
     vendorsAndLocations : '供应商和地址',
+    resources : '资源',
     userCenter : '个人中心',
     userDetail : '用户信息',
     user : '用户',

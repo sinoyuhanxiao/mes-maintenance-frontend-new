@@ -6,7 +6,7 @@
           <el-descriptions-item label="Name">{{ equipmentData.name }}</el-descriptions-item>
           <el-descriptions-item label="Code">{{ equipmentData.code }}</el-descriptions-item>
           <el-descriptions-item label="Model">{{
-            equipmentData.model || equipmentData.serial_number || 'N/A'
+            equipmentData.model || equipmentData.serial_number || '--'
           }}</el-descriptions-item>
           <el-descriptions-item label="Description" class="highlighted-item">
             {{ equipmentData.description || 'No description available' }}

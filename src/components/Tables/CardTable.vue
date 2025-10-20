@@ -12,26 +12,50 @@
     </div>
 
     <div class="card-scroll-container" :class="{ 'with-border': showBorder }">
-      <el-row :gutter="0">
-        <el-col v-for="sp in filteredData" :key="sp.id" :xs="24" :sm="24" :md="24" :lg="24">
-          <Card v-if="props.module === 1" :data="sp" @selection="handleSelection" />
-          <MaintenanceRequestCard v-if="props.module === 2" :data="sp" @selection="handleSelection" />
-          <MaintenanceWorkOrderCard v-if="props.module === 3" :wo="sp" @requestData="handleSelection" :module="2" />
-          <MaintenanceSelectedTaskCard v-if="props.module === 4" :template="sp" @selection="handleSelection" />
+      <el-row :gutter="0" style="gap: 0.5rem">
+        <el-col v-for="(sp, idx) in filteredData" :key="sp.id" :xs="24" :sm="24" :md="24" :lg="24">
+          <MaintenanceResourceCard
+            v-if="props.module === 1"
+            :data="sp"
+            :isSelected="sp.id === selectedId"
+            @selection="() => emitSelection(sp, idx)"
+          />
+          <MaintenanceRequestCard
+            v-if="props.module === 2"
+            :data="sp"
+            :isSelected="sp.id === selectedId"
+            @selection="() => emitSelection(sp, idx)"
+          />
+          <MaintenanceWorkOrderCard
+            v-if="props.module === 3"
+            :wo="sp"
+            :isSelected="sp.id === selectedId"
+            @requestData="() => emitSelection(sp, idx)"
+            :module="2"
+          />
+          <MaintenanceSelectedTaskCard
+            v-if="props.module === 4"
+            :template="sp"
+            :isSelected="sp.id === selectedId"
+            @selection="() => emitSelection(sp, idx)"
+          />
           <AddNewTaskCard
             v-if="props.module === 5"
             :template="sp"
-            :focused="props.focusedCardId === sp.id"
-            :selected="props.selectedItems?.has?.(sp.id) || false"
-            @selection="handleSelection"
+            :isSelected="sp.id === selectedId"
+            @selection="() => emitSelection(sp, idx)"
           />
-          <MaintenanceSelectedStandardsCard v-if="props.module === 6" :template="sp" @selection="handleSelection" />
+          <MaintenanceSelectedStandardsCard
+            v-if="props.module === 6"
+            :template="sp"
+            :isSelected="sp.id === selectedId"
+            @selection="() => emitSelection(sp, idx)"
+          />
           <AddNewStandardCard
             v-if="props.module === 7"
             :template="sp"
-            :focused="props.focusedCardId === sp.id"
-            :selected="props.selectedItems?.has?.(sp.id) || false"
-            @selection="handleSelection"
+            :isSelected="sp.id === selectedId"
+            @selection="() => emitSelection(sp, idx)"
           />
         </el-col>
       </el-row>
@@ -56,9 +80,9 @@
 </template>
 
 <script setup>
-import Card from '@/views/resources/components/Card.vue'
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { Search } from '@element-plus/icons-vue'
+import MaintenanceResourceCard from '@/views/resources/components/MaintenanceResourceCard.vue'
 import MaintenanceRequestCard from './Cards/MaintenanceRequestCard.vue'
 import MaintenanceWorkOrderCard from './Cards/MaintenanceWorkOrderCard.vue'
 import MaintenanceSelectedTaskCard from './Cards/MaintenanceSelectedTaskCard.vue'
@@ -72,30 +96,12 @@ const props = defineProps( {
   maxHeight : String,
   totalItems : Number,
   currentPage : Number,
-  selectedItems : {
-    type : Set,
-    default : () => new Set()
-  },
-  pageSize : {
-    type : Number,
-    default : 10
-  },
-  showBorder : {
-    type : Boolean,
-    default : false
-  },
-  showPagination : {
-    type : Boolean,
-    default : true
-  },
-  showSearch : {
-    type : Boolean,
-    default : true
-  },
-  searchPlaceholder : {
-    type : String,
-    default : 'Search items...'
-  },
+  selectedId : { type : [Number, String, null], default : null },
+  pageSize : { type : Number, default : 10 },
+  showBorder : { type : Boolean, default : false },
+  showPagination : { type : Boolean, default : true },
+  showSearch : { type : Boolean, default : true },
+  searchPlaceholder : { type : String, default : 'Search items...' },
   searchFields : {
     type : Array,
     default : () => ['name', 'category', 'description']
@@ -106,8 +112,10 @@ const props = defineProps( {
   }
 } )
 
-const height = ref( props.maxHeight )
+const emit = defineEmits( ['selection'] )
+
 const searchQuery = ref( '' )
+const height = ref( props.maxHeight )
 
 function updateHeight() {
   height.value = window.innerWidth <= 1600 ? '465px' : props.maxHeight
@@ -122,13 +130,6 @@ onBeforeUnmount( () => {
   window.removeEventListener( 'resize', updateHeight )
 } )
 
-const emit = defineEmits( ['selection', 'page-change'] )
-
-// Pagination handler
-function handleCurrentChange( page ) {
-  emit( 'page-change', page )
-}
-
 // Computed property to filter data based on search query
 const filteredData = computed( () => {
   if ( !searchQuery.value || !props.data ) {
@@ -136,23 +137,18 @@ const filteredData = computed( () => {
   }
 
   const query = searchQuery.value.toLowerCase().trim()
-
   return props.data.filter( item => {
     return props.searchFields.some( field => {
       const value = item[field]
-      if ( typeof value === 'string' ) {
-        return value.toLowerCase().includes( query )
-      }
-      if ( typeof value === 'number' ) {
-        return value.toString().includes( query )
-      }
+      if ( typeof value === 'string' ) return value.toLowerCase().includes( query )
+      if ( typeof value === 'number' ) return value.toString().includes( query )
       return false
     } )
   } )
 } )
 
-function handleSelection( data ) {
-  emit( 'selection', data )
+function emitSelection( sp, idx ) {
+  emit( 'selection', { ...sp, index : idx } )
 }
 </script>
 

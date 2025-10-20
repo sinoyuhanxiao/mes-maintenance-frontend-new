@@ -156,12 +156,12 @@
                 </template>
 
                 <el-image
-                    v-else
-                    :src="scope.row.image"
-                    fit="cover"
-                    class="image-slot-circle"
-                    :preview-src-list="[scope.row.image]"
-                    preview-teleported
+                  v-else
+                  :src="scope.row.image"
+                  fit="cover"
+                  class="image-slot-circle"
+                  :preview-src-list="[scope.row.image]"
+                  preview-teleported
                 >
                   <template #error>
                     <el-tooltip content="Image failed to load">
@@ -313,11 +313,7 @@
             </template>
           </el-table-column>
 
-          <el-table-column
-              prop="created_at"
-              label="Created At"
-              min-width="180"
-          >
+          <el-table-column prop="created_at" label="Created At" min-width="180">
             <template #default="scope">
               <el-text>
                 {{ formatAsLocalDateTimeString(scope.row.created_at) }}
@@ -325,11 +321,7 @@
             </template>
           </el-table-column>
 
-          <el-table-column
-              prop="updated_at"
-              label="Updated At"
-              min-width="180"
-          >
+          <el-table-column prop="updated_at" label="Updated At" min-width="180">
             <template #default="scope">
               <el-text>
                 {{ formatAsLocalDateTimeString(scope.row.updated_at) }}
