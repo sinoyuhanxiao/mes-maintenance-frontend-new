@@ -29,6 +29,7 @@
 <script setup>
 import AddNewStandardCard from '@/components/Tables/Cards/AddNewStandardCard.vue'
 
+// eslint-disable-next-line no-unused-vars
 const props = defineProps( {
   data : {
     type : Array,

@@ -159,6 +159,7 @@ const {
   handleSizeChange,
   handleCurrentChange,
   toggleRowHighlight,
+  // eslint-disable-next-line no-unused-vars
   handleDelete : deleteWorkOrder,
   initializeCommonData
 } = useWorkOrder()

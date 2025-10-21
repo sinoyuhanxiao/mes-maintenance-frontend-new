@@ -26,10 +26,7 @@ export function usePayloadLogger() {
     taskEntry : {
       title : 'Task Entry Payload',
       subtitle : "Click 'Logs' to refresh",
-      buttonSelectors : [
-        '.task-actions button.el-button--primary',
-        '.task-actions button.el-button--warning'
-      ]
+      buttonSelectors : ['.task-actions button.el-button--primary', '.task-actions button.el-button--warning']
     },
     template : {
       title : 'Template Payload',

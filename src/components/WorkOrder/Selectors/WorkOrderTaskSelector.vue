@@ -29,6 +29,7 @@
 <script setup>
 import AddNewTaskCard from '@/components/Tables/Cards/AddNewTaskCard.vue'
 
+// eslint-disable-next-line no-unused-vars
 const props = defineProps( {
   data : {
     type : Array,

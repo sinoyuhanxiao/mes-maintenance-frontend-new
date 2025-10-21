@@ -32,18 +32,18 @@
               :class="{ 'step-completed': isStepCompleted(step) }"
             >
               <div class="step-config-execution">
-              <component
-                :is="getStepComponent(step.type)"
-                :step="getStepWithNumber(step, index)"
-                :preview-mode="false"
-                :interactive="true"
-                :model-value="getStepModelValue(step.step_id)"
-                v-bind="getStepComponentProps(step)"
-                @value-change="handleStepValueChange(step.step_id, $event)"
-                @update:modelValue="handleStepValueChange(step.step_id, $event)"
-              />
+                <component
+                  :is="getStepComponent(step.type)"
+                  :step="getStepWithNumber(step, index)"
+                  :preview-mode="false"
+                  :interactive="true"
+                  :model-value="getStepModelValue(step.step_id)"
+                  v-bind="getStepComponentProps(step)"
+                  @value-change="handleStepValueChange(step.step_id, $event)"
+                  @update:modelValue="handleStepValueChange(step.step_id, $event)"
+                />
 
-              <!-- Image Upload Section -->
+                <!-- Image Upload Section -->
                 <div v-if="step.required_image || step.value?.require_image" class="image-upload-section">
                   <div class="upload-header">
                     <span class="upload-label">
@@ -401,7 +401,7 @@ const toBooleanOrNull = value => {
   if ( typeof value === 'string' ) {
     const normalized = value.trim().toLowerCase()
     if ( ['true', 'pass', 'yes', '1'].includes( normalized ) ) return true
-    if ( ['false', 'fail', 'no', '0' ].includes( normalized ) ) return false
+    if ( ['false', 'fail', 'no', '0'].includes( normalized ) ) return false
   }
   return Boolean( value )
 }
@@ -932,8 +932,12 @@ const getExecutionPayload = () => {
     const originalValue = toDeepClone( originalStep.value || {} )
     const currentValueRecord = stepValues[stepId]
     const currentValue = currentValueRecord ? currentValueRecord.value : undefined
-    const uploadedImages = Array.isArray( stepImages[stepId] ) ? stepImages[stepId].map( img => img?.url ).filter( Boolean ) : []
-    const uploadedFiles = Array.isArray( stepFiles[stepId] ) ? stepFiles[stepId].map( file => file?.url ).filter( Boolean ) : []
+    const uploadedImages = Array.isArray( stepImages[stepId] )
+      ? stepImages[stepId].map( img => img?.url ).filter( Boolean )
+      : []
+    const uploadedFiles = Array.isArray( stepFiles[stepId] )
+      ? stepFiles[stepId].map( file => file?.url ).filter( Boolean )
+      : []
 
     // Resolve base payload for step value using original data as foundation
     const resolvedValue = toDeepClone( originalValue )
@@ -965,9 +969,11 @@ const getExecutionPayload = () => {
       const finalValue = currentValue !== undefined ? currentValue : valueFromOriginal
 
       if ( step.type === 'number' || step.type === 'numeric' ) {
-        const numericValue = finalValue === '' || finalValue === null || finalValue === undefined ? null : Number( finalValue )
+        const numericValue =
+          finalValue === '' || finalValue === null || finalValue === undefined ? null : Number( finalValue )
         resolvedValue.value = Number.isFinite( numericValue ) ? numericValue : null
-        resolvedValue.numeric_limit_bounds = originalValue.numeric_limit_bounds || originalValue.numericLimitBounds || {}
+        resolvedValue.numeric_limit_bounds =
+          originalValue.numeric_limit_bounds || originalValue.numericLimitBounds || {}
       } else if ( step.type === 'checkbox' ) {
         resolvedValue.value = Boolean( finalValue )
       } else if ( step.type === 'inspection' ) {

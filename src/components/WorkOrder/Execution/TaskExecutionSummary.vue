@@ -9,7 +9,11 @@
             {{ taskLabel }}
           </h4>
           <!-- Edit icon for tasks that are not completed or failed -->
-          <el-tooltip v-if="taskState.toLowerCase() !== 'completed' && taskState.toLowerCase() !== 'failed'" content="Execute Task" placement="top">
+          <el-tooltip
+            v-if="taskState.toLowerCase() !== 'completed' && taskState.toLowerCase() !== 'failed'"
+            content="Execute Task"
+            placement="top"
+          >
             <el-icon class="view-icon" @click.stop="$emit('select')">
               <Edit />
             </el-icon>
@@ -97,6 +101,7 @@ const props = defineProps( {
   }
 } )
 
+// eslint-disable-next-line no-unused-vars
 const indexLabel = computed( () => props.index + 1 )
 
 const taskLabel = computed( () => {

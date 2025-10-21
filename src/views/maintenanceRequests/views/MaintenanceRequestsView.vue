@@ -174,7 +174,12 @@
                       <el-icon><DocumentAdd /></el-icon>
                       Create Work Order
                     </el-dropdown-item>
-                    <el-dropdown-item command="delete" :disabled="selectedRequest.status === 2" divided class="delete-item">
+                    <el-dropdown-item
+                      command="delete"
+                      :disabled="selectedRequest.status === 2"
+                      divided
+                      class="delete-item"
+                    >
                       <el-icon><Delete /></el-icon>
                       Delete
                     </el-dropdown-item>

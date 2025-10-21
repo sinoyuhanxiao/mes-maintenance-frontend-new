@@ -100,7 +100,7 @@ const mapResultToBoolean = result => {
 // Watch for prop changes to sync initial values
 watch(
   () => [props.modelValue, props.step?.config?.result, props.step?.config?.remarks],
-  ([modelValue, configResult, configRemarks]) => {
+  ( [modelValue, configResult, configRemarks] ) => {
     const mapped = mapModelToResult( modelValue ?? configResult )
     currentResult.value = mapped ?? ( props.previewMode ? 'pass' : null )
 

@@ -31,13 +31,7 @@
             <el-icon><Search /></el-icon>
           </template>
         </el-input>
-        <el-select
-          v-model="taskFilters.state"
-          placeholder="State"
-          clearable
-          class="filter-select"
-          size="default"
-        >
+        <el-select v-model="taskFilters.state" placeholder="State" clearable class="filter-select" size="default">
           <el-option label="Ready" value="Ready" />
           <el-option label="In progress" value="In progress" />
           <el-option label="Completed" value="Completed" />
@@ -196,6 +190,7 @@ const props = defineProps( {
 
 const emit = defineEmits( ['close', 'update:progress', 'back-to-detail'] )
 
+// eslint-disable-next-line no-unused-vars
 const { t } = useI18n()
 const { currentPayload, showJsonDisplayer, logPayload } = usePayloadLogger()
 const userStore = useUserStore()
@@ -585,15 +580,11 @@ const handleSubmitTask = async( saveAsDraft = false ) => {
     console.log( 'Request Payload:', payload )
     console.groupEnd()
 
-    await ElMessageBox.confirm(
-      `Are you sure you want to ${action} this task?`,
-      'Confirmation',
-      {
-        confirmButtonText : 'Yes',
-        cancelButtonText : 'Cancel',
-        type : 'warning'
-      }
-    )
+    await ElMessageBox.confirm( `Are you sure you want to ${action} this task?`, 'Confirmation', {
+      confirmButtonText : 'Yes',
+      cancelButtonText : 'Cancel',
+      type : 'warning'
+    } )
 
     isSubmitting.value = true
 
