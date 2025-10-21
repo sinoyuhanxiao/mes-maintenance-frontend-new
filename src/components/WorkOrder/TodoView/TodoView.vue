@@ -135,6 +135,8 @@
         :work-order="workOrderInExecution"
         @close="handleExecutionClose"
         @back-to-detail="showDetailView"
+        @update:progress="handleExecutionProgressUpdate"
+        ref="workOrderExecutionRef"
       />
     </div>
 
@@ -227,6 +229,8 @@ const pdfPreviewData = ref( null )
 
 // WorkOrderCreate component ref
 const workOrderCreateRef = ref( null )
+// WorkOrderExecution component ref
+const workOrderExecutionRef = ref( null )
 
 const router = useRouter()
 const route = useRoute()
@@ -307,7 +311,20 @@ const checkUnsavedChanges = async() => {
       return true // Proceed with action on error
     }
   }
-  return true // No create mode, proceed with action
+
+  // If we're currently in execution mode, check for work in progress
+  if ( currentRightPanelView.value === 'execution' && workOrderExecutionRef.value ) {
+    try {
+      // Call the confirmNavigation method exposed by WorkOrderExecution
+      const canLeave = await workOrderExecutionRef.value.confirmNavigation()
+      return canLeave
+    } catch ( error ) {
+      console.error( 'Error checking execution progress:', error )
+      return true // Proceed with action on error
+    }
+  }
+
+  return true // No create or execution mode, proceed with action
 }
 
 // Methods
@@ -558,6 +575,26 @@ const handleExecutionClose = () => {
   currentRightPanelView.value = 'detail'
   workOrderInExecution.value = null
   pendingExecutionWorkOrder.value = null
+}
+
+const handleExecutionProgressUpdate = async() => {
+  try {
+    // Refresh the work order data to get updated task states
+    const workOrderId = workOrderInExecution.value?.id
+    if ( !workOrderId ) return
+
+    const response = await getWorkOrderById( workOrderId )
+    if ( response && response.data ) {
+      // Update the work order in execution with fresh data
+      workOrderInExecution.value = response.data
+      selectedWorkOrder.value = response.data
+    }
+
+    // Also emit refresh to parent to update the work order list
+    emit( 'refresh' )
+  } catch ( error ) {
+    console.error( 'Failed to refresh work order after task submission:', error )
+  }
 }
 
 const isProcessingReturnContext = ref( false )

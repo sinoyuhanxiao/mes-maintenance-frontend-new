@@ -13,6 +13,8 @@
 import { ref, watch } from 'vue'
 
 // eslint-disable-next-line no-unused-vars
+const emit = defineEmits( ['value-change', 'update:modelValue'] )
+
 const props = defineProps( {
   step : {
     type : Object,
@@ -25,6 +27,10 @@ const props = defineProps( {
   interactive : {
     type : Boolean,
     default : false
+  },
+  modelValue : {
+    type : [Boolean, String, Number],
+    default : undefined
   }
 } )
 
@@ -33,14 +39,24 @@ const currentValue = ref( props.step.config?.default || false )
 
 // Watch for prop changes to sync initial values
 watch(
-  () => props.step.config?.default,
+  () => props.modelValue,
   newValue => {
-    if ( !props.interactive ) {
-      currentValue.value = newValue || false
+    if ( newValue === undefined ) {
+      const fallback = props.step.config?.default
+      currentValue.value = fallback !== undefined ? Boolean( fallback ) : false
+    } else {
+      currentValue.value = Boolean( newValue )
     }
   },
   { immediate : true }
 )
+
+watch( currentValue, newValue => {
+  if ( !props.interactive ) return
+  const booleanValue = Boolean( newValue )
+  emit( 'value-change', booleanValue )
+  emit( 'update:modelValue', booleanValue )
+} )
 </script>
 
 <style scoped>

@@ -1,28 +1,86 @@
 <template>
-  <div class="task-summary-card" :class="statusClass" @click="$emit('select')">
-    <div class="summary-header">
-      <div class="summary-title">
-        <h4>{{ task.name || `Task ${indexLabel}` }}</h4>
-        <StatusBadge :status="currentStatus" />
+  <div class="template-card">
+    <!-- Card Content -->
+    <div class="card-content" :class="stateClass">
+      <!-- Row 1: Title + Task Code + Execute Icon -->
+      <div class="row-1">
+        <div style="display: flex; flex-direction: row; align-items: center; gap: 10px">
+          <h4 class="card-title" :title="taskLabel">
+            {{ taskLabel }}
+          </h4>
+          <!-- Edit icon for tasks that are not completed or failed -->
+          <el-tooltip v-if="taskState.toLowerCase() !== 'completed' && taskState.toLowerCase() !== 'failed'" content="Execute Task" placement="top">
+            <el-icon class="view-icon" @click.stop="$emit('select')">
+              <Edit />
+            </el-icon>
+          </el-tooltip>
+          <!-- View icon for completed or failed tasks -->
+          <el-tooltip v-else content="View Logs" placement="top">
+            <el-icon class="view-icon" @click.stop="$emit('view-log')">
+              <View />
+            </el-icon>
+          </el-tooltip>
+        </div>
+        <div class="right-badges">
+          <div v-if="taskCode" class="task-code-badge">{{ taskCode }}</div>
+        </div>
       </div>
-      <span class="summary-meta">Steps: {{ stepCount }}</span>
-    </div>
-    <div class="summary-meta-row">
-      <span class="meta-label">Assigned To:</span>
-      <span class="meta-value">{{ assignee }}</span>
-    </div>
-    <p v-if="task.description" class="summary-description">{{ task.description }}</p>
-    <div class="summary-footer">
-      <span class="footer-time">{{ formattedTime }}</span>
-      <el-icon class="footer-icon"><ArrowRight /></el-icon>
+
+      <!-- Row 2: Task Details -->
+      <div class="row-2 task-details">
+        <div class="detail-item">
+          <span class="detail-label">State:</span>
+          <span class="detail-value">
+            <el-tag
+              v-if="taskState && taskState.toLowerCase() === 'completed'"
+              type="success"
+              size="small"
+              class="tag-item"
+            >
+              Completed
+            </el-tag>
+            <el-tag
+              v-else-if="taskState && taskState.toLowerCase() === 'failed'"
+              type="danger"
+              size="small"
+              class="tag-item"
+            >
+              Failed
+            </el-tag>
+            <template v-else>{{ taskState }}</template>
+          </span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Progress:</span>
+          <span class="detail-value">{{ progressText }}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Actual Time:</span>
+          <span class="detail-value">
+            {{ actualTime }}
+            <span v-if="isActualTimeExceeded" class="time-exceeded-indicator">⬆</span>
+          </span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Est. Time:</span>
+          <span class="detail-value">{{ estimatedTime }}</span>
+        </div>
+      </div>
+
+      <!-- Row 3: Personnel -->
+      <div class="row-3">
+        <div class="detail-item">
+          <span class="detail-label">Personnel:</span>
+          <span class="detail-value">{{ assignedPersonnel }}</span>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue'
-import { ArrowRight } from '@element-plus/icons-vue'
-import StatusBadge from '../Display/StatusBadge.vue'
+import { Edit, View } from '@element-plus/icons-vue'
 
 const props = defineProps( {
   task : {
@@ -41,136 +99,271 @@ const props = defineProps( {
 
 const indexLabel = computed( () => props.index + 1 )
 
-const stepCount = computed( () => {
-  if ( Array.isArray( props.task?.steps ) && props.task.steps.length ) return props.task.steps.length
-  if ( Array.isArray( props.task?.payload?.steps ) && props.task.payload.steps.length ) {
-    return props.task.payload.steps.length
+const taskLabel = computed( () => {
+  const task = props.task
+
+  if ( task && typeof task === 'object' ) {
+    if ( typeof task.name === 'string' && task.name.trim() ) {
+      return task.name
+    }
+
+    if ( typeof task.task_name === 'string' && task.task_name.trim() ) {
+      return task.task_name
+    }
+
+    if ( typeof task.label === 'string' && task.label.trim() ) {
+      return task.label
+    }
+
+    if ( typeof task.taskListText === 'string' && task.taskListText.trim() ) {
+      return task.taskListText
+    }
+
+    if ( typeof task.task_list_text === 'string' && task.task_list_text.trim() ) {
+      return task.task_list_text
+    }
+
+    if ( typeof task.id === 'string' && task.id.trim() ) {
+      return task.id
+    }
+
+    if ( typeof task.id === 'number' ) {
+      return String( task.id )
+    }
   }
-  if ( Array.isArray( props.task?.task_steps ) && props.task.task_steps.length ) return props.task.task_steps.length
-  if ( Array.isArray( props.task?.entries ) && props.task.entries.length ) return props.task.entries.length
-  return 0
+
+  if ( typeof task === 'string' || typeof task === 'number' ) {
+    return String( task )
+  }
+
+  return 'Task'
 } )
 
-const statusClass = computed( () => `summary-${currentStatus.value}` )
-
-const currentStatus = computed( () => {
-  const status = props.progress?.status
-  if ( status === 'draft' ) return 'in_progress'
-  if ( status === 'completed' ) return 'completed'
-  return status || 'not_started'
+const taskCode = computed( () => {
+  return props.task?.id || ''
 } )
 
-const formattedTime = computed( () => {
-  const value = props.progress?.time_spent?.value
-  const unit = props.progress?.time_spent?.unit
-  if ( value && unit ) {
-    return `${value} ${unit}`
-  }
-  return 'No time recorded'
+const taskState = computed( () => {
+  return props.task?.state?.name || '-'
 } )
 
-const assignee = computed( () => {
-  if ( props.task?.assignees && props.task.assignees.length ) {
-    return props.task.assignees.map( person => person.name || person ).join( ', ' )
+const assignedPersonnel = computed( () => {
+  const personnel = props.task?.personnel
+  if ( !personnel ) return '-'
+
+  // Handle array of personnel
+  if ( Array.isArray( personnel ) ) {
+    const names = personnel
+      .map( p => {
+        if ( typeof p === 'string' ) return p
+        if ( typeof p === 'object' && p.name ) return p.name
+        return ''
+      } )
+      .filter( Boolean )
+    return names.length > 0 ? names.join( ', ' ) : '-'
   }
-  if ( props.task?.assignee_ids && props.task.assignee_ids.length ) {
-    return `Assignee #${props.task.assignee_ids[0]}`
+
+  // Handle single personnel object
+  if ( typeof personnel === 'object' && personnel.name ) {
+    return personnel.name
   }
-  const names = ['Alex Martinez', 'Priya Desai', 'Morgan Chen', 'Isabella Fernandez', 'Liam O’Connor', 'Harper Singh']
-  return names[Math.floor( Math.random() * names.length )]
+
+  // Handle string
+  if ( typeof personnel === 'string' ) {
+    return personnel
+  }
+
+  return '-'
+} )
+
+const progressText = computed( () => {
+  const completedSteps = props.task?.completed_steps ?? 0
+  const totalSteps = props.task?.total_steps ?? 0
+  return `${completedSteps} / ${totalSteps} Steps`
+} )
+
+const actualTime = computed( () => {
+  const timeTakenSec = props.task?.time_taken_sec
+  if ( timeTakenSec ) {
+    const takenMinutes = Math.round( timeTakenSec / 60 )
+    return `${takenMinutes} min`
+  }
+  return '-'
+} )
+
+const estimatedTime = computed( () => {
+  const timeEstimateSec = props.task?.time_estimate_sec
+  if ( timeEstimateSec ) {
+    const estimatedMinutes = Math.round( timeEstimateSec / 60 )
+    return `${estimatedMinutes} min`
+  }
+  return '-'
+} )
+
+const isActualTimeExceeded = computed( () => {
+  const timeTakenSec = props.task?.time_taken_sec
+  const timeEstimateSec = props.task?.time_estimate_sec
+
+  if ( !timeTakenSec || !timeEstimateSec ) return false
+
+  return timeTakenSec > timeEstimateSec
+} )
+
+const stateClass = computed( () => {
+  const state = taskState.value?.toLowerCase()
+
+  if ( state === 'completed' ) {
+    return 'state-completed'
+  } else if ( state === 'in-progress' || state === 'in progress' || state === 'inprogress' ) {
+    return 'state-in-progress'
+  } else if ( state === 'failed' ) {
+    return 'state-failed'
+  } else if ( state === 'ready' ) {
+    return 'state-ready'
+  }
+
+  return ''
 } )
 </script>
 
 <style scoped>
-.task-summary-card {
+.template-card {
   border: 1px solid var(--el-border-color-light);
-  border-radius: 10px;
-  padding: 16px;
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
-  cursor: pointer;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  border-radius: 6px;
+  background: var(--el-bg-color);
+  margin-bottom: 12px;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  box-shadow: 0 1px 4px 0 rgba(0, 0, 0, 0.05);
+}
+
+.template-card:last-child {
+  margin-bottom: 0;
+}
+
+.card-content {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
+  padding: 20px;
+  border-left: 2px solid var(--el-border-color-light);
+  border-radius: 4px;
 }
 
-.task-summary-card:hover {
+/* State-based border colors */
+.card-content.state-completed {
+  border-color: var(--el-color-success);
+  border-left-color: var(--el-color-success);
+}
+
+.card-content.state-in-progress {
   border-color: var(--el-color-primary);
-  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.15);
+  border-left-color: var(--el-color-primary);
 }
 
-.summary-header {
+.card-content.state-failed {
+  border-color: var(--el-color-danger);
+  border-left-color: var(--el-color-danger);
+}
+
+.card-content.state-ready {
+  border-color: var(--el-color-info);
+  border-left-color: var(--el-color-info);
+}
+
+.row-1 {
+  flex: 1;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
-.summary-title {
+.card-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  line-height: 1.5;
+}
+
+.right-badges {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-shrink: 0;
 }
 
-.summary-title h4 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
+.task-code-badge {
+  font-size: 14px;
+  font-family: monospace;
+  white-space: nowrap;
+}
+
+.view-icon {
+  font-size: 18px;
+  color: var(--el-color-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.view-icon:hover {
+  color: var(--el-color-primary-dark-2);
+  transform: scale(1.1);
+}
+
+.row-2.task-details {
+  display: flex;
+  flex-wrap: wrap;
+  padding-top: 4px;
+  justify-content: space-between;
+}
+
+.detail-item {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+}
+
+.detail-label {
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+  font-weight: 500;
+}
+
+.detail-value {
+  font-size: 14px;
   color: var(--el-text-color-primary);
 }
 
-.summary-meta {
-  font-size: 13px;
-  color: var(--el-text-color-secondary);
+.tag-item {
+  --el-tag-border-color: var(--el-border-color-light);
 }
 
-.summary-description {
-  margin: 0;
-  font-size: 13px;
-  color: var(--el-text-color-regular);
+.row-3 {
+  padding-top: 8px;
+  margin-top: 4px;
+  border-top: 1px solid var(--el-border-color-lighter);
 }
 
-.summary-meta-row {
-  display: flex;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--el-color-primary);
-}
-
-.meta-label {
-  font-weight: 600;
-}
-
-.meta-value {
-  color: var(--el-color-primary);
-}
-
-.summary-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 13px;
-  color: var(--el-text-color-secondary);
-}
-
-.footer-icon {
+.time-exceeded-indicator {
+  color: var(--el-color-warning);
   font-size: 16px;
-  color: var(--el-color-primary);
 }
 
-.summary-completed {
-  border-color: var(--el-color-success);
-}
-
-.summary-completed:hover {
-  border-color: var(--el-color-success);
-}
-
-.summary-in_progress {
-  border-color: var(--el-color-warning);
-}
-
-.summary-not_started {
-  border-color: var(--el-border-color-light);
+@media (max-width: 480px) {
+  .card-content {
+    padding: 12px;
+  }
+  .card-title {
+    font-size: 15px;
+  }
+  .row-2.task-details {
+    gap: 12px;
+  }
 }
 </style>

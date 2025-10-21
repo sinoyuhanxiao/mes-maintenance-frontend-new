@@ -28,6 +28,8 @@ import { InfoFilled } from '@element-plus/icons-vue'
 import { formatLimitsText } from 'src/views/taskLibrary/utils/stepTransforms'
 
 // eslint-disable-next-line no-unused-vars
+const emit = defineEmits( ['value-change', 'update:modelValue'] )
+
 const props = defineProps( {
   step : {
     type : Object,
@@ -40,6 +42,10 @@ const props = defineProps( {
   interactive : {
     type : Boolean,
     default : false
+  },
+  modelValue : {
+    type : [Number, String, null],
+    default : null
   }
 } )
 
@@ -48,14 +54,31 @@ const currentValue = ref( props.step.config?.default || 0 )
 
 // Watch for prop changes to sync initial values
 watch(
-  () => props.step.config?.default,
+  () => props.modelValue,
   newValue => {
-    if ( !props.interactive ) {
-      currentValue.value = newValue || 0
+    if ( newValue === null || newValue === undefined || newValue === '' ) {
+      const fallback = props.step.config?.default ?? props.step.config?.default_value
+      currentValue.value = fallback !== undefined ? fallback : 0
+    } else {
+      const numeric = Number( newValue )
+      if ( Number.isFinite( numeric ) ) {
+        currentValue.value = numeric
+      } else {
+        const fallback = props.step.config?.default ?? props.step.config?.default_value
+        currentValue.value = fallback !== undefined ? fallback : 0
+      }
     }
   },
   { immediate : true }
 )
+
+watch( currentValue, newValue => {
+  if ( !props.interactive ) return
+  const numeric = newValue === null || newValue === undefined || newValue === '' ? null : Number( newValue )
+  const valueToEmit = Number.isFinite( numeric ) ? numeric : null
+  emit( 'value-change', valueToEmit )
+  emit( 'update:modelValue', valueToEmit )
+} )
 </script>
 
 <style scoped>
@@ -95,8 +118,9 @@ watch(
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
-  color: #909399;
+  font-size: 14px;
+  color: #606266;
+  font-weight: 500;
 }
 
 .step-description {
