@@ -8,12 +8,6 @@
         <div class="filters-container">
           <!-- Keyword Filter -->
           <div class="filter-item"></div>
-
-          <!--          <div class="filter-item">-->
-          <!--            <el-button :icon="Remove" type="warning" plain @click="clearLocalFilters">-->
-          <!--              {{ t('workOrder.filters.clearAll') }}-->
-          <!--            </el-button>-->
-          <!--          </div>-->
         </div>
 
         <div class="actions-row">
@@ -33,7 +27,19 @@
 
           <div class="actions-item">
             <el-button :icon="EditPen" type="primary" @click="openCreateForm">
-              {{ t('shift.createShift') }}
+              {{ t('workOrder.actions.create') }}
+            </el-button>
+          </div>
+
+          <!--          <div class="actions-item">-->
+          <!--            <el-button :icon="Remove" type="warning" plain @click="clearLocalFilters">-->
+          <!--              {{ 'Clear Filters' }}-->
+          <!--            </el-button>-->
+          <!--          </div>-->
+
+          <div class="actions-item">
+            <el-button :icon="Refresh" @click="refreshTable">
+              {{ 'Refresh' }}
             </el-button>
           </div>
         </div>
@@ -50,6 +56,7 @@
         :height="tableHeight"
         :empty-text="t('common.noData')"
         @sort-change="handleSortChange"
+        border
       >
         <el-table-column
           prop="name"
@@ -61,7 +68,7 @@
           show-overflow-tooltip
         >
           <template #default="scope">
-            <el-text tag="b">{{ scope.row.name }}</el-text>
+            <el-text>{{ scope.row.name }}</el-text>
           </template>
         </el-table-column>
 
@@ -140,7 +147,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MesLayout from '@/components/MesLayout'
-import { Delete, Edit, EditPen, Search } from '@element-plus/icons-vue'
+import { Delete, Edit, EditPen, Refresh, Search } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { searchShifts, deactivateShift } from '@/api/shift'
 import { getAllUsers } from '@/api/user'
@@ -266,6 +273,18 @@ async function loadUsers() {
   } catch ( err ) {
     console.error( 'Failed to load users:', err )
     ElMessage.error( t( 'user.message.errorLoadingUsersData' ) )
+  }
+}
+
+async function refreshTable() {
+  try {
+    loading.value = true
+
+    await loadUsers()
+    await loadShifts()
+  } catch ( e ) {
+  } finally {
+    loading.value = false
   }
 }
 

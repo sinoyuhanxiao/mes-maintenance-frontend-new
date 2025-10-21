@@ -244,11 +244,11 @@ export const asyncRoutes = [
   },
 
   {
-    path : '/system-management',
-    name : 'SystemManagement',
+    path : '/administration',
+    name : 'Administration',
     component : Layout,
-    redirect : '/system-management/user-management',
-    meta : { title : 'router.systemManagement', icon : 'users', noCache : true },
+    redirect : '/administration/user-management',
+    meta : { title : 'router.administration', icon : 'users', noCache : true },
     children : [
       {
         path : 'user-management',

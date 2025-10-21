@@ -163,14 +163,12 @@ watch(
 
 async function handleResetForm() {
   try {
-    await ElMessageBox.confirm(
-      t( 'common.confirmMessage', t( 'common.warning' ), {
-        type : 'warning',
-        confirmButtonText : t( 'common.confirm' ),
-        cancelButtonText : t( 'common.cancel' ),
-        distinguishCancelAndClose : true
-      } )
-    )
+    await ElMessageBox.confirm( 'This will reset all fields to their original values. Continue?', 'Warning', {
+      type : 'warning',
+      confirmButtonText : t( 'common.confirm' ),
+      cancelButtonText : t( 'common.cancel' ),
+      distinguishCancelAndClose : true
+    } )
 
     if ( originalRoleSnapshot.value === null ) {
       internalRole.value = createEmptyRole()

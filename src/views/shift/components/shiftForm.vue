@@ -88,12 +88,13 @@ watch(
 
 async function handleResetForm() {
   try {
-    await ElMessageBox.confirm( t( 'common.confirmMessage' ), t( 'common.warning' ), {
+    await ElMessageBox.confirm( 'This will reset all fields to their original values. Continue?', 'Warning', {
       type : 'warning',
       confirmButtonText : t( 'common.confirm' ),
       cancelButtonText : t( 'common.cancel' ),
       distinguishCancelAndClose : true
     } )
+
     if ( originalShiftSnapshot.value === null ) {
       internalShift.value = createEmptyShift()
     } else {

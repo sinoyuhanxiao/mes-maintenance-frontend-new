@@ -12,40 +12,40 @@
     </template>
 
     <!-- Basic Info -->
-    <el-descriptions :column="3" direction="vertical" size="default" class="general-details-descriptions">
-      <el-descriptions-item label="Code" min-width="150px">
-        {{ team?.code || '-' }}
-      </el-descriptions-item>
+    <!--    <el-descriptions :column="3" direction="vertical" size="default" class="general-details-descriptions">-->
+    <!--      <el-descriptions-item label="Code" min-width="150px">-->
+    <!--        {{ team?.code || '-' }}-->
+    <!--      </el-descriptions-item>-->
 
-      <el-descriptions-item label="Parent Team" min-width="150px">
-        <el-tag>
-          {{ props.teamMap[team?.parent_id]?.name || '-' }}
-        </el-tag>
-      </el-descriptions-item>
+    <!--      <el-descriptions-item label="Parent Team" min-width="150px">-->
+    <!--        <el-tag>-->
+    <!--          {{ props.teamMap[team?.parent_id]?.name || '-' }}-->
+    <!--        </el-tag>-->
+    <!--      </el-descriptions-item>-->
 
-      <el-descriptions-item label="Approval Enabled" min-width="150px">
-        <el-switch :model-value="team.type === 'department'" disabled />
-      </el-descriptions-item>
+    <!--      <el-descriptions-item label="Approval Enabled" min-width="150px">-->
+    <!--        <el-switch :model-value="team.type === 'department'" disabled />-->
+    <!--      </el-descriptions-item>-->
 
-      <el-descriptions-item label="Description" :span="3">
-        {{ team?.description || '-' }}
-      </el-descriptions-item>
+    <!--      <el-descriptions-item label="Description" :span="3">-->
+    <!--        {{ team?.description || '-' }}-->
+    <!--      </el-descriptions-item>-->
 
-      <el-descriptions-item label="Created At" min-width="150px">
-        {{ formatAsLocalDateTimeString(team?.created_at) || '-' }}
-      </el-descriptions-item>
+    <!--      <el-descriptions-item label="Created At" min-width="150px">-->
+    <!--        {{ formatAsLocalDateTimeString(team?.created_at) || '-' }}-->
+    <!--      </el-descriptions-item>-->
 
-      <el-descriptions-item label="Updated At" min-width="150px">
-        {{ formatAsLocalDateTimeString(team?.updated_at) || '-' }}
-      </el-descriptions-item>
+    <!--      <el-descriptions-item label="Updated At" min-width="150px">-->
+    <!--        {{ formatAsLocalDateTimeString(team?.updated_at) || '-' }}-->
+    <!--      </el-descriptions-item>-->
 
-      <!-- Backend not supported for now -->
-      <!--      <el-descriptions-item label="Assigned Shift">-->
-      <!--        <el-tag type="info">-->
-      <!--          {{ props.shiftMap[team?.shift_id]?.name || '-' }}-->
-      <!--        </el-tag>-->
-      <!--      </el-descriptions-item>-->
-    </el-descriptions>
+    <!--      &lt;!&ndash; Backend not supported for now &ndash;&gt;-->
+    <!--      &lt;!&ndash;      <el-descriptions-item label="Assigned Shift">&ndash;&gt;-->
+    <!--      &lt;!&ndash;        <el-tag type="info">&ndash;&gt;-->
+    <!--      &lt;!&ndash;          {{ props.shiftMap[team?.shift_id]?.name || '-' }}&ndash;&gt;-->
+    <!--      &lt;!&ndash;        </el-tag>&ndash;&gt;-->
+    <!--      &lt;!&ndash;      </el-descriptions-item>&ndash;&gt;-->
+    <!--    </el-descriptions>-->
 
     <!-- Tabs -->
     <el-tabs v-model="activeTab">
@@ -54,15 +54,21 @@
         <div class="tab-toolbar">
           <el-input
             v-model="search.members"
-            placeholder="Search by name or email"
+            placeholder="Search by keyword"
             prefix-icon="Search"
             clearable
             class="toolbar-input"
           />
         </div>
 
-        <el-table :data="paginatedMembers" style="width: 100%" height="300" @sort-change="handleSortChange('members')">
-          <el-table-column label="Name" sortable="custom" min-width="170px" align="center" fixed="left">
+        <el-table
+          border
+          :data="paginatedMembers"
+          style="width: 100%"
+          height="500"
+          @sort-change="handleSortChange('members')"
+        >
+          <el-table-column label="Name" sortable="custom" min-width="250px" align="center" fixed="left">
             <template #default="scope">
               <span>
                 <el-link @click="goToDetail(scope.row.id, 'user')">
@@ -157,7 +163,7 @@
         <div class="tab-toolbar">
           <el-input
             v-model="search.equipment"
-            placeholder="Search by name or code"
+            placeholder="Search by keyword"
             prefix-icon="Search"
             clearable
             class="toolbar-input"
@@ -167,13 +173,23 @@
         <el-table
           :data="paginatedEquipment"
           style="width: 100%"
-          height="300"
+          height="500"
           @sort-change="handleSortChange('equipment')"
+          border
         >
-          <el-table-column prop="id" label="ID" sortable="custom" width="80" />
-          <el-table-column prop="name" label="Name" sortable="custom" />
-          <el-table-column prop="code" label="Code" min-width="50" sortable="custom" />
-          <el-table-column prop="type" label="Type" min-width="100">
+          <el-table-column label="Name" sortable="custom" min-width="200px" align="center" fixed="left">
+            <template #default="scope">
+              <span>
+                <el-link @click="goToDetail(scope.row.id, 'equipment')">
+                  {{ scope.row.name }}
+                </el-link>
+              </span>
+            </template>
+          </el-table-column>
+
+          <el-table-column prop="id" label="ID" align="center" sortable="custom" width="80" />
+          <el-table-column prop="code" label="Code" align="center" min-width="50" sortable="custom" />
+          <el-table-column prop="type" label="Type" align="center" min-width="100">
             <template #default="scope">
               {{ scope.row.node_type?.default_label }}
             </template>
@@ -205,7 +221,7 @@
         <div class="tab-toolbar">
           <el-input
             v-model="search.locations"
-            placeholder="Search by name or code"
+            placeholder="Search by keyword"
             prefix-icon="Search"
             clearable
             class="toolbar-input"
@@ -215,12 +231,13 @@
         <el-table
           :data="paginatedLocations"
           style="width: 100%"
-          height="300"
+          height="500"
           @sort-change="handleSortChange('locations')"
+          border
         >
-          <el-table-column prop="id" label="ID" sortable="custom" width="80" />
-          <el-table-column prop="name" label="Name" sortable="custom" />
-          <el-table-column prop="image_list" label="Image">
+          <el-table-column prop="name" label="Name" sortable="custom" min-width="150" align="center" />
+          <el-table-column prop="id" label="ID" sortable="custom" min-width="80" align="center" />
+          <el-table-column prop="image_list" label="Image" min-width="100" align="center">
             <template #default="scope">
               <div v-if="scope.row.image_list?.length > 0">
                 <el-image
@@ -229,6 +246,7 @@
                   :preview-src-list="scope.row.image_list"
                   class="location-image-preview"
                   :z-index="9999"
+                  style="width: 100px; height: 100px"
                   preview-teleported
                 />
               </div>
@@ -237,7 +255,37 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column prop="code" label="Code" min-width="120" sortable="custom" />
+          <el-table-column prop="code" label="Code" min-width="120" align="center" />
+          <el-table-column prop="location_type" label="Location Type" min-width="150" align="center">
+            <template #default="scope">
+              <el-text>
+                {{ scope.row.location_type?.name || '-' }}
+              </el-text>
+            </template>
+          </el-table-column>
+          <el-table-column prop="description" label="Description" min-width="300" align="center">
+            <template #default="scope">
+              <el-text>
+                {{ scope.row.description || '-' }}
+              </el-text>
+            </template>
+          </el-table-column>
+
+          <el-table-column prop="address" label="Address" min-width="250" align="center">
+            <template #default="scope">
+              <el-text>
+                {{ scope.row.address || '-' }}
+              </el-text>
+            </template>
+          </el-table-column>
+
+          <el-table-column prop="capacity" label="Capacity" min-width="150" align="center">
+            <template #default="scope">
+              <el-text>
+                {{ scope.row.capacity || '-' }}
+              </el-text>
+            </template>
+          </el-table-column>
         </el-table>
 
         <div class="pagination-container">
@@ -268,7 +316,6 @@ import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Edit, Picture } from '@element-plus/icons-vue'
 import CertificateHoverDetail from '@/views/user/components/CertificateHoverDetail.vue'
-import { formatAsLocalDateTimeString } from '@/utils/datetime'
 
 const props = defineProps( {
   team : { type : Object, default : null },
@@ -330,7 +377,7 @@ const sort = ref( {
   locations : { prop : null, order : null }
 } )
 
-// ===== Map associated lists from team object =====
+// Map associated lists from team object =====
 const mappedMembers = computed( () => {
   if ( !props.team ) return []
   const memberIds = props.team.team_members_id || []
@@ -354,21 +401,31 @@ const mappedLocations = computed( () => {
   return ids.map( id => props.locationMap[id] || props.locationMap[String( id )] ).filter( Boolean )
 } )
 
-// ===== Filtering =====
+// Filtering
 const filterData = ( list, q, fields ) => {
-  if ( !list ) return []
+  if ( !list ) {
+    return []
+  }
   const keyword = q.trim().toLowerCase()
-  if ( !keyword ) return list
+  if ( !keyword ) {
+    return list
+  }
+
   return list.filter( item =>
-    fields.some( f =>
-      String( item[f] || '' )
+    fields.some( f => {
+      if ( f === 'full_name' ) {
+        const fullName = `${item.first_name || ''} ${item.last_name || ''}`.toLowerCase().trim()
+        return fullName.includes( keyword )
+      }
+
+      return String( item[f] || '' )
         .toLowerCase()
         .includes( keyword )
-    )
+    } )
   )
 }
 
-// ===== Sorting =====
+// Sorting
 const sortData = ( list, { prop, order } ) => {
   if ( !prop || !order ) return list
   const sorted = [...list].sort( ( a, b ) => {
@@ -387,7 +444,7 @@ const handleSortChange =
 
 // ===== Computed filtered lists =====
 const filteredMembers = computed( () => {
-  const f = filterData( mappedMembers.value, search.value.members, ['id', 'full_name', 'email'] )
+  const f = filterData( mappedMembers.value, search.value.members, ['id', 'full_name', 'username', 'employee_number'] )
   return sortData( f, sort.value.members )
 } )
 const filteredEquipment = computed( () => {
@@ -415,7 +472,7 @@ function isLeader( userId ) {
 
 function goToDetail( id, type ) {
   if ( type === 'equipment' ) {
-    // router.push({ name : 'EquipmentDetail', params : { id : id }})
+    router.push( { path : '/maintenance/equipment', query : { equipmentId : id }} )
   }
 
   if ( type === 'location' ) {

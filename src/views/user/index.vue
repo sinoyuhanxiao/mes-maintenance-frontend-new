@@ -52,12 +52,6 @@
             </el-select>
           </div>
 
-          <div class="filter-item">
-            <el-button :icon="Remove" type="warning" plain @click="clearLocalFilters">
-              {{ t('workOrder.filters.clearAll') }}
-            </el-button>
-          </div>
-
           <!--          <div class="filter-item">-->
           <!--            <el-select-->
           <!--                v-model="localFilters.status_ids"-->
@@ -80,7 +74,7 @@
           <div class="actions-item">
             <el-input
               v-model="localFilters.keyword"
-              :placeholder="t('user.searchByName')"
+              :placeholder="'Search by name or username'"
               clearable
               @input="handleFilterChange"
               style="width: 280px"
@@ -96,6 +90,18 @@
           <div class="actions-item">
             <el-button :icon="EditPen" type="primary" @click="openCreateForm">
               {{ t('workOrder.actions.create') }}
+            </el-button>
+          </div>
+
+          <div class="actions-item">
+            <el-button :icon="Remove" type="warning" plain @click="clearLocalFilters">
+              {{ 'Clear Filters' }}
+            </el-button>
+          </div>
+
+          <div class="actions-item">
+            <el-button :icon="Refresh" @click="refreshTable">
+              {{ 'Refresh' }}
             </el-button>
           </div>
         </div>
@@ -114,6 +120,7 @@
           :height="tableHeight"
           fit
           highlight-current-row
+          border
         >
           <el-table-column
             :label="'Full Name'"
@@ -178,7 +185,7 @@
           <el-table-column
             :label="t('user.table.username')"
             prop="username"
-            width="200"
+            width="220"
             sortable="custom"
             align="center"
           >
@@ -309,11 +316,11 @@
             align="center"
           >
             <template #default="scope">
-              <span>{{ scope.row.employee_number }}</span>
+              <span>{{ scope.row.employee_number ?? '-' }}</span>
             </template>
           </el-table-column>
 
-          <el-table-column prop="created_at" label="Created At" min-width="180">
+          <el-table-column sortable prop="created_at" label="Created At" min-width="180" align="center">
             <template #default="scope">
               <el-text>
                 {{ formatAsLocalDateTimeString(scope.row.created_at) }}
@@ -321,7 +328,7 @@
             </template>
           </el-table-column>
 
-          <el-table-column prop="updated_at" label="Updated At" min-width="180">
+          <el-table-column sortable prop="updated_at" label="Updated At" min-width="180" align="center">
             <template #default="scope">
               <el-text>
                 {{ formatAsLocalDateTimeString(scope.row.updated_at) }}
@@ -455,7 +462,7 @@ const router = useRouter()
 
 // Table related
 const usersTableData = ref( [] )
-const sortSettings = ref( { prop : '', order : '' } )
+const sortSettings = ref( { prop : 'created_at', order : 'descending' } )
 const loading = ref( false )
 const currentPage = ref( 1 )
 const selectedPageSize = ref( 20 )
@@ -651,6 +658,18 @@ function handleSortChange( { prop, order } ) {
 
 const updateTableHeight = () => {
   tableHeight.value = window.innerHeight - 320
+}
+
+async function refreshTable() {
+  try {
+    loading.value = true
+    await loadRoles()
+    await loadDepartments()
+    await loadUsers()
+  } catch ( e ) {
+  } finally {
+    loading.value = false
+  }
 }
 
 onBeforeUnmount( () => {

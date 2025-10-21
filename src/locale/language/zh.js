@@ -545,7 +545,7 @@ export default {
     team : '班组',
     shift : '班次',
     department : '部门',
-    systemManagement : '系统管理',
+    administration : '系统管理',
     myAccount : '我的账号',
     nested : '嵌套路由',
     menu1 : '菜单1',

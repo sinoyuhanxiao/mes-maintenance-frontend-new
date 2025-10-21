@@ -163,23 +163,38 @@
       </div>
 
       <!-- Role cards -->
-      <div class="detail-section">
-        <div
-          v-for="role in rawUser?.role_list || []"
-          :key="role.id"
-          class="el-col el-col-24 is-guttered card-container"
-        >
-          <div class="role-card">
-            <el-text size="large" style="color: var(--el-color-primary)">
-              {{ role.name }}
-            </el-text>
+      <div class="certificate-info-list">
+        <div v-if="rawUser?.role_list?.length > 0">
+          <div v-for="role in rawUser?.role_list || []" :key="role.id">
+            <div>
+              <el-descriptions class="general-details-descriptions" :column="4">
+                <el-descriptions-item :label="'Role Name'">
+                  {{ role.name }}
+                </el-descriptions-item>
 
-            <!--            <el-text size="large" style="color: var(&#45;&#45;el-color-primary)">-->
-            <!--               - {{ role.description }}-->
-            <!--            </el-text>-->
-            <!-- Hide permission matrix table for now -->
-            <!--            <role-permission-content :role="role" />-->
+                <el-descriptions-item :label="'Role ID'">
+                  {{ role.id }}
+                </el-descriptions-item>
+
+                <el-descriptions-item :label="'Code'">
+                  {{ role.code }}
+                </el-descriptions-item>
+
+                <el-descriptions-item :label="'Module'">
+                  {{ role.module }}
+                </el-descriptions-item>
+
+                <div v-if="role.description">
+                  <el-descriptions-item :label="'Description'" :span="4">
+                    {{ role.description }}
+                  </el-descriptions-item>
+                </div>
+              </el-descriptions>
+            </div>
           </div>
+        </div>
+        <div v-else>
+          <el-empty :description="'No role assigned'" :image-size="120" style="margin-top: 12px" />
         </div>
       </div>
 
@@ -195,13 +210,8 @@
       <!-- Certificate cards -->
       <div class="certificate-info-list">
         <div v-if="rawUser?.certificate_list?.length > 0">
-          <div
-            v-for="cert in rawUser?.certificate_list || []"
-            :key="cert.id"
-            class="info-card"
-            style="display: flex; flex-direction: row; gap: 16px"
-          >
-            <div class="image-container">
+          <div v-for="cert in rawUser?.certificate_list || []" :key="cert.id" class="info-card">
+            <div v-if="cert.file_list.length > 1" class="image-container">
               <el-carousel height="150px">
                 <el-carousel-item v-for="(img, index) in cert.file_list" :key="img">
                   <el-image
@@ -209,14 +219,29 @@
                     :preview-src-list="cert.file_list"
                     :initial-index="index"
                     fit="cover"
-                    style="height: 150px; width: 150px"
                     preview-teleported
                   />
                 </el-carousel-item>
               </el-carousel>
             </div>
 
-            <div class="cert-info detail-section">
+            <div v-else class="image-container">
+              <el-image
+                :src="cert.file_list?.[0] || ''"
+                :preview-src-list="cert.file_list"
+                :initial-index="0"
+                fit="cover"
+                style="height: 150px; width: 150px"
+              >
+                <template #error>
+                  <el-tooltip content="No Image">
+                    <el-empty style="padding: 0 0" :image-size="100" />
+                  </el-tooltip>
+                </template>
+              </el-image>
+            </div>
+
+            <div>
               <el-descriptions class="general-details-descriptions" :column="4">
                 <el-descriptions-item :label="t('user.certificateName')">
                   {{ cert.name }}
@@ -427,6 +452,10 @@ async function loadUserTeams( userId ) {
   border: 1px solid var(--el-border-color-light);
   border-radius: 8px;
   margin-top: 16px;
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  //width: 100%;
 }
 
 .role-card {
@@ -447,7 +476,6 @@ async function loadUserTeams( userId ) {
 .certificate-info-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
 }
 
 .certificate-card {
@@ -463,7 +491,8 @@ async function loadUserTeams( userId ) {
 }
 
 .cert-info {
-  width: 70%;
+  //width: 100%;
+  background: transparent;
 }
 
 .title-block {

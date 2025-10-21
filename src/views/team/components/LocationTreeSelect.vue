@@ -9,7 +9,7 @@
     node-key="id"
     :default-expand-all="false"
     :filterable="true"
-    :placeholder="t('common.filterByLocationPlaceholder')"
+    :placeholder="inputPlaceholder"
     :style="{ width }"
     clearable
     collapse-tags
@@ -24,9 +24,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { getLocationTree } from '@/api/location.js'
 import { ElTreeSelect } from 'element-plus'
-import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
 const props = defineProps( {
   modelValue : {
     type : [Array, Number, String],
@@ -43,6 +41,10 @@ const props = defineProps( {
   width : {
     type : String,
     default : '100%'
+  },
+  inputPlaceholder : {
+    type : String,
+    default : 'Filter by Location'
   }
 } )
 

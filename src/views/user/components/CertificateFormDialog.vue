@@ -236,9 +236,7 @@ const handleConfirm = async() => {
         }
       }
     } catch ( err ) {
-      // TODO: replace with translated key
-      console.log( err )
-      ElMessage.error( 'Image file cleanup failed' )
+      // console.log( err )
     }
 
     // Clear FileUploadMultiple component internal imageList

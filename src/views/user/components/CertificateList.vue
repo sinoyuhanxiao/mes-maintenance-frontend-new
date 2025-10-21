@@ -4,17 +4,35 @@
       <div v-for="(certificate, index) in certificates" :key="certificate.id" class="certificate-card">
         <!-- Left: image preview -->
         <div class="certificate-image-preview-section">
-          <el-image
-            :src="certificate.file_list?.[0] || ''"
-            :preview-src-list="certificate.file_list"
-            :initial-index="0"
-            fit="cover"
-            class="certificate-thumb"
-          >
-            <template #error>
-              <el-text>No Image</el-text>
-            </template>
-          </el-image>
+          <div v-if="certificate.file_list.length > 1">
+            <el-carousel indicator-position="outside" height="100px">
+              <el-carousel-item v-for="(img, index) in certificate.file_list" :key="img">
+                <el-image
+                  :src="img"
+                  :preview-src-list="certificate.file_list"
+                  :initial-index="index"
+                  fit="cover"
+                  preview-teleported
+                />
+              </el-carousel-item>
+            </el-carousel>
+          </div>
+
+          <div v-else>
+            <el-image
+              :src="certificate.file_list?.[0] || ''"
+              :preview-src-list="certificate.file_list"
+              :initial-index="0"
+              fit="cover"
+              style="height: 100px; width: 100px"
+            >
+              <template #error>
+                <el-tooltip content="No Image">
+                  <el-empty style="padding: 0 0" :image-size="80" />
+                </el-tooltip>
+              </template>
+            </el-image>
+          </div>
         </div>
 
         <!-- Middle: details -->

@@ -1,216 +1,225 @@
 <template>
-  <el-form ref="formRef" :model="internalTeam" :rules="teamFormRules" label-width="180px" class="two-col-form">
-    <div class="form-row">
-      <el-form-item prop="name" :label="t('team.name')">
-        <el-input v-model="internalTeam.name" />
-      </el-form-item>
+  <div v-loading="isFormLoading" element-loading-background="rgba(255,255,255,0.8)">
+    <el-form ref="formRef" :model="internalTeam" :rules="teamFormRules" label-width="180px" class="two-col-form">
+      <div class="form-row">
+        <el-form-item prop="name" :label="t('team.name')">
+          <el-input v-model="internalTeam.name" />
+        </el-form-item>
 
-      <el-form-item prop="code" :label="t('team.code')">
-        <el-input v-model="internalTeam.code" />
-      </el-form-item>
-    </div>
+        <el-form-item prop="code" :label="t('team.code')">
+          <el-input v-model="internalTeam.code" />
+        </el-form-item>
+      </div>
 
-    <div class="form-row">
-      <el-form-item class="full-width" prop="description" :label="t('common.description')">
-        <el-input type="textarea" v-model="internalTeam.description" />
-      </el-form-item>
-    </div>
+      <div class="form-row">
+        <el-form-item class="full-width" prop="description" :label="t('common.description')">
+          <el-input type="textarea" v-model="internalTeam.description" />
+        </el-form-item>
+      </div>
 
-    <div class="form-row">
-      <el-form-item :label="'Parent Group'" class="full-width">
-        <div class="parent-team-row">
-          <el-switch v-model="isChildTeam" active-text="Assign under another group" />
-          <TeamTreeSelect
-            v-if="isChildTeam"
-            v-model="internalTeam.parent_id"
-            :multiple="false"
-            :disable-team-id="internalTeam.id"
-            style="flex: 1"
-          />
-        </div>
-      </el-form-item>
-    </div>
-
-    <div class="form-row">
-      <el-form-item prop="leader_id" :label="t('team.leader')" class="full-width">
-        <el-select
-          v-model="internalTeam.leader_id"
-          :placeholder="t('team.placeholder.selectLeader')"
-          clearable
-          filterable
-          :filter-method="filterUserOptions"
-        >
-          <template #header>
-            <el-switch
-              v-model="showAllUser"
-              class="mb-2"
-              active-text="Show All Users"
-              inactive-text="Show Available Users"
+      <div class="form-row">
+        <el-form-item :label="'Parent Group'" class="full-width">
+          <div class="parent-team-row">
+            <el-switch v-model="isChildTeam" active-text="Assign under another group" />
+            <TeamTreeSelect
+              v-if="isChildTeam"
+              v-model="internalTeam.parent_id"
+              :multiple="false"
+              :disable-team-id="internalTeam.id"
+              style="flex: 1"
             />
-          </template>
+          </div>
+        </el-form-item>
+      </div>
 
-          <el-option
-            v-for="user in filteredUserOptions"
-            :key="user.id"
-            :value="user.id"
-            :label="formatUserLabel(user)"
-            :disabled="isChildTeam && (user.id === parentTeamLeaderId || user.disabled)"
+      <div class="form-row">
+        <el-form-item prop="leader_id" :label="t('team.leader')" class="full-width">
+          <el-select
+            v-model="internalTeam.leader_id"
+            :placeholder="t('team.placeholder.selectLeader')"
+            clearable
+            filterable
+            :filter-method="filterUserOptions"
           >
-            <template #default>
-              <div class="user-option-row">
-                <span class="user-name">{{ user.first_name }} {{ user.last_name }}</span>
-                <span class="user-roles">
-                  {{ user.role_list?.map(r => r.name).join(' | ') || '-' }}
-                </span>
-              </div>
+            <template #header>
+              <el-switch
+                v-model="internalTeam.cascade_add_to_parents"
+                class="mb-2"
+                active-text="Show all users, selected users will also be added to all parent group"
+                inactive-text="Show users from parent group"
+              />
             </template>
-          </el-option>
-        </el-select>
-      </el-form-item>
-    </div>
 
-    <div class="form-row">
-      <el-form-item prop="team_members_id" :label="t('team.members')" class="full-width">
-        <el-select
-          v-model="internalTeam.team_members_id"
-          multiple
-          collapse-tags
-          collapse-tags-tooltip
-          :max-collapse-tags="10"
-          filterable
-          clearable
-          :filter-method="filterUserOptions"
-          :placeholder="t('team.placeholder.selectMembers')"
-        >
-          <template #header>
-            <el-switch
-              v-model="showAllUser"
-              class="mb-2"
-              active-text="Show All Users"
-              inactive-text="Show Available Users"
+            <el-option
+              v-for="user in filteredUserOptions"
+              :key="user.id"
+              :value="user.id"
+              :label="formatUserLabel(user)"
+              :disabled="isChildTeam && (user.id === parentTeamLeaderId || user.disabled)"
+            >
+              <template #default>
+                <div class="user-option-row">
+                  <span class="user-name">{{ user.first_name }} {{ user.last_name }}</span>
+                  <span class="user-roles">
+                    {{ user.role_list?.map(r => r.name).join(' | ') || '-' }}
+                  </span>
+                </div>
+              </template>
+            </el-option>
+          </el-select>
+        </el-form-item>
+      </div>
+
+      <div class="form-row">
+        <el-form-item prop="team_members_id" :label="t('team.members')" class="full-width">
+          <el-select
+            v-model="internalTeam.team_members_id"
+            multiple
+            collapse-tags
+            collapse-tags-tooltip
+            :max-collapse-tags="10"
+            filterable
+            clearable
+            :filter-method="filterUserOptions"
+            :placeholder="t('team.placeholder.selectMembers')"
+          >
+            <template #header>
+              <el-switch
+                v-model="internalTeam.cascade_add_to_parents"
+                class="mb-2"
+                active-text="Show all users, selected user will also be added to all parent group"
+                inactive-text="Show users from parent group"
+              />
+            </template>
+
+            <!-- Custom header slot -->
+            <el-option
+              v-for="user in filteredUserOptions"
+              :key="user.id"
+              :value="user.id"
+              :label="formatUserLabel(user)"
+              :disabled="
+                user.id === internalTeam.leader_id || (isChildTeam && (user.id === parentTeamLeaderId || user.disabled))
+              "
+            >
+              <template #default>
+                <div class="user-option-row">
+                  <span class="user-name">{{ user.first_name }} {{ user.last_name }}</span>
+                  <span class="user-roles">
+                    {{ user.role_list?.map(r => r.name).join(' | ') || '-' }}
+                  </span>
+                </div>
+              </template>
+            </el-option>
+
+            <template #footer>
+              <div class="select-header">
+                <el-button type="primary" size="small" @click="checkAllMembers">
+                  {{ 'Select All' }}
+                </el-button>
+
+                <el-button type="warning" size="small" @click="uncheckAllMembers">
+                  {{ 'Clear All' }}
+                </el-button>
+              </div>
+              <el-divider style="margin: 4px 0" />
+            </template>
+          </el-select>
+        </el-form-item>
+      </div>
+
+      <div class="form-row">
+        <el-form-item :label="'Working Shift'" prop="shift_id">
+          <el-select v-model="internalTeam.shift_id" filterable clearable :placeholder="'Select a shift'">
+            <el-option v-for="s in props.shiftOptions" :key="s.id" :label="s.name" :value="s.id" />
+          </el-select>
+        </el-form-item>
+
+        <!-- Right column: Read-only start & end times -->
+        <el-form-item label="Working Hours" v-if="selectedShift">
+          <div class="shift-time-row">
+            <el-time-picker
+              :model-value="selectedShiftStart"
+              readonly
+              disabled
+              format="HH:mm"
+              value-format="HH:mm:ss"
+              style="width: 120px"
             />
-          </template>
+            <span> to </span>
+            <el-time-picker
+              :model-value="selectedShiftEnd"
+              readonly
+              disabled
+              format="HH:mm"
+              value-format="HH:mm:ss"
+              style="width: 120px"
+            />
+          </div>
+        </el-form-item>
+      </div>
 
-          <!-- Custom header slot -->
-          <el-option
-            v-for="user in filteredUserOptions"
-            :key="user.id"
-            :value="user.id"
-            :label="formatUserLabel(user)"
-            :disabled="
-              user.id === internalTeam.leader_id || (isChildTeam && (user.id === parentTeamLeaderId || user.disabled))
-            "
-          >
-            <template #default>
-              <div class="user-option-row">
-                <span class="user-name">{{ user.first_name }} {{ user.last_name }}</span>
-                <span class="user-roles">
-                  {{ user.role_list?.map(r => r.name).join(' | ') || '-' }}
-                </span>
-              </div>
-            </template>
-          </el-option>
+      <div class="form-row">
+        <!--      <el-form-item prop="department_id" :label="t('user.department')">-->
+        <!--        <el-select v-model="internalTeam.department_id" clearable>-->
+        <!--          <el-option v-for="d in departmentOptions" :key="d.id" :label="d.name" :value="d.id" />-->
+        <!--        </el-select>-->
+        <!--      </el-form-item>-->
 
-          <template #footer>
-            <div class="select-header">
-              <el-button type="primary" size="small" @click="checkAllMembers">
-                {{ 'Select All' }}
-              </el-button>
-
-              <el-button type="warning" size="small" @click="uncheckAllMembers">
-                {{ 'Clear All' }}
-              </el-button>
-            </div>
-            <el-divider style="margin: 4px 0" />
-          </template>
-        </el-select>
-      </el-form-item>
-    </div>
-
-    <div class="form-row">
-      <!-- Commented for now as backend not supported -->
-      <!--      <el-form-item :label="'Working Shift'" prop="shift_id">-->
-      <!--        <el-select v-model="internalTeam.shift_id" filterable clearable :placeholder="'Select a shift'">-->
-      <!--          <el-option v-for="s in props.shiftOptions" :key="s.id" :label="s.name" :value="s.id" />-->
-      <!--        </el-select>-->
-      <!--      </el-form-item>-->
-
-      <!-- Right column: Read-only start & end times -->
-      <el-form-item label="Working Hours" v-if="selectedShift">
-        <div class="shift-time-row">
-          <el-time-picker
-            :model-value="selectedShiftStart"
-            readonly
-            disabled
-            format="HH:mm"
-            value-format="HH:mm:ss"
-            style="width: 120px"
+        <el-form-item prop="equipment_node_ids" :label="t('team.assignedEquipment')" class="full-width">
+          <EquipmentTreeSelect
+            v-model="internalTeam.equipment_node_ids"
+            :max-collapse-tags="5"
+            :input-placeholder="'Select Equipment'"
           />
-          <span> to </span>
-          <el-time-picker
-            :model-value="selectedShiftEnd"
-            readonly
-            disabled
-            format="HH:mm"
-            value-format="HH:mm:ss"
-            style="width: 120px"
+        </el-form-item>
+      </div>
+
+      <div class="form-row">
+        <el-form-item prop="location_ids" :label="t('team.assignedLocation')" class="full-width">
+          <LocationTreeSelect
+            v-model="internalTeam.location_ids"
+            :max-collapse-tags="5"
+            :input-placeholder="'Select Locations'"
           />
-        </div>
-      </el-form-item>
+        </el-form-item>
+      </div>
+
+      <div class="form-row">
+        <el-form-item class="full-width" :label="'Approval Flow Capability'" prop="type">
+          <el-switch v-model="isDepartmentType" :active-text="'Enabled'" :inactive-text="'Disabled'" />
+
+          <el-alert
+            v-if="isDepartmentType"
+            title="This group will be able to create approval flows."
+            type="success"
+            show-icon
+            description="Approval steps will be limited to members of this group."
+          />
+
+          <el-alert
+            v-else
+            title="Approval flow creation is disabled."
+            type="info"
+            show-icon
+            description="Enable this option if this group needs to manage approvals."
+          />
+        </el-form-item>
+      </div>
+    </el-form>
+    <div class="form-action-row">
+      <el-button @click="emit('cancel')">
+        {{ t('common.cancel') }}
+      </el-button>
+
+      <el-button type="warning" @click="handleResetForm">
+        {{ t('workOrder.actions.reset') }}
+      </el-button>
+
+      <el-button type="primary" :disabled="internalTeam.id && !isTeamEdited" @click="handleConfirmSubmit">
+        {{ t('common.confirm') }}
+      </el-button>
     </div>
-
-    <div class="form-row">
-      <!--      <el-form-item prop="department_id" :label="t('user.department')">-->
-      <!--        <el-select v-model="internalTeam.department_id" clearable>-->
-      <!--          <el-option v-for="d in departmentOptions" :key="d.id" :label="d.name" :value="d.id" />-->
-      <!--        </el-select>-->
-      <!--      </el-form-item>-->
-
-      <el-form-item prop="equipment_node_ids" :label="t('team.assignedEquipment')" class="full-width">
-        <EquipmentTreeSelect v-model="internalTeam.equipment_node_ids" :max-collapse-tags="5" />
-      </el-form-item>
-    </div>
-
-    <div class="form-row">
-      <el-form-item prop="location_ids" :label="t('team.assignedLocation')" class="full-width">
-        <LocationTreeSelect v-model="internalTeam.location_ids" :max-collapse-tags="5" />
-      </el-form-item>
-    </div>
-
-    <div class="form-row">
-      <el-form-item class="full-width" :label="'Approval Flow Capability'" prop="type">
-        <el-switch v-model="isDepartmentType" :active-text="'Enabled'" :inactive-text="'Disabled'" />
-
-        <el-alert
-          v-if="isDepartmentType"
-          title="This group will be able to create approval flows."
-          type="success"
-          show-icon
-          description="Approval steps will be limited to members of this group."
-        />
-
-        <el-alert
-          v-else
-          title="Approval flow creation is disabled."
-          type="info"
-          show-icon
-          description="Enable this option if this group needs to manage approvals."
-        />
-      </el-form-item>
-    </div>
-  </el-form>
-  <div class="form-action-row">
-    <el-button @click="emit('cancel')">
-      {{ t('common.cancel') }}
-    </el-button>
-
-    <el-button type="warning" @click="handleResetForm">
-      {{ t('workOrder.actions.reset') }}
-    </el-button>
-
-    <el-button type="primary" :disabled="internalTeam.id && !isTeamEdited" @click="handleConfirmSubmit">
-      {{ t('common.confirm') }}
-    </el-button>
   </div>
 </template>
 
@@ -251,12 +260,12 @@ const teamFormRules = {
 const formRef = ref()
 const submitting = ref( false )
 const isChildTeam = ref( false )
+// const isLoading = ref( false )
 const internalTeam = ref( createEmptyTeam() )
 const originalTeamSnapshot = ref( null )
 const parentTeam = ref( null )
 const parentTeamMembers = ref( [] ) // All eligible members for child team
 const parentTeamLeaderId = ref( null )
-const showAllUser = ref( false )
 const buildCreateTeamPayload = entry => ( {
   name : entry.name,
   code : entry.code,
@@ -266,8 +275,9 @@ const buildCreateTeamPayload = entry => ( {
   location_ids : entry.location_ids,
   equipment_node_ids : entry.equipment_node_ids,
   parent_id : entry.parent_id,
-  // shift_id : entry.shift_id
-  type : entry.type
+  shift_ids : entry.shift_id ? [entry.shift_id] : [],
+  type : entry.type,
+  cascade_add_to_parents : entry.cascade_add_to_parents
 } )
 
 const buildUpdateTeamPayload = ( entry, original ) => {
@@ -308,12 +318,18 @@ const buildUpdateTeamPayload = ( entry, original ) => {
     payload.parent_id = entry.parent_id
   }
 
-  // if ( entry.shift_id !== original.shift_id ) {
-  //   payload.shift_id = entry.shift_id
-  // }
+  if ( entry.shift_id !== original.shift_id ) {
+    payload.shift_ids = [entry.shift_id]
+  }
+
+  if ( entry.cascade_add_to_parents !== original.cascade_add_to_parents ) {
+    payload.cascade_add_to_parents = entry.cascade_add_to_parents
+  }
 
   return payload
 }
+
+const isFormLoading = ref( false )
 
 const isDepartmentType = computed( {
   get : () => internalTeam.value.type === 'department',
@@ -348,16 +364,14 @@ const formatUserLabel = user => {
 const filteredUserOptions = computed( () => {
   let baseList = props.userOptions
 
-  if ( isChildTeam.value && parentTeamMembers.value ) {
-    // Only include parent team members; disable others
+  // Only show members from parent team members if cascade add to parent not enabled
+  if ( isChildTeam.value && parentTeamMembers.value && !internalTeam.value.cascade_add_to_parents ) {
     baseList = baseList.map( u => ( {
       ...u,
       disabled : !parentTeamMembers.value.includes( u.id )
     } ) )
-  }
 
-  // Hide disabled users if checkbox is on
-  if ( !showAllUser.value ) {
+    // Hide disabled users
     baseList = baseList.filter( u => !u.disabled )
   }
 
@@ -381,24 +395,30 @@ const selectedShiftEnd = computed( () => selectedShift.value?.end_time || null )
 watch(
   () => props.team,
   async team => {
-    if ( team ) {
-      const clonedTeam = transformIncomingTeam( team )
-      internalTeam.value = clonedTeam
-      originalTeamSnapshot.value = JSON.parse( JSON.stringify( clonedTeam ) )
-      if ( internalTeam.value.parent_id ) {
-        isChildTeam.value = true
+    isFormLoading.value = true
 
-        await handleParentTeamChange( internalTeam.value.parent_id )
+    try {
+      if ( team ) {
+        const clonedTeam = transformIncomingTeam( team )
+        internalTeam.value = clonedTeam
+        originalTeamSnapshot.value = JSON.parse( JSON.stringify( clonedTeam ) )
+        if ( internalTeam.value.parent_id ) {
+          isChildTeam.value = true
+
+          await handleParentTeamChange( internalTeam.value.parent_id )
+        }
+      } else {
+        internalTeam.value = createEmptyTeam()
+        originalTeamSnapshot.value = null
       }
-    } else {
-      internalTeam.value = createEmptyTeam()
-      originalTeamSnapshot.value = null
-    }
 
-    await nextTick()
+      await nextTick()
 
-    if ( formRef.value ) {
-      formRef.value.clearValidate()
+      if ( formRef.value ) {
+        formRef.value.clearValidate()
+      }
+    } finally {
+      isFormLoading.value = false
     }
   },
   { immediate : true }
@@ -445,8 +465,9 @@ function createEmptyTeam() {
     equipment_node_ids : [],
     team_members_id : [],
     parent_id : null,
-    type : null
-    // shift_id : null
+    type : null,
+    shift_id : null,
+    cascade_add_to_parents : false
   }
 }
 
@@ -457,20 +478,19 @@ function transformIncomingTeam( team ) {
     // department_id : team.department?.id || null,
     leader_id : team.leader_id || null,
     location_ids : team.team_locations_id,
-    equipment_node_ids : team.team_equipment_nodes_id
+    equipment_node_ids : team.team_equipment_nodes_id,
+    shift_id : team.shift_list?.length > 0 ? team.shift_list[0]?.id : null
   }
 }
 
 async function handleResetForm() {
   try {
-    await ElMessageBox.confirm(
-      t( 'common.confirmMessage', t( 'common.warning' ), {
-        type : 'warning',
-        confirmButtonText : t( 'common.confirm' ),
-        cancelButtonText : t( 'common.cancel' ),
-        distinguishCancelAndClose : true
-      } )
-    )
+    await ElMessageBox.confirm( 'This will reset all fields to their original values. Continue?', 'Warning', {
+      type : 'warning',
+      confirmButtonText : t( 'common.confirm' ),
+      cancelButtonText : t( 'common.cancel' ),
+      distinguishCancelAndClose : true
+    } )
 
     if ( originalTeamSnapshot.value === null ) {
       internalTeam.value = createEmptyTeam()
@@ -562,7 +582,6 @@ async function handleParentTeamChange( newPid ) {
   }
 
   try {
-    console.log( 'fetching Parent Team info...' )
     const res = await getTeamById( newPid )
     const data = res.data || {}
 
@@ -585,47 +604,6 @@ async function handleParentTeamChange( newPid ) {
     parentTeamMembers.value = []
     parentTeamLeaderId.value = null
   }
-
-  // if ( newPid ) {
-  //   try {
-  //     console.log( 'new parent id detected on watch' )
-  //     const res = await getTeamById( newPid )
-  //     const data = res.data || {}
-  //
-  //     parentTeam.value = data
-  //     parentTeamLeaderId.value = data.team_member_list?.find( m => m.is_leader )?.id || null
-  //     parentTeamMembers.value = data.team_member_list?.filter( m => m.status === 1 )?.map( m => m.id ) || []
-  //
-  //     // Trim team's existing leader/member based on Parent Team
-  //     if ( !parentTeamMembers.value.length ) {
-  //       return
-  //     }
-  //
-  //     console.log( 'running trim on invalid leader for internal team' )
-  //     // Trim away invalid leader (selected leader is not part of Parent Team or selected leader is also Parent Team's leader)
-  //     const leaderId = internalTeam.value.leader_id
-  //     if ( leaderId && ( !parentTeamMembers.value.includes( leaderId ) || leaderId === parentTeamLeaderId.value ) ) {
-  //       internalTeam.value.leader_id = null
-  //     }
-  //
-  //     console.log( 'running trim on invalid members for internal team' )
-  //     // Trim invalid selected members (keep only id from Parent Team and not leader of Parent Team)
-  //     internalTeam.value.team_members_id = internalTeam.value.team_members_id.filter(
-  //         id => parentTeamMembers.value.includes( id ) && id !== parentTeamLeaderId.value
-  //     )
-  //   } catch ( err ) {
-  //     console.error( 'Failed to fetch Parent Team:', err )
-  //     parentTeam.value = null
-  //     parentTeamMembers.value = []
-  //     parentTeamLeaderId.value = null
-  //   }
-  // } else {
-  //   console.log( 'null/undefined pid detected on watch' )
-  //
-  //   parentTeam.value = null
-  //   parentTeamMembers.value = []
-  //   parentTeamLeaderId.value = null
-  // }
 }
 </script>
 

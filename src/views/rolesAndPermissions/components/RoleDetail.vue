@@ -13,27 +13,27 @@
     </template>
 
     <!-- Basic Info -->
-    <el-descriptions :column="3" direction="vertical" size="default" class="general-details-descriptions">
-      <el-descriptions-item label="Code">
-        {{ role?.code || '-' }}
-      </el-descriptions-item>
+    <!--    <el-descriptions :column="3" direction="vertical" size="default" class="general-details-descriptions">-->
+    <!--      <el-descriptions-item label="Code">-->
+    <!--        {{ role?.code || '-' }}-->
+    <!--      </el-descriptions-item>-->
 
-      <el-descriptions-item label="Module">
-        {{ role?.module || '-' }}
-      </el-descriptions-item>
+    <!--      <el-descriptions-item label="Module">-->
+    <!--        {{ role?.module || '-' }}-->
+    <!--      </el-descriptions-item>-->
 
-      <el-descriptions-item label="Description" :span="3">
-        {{ role?.description || '-' }}
-      </el-descriptions-item>
+    <!--      <el-descriptions-item label="Description" :span="3">-->
+    <!--        {{ role?.description || '-' }}-->
+    <!--      </el-descriptions-item>-->
 
-      <el-descriptions-item label="Created At" min-width="150px">
-        {{ formatAsLocalDateTimeString(role?.created_at) || '-' }}
-      </el-descriptions-item>
+    <!--      <el-descriptions-item label="Created At" min-width="150px">-->
+    <!--        {{ formatAsLocalDateTimeString(role?.created_at) || '-' }}-->
+    <!--      </el-descriptions-item>-->
 
-      <el-descriptions-item label="Updated At" min-width="150px">
-        {{ formatAsLocalDateTimeString(role?.updated_at) || '-' }}
-      </el-descriptions-item>
-    </el-descriptions>
+    <!--      <el-descriptions-item label="Updated At" min-width="150px">-->
+    <!--        {{ formatAsLocalDateTimeString(role?.updated_at) || '-' }}-->
+    <!--      </el-descriptions-item>-->
+    <!--    </el-descriptions>-->
 
     <!-- Tabs -->
     <el-tabs v-model="activeTab">
@@ -49,9 +49,9 @@
           />
         </div>
 
-        <el-table :data="paginatedUsers" style="width: 100%" height="300" @sort-change="handleSortChange">
-          <el-table-column prop="id" label="ID" width="80" sortable="custom" />
-          <el-table-column label="Name" min-width="200" sortable="custom">
+        <el-table border :data="paginatedUsers" style="width: 100%" height="500" @sort-change="handleSortChange">
+          <el-table-column prop="id" label="ID" width="80" sortable="custom" align="center" />
+          <el-table-column label="Name" min-width="200" sortable="custom" align="center">
             <template #default="scope">
               <span>
                 <el-link @click="goToUserDetail(scope.row.id)">
@@ -60,8 +60,8 @@
               </span>
             </template>
           </el-table-column>
-          <el-table-column prop="email" label="Email" min-width="220" />
-          <el-table-column prop="phone_number" label="Phone" min-width="140" />
+          <el-table-column prop="email" label="Email" min-width="220" align="center" />
+          <el-table-column prop="phone_number" label="Phone" min-width="140" align="center" />
         </el-table>
 
         <div class="pagination-container">
@@ -89,7 +89,6 @@
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Edit } from '@element-plus/icons-vue'
-import { formatAsLocalDateTimeString } from '@/utils/datetime'
 
 const props = defineProps( {
   role : { type : Object, default : null },

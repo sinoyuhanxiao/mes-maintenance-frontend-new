@@ -549,7 +549,7 @@ export default {
     vendorsAndLocations : 'Vendors & Locations',
     userCenter : 'User Center',
     userDetail : 'User Detail',
-    systemManagement : 'System',
+    administration : 'Administration',
     user : 'User',
     team : 'Work Group',
     department : 'Department',

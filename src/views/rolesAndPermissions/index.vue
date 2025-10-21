@@ -60,12 +60,6 @@
           <!--              <el-option v-for="p in permissionOptions" :key="p.id" :label="p.name" :value="p.id" />-->
           <!--            </el-select>-->
           <!--          </div>-->
-
-          <div class="filter-item">
-            <el-button :icon="Remove" type="warning" plain @click="clearLocalFilters">
-              {{ t('workOrder.filters.clearAll') }}
-            </el-button>
-          </div>
         </div>
 
         <div class="actions-row">
@@ -90,6 +84,18 @@
               {{ t('workOrder.actions.create') }}
             </el-button>
           </div>
+
+          <div class="actions-item">
+            <el-button :icon="Remove" type="warning" plain @click="clearLocalFilters">
+              {{ 'Clear Filters' }}
+            </el-button>
+          </div>
+
+          <div class="actions-item">
+            <el-button :icon="Refresh" @click="refreshTable">
+              {{ 'Refresh' }}
+            </el-button>
+          </div>
         </div>
       </div>
     </template>
@@ -104,6 +110,7 @@
         :height="tableHeight"
         :empty-text="t('common.noData')"
         @sort-change="handleSortChange"
+        border
       >
         <el-table-column prop="name" :label="'Role Name'" width="220" sortable="custom" align="center" fixed="left">
           <template #default="scope">
@@ -146,13 +153,13 @@
         <!--          </template>-->
         <!--        </el-table-column>-->
 
-        <el-table-column prop="module" :label="'Module'" width="220" sortable="custom" align="center" fixed="left">
+        <el-table-column prop="module" :label="'Module'" width="220" sortable="custom" align="center">
           <template #default="scope">
             <el-text>{{ scope.row.module || '-' }}</el-text>
           </template>
         </el-table-column>
 
-        <el-table-column prop="code" :label="'Code'" width="250" sortable="custom" align="center" fixed="left">
+        <el-table-column prop="code" :label="'Code'" width="250" sortable="custom" align="center">
           <template #default="scope">
             <el-text>{{ scope.row.code }}</el-text>
           </template>
@@ -182,7 +189,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column :label="t('common.actions')" fixed="right" align="center" header-align="center" width="250">
+        <el-table-column :label="t('common.actions')" fixed="right" align="center" header-align="center" width="280">
           <template #default="scope">
             <el-button :icon="View" type="success" size="small" @click="handleView(scope.row)">
               {{ t('common.view') }}
@@ -240,7 +247,7 @@
 import { ref, reactive, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MesLayout from 'src/components/MesLayout'
-import { Delete, Edit, EditPen, Remove, Search, View } from '@element-plus/icons-vue'
+import { Delete, Edit, EditPen, Refresh, Remove, Search, View } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { searchUsers } from '@/api/user.js'
 // import EquipmentTag from '@/views/team/components/EquipmentTag.vue'
@@ -441,6 +448,18 @@ async function loadUsers() {
 //     ElMessage.error( 'Failed to load permissions' )
 //   }
 // }
+
+async function refreshTable() {
+  try {
+    loading.value = true
+
+    await loadUsers()
+    await loadRoles()
+  } catch ( e ) {
+  } finally {
+    loading.value = false
+  }
+}
 
 // Watch for changes in location or equipment filters and reload
 watch(

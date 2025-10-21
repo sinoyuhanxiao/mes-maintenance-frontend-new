@@ -56,7 +56,7 @@
           <!-- Header filter section -->
           <template #header>
             <div class="role-filter-header">
-              <div class="filter-title">Filter By Module:</div>
+              <div class="filter-title">Filter By Module</div>
               <el-checkbox-group v-model="selectedModules" @change="filterRolesByModule">
                 <el-checkbox label="maintenance">Maintenance</el-checkbox>
                 <el-checkbox label="quality control">Quality Control</el-checkbox>
@@ -64,7 +64,6 @@
                 <el-checkbox label="inventory">Inventory</el-checkbox>
               </el-checkbox-group>
             </div>
-            <el-divider />
           </template>
 
           <!-- Filtered Role Options -->
@@ -770,18 +769,12 @@ async function handleConfirm() {
 
 async function handleResetForm() {
   try {
-    await ElMessageBox.confirm(
-      t(
-        'common.confirmMessage',
-        t( 'common.warning' ), // title
-        {
-          type : 'warning',
-          confirmButtonText : t( 'common.confirm' ),
-          cancelButtonText : t( 'common.cancel' ),
-          distinguishCancelAndClose : true
-        }
-      )
-    )
+    await ElMessageBox.confirm( 'This will reset all fields to their original values. Continue?', 'Warning', {
+      type : 'warning',
+      confirmButtonText : t( 'common.confirm' ),
+      cancelButtonText : t( 'common.cancel' ),
+      distinguishCancelAndClose : true
+    } )
 
     if ( originalUserSnapshot.value === null ) {
       internalUser.value = createEmptyUser()

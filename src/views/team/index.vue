@@ -46,17 +46,11 @@
           <!--          </div>-->
 
           <div class="filter-item">
-            <LocationTreeSelect v-model="localFilters.location_ids" :width="'450px'" />
+            <LocationTreeSelect v-model="localFilters.location_ids" :max-collapse-tags="1" :width="'300px'" />
           </div>
 
           <div class="filter-item">
-            <EquipmentTreeSelect v-model="localFilters.equipment_node_ids" :width="'450px'" />
-          </div>
-
-          <div class="filter-item">
-            <el-button :icon="Remove" type="warning" plain @click="clearLocalFilters">
-              {{ t('workOrder.filters.clearAll') }}
-            </el-button>
+            <EquipmentTreeSelect v-model="localFilters.equipment_node_ids" :max-collapse-tags="1" :width="'300px'" />
           </div>
         </div>
 
@@ -64,7 +58,7 @@
           <div class="actions-item">
             <el-input
               v-model="localFilters.keyword"
-              :placeholder="t('user.searchByName')"
+              :placeholder="'Search By Keyword'"
               clearable
               @input="handleFilterChange"
               style="width: 200px"
@@ -80,6 +74,18 @@
           <div class="actions-item">
             <el-button :icon="EditPen" type="primary" @click="openCreateForm">
               {{ t('workOrder.actions.create') }}
+            </el-button>
+          </div>
+
+          <div class="actions-item">
+            <el-button :icon="Remove" type="warning" plain @click="clearLocalFilters">
+              {{ 'Clear Filters' }}
+            </el-button>
+          </div>
+
+          <div class="actions-item">
+            <el-button :icon="Refresh" @click="refreshTable">
+              {{ 'Refresh' }}
             </el-button>
           </div>
         </div>
@@ -119,16 +125,16 @@
 
         <el-table-column prop="id" :label="'ID'" width="130" sortable="custom" fixed="left" />
 
-        <el-table-column prop="leader_id" :label="t('team.leader')" width="180">
+        <el-table-column prop="leader_id" :label="t('team.leader')" width="200">
           <template #default="scope">
             <template v-if="scope.row.leader_id">
               <UserTag
                 v-if="userMap[scope.row.leader_id]"
                 :user="userMap[scope.row.leader_id]"
                 :department-options="departmentOptions"
-                style="margin: 2px"
               />
             </template>
+
             <template v-else>
               <span>-</span>
             </template>
@@ -136,7 +142,7 @@
         </el-table-column>
 
         <!-- Members count column -->
-        <el-table-column prop="team_members_id" :label="t('team.members')" width="150" align="center">
+        <el-table-column prop="team_members_id" :label="t('team.members')" width="200">
           <template #default="{ row }">
             <el-button
               v-if="row.team_members_id?.length"
@@ -152,7 +158,7 @@
         </el-table-column>
 
         <!-- Equipment count column -->
-        <el-table-column prop="team_equipment_nodes_id" :label="t('team.assignedEquipment')" width="180" align="center">
+        <el-table-column prop="team_equipment_nodes_id" :label="t('team.assignedEquipment')" width="200">
           <template #default="{ row }">
             <el-button
               v-if="row.team_equipment_nodes_id?.length"
@@ -168,7 +174,7 @@
         </el-table-column>
 
         <!-- Locations count column -->
-        <el-table-column prop="team_locations_id" :label="t('team.assignedLocation')" width="180" align="center">
+        <el-table-column prop="team_locations_id" :label="t('team.assignedLocation')" width="200">
           <template #default="{ row }">
             <el-button
               v-if="row.team_locations_id?.length"
@@ -183,6 +189,18 @@
           </template>
         </el-table-column>
 
+        <el-table-column prop="shift_list" label="Assigned Shift" width="350">
+          <template #default="scope">
+            <el-text>
+              {{
+                scope.row.shift_list.length > 0
+                  ? `${scope.row.shift_list[0].name} ${scope.row.shift_list[0].start_time} to ${scope.row.shift_list[0].end_time}`
+                  : '-'
+              }}
+            </el-text>
+          </template>
+        </el-table-column>
+
         <!--        <el-table-column :label="t('user.department')" prop="department" width="250" align="center">-->
         <!--          <template #default="scope">-->
         <!--            <template v-if="scope.row.department">-->
@@ -194,7 +212,13 @@
         <!--          </template>-->
         <!--        </el-table-column>-->
 
-        <el-table-column prop="code" :label="t('team.code')" width="200" sortable="custom" />
+        <el-table-column prop="code" :label="t('team.code')" width="200" sortable="custom">
+          <template #default="scope">
+            <el-text>
+              {{ scope.row.code || '-' }}
+            </el-text>
+          </template>
+        </el-table-column>
 
         <el-table-column prop="description" :label="t('common.description')" width="400" sortable="custom">
           <template #default="scope">
@@ -211,26 +235,25 @@
           </template>
         </el-table-column>
 
-        <!-- Commented as its not supported yet in backend -->
-        <!--        <el-table-column prop="shift_id" label="Assigned Shift" width="350">-->
-        <!--          <template #default="scope">-->
-        <!--            <el-text>-->
-        <!--              {{-->
-        <!--                shiftMap[scope.row.shift_id]-->
-        <!--                  ? `${shiftMap[scope.row.shift_id].name} (${shiftMap[scope.row.shift_id].displayTime})`-->
-        <!--                  : '-'-->
-        <!--              }}-->
-        <!--            </el-text>-->
-        <!--          </template>-->
-        <!--        </el-table-column>-->
-
-        <el-table-column prop="type" :label="'Approval Enabled'" width="250">
+        <el-table-column prop="type" :label="'Approval'" width="250">
           <template #default="scope">
-            <el-switch :model-value="scope.row.type === 'department'" disabled />
+            <el-text v-if="scope.row.type === 'department'">
+              <el-icon :color="'green'">
+                <CircleCheck />
+              </el-icon>
+              Enabled
+            </el-text>
+
+            <el-text v-else>
+              <el-icon :color="'red'">
+                <CircleClose />
+              </el-icon>
+              Disabled
+            </el-text>
           </template>
         </el-table-column>
 
-        <el-table-column prop="created_at" label="Created At" min-width="180" show-overflow-tooltip>
+        <el-table-column prop="created_at" label="Created At" width="250" show-overflow-tooltip>
           <template #default="scope">
             <el-text>
               {{ formatAsLocalDateTimeString(scope.row.created_at) }}
@@ -238,7 +261,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="updated_at" label="Updated At" min-width="180" show-overflow-tooltip>
+        <el-table-column prop="updated_at" label="Updated At" width="250" show-overflow-tooltip>
           <template #default="scope">
             <el-text>
               {{ formatAsLocalDateTimeString(scope.row.updated_at) }}
@@ -246,7 +269,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column :label="t('common.actions')" fixed="right" align="center" header-align="center" width="400">
+        <el-table-column :label="t('common.actions')" fixed="right" align="left" header-align="center" width="400">
           <template #default="scope">
             <el-button :icon="View" type="success" size="small" @click="handleView(scope.row)">
               {{ t('common.view') }}
@@ -317,7 +340,7 @@
 import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MesLayout from 'src/components/MesLayout'
-import { Delete, Edit, EditPen, Remove, Search, View } from '@element-plus/icons-vue'
+import { CircleCheck, CircleClose, Delete, Edit, EditPen, Refresh, Remove, Search, View } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { searchTeams, deactivateTeam, getAllTeamTree, getTeamTreeByIds } from '@/api/team.js'
 import { searchUsers } from '@/api/user.js'
@@ -332,7 +355,7 @@ import UserTag from '@/views/user/components/UserTag.vue'
 // import TagPopover from '@/views/team/components/TagPopover.vue'
 import { searchShifts } from '@/api/shift'
 import TeamDetail from '@/views/team/components/TeamDetail.vue'
-import { formatAsLocalDateTimeString } from '../../utils/datetime'
+import { formatAsLocalDateTimeString } from '@/utils/datetime'
 
 // import { useRouter } from 'vue-router'
 
@@ -495,12 +518,23 @@ async function handleFilterChange() {
         Array.isArray( team.team_equipment_nodes_id ) &&
         team.team_equipment_nodes_id.some( eq => equipmentFilterSet.has( String( eq ) ) )
 
-      const isMatched = matchKeyword || matchMember || matchLocation || matchEquipment
+      const isMatchedByNonMember =
+          matchKeyword || matchLocation || matchEquipment
+
+      // const isMatchedByMemberOnly =
+      //     matchMember && !isMatchedByNonMember
+
+      const isMatched = isMatchedByNonMember || matchMember
 
       if ( isMatched ) {
-        // when a node matches, skip traversing its children
         matchedSet.add( team.id )
-        continue
+
+        // If matched by non-member condition, STOP recursion (current behavior)
+        if ( isMatchedByNonMember ) {
+          continue
+        }
+
+        // If matched ONLY by member, allow recursion to continue
       }
 
       // otherwise check children recursively; if any child matches, include this parent
@@ -536,6 +570,21 @@ function clearLocalFilters() {
   Object.assign( localFilters, initialFilters )
   matchedTeamIds.value.clear()
   loadTeams()
+}
+
+async function refreshTable() {
+  try {
+    loading.value = true
+
+    await loadShifts()
+    await loadLocations()
+    await loadEquipments()
+    await loadUsers()
+    await loadTeams()
+  } catch ( e ) {
+  } finally {
+    loading.value = false
+  }
 }
 
 function handlePageChange( val ) {
@@ -584,6 +633,7 @@ async function loadTeams() {
     const tree = treeRes.data || []
     teamOptions.value = listRes.data?.content || []
 
+    // Team map building
     teamMap.value = Object.fromEntries(
       teamOptions.value.map( team => {
         const activeLeaders = team.team_member_list?.filter( m => m.is_leader && m.status === 1 ) || []
@@ -602,7 +652,7 @@ async function loadTeams() {
             leader_id : leaderId,
             created_at : team.created_at,
             updated_at : team.updated_at,
-            // shift_id : team.shift_id || null,
+            shift_list : team.shift_list || [],
             team_members_id : ( team.team_member_list || [] ).filter( m => !m.is_leader && m.status === 1 ).map( m => m.id ),
             team_locations_id : ( team.team_location_list || [] ).filter( l => l.status === 1 ).map( l => l.id ),
             team_equipment_nodes_id : ( team.team_equipment_node_list || [] ).filter( e => e.status === 1 ).map( e => e.id )
@@ -798,7 +848,6 @@ onMounted( async() => {
 }
 
 :deep(.el-table__row.matched-row) {
-  background-color: rgba(64, 158, 255, 0.12) !important;
-  transition: background-color 0.3s ease;
+  background-color: #ecf5ff !important;
 }
 </style>

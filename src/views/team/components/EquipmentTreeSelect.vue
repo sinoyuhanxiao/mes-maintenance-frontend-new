@@ -10,7 +10,7 @@
     :default-expand-all="false"
     :filterable="true"
     :render-after-expand="false"
-    :placeholder="t('common.filterByEquipmentPlaceholder')"
+    :placeholder="inputPlaceholder"
     :style="{ width }"
     clearable
     collapse-tags
@@ -23,9 +23,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { ElTreeSelect } from 'element-plus'
 import { getEquipmentTree } from '@/api/equipment'
-import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
 const treeData = ref( [] )
 
 const props = defineProps( {
@@ -40,6 +38,10 @@ const props = defineProps( {
   width : {
     type : String,
     default : '100%'
+  },
+  inputPlaceholder : {
+    type : String,
+    default : 'Filter by Equipment'
   }
 } )
 
