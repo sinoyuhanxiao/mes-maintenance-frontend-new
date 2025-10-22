@@ -138,7 +138,7 @@
           </div>
 
           <div class="task-actions">
-            <el-button v-show="true" type="info" @click="handleLogStepValues">Logs</el-button>
+            <el-button v-show="false" type="info" @click="handleLogStepValues">Logs</el-button>
             <el-button type="primary" @click="handleFinalSubmit" :loading="isSubmitting">Submit</el-button>
           </div>
         </div>

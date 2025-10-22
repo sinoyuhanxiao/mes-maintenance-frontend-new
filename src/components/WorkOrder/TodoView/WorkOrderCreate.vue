@@ -483,6 +483,7 @@
             {{ $t('workOrder.actions.cancel') }}
           </el-button>
           <el-button
+            v-show="false"
             type="info"
             @click="logCurrentPayload"
             class="logs-button"
