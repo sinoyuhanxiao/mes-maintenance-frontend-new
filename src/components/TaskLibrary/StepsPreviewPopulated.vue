@@ -261,10 +261,7 @@ const processPopulatedStep = ( s, idx ) => {
       result,
       remarks : v.remarks || ''
     }
-    // Add remarks to description if present
-    if ( v.remarks ) {
-      base.description = base.description ? `${base.description}\n\nRemarks: ${v.remarks}` : `Remarks: ${v.remarks}`
-    }
+    // Note: remarks are now displayed by InspectionStepPreview component, not in description
   } else if ( type === 'attachments' ) {
     base.config = {
       upload_style : { list_type : 'picture-card' },

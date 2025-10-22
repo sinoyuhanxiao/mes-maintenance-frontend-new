@@ -326,7 +326,11 @@ const processTemplateStep = ( s, idx ) => {
   } else if ( type === 'text' ) {
     base.config = { default_value : v.value ?? '', required_image : base.required_image }
   } else if ( type === 'inspection' ) {
-    base.config = { default : v.value !== undefined ? v.value : 'pass', required_image : base.required_image }
+    base.config = {
+      default : v.value !== undefined ? v.value : 'pass',
+      remarks : v.remarks || '',
+      required_image : base.required_image
+    }
   } else if ( type === 'attachments' ) {
     base.config = { upload_style : { list_type : 'picture-card' }, required_image : base.required_image }
   }
@@ -395,7 +399,11 @@ const processStandaloneStep = ( s, idx ) => {
     base.config = { default_value : defaultVal, required_image : base.required_image }
   } else if ( type === 'inspection' ) {
     const defaultVal = v.value !== undefined ? v.value : v.default || 'pass'
-    base.config = { default : defaultVal, required_image : base.required_image }
+    base.config = {
+      default : defaultVal,
+      remarks : v.remarks || '',
+      required_image : base.required_image
+    }
   } else if ( type === 'attachments' ) {
     base.config = { upload_style : { list_type : 'picture-card' }, required_image : base.required_image }
   }
@@ -510,7 +518,14 @@ const initializeStepValue = ( stepId, type, valueData = {} ) => {
   } else if ( type === 'checkbox' ) {
     const checkboxValue = valueData.value !== undefined ? valueData.value : valueData.default
     const normalized = toBooleanOrNull( checkboxValue )
-    stepValues[stepId].value = normalized === null ? false : normalized
+    // CRITICAL FIX: Don't pre-populate with false - leave as null/undefined for required validation
+    stepValues[stepId].value = normalized
+    console.log( '[StepsExecution] initializeStepValue checkbox:', {
+      stepId,
+      checkboxValue,
+      normalized,
+      finalValue : stepValues[stepId].value
+    } )
   } else if ( type === 'inspection' ) {
     const inspectionValue = valueData.value !== undefined ? valueData.value : valueData.default
     stepValues[stepId].value = toBooleanOrNull( inspectionValue )
@@ -623,6 +638,8 @@ const findExecutionStep = stepId => executionSteps.value.find( step => step.step
 const handleStepValueChange = ( stepId, value ) => {
   if ( !stepId ) return
 
+  console.log( '[StepsExecution] handleStepValueChange:', { stepId, value, valueType : typeof value } )
+
   if ( !stepValues[stepId] ) {
     stepValues[stepId] = {}
   }
@@ -634,6 +651,8 @@ const handleStepValueChange = ( stepId, value ) => {
   } else {
     stepValues[stepId].value = value
   }
+
+  console.log( '[StepsExecution] stepValues after update:', stepValues[stepId] )
 
   // Emit updated values to parent
   emitValuesUpdate()
@@ -831,7 +850,20 @@ const isStepValueProvided = step => {
   }
 
   if ( step.type === 'checkbox' ) {
-    return value === true || value === false
+    // For required checkboxes, they must be checked (true)
+    // null/undefined means not interacted with, false means explicitly unchecked
+    // Both null/undefined and false should fail validation for required checkboxes
+    const result = value === true
+    console.log( '[StepsExecution] isStepValueProvided checkbox:', {
+      stepId,
+      value,
+      valueType : typeof value,
+      isNull : value === null,
+      isUndefined : value === undefined,
+      isFalse : value === false,
+      result
+    } )
+    return result
   }
 
   if ( isAttachmentStep( step ) ) {
@@ -852,6 +884,20 @@ const isStepCompleted = step => {
 const getMissingRequiredSteps = () => {
   const missing = []
   executionSteps.value.forEach( step => {
+    // Debug logging for checkbox steps
+    if ( step.type === 'checkbox' ) {
+      const stepId = step.step_id
+      const value = stepValues[stepId]?.value
+      console.log( '[StepsExecution] Checkbox validation:', {
+        stepId,
+        label : step.label,
+        required : step.required,
+        value,
+        valueType : typeof value,
+        isProvided : isStepValueProvided( step )
+      } )
+    }
+
     // Only check if the step is explicitly marked as required
     if ( step.required && !isStepValueProvided( step ) ) {
       missing.push( step.label || step.name || `Step ${step.order}` )
@@ -875,6 +921,7 @@ const getMissingRequiredSteps = () => {
       }
     }
   } )
+  console.log( '[StepsExecution] Missing required steps:', missing )
   return missing
 }
 

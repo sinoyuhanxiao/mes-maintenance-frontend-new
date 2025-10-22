@@ -191,7 +191,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch, nextTick } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ArrowLeft, Search } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -642,9 +642,6 @@ const handleSubmitTask = async( saveAsDraft = false ) => {
       // Highlight the updated task
       highlightedTaskId.value = taskEntryId
 
-      // Scroll to the highlighted task
-      scrollToHighlightedTask()
-
       // Remove highlight after 3 seconds
       setTimeout( () => {
         highlightedTaskId.value = null
@@ -687,9 +684,6 @@ const autoSaveDraft = async() => {
 
       // Highlight the updated task
       highlightedTaskId.value = taskEntryId
-
-      // Scroll to the highlighted task
-      scrollToHighlightedTask()
 
       // Remove highlight after 3 seconds
       setTimeout( () => {
@@ -766,16 +760,17 @@ const isTaskHighlighted = task => {
   return taskId === highlightedTaskId.value
 }
 
-const scrollToHighlightedTask = async() => {
-  // Wait for DOM update before scrolling
-  await nextTick()
-  setTimeout( () => {
-    const highlightedCard = document.querySelector( '.template-card.highlighted' )
-    if ( highlightedCard ) {
-      highlightedCard.scrollIntoView( { behavior : 'smooth', block : 'center' } )
-    }
-  }, 100 )
-}
+// Removed: scrollToHighlightedTask function - no longer needed as per user requirements
+// User wants only highlight effect without automatic scrolling
+// const scrollToHighlightedTask = async() => {
+//   await nextTick()
+//   setTimeout( () => {
+//     const highlightedCard = document.querySelector( '.template-card.highlighted' )
+//     if ( highlightedCard ) {
+//       highlightedCard.scrollIntoView( { behavior : 'smooth', block : 'center' } )
+//     }
+//   }, 100 )
+// }
 
 // Expose method to parent for navigation guard
 defineExpose( {

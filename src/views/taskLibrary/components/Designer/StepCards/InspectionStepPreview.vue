@@ -109,8 +109,9 @@ watch(
     currentResult.value = mapped ?? ( props.previewMode ? 'pass' : null )
 
     // Initialize remarks from config if available
-    if ( configRemarks && typeof configRemarks === 'string' ) {
-      remarks.value = configRemarks
+    if ( configRemarks !== undefined && configRemarks !== null ) {
+      remarks.value = String( configRemarks )
+      console.log( '[InspectionStepPreview] Updated remarks from config:', remarks.value )
     }
   },
   { immediate : true }

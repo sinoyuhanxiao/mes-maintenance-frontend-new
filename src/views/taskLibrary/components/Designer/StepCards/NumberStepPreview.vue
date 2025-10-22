@@ -72,6 +72,27 @@ watch(
   { immediate : true }
 )
 
+// Watch for step.config changes (for populated previews where config is set after mount)
+watch(
+  () => [props.step.config?.default, props.step.config?.default_value, props.interactive],
+  ( [defaultVal, defaultValueVal, interactive] ) => {
+    // In non-interactive mode (logs view), always use config values
+    const shouldUseConfig =
+      !interactive || props.modelValue === null || props.modelValue === undefined || props.modelValue === ''
+
+    if ( shouldUseConfig ) {
+      const fallback = defaultVal ?? defaultValueVal
+      if ( fallback !== undefined && fallback !== null ) {
+        const numeric = Number( fallback )
+        if ( Number.isFinite( numeric ) ) {
+          currentValue.value = numeric
+        }
+      }
+    }
+  },
+  { immediate : true }
+)
+
 watch( currentValue, newValue => {
   if ( !props.interactive ) return
   const numeric = newValue === null || newValue === undefined || newValue === '' ? null : Number( newValue )

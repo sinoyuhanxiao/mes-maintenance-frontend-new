@@ -56,7 +56,7 @@ const props = defineProps( {
 } )
 
 // Reactive state for user input
-const currentValue = ref( props.step.config?.default || '' )
+const currentValue = ref( props.step.config?.default ?? props.step.config?.default_value ?? '' )
 
 // Debug logging
 console.log( '[TextStepPreview] Step:', props.step )
@@ -74,6 +74,25 @@ watch(
       currentValue.value = fallback !== undefined ? String( fallback ) : ''
     } else {
       currentValue.value = String( newValue )
+    }
+  },
+  { immediate : true }
+)
+
+// Watch for step.config changes (for populated previews where config is set after mount)
+watch(
+  () => [props.step.config?.default, props.step.config?.default_value, props.interactive],
+  ( [defaultVal, defaultValueVal, interactive] ) => {
+    // In non-interactive mode (logs view), always use config values
+    // In interactive mode, only use config if modelValue is not set
+    const shouldUseConfig = !interactive || !props.modelValue || props.modelValue === ''
+
+    if ( shouldUseConfig ) {
+      const fallback = defaultVal ?? defaultValueVal
+      if ( fallback !== undefined && fallback !== null ) {
+        currentValue.value = String( fallback )
+        console.log( '[TextStepPreview] Updated from config watch:', currentValue.value )
+      }
     }
   },
   { immediate : true }

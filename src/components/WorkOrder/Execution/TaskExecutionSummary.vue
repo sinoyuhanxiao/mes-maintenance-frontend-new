@@ -8,22 +8,27 @@
           <h4 class="card-title" :title="taskLabel">
             {{ taskLabel }}
           </h4>
-          <!-- Edit icon for tasks that are not completed or failed -->
-          <el-tooltip
-            v-if="taskState.toLowerCase() !== 'completed' && taskState.toLowerCase() !== 'failed'"
-            content="Execute Task"
-            placement="top"
-          >
-            <el-icon class="view-icon" @click.stop="$emit('select')">
-              <Edit />
-            </el-icon>
-          </el-tooltip>
-          <!-- View icon for completed or failed tasks -->
-          <el-tooltip v-else content="View Logs" placement="top">
-            <el-icon class="view-icon" @click.stop="$emit('view-log')">
-              <View />
-            </el-icon>
-          </el-tooltip>
+          <!-- For completed or failed tasks: show only view logs icon -->
+          <template v-if="taskState.toLowerCase() === 'completed' || taskState.toLowerCase() === 'failed'">
+            <el-tooltip content="View Logs" placement="top">
+              <el-icon class="view-icon" @click.stop="$emit('view-log')">
+                <View />
+              </el-icon>
+            </el-tooltip>
+          </template>
+          <!-- For non-final states: show both view and edit icons -->
+          <template v-else>
+            <el-tooltip content="View Logs" placement="top">
+              <el-icon class="view-icon" @click.stop="$emit('view-log')">
+                <View />
+              </el-icon>
+            </el-tooltip>
+            <el-tooltip content="Execute Task" placement="top">
+              <el-icon class="view-icon edit-icon" @click.stop="$emit('select')">
+                <Edit />
+              </el-icon>
+            </el-tooltip>
+          </template>
         </div>
         <div class="right-badges">
           <div v-if="taskCode" class="task-code-badge">{{ taskCode }}</div>
@@ -272,9 +277,8 @@ const stateClass = computed( () => {
 }
 
 .template-card.highlighted {
-  border-color: #67c23a;
-  border-left: 2px solid #67c23a !important;
-  box-shadow: 0 2px 12px rgba(103, 194, 58, 0.2);
+  border-color: var(--el-border-color-light);
+  box-shadow: 0 2px 12px var(--el-border-color-light);
   background: #f0f9f0;
   animation: highlightPulse 2s ease-in-out;
 }
