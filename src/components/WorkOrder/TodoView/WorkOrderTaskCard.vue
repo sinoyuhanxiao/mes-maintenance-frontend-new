@@ -42,7 +42,12 @@
               Failed
             </el-tag>
             <el-tag
-              v-else-if="taskState && (taskState.toLowerCase() === 'in progress' || taskState.toLowerCase() === 'in-progress' || taskState.toLowerCase() === 'inprogress')"
+              v-else-if="
+                taskState &&
+                (taskState.toLowerCase() === 'in progress' ||
+                  taskState.toLowerCase() === 'in-progress' ||
+                  taskState.toLowerCase() === 'inprogress')
+              "
               type="primary"
               size="small"
               class="tag-item"

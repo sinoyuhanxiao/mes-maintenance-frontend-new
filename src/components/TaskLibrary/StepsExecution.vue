@@ -175,6 +175,7 @@ const imageUploadLoading = reactive( {} )
 const fileUploadLoading = reactive( {} )
 
 // Get user store for completion metadata
+// eslint-disable-next-line no-unused-vars
 const userStore = useUserStore()
 
 // Map backend step value types to preview component types
