@@ -2,7 +2,7 @@
   <div class="add-new-spare-part">
     <div class="general-information">
       <el-form ref="formRef" :model="formData" :rules="rules" :label-position="labelPosition" label-width="auto">
-        <!-- Part Name (full width, label top / input bottom) -->
+        <!-- Part Name -->
         <el-row :gutter="20">
           <el-col :span="24">
             <el-form-item
@@ -18,14 +18,13 @@
           </el-col>
         </el-row>
 
-        <!-- Material Code + Inventory Code -->
+        <!-- Codes -->
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="Part Code" prop="code" :rules="[{ required: true, message: 'Part Code is required' }]">
               <el-input v-model="formData.code" clearable placeholder="Enter Part Code" />
             </el-form-item>
           </el-col>
-
           <el-col :span="12">
             <el-form-item
               label="Inventory Code"
@@ -52,7 +51,6 @@
               </el-select>
             </el-form-item>
           </el-col>
-
           <el-col :span="12">
             <el-form-item label="Manufacturer" prop="manufacturer_id">
               <el-select
@@ -88,7 +86,6 @@
               />
             </el-form-item>
           </el-col>
-
           <el-col :span="12">
             <el-form-item
               label="Max Stock"
@@ -123,7 +120,6 @@
               <el-input-number v-model="formData.current_stock" :min="0" :precision="0" :step="1" style="width: 100%" />
             </el-form-item>
           </el-col>
-
           <el-col :span="12">
             <el-form-item
               label="Reorder Point"
@@ -146,7 +142,7 @@
           </el-col>
         </el-row>
 
-        <!-- Description (full width) BEFORE uploads -->
+        <!-- Description -->
         <el-row :gutter="20">
           <el-col :span="24">
             <el-form-item label="Description" prop="description">
@@ -161,14 +157,21 @@
         </el-row>
       </el-form>
 
-      <!-- Uploads -->
+      <!-- Attachments (matches VendorForm API) -->
       <div class="file-upload">
         <FileUploadMultiple
-          @update:imageList="handleImageListUpdate"
-          @update:fileList="handleFilesListUpdate"
+          :key="`fum-${formData.id}-${existingImageUrls.length}-${existingFileUrls.length}`"
           upload-type="both"
           :max-images="5"
-          :max-files="5"
+          :max-files="10"
+          :existing-image-list="existingImageUrls"
+          :existing-file-list="existingFileUrls"
+          image-label="Upload Images"
+          file-label="Upload Files"
+          @update:imageList="onNewImages"
+          @update:filesList="onNewFiles"
+          @update:removedExistingImages="onRemovedExistingImages"
+          @update:removedExistingFiles="onRemovedExistingFiles"
         />
       </div>
 
@@ -183,7 +186,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, onMounted, watch, computed, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getAllSparePartClasses, createSparePart, updateSparePart } from '@/api/resources'
 import { uploadMultipleToMinio } from '@/api/minio'
@@ -195,15 +198,16 @@ const props = defineProps( {
 } )
 const emit = defineEmits( ['close', 'cancel', 'success'] )
 
+const DEBUG = true
+
 const formRef = ref( null )
 const labelPosition = ref( 'top' )
 const submitLoading = ref( false )
 
 const sparePartClasses = ref( [] )
 const manufacturers = ref( [{ id : 1, name : 'FPS' }] )
-
-const uploadedImages = ref( [] )
-const uploadedFiles = ref( [] )
+const uploaderKey = ref( 0 )
+let lastSeedId = null
 
 const formData = reactive( {
   id : null,
@@ -212,8 +216,19 @@ const formData = reactive( {
   description : '',
   code : '',
   priority : null,
+
+  // EXISTING URLs from server (seed previews)
   image_list : [],
   file_list : [],
+
+  // NEW Files picked in this session (like VendorForm)
+  image_files : [],
+  file_files : [],
+
+  // Track removed existing URLs (if your backend needs to delete them)
+  removed_existing_images : [],
+  removed_existing_files : [],
+
   reorder_point : 0,
   maximum_stock_level : 1,
   minimum_stock_level : 0,
@@ -253,6 +268,18 @@ const rules = reactive( {
   universal_code : [{ required : true, message : 'Please enter Inventory Code', trigger : 'blur' }]
 } )
 
+/* ---------- helpers ---------- */
+const mapToUrls = arr => ( Array.isArray( arr ) ? arr.map( x => ( typeof x === 'string' ? x : x?.url ) ).filter( Boolean ) : [] )
+
+const toRealFiles = arr =>
+  Array.isArray( arr )
+    ? arr.map( x => ( x instanceof File ? x : x?.raw instanceof File ? x.raw : null ) ).filter( Boolean )
+    : []
+
+/* ---------- existing lists for uploader thumbnails ---------- */
+const existingImageUrls = computed( () => mapToUrls( formData.image_list ) )
+const existingFileUrls = computed( () => mapToUrls( formData.file_list ) )
+
 /* ---------- prefill on edit ---------- */
 const prefill = src => {
   if ( !src ) return
@@ -263,8 +290,17 @@ const prefill = src => {
     description : src.description ?? '',
     code : src.code ?? '',
     priority : src.priority ?? null,
-    image_list : Array.isArray( src.image_list ) ? [...src.image_list] : [],
-    file_list : Array.isArray( src.file_list ) ? [...src.file_list] : [],
+
+    // keep URLs for previews
+    image_list : mapToUrls( src.image_list ),
+    file_list : mapToUrls( src.file_list ?? src.files_list ),
+
+    // reset session picks and removed trackers
+    image_files : [],
+    file_files : [],
+    removed_existing_images : [],
+    removed_existing_files : [],
+
     reorder_point : src.reorder_point ?? 0,
     maximum_stock_level : src.maximum_stock_level ?? 1,
     minimum_stock_level : src.minimum_stock_level ?? 0,
@@ -277,39 +313,77 @@ const prefill = src => {
   Object.assign( formData, m )
 }
 
+// 👇 replace your existing watch(props.initialData, ...) with this
 watch(
   () => props.initialData,
-  v => {
+  async v => {
+    if ( DEBUG ) {
+      console.log( '[SparePartForm] props.initialData (raw):', v )
+      console.log( '[SparePartForm] raw.image_list:', v?.image_list )
+      console.log( '[SparePartForm] raw.file_list:', v?.file_list )
+    }
+
+    // ✅ prefill form fields
     if ( props.mode === 'edit' && v ) prefill( v )
+
+    // ✅ only bump uploaderKey when switching to a *different* record
+    const newId = v?.id ?? null
+    if ( newId !== lastSeedId ) {
+      uploaderKey.value += 1
+      lastSeedId = newId
+      if ( DEBUG ) console.log( '[SparePartForm] uploaderKey bumped:', uploaderKey.value )
+    }
+
+    await nextTick()
+
+    if ( DEBUG ) {
+      console.log( '[SparePartForm] after prefill -> formData.image_list:', formData.image_list )
+      console.log( '[SparePartForm] after prefill -> formData.file_list:', formData.file_list )
+    }
   },
   { immediate : true }
 )
 
+/* ---------- uploader events (VendorForm-style) ---------- */
+// new picks (Files only)
+const onNewImages = files => {
+  formData.image_files = toRealFiles( files )
+}
+const onNewFiles = files => {
+  formData.file_files = toRealFiles( files )
+}
+
+// removed existing URLs
+const onRemovedExistingImages = urls => {
+  const removed = Array.isArray( urls ) ? urls : []
+  formData.removed_existing_images = Array.from( new Set( [...( formData.removed_existing_images || [] ), ...removed] ) )
+  const rm = new Set( removed )
+  formData.image_list = ( formData.image_list || [] ).filter( u => !rm.has( typeof u === 'string' ? u : u?.url ) )
+}
+const onRemovedExistingFiles = urls => {
+  const removed = Array.isArray( urls ) ? urls : []
+  formData.removed_existing_files = Array.from( new Set( [...( formData.removed_existing_files || [] ), ...removed] ) )
+  const rm = new Set( removed )
+  formData.file_list = ( formData.file_list || [] ).filter( u => !rm.has( typeof u === 'string' ? u : u?.url ) )
+}
+
 /* ---------- uploads ---------- */
-const handleImageListUpdate = images => {
-  uploadedImages.value = images
-  formData.image_list = images
-}
-const handleFilesListUpdate = files => {
-  uploadedFiles.value = files
-  formData.file_list = files
-}
-const needsUpload = arr => Array.isArray( arr ) && arr.some( it => typeof it !== 'string' )
+const needsUpload = arr => Array.isArray( arr ) && arr.length > 0
 
 const uploadFilesToServer = async() => {
-  try {
-    if ( needsUpload( formData.image_list ) ) {
-      const imageRes = await uploadMultipleToMinio( formData.image_list )
-      const imgs = imageRes.data?.uploadedFiles || []
-      formData.image_list = imgs.map( f => f.url )
-    }
-    if ( needsUpload( formData.file_list ) ) {
-      const fileRes = await uploadMultipleToMinio( formData.file_list )
-      const fls = fileRes.data?.uploadedFiles || []
-      formData.file_list = fls.map( f => f.url )
-    }
-  } catch {
-    throw new Error( 'File upload failed' )
+  // ONLY upload new Files; existing URLs stay
+  if ( needsUpload( formData.image_files ) ) {
+    const imageRes = await uploadMultipleToMinio( formData.image_files )
+    const imgs = imageRes?.data?.uploadedFiles || []
+    // append new uploaded URLs to existing kept URLs
+    formData.image_list = [...mapToUrls( formData.image_list ), ...imgs.map( f => f.url ).filter( Boolean )]
+    formData.image_files = []
+  }
+  if ( needsUpload( formData.file_files ) ) {
+    const fileRes = await uploadMultipleToMinio( formData.file_files )
+    const fls = fileRes?.data?.uploadedFiles || []
+    formData.file_list = [...mapToUrls( formData.file_list ), ...fls.map( f => f.url ).filter( Boolean )]
+    formData.file_files = []
   }
 }
 
@@ -321,20 +395,26 @@ const handleConfirm = async() => {
 
   submitLoading.value = true
   try {
-    if ( needsUpload( formData.image_list ) || needsUpload( formData.file_list ) ) {
-      await uploadFilesToServer()
+    // 1) upload NEW files, keep existing URLs
+    await uploadFilesToServer()
+
+    // 2) payload: URLs only (server-friendly)
+    const payload = {
+      ...formData,
+      image_list : mapToUrls( formData.image_list ),
+      file_list : mapToUrls( formData.file_list )
     }
 
     let res
     if ( props.mode === 'edit' ) {
-      res = await updateSparePart( formData.id, { ...formData } )
+      res = await updateSparePart( payload.id, payload )
       ElMessage.success( 'Spare part updated successfully!' )
     } else {
-      res = await createSparePart( { ...formData } )
+      res = await createSparePart( payload )
       ElMessage.success( 'Spare part created successfully!' )
     }
 
-    emit( 'success', res?.data || { ...formData } )
+    emit( 'success', res?.data || payload )
     emit( 'close' )
     resetForm()
   } catch ( err ) {
@@ -352,7 +432,7 @@ const handleCancel = () => {
 }
 
 const resetForm = () => {
-  if ( formRef.value ) formRef.value.resetFields()
+  if ( formRef.value ) formRef.value.resetFields?.()
   Object.assign( formData, {
     id : null,
     name : '',
@@ -362,6 +442,10 @@ const resetForm = () => {
     priority : null,
     image_list : [],
     file_list : [],
+    image_files : [],
+    file_files : [],
+    removed_existing_images : [],
+    removed_existing_files : [],
     reorder_point : 0,
     maximum_stock_level : 1,
     minimum_stock_level : 0,
@@ -389,18 +473,15 @@ onMounted( () => {
   display: flex;
   flex-direction: column;
 }
-
 .general-information {
   margin-top: 16px;
 }
-
 .file-upload {
   flex: 1;
   display: flex;
   flex-direction: column;
   margin-top: 4px;
 }
-
 .dialog-footer {
   flex: 1;
   display: flex;
@@ -408,7 +489,6 @@ onMounted( () => {
   justify-content: flex-end;
   margin-top: 12px;
 }
-
 :deep(.el-form-item) {
   width: 100%;
 }

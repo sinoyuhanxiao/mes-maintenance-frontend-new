@@ -150,6 +150,7 @@ prop="universal_code"
             @update:imageList="handleImageListUpdate"
             @update:fileList="handleFilesListUpdate"
             upload-type="both"
+            image-label="Upload Images"
             :max-images="5"
             :max-files="5"
           />

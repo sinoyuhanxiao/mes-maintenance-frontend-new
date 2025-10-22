@@ -10,13 +10,14 @@
           clearable
         />
 
-        <!-- Small popover under the filter icon -->
+        <!-- 🔽 Filter popover -->
         <el-popover placement="bottom-start" width="300" v-model:visible="filterVisible" trigger="click">
           <template #reference>
             <el-icon style="cursor: pointer" title="Filter"><Filter /></el-icon>
           </template>
 
-          <div class="filter-content">
+          <!-- ===== Spare Parts filter (unchanged) ===== -->
+          <div v-if="currentView === 1" class="filter-content">
             <!-- Sort -->
             <div class="filter-section">
               <div class="filter-title">Sort</div>
@@ -31,12 +32,12 @@
             <!-- Category -->
             <div class="filter-section">
               <div class="filter-title">Category</div>
-              <el-select v-model="filterState.categories" placeholder="All" multiple clearable style="width: 100%">
+              <el-select v-model="filterState.categories" placeholder="Select" multiple clearable style="width: 100%">
                 <el-option v-for="opt in categoryOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
               </el-select>
             </div>
 
-            <!-- Availability (kept for later; currently backend only receives category) -->
+            <!-- Availability -->
             <div class="filter-section">
               <div class="filter-title">Availability</div>
               <el-checkbox-group v-model="filterState.stockStatuses">
@@ -44,6 +45,27 @@
                 <el-checkbox label="lowStock">Below Min Stock</el-checkbox>
                 <el-checkbox label="outOfStock">Out of Stock</el-checkbox>
               </el-checkbox-group>
+            </div>
+
+            <div class="filter-actions">
+              <el-button @click="clearFilters" text>Reset</el-button>
+              <el-button @click="applyFilters" type="primary">Apply</el-button>
+            </div>
+          </div>
+
+          <!-- ===== Tools filter (Category only) ===== -->
+          <div v-else class="filter-content">
+            <div class="filter-section">
+              <div class="filter-title">Tool Category</div>
+              <el-select
+                v-model="filterStateTool.categories"
+                placeholder="Select"
+                multiple
+                clearable
+                style="width: 100%"
+              >
+                <el-option v-for="opt in toolCategoryOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+              </el-select>
             </div>
 
             <div class="filter-actions">
@@ -75,8 +97,8 @@
       </div>
     </div>
 
+    <!-- 🔽 Spare Parts section -->
     <div class="main-container-sp" v-if="currentView === 1">
-      <!-- ADD DIALOG -->
       <el-dialog v-model="dialogVisible" title="Add New Spare Part" width="600px">
         <SparePartForm
           mode="create"
@@ -86,9 +108,9 @@
         />
       </el-dialog>
 
-      <!-- EDIT DIALOG -->
-      <el-dialog v-model="editDialogVisible" title="Edit Spare Part" width="600px">
+      <el-dialog v-model="editDialogVisible" title="Edit Spare Part" width="600px" destroy-on-close>
         <SparePartForm
+          :key="selectedData?.id"
           mode="edit"
           :initialData="selectedData"
           @success="handleCreate"
@@ -122,91 +144,82 @@
                 <template #dropdown>
                   <el-dropdown-menu>
                     <el-dropdown-item @click="openEditDialog">Edit</el-dropdown-item>
-                    <el-dropdown-item divided class="danger-item" @click="confirmDelete"> Delete </el-dropdown-item>
+                    <el-dropdown-item divided class="danger-item" @click="confirmDelete">Delete</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
             </div>
 
             <el-tabs v-model="activeName" type="card" class="demo-tabs" style="margin-top: 10px">
-              <el-tab-pane label="Details" name="first">
-                <ViewDetails v-model:data="selectedData" />
-              </el-tab-pane>
-              <el-tab-pane label="Batches" name="second">
-                <Batches :sparePart="selectedData" />
-              </el-tab-pane>
-              <el-tab-pane label="Usage" name="third">
-                <Usage />
-              </el-tab-pane>
-              <el-tab-pane label="Transactions" name="fourth">
-                <Transactions :sparePart="selectedData" />
-              </el-tab-pane>
-              <el-tab-pane label="History" name="fifth">
-                <History />
-              </el-tab-pane>
+              <el-tab-pane label="Details" name="first"><ViewDetails v-model:data="selectedData" /></el-tab-pane>
+              <el-tab-pane label="Batches" name="second"><Batches :sparePart="selectedData" /></el-tab-pane>
+              <el-tab-pane label="Usage" name="third"><Usage /></el-tab-pane>
+              <el-tab-pane label="Transactions" name="fourth"><Transactions :sparePart="selectedData" /></el-tab-pane>
+              <el-tab-pane label="History" name="fifth"><History /></el-tab-pane>
             </el-tabs>
           </el-card>
         </div>
       </div>
     </div>
 
-    <div v-if="currentView === 2">
-      <ToolsView v-model:keyword="keyword" :newTool="newTool" @close="() => (newTool = false)" />
-    </div>
+    <!-- 🔽 Tools section -->
+    <ToolsView
+      v-if="currentView === 2"
+      v-model:keyword="keyword"
+      :newTool="newTool"
+      :category-ids="filterStateTool.categories"
+      @close="() => (newTool = false)"
+    />
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref, onBeforeUnmount, computed, reactive, watch } from 'vue'
+import { ref, reactive, onMounted, onBeforeUnmount, watch, computed } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
+import { Search, Filter, Tools, Magnet, MoreFilled } from '@element-plus/icons-vue'
 import CardTable from '../../components/Tables/CardTable.vue'
 import ViewDetails from './components/ViewDetails.vue'
 import Usage from './components/Usage.vue'
 import Transactions from './components/Transactions.vue'
 import History from './components/History.vue'
-import SparePartForm from './components/SparePartForm.vue'
-import { Search, Filter, Tools, Magnet, MoreFilled } from '@element-plus/icons-vue'
 import Batches from './components/Batches/Batches.vue'
+import SparePartForm from './components/SparePartForm.vue'
 import ToolsView from './components/Tools/ToolsView.vue'
-import { searchSpareParts, deleteSparePart, getAllSparePartClasses } from '@/api/resources'
+import { searchSpareParts, deleteSparePart, getAllSparePartClasses, getAllToolClasses } from '@/api/resources'
 
+// ===== States =====
 const activeName = ref( 'first' )
 const dialogVisible = ref( false )
 const editDialogVisible = ref( false )
 const newTool = ref( false )
+const currentView = ref( 1 )
+const keyword = ref( null )
+
 const spareParts = ref( [] )
 const selectedData = ref( null )
 const selectedIndex = ref( 0 )
 const totalItems = ref( 0 )
-const keyword = ref( null )
+
+const listQuery = reactive( { page : 1, limit : 10, sort : '-id' } )
+const filterVisible = ref( false )
+
+// ===== Spare Part filters =====
+const filterState = reactive( {
+  sortKey : 'createdAt_desc',
+  categories : [],
+  stockStatuses : []
+} )
 const categoryOptions = ref( [] )
 
-const listQuery = reactive( {
-  page : 1,
-  limit : 10,
-  sort : '-id'
-} )
+// ===== Tool filters =====
+const toolsRef = ref( null )
+const filterStateTool = reactive( { categories : [] } )
+const toolCategoryOptions = ref( [] )
 
-/** Filter popover state */
-const filterVisible = ref( false )
-const filterState = reactive( {
-  sortKey : 'createdAt_desc', // 'createdAt_desc' | 'createdAt_asc' | 'name_asc' | 'name_desc'
-  categories : [],
-  stockStatuses : [] // (not sent to backend yet)
-} )
-
-/** ✅ Use backend for all filter/sort/paging */
+// ===== Fetching helpers =====
 const useServerFiltering = true
+const STATUS_ACTIVE = 1
 
-// /** ——— Helpers (UI badges only; not used for backend) ——— */
-// function getQty( item ) {
-//   return item?.current_stock ?? item?.quantity ?? item?.stock ?? item?.qty ?? 0
-// }
-// function getName( item ) {
-//   return item?.name ?? item?.display_name ?? item?.code ?? item?.universal_code ?? ''
-// }
-
-/** ✅ Map sortKey -> backend sortField/direction */
 function resolveSort( sortKey ) {
   switch ( sortKey ) {
     case 'createdAt_asc':
@@ -222,45 +235,40 @@ function resolveSort( sortKey ) {
   }
 }
 
-/** ✅ Build backend payload EXACTLY like your curl */
-const STATUS_ACTIVE = 1
 function buildSearchPayload() {
   return {
     keyword : keyword.value ?? '',
     spare_part_class_ids : filterState.categories?.length ? filterState.categories : undefined,
-    status_ids : [STATUS_ACTIVE] // always filter out soft-deleted rows
+    status_ids : [STATUS_ACTIVE]
   }
 }
 
-/** ✅ Fetch from API with backend sort/filter/paging */
 async function getAllSparePartsData() {
   const { sortField, direction } = resolveSort( filterState.sortKey )
-
   const response = await searchSpareParts( listQuery.page, listQuery.limit, sortField, direction, buildSearchPayload() )
-
   const page = response.data
   spareParts.value = page?.content ?? []
   totalItems.value = page?.totalElements ?? 0
-
-  // keep details panel stable
   selectedIndex.value = 0
   selectedData.value = spareParts.value?.[0] ?? null
 }
 
-/** ✅ Refetch on keyword/sort/category change */
+// ===== Watchers =====
 watch(
   () => keyword.value,
   () => {
-    if ( useServerFiltering ) {
+    if ( useServerFiltering && currentView.value === 1 ) {
       listQuery.page = 1
       getAllSparePartsData()
+    } else if ( currentView.value === 2 ) {
+      toolsRef.value?.applyCategoryFilter?.( filterStateTool.categories )
     }
   }
 )
 watch(
   () => filterState.sortKey,
   () => {
-    if ( useServerFiltering ) {
+    if ( useServerFiltering && currentView.value === 1 ) {
       listQuery.page = 1
       getAllSparePartsData()
     }
@@ -269,7 +277,7 @@ watch(
 watch(
   () => filterState.categories,
   () => {
-    if ( useServerFiltering ) {
+    if ( useServerFiltering && currentView.value === 1 ) {
       listQuery.page = 1
       getAllSparePartsData()
     }
@@ -277,90 +285,66 @@ watch(
   { deep : true }
 )
 
-/** Page height handling */
+// ===== Apply/Clear filters =====
+async function applyFilters() {
+  if ( currentView.value === 1 ) {
+    if ( useServerFiltering ) {
+      listQuery.page = 1
+      await getAllSparePartsData()
+    }
+  } else {
+    toolsRef.value?.applyCategoryFilter?.( filterStateTool.categories )
+  }
+  filterVisible.value = false
+}
+
+async function clearFilters() {
+  if ( currentView.value === 1 ) {
+    filterState.sortKey = 'createdAt_desc'
+    filterState.categories = []
+    filterState.stockStatuses = []
+    if ( useServerFiltering ) {
+      listQuery.page = 1
+      await getAllSparePartsData()
+    }
+  } else {
+    filterStateTool.categories = []
+    toolsRef.value?.clearCategoryFilter?.()
+  }
+  filterVisible.value = false
+}
+
+// ===== Lifecycle =====
 const maxHeight = ref( '770px' )
 function updateHeight() {
   maxHeight.value = window.innerWidth <= 1600 ? '521px' : '737px'
 }
-
-/** Apply/Clear in popover */
-function applyFilters() {
-  if ( useServerFiltering ) {
-    listQuery.page = 1
-    getAllSparePartsData()
-  }
-  filterVisible.value = false
-}
-function clearFilters() {
-  filterState.sortKey = 'createdAt_desc'
-  filterState.categories = []
-  // leave stockStatuses as-is (not sent yet)
-  if ( useServerFiltering ) {
-    listQuery.page = 1
-    getAllSparePartsData()
-  }
-  filterVisible.value = false
-}
-
-/** Table bindings (server mode) */
-const tableData = computed( () => spareParts.value )
-const tableTotal = computed( () => totalItems.value )
-
-/** Delete flow */
-async function confirmDelete() {
-  if ( !selectedData.value?.id ) return
-  try {
-    await ElMessageBox.confirm(
-      `Delete spare part “${selectedData.value.name}” (ID: ${selectedData.value.id})? This cannot be undone.`,
-      'Confirm Delete',
-      {
-        confirmButtonText : 'Delete',
-        cancelButtonText : 'Cancel',
-        type : 'warning',
-        autofocus : false,
-        confirmButtonClass : 'el-button--danger'
-      }
-    )
-    await deleteSparePart( selectedData.value.id )
-    ElMessage.success( 'Spare part deleted.' )
-
-    const isLastItemOnPage = spareParts.value.length === 1 && listQuery.page > 1
-    if ( isLastItemOnPage ) listQuery.page -= 1
-
-    selectedData.value = null
-    selectedIndex.value = 0
-    await getAllSparePartsData()
-  } catch ( err ) {
-    if ( err === 'cancel' ) return
-    ElMessage.error( err?.message || 'Failed to delete spare part.' )
-  }
-}
-
-/** Lifecycle */
 onMounted( async() => {
   updateHeight()
   window.addEventListener( 'resize', updateHeight )
 
-  try {
-    const res = await getAllSparePartClasses()
-    categoryOptions.value = ( res.data || [] )
-      .map( c => ( {
-        value : c.id,
-        label : ( c.name ?? '' ).trim() || `Class #${c.id}`
-      } ) )
-      .sort( ( a, b ) => a.label.localeCompare( b.label, undefined, { sensitivity : 'base', numeric : true } ) )
-  } catch ( err ) {
-    console.error( 'Failed to load spare part classes:', err )
-  }
+  // Spare part categories
+  const res = await getAllSparePartClasses()
+  categoryOptions.value = ( res.data || [] ).map( c => ( {
+    value : c.id,
+    label : c.name || `Class #${c.id}`
+  } ) )
+
+  // Tool categories
+  const toolRes = await getAllToolClasses()
+  toolCategoryOptions.value = ( toolRes.data || [] ).map( c => ( {
+    value : c.id,
+    label : c.name || `Category #${c.id}`
+  } ) )
 
   await getAllSparePartsData()
 } )
+onBeforeUnmount( () => window.removeEventListener( 'resize', updateHeight ) )
 
-onBeforeUnmount( () => {
-  window.removeEventListener( 'resize', updateHeight )
-} )
+// ===== Spare Part helpers =====
+const tableData = computed( () => spareParts.value )
+const tableTotal = computed( () => totalItems.value )
 
-/** Selections / dialogs */
 function getSelection( data ) {
   selectedIndex.value = data.index
   selectedData.value = data
@@ -369,25 +353,37 @@ function openEditDialog() {
   if ( !selectedData.value ) return
   editDialogVisible.value = true
 }
-async function handleCreate( data ) {
-  if ( data ) {
-    dialogVisible.value = false
-    editDialogVisible.value = false
+async function confirmDelete() {
+  if ( !selectedData.value?.id ) return
+  try {
+    await ElMessageBox.confirm( `Delete spare part “${selectedData.value.name}”?`, 'Confirm Delete', {
+      confirmButtonText : 'Delete',
+      cancelButtonText : 'Cancel',
+      type : 'warning'
+    } )
+    await deleteSparePart( selectedData.value.id )
+    ElMessage.success( 'Deleted' )
+    await getAllSparePartsData()
+  } catch ( err ) {
+    if ( err !== 'cancel' ) ElMessage.error( 'Failed to delete' )
   }
+}
+async function handleCreate( data ) {
+  dialogVisible.value = false
+  editDialogVisible.value = false
   await getAllSparePartsData()
 }
 
-/** View switching */
-const currentView = ref( 1 )
-const handleCurrentChange = val => {
-  listQuery.page = val
-  getAllSparePartsData()
-}
+// ===== View switching =====
 const handleCommand = command => {
   currentView.value = command === 'a' ? 1 : 2
 }
 const currentLabel = computed( () => ( currentView.value === 1 ? 'Spare Parts' : 'Tools' ) )
 const currentIcon = computed( () => ( currentView.value === 1 ? 'Magnet' : 'Tools' ) )
+const handleCurrentChange = val => {
+  listQuery.page = val
+  getAllSparePartsData()
+}
 </script>
 
 <style scoped>
@@ -396,69 +392,18 @@ const currentIcon = computed( () => ( currentView.value === 1 ? 'Magnet' : 'Tool
   display: flex;
   flex-direction: column;
 }
-
 .header {
-  padding-left: 5px;
   display: flex;
-  flex-direction: row;
   justify-content: space-between;
+  align-items: center;
 }
-
 .left-header,
 .right-header {
   display: flex;
-  flex-direction: row;
-  align-items: center;
   gap: 1rem;
-}
-
-.main-container-sp {
-  display: flex;
-  flex-direction: row;
-  gap: 0.5rem;
-}
-
-.table-container {
-  flex: 0 0 30vw;
-}
-
-.content-container {
-  padding: 5px;
-  flex: 0 1 70vw;
-  display: flex;
-  justify-content: center;
-}
-
-.tab-container {
-  width: 100%;
-  max-width: 1245px;
-  margin: 0 auto;
-}
-
-.kebab-dropdown {
-  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  margin-left: auto;
-}
-.kebab-icon {
-  transform: rotate(90deg);
-  cursor: pointer;
-  padding: 8px;
-  border-radius: 4px;
-  transition: background-color 0.2s ease;
-  font-size: 24px;
-  color: #409eff;
-}
-.danger-item {
-  color: #f56c6c;
-}
-.danger-item:hover {
-  color: #fff;
-  background: #f56c6c;
 }
 
-/* Popover filter layout */
 .filter-content {
   display: flex;
   flex-direction: column;
@@ -474,26 +419,49 @@ const currentIcon = computed( () => ( currentView.value === 1 ? 'Magnet' : 'Tool
   font-size: 14px;
 }
 .filter-actions {
-  margin-top: 10px;
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+  margin-top: 10px;
 }
 
-@media (max-width: 1600px) {
-  .table-container {
-    flex: 0 0 30vw;
-  }
-  .content-container {
-    padding: 5px;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-  }
-  .tab-container {
-    width: 100%;
-    max-width: 977px;
-    margin: 0 auto;
-  }
+/* parent .vue */
+.main-container-sp {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* left panel fixed as a percentage, not vw */
+.table-container {
+  flex: 0 0 32%;
+  max-width: 32%;
+  min-width: 320px; /* optional safety floor */
+  box-sizing: border-box;
+}
+
+/* right panel takes the rest */
+.content-container {
+  flex: 1 1 68%;
+  max-width: 68%;
+  box-sizing: border-box;
+}
+
+/* optional: avoid unexpected overflows in flex children */
+.tab-container {
+  min-width: 0;
+}
+
+.kebab-icon {
+  transform: rotate(90deg);
+  cursor: pointer;
+  font-size: 24px;
+  color: #409eff;
+}
+.danger-item {
+  color: #f56c6c;
+}
+.danger-item:hover {
+  color: #fff;
+  background: #f56c6c;
 }
 </style>

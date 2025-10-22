@@ -4,9 +4,7 @@
     <div v-if="showSearch" class="search-container">
       <el-input v-model="searchQuery" :placeholder="searchPlaceholder" size="default" clearable class="search-input">
         <template #prefix>
-          <el-icon>
-            <Search />
-          </el-icon>
+          <el-icon><Search /></el-icon>
         </template>
       </el-input>
     </div>
@@ -60,7 +58,6 @@
         </el-col>
       </el-row>
 
-      <!-- No results message -->
       <div v-if="filteredData.length === 0 && searchQuery" class="no-results">
         <el-empty description="No items found matching your search" :image-size="80" />
       </div>
@@ -73,7 +70,7 @@
       :page-size="pageSize"
       :total="totalItems"
       :pager-count="3"
-      @current-change="handleCurrentChange"
+      @current-change="onCurrentChange"
       class="pagination"
     />
   </div>
@@ -102,14 +99,12 @@ const props = defineProps( {
   showPagination : { type : Boolean, default : true },
   showSearch : { type : Boolean, default : true },
   searchPlaceholder : { type : String, default : 'Search items...' },
-  searchFields : {
-    type : Array,
-    default : () => ['name', 'category', 'description']
-  },
-  focusedCardId : {
-    type : [String, Number],
-    default : null
-  }
+  searchFields : { type : Array, default : () => ['name', 'category', 'description'] },
+  focusedCardId : { type : [String, Number], default : null },
+
+  // ✅ function props coming from parent
+  handleCurrentChange : { type : Function, default : null },
+  handleSizeChange : { type : Function, default : null }
 } )
 
 const emit = defineEmits( ['selection'] )
@@ -120,57 +115,72 @@ const height = ref( props.maxHeight )
 function updateHeight() {
   height.value = window.innerWidth <= 1600 ? '465px' : props.maxHeight
 }
-
 onMounted( () => {
   updateHeight()
   window.addEventListener( 'resize', updateHeight )
 } )
-
 onBeforeUnmount( () => {
   window.removeEventListener( 'resize', updateHeight )
 } )
 
-// Computed property to filter data based on search query
 const filteredData = computed( () => {
-  if ( !searchQuery.value || !props.data ) {
-    return props.data || []
-  }
-
+  if ( !searchQuery.value || !props.data ) return props.data || []
   const query = searchQuery.value.toLowerCase().trim()
-  return props.data.filter( item => {
-    return props.searchFields.some( field => {
+  return props.data.filter( item =>
+    props.searchFields.some( field => {
       const value = item[field]
       if ( typeof value === 'string' ) return value.toLowerCase().includes( query )
       if ( typeof value === 'number' ) return value.toString().includes( query )
       return false
     } )
-  } )
+  )
 } )
 
 function emitSelection( sp, idx ) {
   emit( 'selection', { ...sp, index : idx } )
 }
+
+// ✅ delegate pagination event to parent’s function prop
+function onCurrentChange( p ) {
+  props.handleCurrentChange && props.handleCurrentChange( p )
+}
+// If you later add sizes:
+// function onSizeChange(s) {
+//   props.handleSizeChange && props.handleSizeChange(s)
+// }
 </script>
 
 <style scoped>
 .card-table-wrapper {
   width: 100%;
 }
-
 .search-container {
   margin-bottom: 10px;
 }
-
 .search-input {
   max-width: 400px;
 }
 
+/* CardTable.vue */
 .card-scroll-container {
-  height: v-bind(maxHeight);
-  overflow-y: auto;
-  padding: 5px;
+  height: v-bind(height);
+  overflow-y: scroll; /* reserve scrollbar width always */
+  padding-right: 8px; /* content doesn’t hug the bar */
   border-radius: 6px;
 }
+
+/* if you prefer modern behavior instead: */
+/*
+.card-scroll-container {
+  height: v-bind(height);
+  overflow-y: auto;
+  scrollbar-gutter: stable both-edges;
+  padding-right: 8px;
+}
+@supports not (scrollbar-gutter: stable) {
+  .card-scroll-container { overflow-y: scroll; }
+}
+*/
 
 .card-scroll-container.with-border {
   border: 1px solid #e4e7ed;

@@ -3,39 +3,42 @@
     <!-- Add -->
     <el-dialog
       draggable
-      close-on-click-modal="true"
+      :close-on-click-modal="true"
       v-model="newToolActive"
       title="Add New Tool"
       width="600"
       top="5vh"
-      @close="
-        () => {
-          ;(newToolActive = false), emit('close')
-        }
-      "
+      destroy-on-close
+      @close="onAddDialogClose"
     >
-      <NewTool @createTool="handleCreate" />
+      <NewTool :key="newToolKey" @createTool="handleCreate" @close="onChildRequestsClose" />
     </el-dialog>
 
     <!-- Edit -->
     <el-dialog
       draggable
-      close-on-click-modal="true"
+      :close-on-click-modal="true"
       v-model="editToolActive"
       title="Edit Tool"
       width="600"
       top="5vh"
+      destroy-on-close
       @close="
         () => {
           editToolActive = false
         }
       "
     >
-      <EditTool @editTool="handleEdit" :data="selectedTool" />
+      <EditTool
+        :data="selectedTool"
+        @editTool="handleEdit"
+        @close="editToolActive = false"
+        @cancel="editToolActive = false"
+      />
     </el-dialog>
 
-    <!-- Deactivate / Soft-delete (inline, same style as your tier dialogs) -->
-    <el-dialog v-model="deactivateDialogVisible" title="Confirm Deletion" width="420px">
+    <!-- Deactivate -->
+    <el-dialog v-model="deactivateDialogVisible" title="Confirm" width="420px">
       <div>
         Are you sure you want to delete
         <b>{{ selectedTool?.name }}</b
@@ -49,9 +52,36 @@
 
     <div class="table-body">
       <el-table :data="tools" :style="{ width: '100%', height: maxHeight }" border>
-        <el-table-column width="110px" label="Image">
+        <!-- IMAGE COLUMN (preview only if image valid) -->
+        <el-table-column width="100px" label="Image">
           <template #default="{ row }">
-            <el-image v-if="row.image_list.length > 0" :src="row.image_list" style="width: 80px" />
+            <div class="img-cell">
+              <template v-if="firstImage(row)">
+                <el-image
+                  :src="firstImage(row)"
+                  class="img-box"
+                  fit="cover"
+                  :preview-src-list="previewList(row)"
+                  :initial-index="0"
+                  :hide-on-click-modal="true"
+                  :preview-teleported="true"
+                  :z-index="3000"
+                  @error="handleImageError(row)"
+                >
+                  <template #error>
+                    <div class="img-fallback">
+                      <el-icon><IconPicture /></el-icon>
+                    </div>
+                  </template>
+                </el-image>
+              </template>
+
+              <template v-else>
+                <div class="img-fallback">
+                  <el-icon><IconPicture /></el-icon>
+                </div>
+              </template>
+            </div>
           </template>
         </el-table-column>
 
@@ -98,35 +128,42 @@ size="small"
 <script setup>
 import { ref, onMounted, onBeforeUnmount, watch, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
+import { Picture as IconPicture } from '@element-plus/icons-vue'
 import NewTool from './NewTool.vue'
 import EditTool from './EditTool.vue'
 import { searchTools, createTool, updateTool, deleteTool } from '@/api/resources'
 
 const props = defineProps( {
   newTool : Boolean,
-  keyword : String
+  keyword : String,
+  /** ✅ new prop from parent: selected tool class IDs */
+  categoryIds : {
+    type : Array,
+    default : () => []
+  }
 } )
 const emit = defineEmits( ['close'] )
 
+/** ----- Dialog state ----- */
 const newToolActive = ref( props.newTool )
+const newToolKey = ref( 0 )
 const editToolActive = ref( false )
-
 const selectedTool = ref( null )
-
-// NEW: inline deactivate dialog state
 const deactivateDialogVisible = ref( false )
 const deleting = ref( false )
 
 watch(
   () => props.newTool,
-  newVal => {
-    newToolActive.value = newVal
+  v => {
+    newToolActive.value = v
+    if ( v ) newToolKey.value += 1
   }
 )
 
+/** ----- Layout height ----- */
 const maxHeight = ref( '737px' )
 function updateHeight() {
-  maxHeight.value = window.innerWidth <= 1600 ? '521px' : maxHeight.value
+  maxHeight.value = window.innerWidth <= 1600 ? '521px' : '737px'
 }
 onMounted( () => {
   updateHeight()
@@ -136,37 +173,73 @@ onBeforeUnmount( () => {
   window.removeEventListener( 'resize', updateHeight )
 } )
 
-const apiSuccess = ( header, name ) => {
-  ElMessage( { message : header + name, type : 'success' } )
-}
-
+/** ----- Table / paging / search state ----- */
 const listQuery = reactive( { page : 1, size : 20 } )
-const search = ref( { keyword : null } )
+const tools = ref( [] )
+const totalItems = ref( 0 )
 
-const tools = ref( null )
-const totalItems = ref( null )
-
+/** ✅ Build payload exactly like your curl */
 async function getToolsData() {
-  const response = await searchTools( listQuery.page, listQuery.size, 'name', 'ASC', search.value )
-  tools.value = response.data.content
-  totalItems.value = response.data.totalElements
-}
-getToolsData()
+  const payload = {}
 
+  // include keyword only if non-empty (ok if backend ignores this)
+  if ( props.keyword && props.keyword.trim().length > 0 ) {
+    payload.keyword = props.keyword.trim()
+  }
+
+  // include tool_class_ids if any selected
+  if ( Array.isArray( props.categoryIds ) && props.categoryIds.length > 0 ) {
+    // ensure numbers
+    payload.tool_class_ids = props.categoryIds.map( x => Number( x ) ).filter( n => !Number.isNaN( n ) )
+  }
+
+  const res = await searchTools(
+    listQuery.page,
+    listQuery.size,
+    'name', // sort by name for category filtering UX
+    'ASC',
+    payload
+  )
+
+  const page = res?.data
+  tools.value = page?.content ?? []
+  totalItems.value = page?.totalElements ?? 0
+}
+
+/** React to keyword and category changes */
 watch(
   () => props.keyword,
-  newVal => {
-    search.value.keyword = newVal
+  () => {
+    listQuery.page = 1
     getToolsData()
   }
 )
+
+watch(
+  () => props.categoryIds,
+  () => {
+    listQuery.page = 1
+    getToolsData()
+  },
+  { deep : true }
+)
+
+/** Initial load */
+getToolsData()
+
+/** ----- CRUD handlers ----- */
+const apiSuccess = ( header, name ) => {
+  ElMessage( { message : header + name, type : 'success' } )
+}
 
 async function handleCreate( data ) {
   try {
     const create = await createTool( data )
     if ( create.status == 200 ) {
       apiSuccess( 'Tool Created: ', create.data.name )
+      newToolActive.value = false
       emit( 'close' )
+      newToolKey.value += 1
       getToolsData()
     }
   } catch ( err ) {
@@ -178,7 +251,7 @@ async function handleEdit( data ) {
   try {
     const update = await updateTool( data )
     if ( update.status == 200 ) {
-      apiSuccess( 'Tool Updated: ', data.name )
+      apiSuccess( 'Tool updated: ', data.name )
       editToolActive.value = false
       getToolsData()
     }
@@ -187,7 +260,6 @@ async function handleEdit( data ) {
   }
 }
 
-// NEW: open dialog like your t2/t3/t4 components
 function openDeactivateDialog( row ) {
   selectedTool.value = row
   deactivateDialogVisible.value = true
@@ -198,7 +270,7 @@ async function confirmDeactivate() {
   deleting.value = true
   try {
     await deleteTool( selectedTool.value.id )
-    ElMessage.success( `Tool Deactivated: ${selectedTool.value.name}` )
+    ElMessage.success( `Tool Deleted: ${selectedTool.value.name}` )
     deactivateDialogVisible.value = false
     await getToolsData()
   } catch ( err ) {
@@ -212,7 +284,7 @@ async function confirmDeactivate() {
 }
 
 function editTool( row ) {
-  row.tool_class_id = row.tool_class.id
+  row.tool_class_id = row.tool_class?.id
   selectedTool.value = row
   editToolActive.value = true
 }
@@ -220,6 +292,33 @@ function editTool( row ) {
 const handleCurrentChange = val => {
   listQuery.page = val
   getToolsData()
+}
+
+/** ----- IMAGE HELPERS ----- */
+const toArray = v => ( Array.isArray( v ) ? v : typeof v === 'string' && v ? [v] : [] )
+const firstImage = row => {
+  const list = toArray( row?.image_list )
+  return list.length ? list[0] : null
+}
+const previewList = row => {
+  return toArray( row?.image_list ).filter( u => typeof u === 'string' && u.trim().length > 0 )
+}
+function handleImageError( row ) {
+  if ( Array.isArray( row.image_list ) && row.image_list.length > 0 ) {
+    row.image_list = []
+  }
+}
+
+/** ----- dialog close helpers ----- */
+function onAddDialogClose() {
+  newToolActive.value = false
+  newToolKey.value += 1
+  emit( 'close' )
+}
+function onChildRequestsClose() {
+  newToolActive.value = false
+  newToolKey.value += 1
+  emit( 'close' )
 }
 </script>
 
@@ -229,13 +328,15 @@ const handleCurrentChange = val => {
 }
 
 .pagination {
-  margin-top: 5px;
+  margin: 10px 0;
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;   /* ⬅ center it */
+  width: 100%;               /* helps in some layouts */
   flex-shrink: 0;
 }
 
-/* tighter actions column */
+
+/* action column */
 .action-column :deep(.cell) {
   padding: 0 6px;
 }
@@ -247,5 +348,32 @@ const handleCurrentChange = val => {
 }
 .action-btn {
   padding: 4px 10px;
+}
+
+/* image layout */
+.img-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  box-sizing: border-box;
+}
+.img-box,
+.img-fallback {
+  width: 64px;
+  height: 64px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+.img-box {
+  cursor: zoom-in;
+}
+.img-fallback {
+  background: var(--el-fill-color-lighter);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--el-text-color-secondary);
+  cursor: default;
 }
 </style>

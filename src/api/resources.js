@@ -176,22 +176,34 @@ export const deleteSparePart = id => {
   } )
 }
 
-/**
- * Delete tool
- * @param {number} - Tool ID
- * @returns {Promise} Nothing
- */
 // api/resources.js
-export const deleteTool = id => {
-  return http.request( {
-    method : 'delete',
-    url : `/resource/tool/delete/${encodeURIComponent( id )}`,
-    headers : { Accept : '*/*' },
-    // 204 returns an empty body — skip any global JSON parsing
-    transformResponse : [data => data],
-    // 200 or 204 are both success
-    validateStatus : s => ( s >= 200 && s < 300 ) || s === 204
-  } )
+export const deleteTool = async id => {
+  // ✅ match your backend's URL (note the /api prefix!)
+  const url = `/api/resource/tool/delete/${encodeURIComponent( id )}`
+
+  try {
+    const res = await fetch( url, {
+      method : 'DELETE',
+      headers : { Accept : '*/*' }
+    } )
+
+    if ( res.status === 404 ) {
+      // Optional: treat already-deleted items as success
+      console.warn( `Tool ${id} not found (already deleted).` )
+      return null
+    }
+
+    if ( !res.ok ) {
+      const text = await res.text().catch( () => '' )
+      throw new Error( text || res.statusText || `HTTP ${res.status}` )
+    }
+
+    // 204 success → no content
+    return null
+  } catch ( err ) {
+    console.error( 'deleteTool error:', err )
+    throw err
+  }
 }
 
 // Inventory APIs
