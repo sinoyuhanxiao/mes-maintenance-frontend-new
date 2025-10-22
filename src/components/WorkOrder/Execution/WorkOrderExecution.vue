@@ -88,6 +88,7 @@
           :task="card.task"
           :progress="card.progress"
           :index="index"
+          :is-highlighted="isTaskHighlighted(card.task)"
           @select="openTaskDrawer(card.task)"
           @view-log="openTaskLogViewer(card.task)"
         />
@@ -102,6 +103,7 @@
       destroy-on-close
       append-to-body
       class="work-order-task-drawer"
+      :before-close="handleDrawerClose"
     >
       <template #header>
         <div class="drawer-header-container" style="margin-bottom: -32px !important">
@@ -137,7 +139,6 @@
 
           <div class="task-actions">
             <el-button v-show="true" type="info" @click="handleLogStepValues">Logs</el-button>
-            <el-button type="warning" @click="handleSaveDraft" :loading="isSubmitting">Save Draft</el-button>
             <el-button type="primary" @click="handleFinalSubmit" :loading="isSubmitting">Submit</el-button>
           </div>
         </div>
@@ -190,7 +191,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch, nextTick } from 'vue'
 import { ArrowLeft, Search } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -227,6 +228,7 @@ const isSubmitting = ref( false )
 const showTaskLogDialog = ref( false )
 const selectedTaskForLog = ref( null )
 const activeLogTab = ref( 'logs' )
+const highlightedTaskId = ref( null )
 
 // Filter state
 const taskFilters = ref( {
@@ -506,6 +508,18 @@ const openTaskDrawer = async task => {
   }
 }
 
+const handleDrawerClose = async done => {
+  // Auto-save draft before closing
+  try {
+    await autoSaveDraft()
+    done()
+  } catch ( error ) {
+    // If auto-save fails, still allow closing
+    console.warn( 'Auto-save failed, but allowing drawer to close:', error )
+    done()
+  }
+}
+
 const closeDrawer = () => {
   drawerVisible.value = false
   activeTask.value = null
@@ -624,6 +638,18 @@ const handleSubmitTask = async( saveAsDraft = false ) => {
 
     if ( response?.status === 'success' || response?.data ) {
       ElMessage.success( `Task ${saveAsDraft ? 'saved as draft' : 'submitted'} successfully` )
+
+      // Highlight the updated task
+      highlightedTaskId.value = taskEntryId
+
+      // Scroll to the highlighted task
+      scrollToHighlightedTask()
+
+      // Remove highlight after 3 seconds
+      setTimeout( () => {
+        highlightedTaskId.value = null
+      }, 3000 )
+
       closeDrawer()
       emit( 'update:progress' )
     } else {
@@ -639,8 +665,47 @@ const handleSubmitTask = async( saveAsDraft = false ) => {
   }
 }
 
-const handleSaveDraft = () => {
-  handleSubmitTask( true )
+const autoSaveDraft = async() => {
+  if ( isSubmitting.value ) return
+  if ( !activeTask.value ) return
+
+  try {
+    const { taskEntryId, payload } = prepareTaskEntryPayload( true )
+
+    console.groupCollapsed( '🧾 WorkOrderExecution: Auto-saving draft' )
+    console.log( 'Task Entry ID:', taskEntryId )
+    console.log( 'API Endpoint:', `/api/task/entry/${taskEntryId}` )
+    console.log( 'Request Payload:', payload )
+    console.groupEnd()
+
+    isSubmitting.value = true
+
+    const response = await updateTaskEntry( taskEntryId, payload )
+
+    if ( response?.status === 'success' || response?.data ) {
+      ElMessage.success( 'Draft saved automatically' )
+
+      // Highlight the updated task
+      highlightedTaskId.value = taskEntryId
+
+      // Scroll to the highlighted task
+      scrollToHighlightedTask()
+
+      // Remove highlight after 3 seconds
+      setTimeout( () => {
+        highlightedTaskId.value = null
+      }, 3000 )
+
+      emit( 'update:progress' )
+    } else {
+      console.warn( 'Auto-save draft response not successful:', response )
+    }
+  } catch ( error ) {
+    // Only log errors, don't show to user (silent save)
+    console.warn( 'Auto-save draft error:', error )
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 const handleFinalSubmit = () => {
@@ -693,6 +758,23 @@ const handleSearchInput = value => {
   searchDebounceTimer = setTimeout( () => {
     taskFilters.value.search = value
   }, 300 )
+}
+
+const isTaskHighlighted = task => {
+  if ( !highlightedTaskId.value ) return false
+  const taskId = task?.id || task?.task_id || task?.task_entry_id
+  return taskId === highlightedTaskId.value
+}
+
+const scrollToHighlightedTask = async() => {
+  // Wait for DOM update before scrolling
+  await nextTick()
+  setTimeout( () => {
+    const highlightedCard = document.querySelector( '.template-card.highlighted' )
+    if ( highlightedCard ) {
+      highlightedCard.scrollIntoView( { behavior : 'smooth', block : 'center' } )
+    }
+  }, 100 )
 }
 
 // Expose method to parent for navigation guard

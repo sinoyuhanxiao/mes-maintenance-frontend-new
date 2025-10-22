@@ -57,6 +57,7 @@
                     :auto-upload="false"
                     :on-change="uploadFile => handleImageSelected(step.step_id, uploadFile)"
                     :on-remove="file => handleImageRemove(step.step_id, file)"
+                    :on-preview="handleImagePreview"
                     accept="image/*"
                   >
                     <el-icon><Plus /></el-icon>
@@ -122,13 +123,21 @@
         />
       </div>
     </div>
+
+    <!-- Image Preview Dialog -->
+    <el-image-viewer
+      v-if="showImagePreview"
+      :url-list="[previewImageUrl]"
+      :initial-index="0"
+      @close="showImagePreview = false"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, reactive, watch } from 'vue'
 import { Search, Tools, Plus, UploadFilled } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElImageViewer } from 'element-plus'
 import { useTaskLibrary } from '@/composables/designer/useTaskLibrary'
 import { transformLimitsFromBackend } from '@/views/taskLibrary/utils/stepTransforms'
 import { uploadToMinio } from '@/api/minio'
@@ -173,6 +182,10 @@ const stepInitialized = reactive( {} ) // Track which steps have been initialize
 // Track upload loading states
 const imageUploadLoading = reactive( {} )
 const fileUploadLoading = reactive( {} )
+
+// Image preview dialog state
+const showImagePreview = ref( false )
+const previewImageUrl = ref( '' )
 
 // Get user store for completion metadata
 // eslint-disable-next-line no-unused-vars
@@ -782,6 +795,15 @@ const handleFilePreview = file => {
     window.open( file.response.url, '_blank' )
   } else {
     console.warn( 'File preview failed - no URL found:', file )
+  }
+}
+
+const handleImagePreview = uploadFile => {
+  if ( uploadFile && uploadFile.url ) {
+    previewImageUrl.value = uploadFile.url
+    showImagePreview.value = true
+  } else {
+    console.warn( 'Image preview failed - no URL found:', uploadFile )
   }
 }
 

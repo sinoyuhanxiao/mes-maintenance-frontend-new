@@ -1,5 +1,5 @@
 <template>
-  <div class="template-card">
+  <div class="template-card" :class="{ highlighted: isHighlighted }">
     <!-- Card Content -->
     <div class="card-content" :class="stateClass">
       <!-- Row 1: Title + Task Code + Execute Icon -->
@@ -119,6 +119,10 @@ const props = defineProps( {
   index : {
     type : Number,
     default : 0
+  },
+  isHighlighted : {
+    type : Boolean,
+    default : false
   }
 } )
 
@@ -265,6 +269,24 @@ const stateClass = computed( () => {
 
 .template-card:last-child {
   margin-bottom: 0;
+}
+
+.template-card.highlighted {
+  border-color: #67c23a;
+  border-left: 2px solid #67c23a !important;
+  box-shadow: 0 2px 12px rgba(103, 194, 58, 0.2);
+  background: #f0f9f0;
+  animation: highlightPulse 2s ease-in-out;
+}
+
+@keyframes highlightPulse {
+  0%,
+  100% {
+    box-shadow: 0 2px 12px rgba(103, 194, 58, 0.2);
+  }
+  50% {
+    box-shadow: 0 4px 16px rgba(103, 194, 58, 0.3);
+  }
 }
 
 .card-content {
