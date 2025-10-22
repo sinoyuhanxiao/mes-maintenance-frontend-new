@@ -132,6 +132,7 @@ import { ElMessage } from 'element-plus'
 import { useTaskLibrary } from '@/composables/designer/useTaskLibrary'
 import { transformLimitsFromBackend } from '@/views/taskLibrary/utils/stepTransforms'
 import { uploadToMinio } from '@/api/minio'
+import useUserStore from '@/store/modules/users'
 
 // Preview components reused from Procedure Designer
 import InspectionStepPreview from '@/views/taskLibrary/components/Designer/StepCards/InspectionStepPreview.vue'
@@ -172,6 +173,9 @@ const stepInitialized = reactive( {} ) // Track which steps have been initialize
 // Track upload loading states
 const imageUploadLoading = reactive( {} )
 const fileUploadLoading = reactive( {} )
+
+// Get user store for completion metadata
+const userStore = useUserStore()
 
 // Map backend step value types to preview component types
 const mapValueTypeToPreviewType = valueType => {
@@ -834,6 +838,19 @@ const getMissingRequiredSteps = () => {
     if ( !hasRequiredImages( step ) ) {
       missing.push( ( step.label || step.name || `Step ${step.order}` ) + ' (image required)' )
     }
+    // Check for remarks on failed inspection steps
+    if ( step.type === 'inspection' ) {
+      const stepId = step.step_id
+      const stepValue = stepValues[stepId]
+      // Check if inspection failed (value is false or 'fail')
+      const isFailed = stepValue?.value === false || stepValue?.value === 'fail'
+      if ( isFailed ) {
+        const remarks = stepValue?.remarks || ''
+        if ( !remarks || remarks.trim() === '' ) {
+          missing.push( ( step.label || step.name || `Step ${step.order}` ) + ' (remarks required for failed inspection)' )
+        }
+      }
+    }
   } )
   return missing
 }
@@ -1017,6 +1034,10 @@ const getExecutionPayload = () => {
     if ( 'relevant_tools' in stepPayload ) {
       delete stepPayload.relevant_tools
     }
+
+    // Add completion metadata
+    // stepPayload.completed_by = userStore.uid || null
+    stepPayload.completed_at = new Date().toISOString() // UTC timestamp in ISO 8601 format
 
     return stepPayload
   } )

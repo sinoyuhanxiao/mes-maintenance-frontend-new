@@ -2711,6 +2711,28 @@ defineOptions( {
 
   .details-tabs {
     height: 100%;
+
+    :deep(.el-tabs__header) {
+      margin: 0 0 16px 0;
+    }
+
+    :deep(.el-tabs__nav-wrap::after) {
+      height: 1px;
+    }
+
+    :deep(.el-tabs__item) {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    :deep(.el-tabs__item.is-top) {
+      font-size: 16px;
+      width: 50%;
+    }
+
+    :deep(.el-tabs__nav.is-top) {
+      width: 100%;
+    }
   }
 
   // Card Components - matching StandardsPreview exactly

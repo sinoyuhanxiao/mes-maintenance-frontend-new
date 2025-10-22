@@ -48,7 +48,7 @@
         </el-select>
         <el-select
           v-model="taskFilters.timeSpent"
-          placeholder="Time spent"
+          placeholder="Actual Time"
           clearable
           class="filter-select"
           size="default"
@@ -56,7 +56,28 @@
           <el-option label="Less than 15 min" value="lt15" />
           <el-option label="15 - 30 min" value="15to30" />
           <el-option label="More than 30 min" value="gt30" />
+          <el-option label="Custom Range" value="custom" class="custom-range-option" />
         </el-select>
+        <div v-if="taskFilters.timeSpent === 'custom'" class="custom-time-range">
+          <el-input-number
+            v-model="customTimeRange.start"
+            :min="0"
+            placeholder="Min"
+            size="default"
+            class="time-range-input"
+            controls-position="right"
+          />
+          <span class="range-separator">-</span>
+          <el-input-number
+            v-model="customTimeRange.end"
+            :min="customTimeRange.start || 0"
+            placeholder="Max"
+            size="default"
+            class="time-range-input"
+            controls-position="right"
+          />
+          <span class="time-unit">min</span>
+        </div>
       </div>
 
       <!-- Scrollable Tasks List -->
@@ -115,7 +136,7 @@
           </div>
 
           <div class="task-actions">
-            <el-button v-show="false" type="info" @click="handleLogStepValues">Logs</el-button>
+            <el-button v-show="true" type="info" @click="handleLogStepValues">Logs</el-button>
             <el-button type="warning" @click="handleSaveDraft" :loading="isSubmitting">Save Draft</el-button>
             <el-button type="primary" @click="handleFinalSubmit" :loading="isSubmitting">Submit</el-button>
           </div>
@@ -150,7 +171,7 @@
         </el-tab-pane>
 
         <!-- Steps Tab -->
-        <el-tab-pane label="Steps Template" name="steps">
+        <el-tab-pane label="Original Template" name="steps">
           <StepsPreview
             v-if="showTaskLogDialog && selectedTaskForLog?.steps"
             :steps="selectedTaskForLog.steps"
@@ -215,6 +236,7 @@ const taskFilters = ref( {
   timeSpent : ''
 } )
 
+const customTimeRange = ref( { start : null, end : null } ) // Custom time range in minutes
 const searchInput = ref( '' )
 let searchDebounceTimer = null
 
@@ -372,6 +394,16 @@ const filteredTaskCards = computed( () => {
       const minutes = Math.round( timeTakenSec / 60 )
 
       switch ( taskFilters.value.timeSpent ) {
+        case 'custom':
+          // Custom range filter
+          if ( customTimeRange.value.start !== null && customTimeRange.value.end !== null ) {
+            return minutes >= customTimeRange.value.start && minutes <= customTimeRange.value.end
+          } else if ( customTimeRange.value.start !== null ) {
+            return minutes >= customTimeRange.value.start
+          } else if ( customTimeRange.value.end !== null ) {
+            return minutes <= customTimeRange.value.end
+          }
+          return true
         case 'lt15':
           return minutes < 15
         case '15to30':
@@ -511,7 +543,7 @@ const prepareTaskEntryPayload = ( saveAsDraft = false ) => {
   }
 
   const timeTakenSec = Math.max( 0, Math.round( minutesValue * 60 ) )
-  const userId = userStore.userInfo?.id || userStore.userInfo?.user_id || '999'
+  const userId = userStore.uid || '999'
 
   return {
     taskEntryId,
@@ -534,7 +566,7 @@ const buildDebugPayload = () => {
 
   const minutesValue = Number( manualTimeMinutes.value )
   const timeTakenSec = Number.isNaN( minutesValue ) ? 0 : Math.max( 0, Math.round( minutesValue * 60 ) )
-  const userId = userStore.userInfo?.id || userStore.userInfo?.user_id || '999'
+  const userId = userStore.uid || '999'
 
   return {
     taskEntryId,
@@ -683,7 +715,7 @@ watch(
 )
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .work-order-execution {
   display: flex;
   flex-direction: column;
@@ -744,6 +776,32 @@ watch(
 
 .filter-select {
   width: 150px;
+}
+
+.custom-time-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.time-range-input {
+  width: 100px;
+}
+
+.range-separator {
+  color: var(--el-text-color-secondary);
+  font-weight: 500;
+}
+
+.time-unit {
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+:deep(.custom-range-option) {
+  color: var(--el-color-primary);
+  font-weight: 500;
 }
 
 .tasks-list-container {
@@ -900,11 +958,38 @@ header.el-drawer__header {
   :deep(.el-dialog__body) {
     padding: 20px;
   }
-}
 
-.task-log-tabs {
-  :deep(.el-tabs__content) {
-    overflow: visible;
+  .task-log-tabs {
+    :deep(.el-tabs__header) {
+      margin: 0 0 16px 0;
+    }
+
+    :deep(.el-tabs__nav-wrap::after) {
+      height: 1px;
+    }
+
+    :deep(.el-tabs__nav-prev),
+    :deep(.el-tabs__nav-next) {
+      display: none;
+    }
+
+    :deep(.el-tabs__item) {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    :deep(.el-tabs__item.is-top) {
+      font-size: 16px;
+      width: 45%;
+    }
+
+    :deep(.el-tabs__nav.is-top) {
+      width: 100%;
+    }
+
+    :deep(.el-tabs__content) {
+      overflow: visible;
+    }
   }
 }
 </style>

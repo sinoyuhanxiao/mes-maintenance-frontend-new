@@ -27,6 +27,10 @@
     </div>
     <!-- Remarks textarea - shown when Failed is selected in interactive mode -->
     <div v-if="currentResult === 'fail' && interactive" class="remarks-section">
+      <div class="remarks-label-required">
+        <span class="required-asterisk">*</span>
+        Remarks
+      </div>
       <el-input
         v-model="remarks"
         type="textarea"
@@ -220,6 +224,13 @@ watch( remarks, () => {
 
 .remarks-section {
   margin-top: 8px;
+}
+
+.remarks-label-required {
+  font-size: 13px;
+  color: #606266;
+  font-weight: 500;
+  margin-bottom: 8px;
 }
 
 .remarks-textarea {

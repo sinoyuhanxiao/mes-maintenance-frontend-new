@@ -35,6 +35,20 @@
               {{ $t('workOrder.actions.edit') }}
             </el-button>
 
+            <!-- Start Work Order Button -->
+            <el-button
+              v-if="!shouldShowApprovalButtons"
+              class="start-work-order-button"
+              type="success"
+              plain
+              size="default"
+              @click="handleStartWorkOrder"
+              aria-label="Start Work Order"
+            >
+              <el-icon style="margin-right: 4px"><VideoPlay /></el-icon>
+              Start Work Order
+            </el-button>
+
             <!-- Approve and Reject Buttons (shown when all tasks are finished) -->
             <template v-if="shouldShowApprovalButtons">
               <el-button
@@ -75,7 +89,6 @@
                     <el-icon><Download /></el-icon>
                     {{ $t('workOrder.actions.export') }}
                   </el-dropdown-item>
-                  <StartWorkOrderAction :work-order="workOrder" @start="handleStartWorkOrder" />
                   <el-dropdown-item v-if="workOrder.state?.id === 12" command="recreate" divided>
                     <el-icon><DocumentCopy /></el-icon>
                     {{ $t('workOrder.actions.recreate') }}
@@ -452,7 +465,7 @@
                 </el-select>
                 <el-select
                   v-model="taskFilters.timeSpent"
-                  placeholder="Time spent"
+                  placeholder="Actual Time"
                   clearable
                   class="filter-select"
                   size="default"
@@ -460,7 +473,28 @@
                   <el-option label="Less than 15 min" value="lt15" />
                   <el-option label="15 - 30 min" value="15to30" />
                   <el-option label="More than 30 min" value="gt30" />
+                  <el-option label="Custom Range" value="custom" class="custom-range-option" />
                 </el-select>
+                <div v-if="taskFilters.timeSpent === 'custom'" class="custom-time-range">
+                  <el-input-number
+                    v-model="customTimeRange.start"
+                    :min="0"
+                    placeholder="Min"
+                    size="default"
+                    class="time-range-input"
+                    controls-position="right"
+                  />
+                  <span class="range-separator">-</span>
+                  <el-input-number
+                    v-model="customTimeRange.end"
+                    :min="customTimeRange.start || 0"
+                    placeholder="Max"
+                    size="default"
+                    class="time-range-input"
+                    controls-position="right"
+                  />
+                  <span class="time-unit">min</span>
+                </div>
               </div>
 
               <!-- Tasks List -->
@@ -629,7 +663,7 @@
       </el-tab-pane>
 
       <!-- Steps Tab -->
-      <el-tab-pane label="Steps Template" name="steps">
+      <el-tab-pane label="Original Template" name="steps">
         <StepsPreview
           v-if="showTaskPreviewDialog"
           :key="selectedTaskTemplateId || selectedTaskForPreview?.id || 'task-preview'"
@@ -763,7 +797,8 @@ import {
   DocumentCopy,
   Search,
   Select,
-  CloseBold
+  CloseBold,
+  VideoPlay
 } from '@element-plus/icons-vue'
 import { convertToLocalTime } from '@/utils/datetime'
 import { exportTimeline as exportTimelineData, generateTimestampedFilename } from '@/utils/timelineExport'
@@ -782,7 +817,6 @@ import Timeline from '../Timeline/Timeline.vue'
 import WorkOrderTaskCard from './WorkOrderTaskCard.vue'
 import StepsPreview from '@/components/TaskLibrary/StepsPreview.vue'
 import StandardsPreview from '@/components/TaskLibrary/StandardsPreview.vue'
-import StartWorkOrderAction from '@/components/WorkOrder/Actions/StartWorkOrderAction.vue'
 import TaskLogsView from '@/components/WorkOrder/Logs/TaskLogsView.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
@@ -844,6 +878,8 @@ const taskFilters = ref( {
   assignee : '',
   timeSpent : ''
 } )
+
+const customTimeRange = ref( { start : null, end : null } ) // Custom time range in minutes
 
 // Task preview tab state
 const activeTaskPreviewTab = ref( 'logs' )
@@ -1032,6 +1068,16 @@ const filteredTaskEntries = computed( () => {
       const minutes = Math.round( timeTakenSec / 60 )
 
       switch ( taskFilters.value.timeSpent ) {
+        case 'custom':
+          // Custom range filter
+          if ( customTimeRange.value.start !== null && customTimeRange.value.end !== null ) {
+            return minutes >= customTimeRange.value.start && minutes <= customTimeRange.value.end
+          } else if ( customTimeRange.value.start !== null ) {
+            return minutes >= customTimeRange.value.start
+          } else if ( customTimeRange.value.end !== null ) {
+            return minutes <= customTimeRange.value.end
+          }
+          return true
         case 'lt15':
           return minutes < 15
         case '15to30':
@@ -2954,6 +3000,32 @@ defineOptions( {
   width: 150px;
 }
 
+.custom-time-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.time-range-input {
+  width: 100px;
+}
+
+.range-separator {
+  color: var(--el-text-color-secondary);
+  font-weight: 500;
+}
+
+.time-unit {
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+:deep(.custom-range-option) {
+  color: var(--el-color-primary);
+  font-weight: 500;
+}
+
 @media (max-width: 768px) {
   .tasks-filter-bar {
     flex-direction: column;
@@ -3046,6 +3118,28 @@ defineOptions( {
 
   .details-tabs {
     height: 100%;
+
+    :deep(.el-tabs__header) {
+      margin: 0 0 16px 0;
+    }
+
+    :deep(.el-tabs__nav-wrap::after) {
+      height: 1px;
+    }
+
+    :deep(.el-tabs__item) {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    :deep(.el-tabs__item.is-top) {
+      font-size: 16px;
+      width: 50%;
+    }
+
+    :deep(.el-tabs__nav.is-top) {
+      width: 100%;
+    }
   }
 
   // Card Components - matching StandardsPreview exactly

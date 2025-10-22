@@ -34,13 +34,9 @@
                   :interactive="false"
                 />
 
-                <!-- Completion Metadata -->
-                <div v-if="step.completed_by || step.completed_at" class="step-metadata">
-                  <div v-if="step.completed_by" class="metadata-item">
-                    <el-icon><User /></el-icon>
-                    <span>Completed by: {{ step.completed_by }}</span>
-                  </div>
-                  <div v-if="step.completed_at" class="metadata-item">
+                <!-- Completion Metadata (only show timestamp, not user) -->
+                <div v-if="step.completed_at" class="step-metadata">
+                  <div class="metadata-item">
                     <el-icon><Clock /></el-icon>
                     <span>{{ formatTimestamp(step.completed_at) }}</span>
                   </div>
@@ -102,7 +98,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { Search, Tools, User, Clock, Document } from '@element-plus/icons-vue'
+import { Search, Tools, Clock, Document } from '@element-plus/icons-vue'
 import { convertToLocalTime } from '@/utils/datetime'
 
 // Preview components reused from Procedure Designer

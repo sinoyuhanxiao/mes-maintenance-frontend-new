@@ -144,17 +144,25 @@ const formatTimestamp = timestamp => {
   return convertToLocalTime( date.toISOString() )
 }
 
-// Format task time from log.task.created_at
+// Format task time based on change type
 const formatTaskTime = log => {
   if ( !log ) return '-'
 
-  // Prefer task.created_at, fallback to log.time
-  const createdAt = log.task?.created_at
-  if ( createdAt ) {
-    return convertToLocalTime( createdAt )
+  // For 'create' change type, use task.created_at
+  // For 'update' change type, use task.updated_at
+  let timestamp = null
+  if ( log.change === 'create' ) {
+    timestamp = log.task?.created_at
+  } else if ( log.change === 'update' ) {
+    timestamp = log.task?.updated_at
   }
 
-  // Fallback to log.time if task.created_at is not available
+  // Convert to browser local time if timestamp exists
+  if ( timestamp ) {
+    return convertToLocalTime( timestamp )
+  }
+
+  // Fallback to log.time if task timestamps are not available
   if ( log.time ) {
     return formatTimestamp( log.time )
   }

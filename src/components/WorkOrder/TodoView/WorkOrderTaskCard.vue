@@ -41,6 +41,22 @@
             >
               Failed
             </el-tag>
+            <el-tag
+              v-else-if="taskState && (taskState.toLowerCase() === 'in progress' || taskState.toLowerCase() === 'in-progress' || taskState.toLowerCase() === 'inprogress')"
+              type="primary"
+              size="small"
+              class="tag-item"
+            >
+              In Progress
+            </el-tag>
+            <el-tag
+              v-else-if="taskState && taskState.toLowerCase() === 'ready'"
+              type="info"
+              size="small"
+              class="tag-item"
+            >
+              Ready
+            </el-tag>
             <template v-else>{{ taskState }}</template>
           </span>
         </div>
