@@ -23,7 +23,7 @@
 
   <div class="form-action-row">
     <el-button @click="emit('cancel')">{{ t('common.cancel') }}</el-button>
-    <el-button type="warning" @click="handleResetForm">
+    <el-button type="warning" @click="handleResetForm(false)">
       {{ t('workOrder.actions.reset') }}
     </el-button>
     <el-button type="primary" :disabled="internalShift.id && !isShiftEdited" @click="handleConfirmSubmit">
@@ -37,6 +37,10 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import { createShift, updateShift } from '@/api/shift'
+
+defineExpose( {
+  handleResetForm
+} )
 
 const props = defineProps( {
   shift : {
@@ -86,14 +90,16 @@ watch(
   { immediate : true }
 )
 
-async function handleResetForm() {
+async function handleResetForm( skipConfirmation ) {
   try {
-    await ElMessageBox.confirm( 'This will reset all fields to their original values. Continue?', 'Warning', {
-      type : 'warning',
-      confirmButtonText : t( 'common.confirm' ),
-      cancelButtonText : t( 'common.cancel' ),
-      distinguishCancelAndClose : true
-    } )
+    if ( !skipConfirmation ) {
+      await ElMessageBox.confirm( 'This will reset all fields to their original values. Continue?', 'Warning', {
+        type : 'warning',
+        confirmButtonText : t( 'common.confirm' ),
+        cancelButtonText : t( 'common.cancel' ),
+        distinguishCancelAndClose : true
+      } )
+    }
 
     if ( originalShiftSnapshot.value === null ) {
       internalShift.value = createEmptyShift()

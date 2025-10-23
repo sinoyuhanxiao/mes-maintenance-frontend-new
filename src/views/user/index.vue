@@ -100,7 +100,7 @@
           </div>
 
           <div class="actions-item">
-            <el-button :icon="Refresh" @click="refreshTable">
+            <el-button :icon="RefreshIcon" @click="refreshTable">
               {{ 'Refresh' }}
             </el-button>
           </div>
@@ -155,11 +155,9 @@
               <div class="profile-picture-cell">
                 <!-- image URL missing -->
                 <template v-if="!scope.row.image">
-                  <el-tooltip content="No image available">
-                    <div class="image-slot-circle">
-                      <el-icon><Picture /></el-icon>
-                    </div>
-                  </el-tooltip>
+                  <el-text>
+                    {{ '-' }}
+                  </el-text>
                 </template>
 
                 <el-image
@@ -171,11 +169,9 @@
                   preview-teleported
                 >
                   <template #error>
-                    <el-tooltip content="Image failed to load">
-                      <div class="image-slot-circle">
-                        <el-icon><Picture /></el-icon>
-                      </div>
-                    </el-tooltip>
+                    <el-text>
+                      {{ '-' }}
+                    </el-text>
                   </template>
                 </el-image>
               </div>
@@ -364,14 +360,15 @@
         v-model="isUserFormDialogVisible"
         top="10vh"
         width="50%"
+        @close="handleFormClosed"
       >
         <div v-loading="isFormProcessing">
           <UserForm
+            ref="userFormRef"
             :user="currentEditingUser"
             :role-options="roleOptions"
-            :department-options="departmentOptions"
             @confirm="handleUserSubmit"
-            @cancel="() => (isUserFormDialogVisible = false)"
+            @cancel="handleFormClosed"
             @update:loading="isFormProcessing = $event"
           />
         </div>
@@ -435,7 +432,16 @@
 <script setup>
 import { ref, reactive, onMounted, onBeforeUnmount } from 'vue'
 import MesLayout from 'src/components/MesLayout'
-import { EditPen, Edit, View, Delete, QuestionFilled, Search, Picture, Remove } from '@element-plus/icons-vue'
+import {
+  EditPen,
+  Edit,
+  View,
+  Delete,
+  QuestionFilled,
+  Search,
+  Refresh as RefreshIcon,
+  Remove
+} from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 // import { convertToLocalTime } from '@/utils/datetime'
@@ -446,7 +452,7 @@ import { useRouter } from 'vue-router'
 import { deleteUserById, getUserById, searchUsers } from '@/api/user.js'
 import UserForm from '@/views/user/components/UserForm.vue'
 import { disableUsers, enableUsers, searchRoles } from '@/api/rbac'
-import { searchDepartments } from '@/api/department'
+// import { searchDepartments } from '@/api/department'
 // import DepartmentTag from '@/views/department/components/DepartmentTag.vue'
 // import TagPopover from '@/views/team/components/TagPopover.vue'
 import { useUserStore } from '@/store'
@@ -472,6 +478,7 @@ const tableHeight = ref( window.innerHeight - 250 )
 
 // Form related
 const isFormProcessing = ref( false )
+const userFormRef = ref()
 const isUserFormDialogVisible = ref( false )
 const currentEditingUser = ref( null ) // null = create mode
 const showSuccessDialog = ref( false )
@@ -479,14 +486,14 @@ const createdUsername = ref( '' )
 
 const initialFilters = {
   keyword : null,
-  department_ids : [],
+  // department_ids : [],
   role_ids : []
 }
 
 const localFilters = reactive( { ...initialFilters } )
 
 const roleOptions = ref( [] )
-const departmentOptions = ref( [] )
+// const departmentOptions = ref( [] )
 
 // const departmentMap = computed( () => Object.fromEntries( departmentOptions.value.map( d => [d.id, d] ) ) )
 
@@ -544,6 +551,11 @@ async function confirmDelete( row ) {
 function handleCurrentPageChange( val ) {
   currentPage.value = val
   loadUsers()
+}
+
+function handleFormClosed() {
+  isUserFormDialogVisible.value = false
+  userFormRef.value?.handleResetForm( true )
 }
 
 function handleSizeChange( val ) {
@@ -624,14 +636,14 @@ async function loadRoles() {
   }
 }
 
-async function loadDepartments() {
-  try {
-    const response = await searchDepartments( {}, 1, 1000 )
-    departmentOptions.value = response.data.content
-  } catch ( e ) {
-    ElMessage.error( e )
-  }
-}
+// async function loadDepartments() {
+//   try {
+//     const response = await searchDepartments( {}, 1, 1000 )
+//     departmentOptions.value = response.data.content
+//   } catch ( e ) {
+//     ElMessage.error( e )
+//   }
+// }
 
 async function handleFilterChange() {
   try {
@@ -664,7 +676,7 @@ async function refreshTable() {
   try {
     loading.value = true
     await loadRoles()
-    await loadDepartments()
+    // await loadDepartments()
     await loadUsers()
   } catch ( e ) {
   } finally {
@@ -678,7 +690,7 @@ onBeforeUnmount( () => {
 
 onMounted( async() => {
   await loadRoles()
-  await loadDepartments()
+  // await loadDepartments()
   await loadUsers()
 
   emitter.on( 'user:updated', async updatedUserId => {
@@ -778,5 +790,13 @@ onBeforeUnmount( () => {
   background: var(--el-fill-color-light);
   color: var(--el-text-color-secondary);
   font-size: 30px;
+}
+
+:deep(.el-scrollbar__bar.is-horizontal) {
+  height: 14px !important;
+}
+
+:deep(.el-scrollbar__thumb.is-horizontal) {
+  height: 14px !important;
 }
 </style>

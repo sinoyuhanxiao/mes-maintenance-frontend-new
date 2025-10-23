@@ -257,9 +257,9 @@ export const asyncRoutes = [
         meta : { title : 'router.user', icon : 'users', noCache : false }
       },
       {
-        path : 'team-management',
+        path : 'work-group-management',
         component : () => import( '@/views/team/index.vue' ),
-        name : 'TeamManagement',
+        name : 'WorkGroupManagement',
         meta : { title : 'router.team', icon : 'users', noCache : false }
       },
       {

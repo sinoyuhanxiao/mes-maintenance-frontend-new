@@ -56,7 +56,7 @@
       {{ t('common.cancel') }}
     </el-button>
 
-    <el-button type="warning" @click="handleResetForm">
+    <el-button type="warning" @click="handleResetForm(false)">
       {{ t('workOrder.actions.reset') }}
     </el-button>
 
@@ -71,6 +71,10 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { createRole, updateRole } from '@/api/rbac'
+
+defineExpose( {
+  handleResetForm
+} )
 
 const prop = defineProps( {
   role : {
@@ -161,14 +165,16 @@ watch(
   { immediate : true }
 )
 
-async function handleResetForm() {
+async function handleResetForm( skipConfirmation ) {
   try {
-    await ElMessageBox.confirm( 'This will reset all fields to their original values. Continue?', 'Warning', {
-      type : 'warning',
-      confirmButtonText : t( 'common.confirm' ),
-      cancelButtonText : t( 'common.cancel' ),
-      distinguishCancelAndClose : true
-    } )
+    if ( !skipConfirmation ) {
+      await ElMessageBox.confirm( 'This will reset all fields to their original values. Continue?', 'Warning', {
+        type : 'warning',
+        confirmButtonText : t( 'common.confirm' ),
+        cancelButtonText : t( 'common.cancel' ),
+        distinguishCancelAndClose : true
+      } )
+    }
 
     if ( originalRoleSnapshot.value === null ) {
       internalRole.value = createEmptyRole()

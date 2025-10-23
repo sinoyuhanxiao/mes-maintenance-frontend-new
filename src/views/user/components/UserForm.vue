@@ -201,7 +201,7 @@
       {{ t('user.form.cancelButton') }}
     </el-button>
 
-    <el-button type="warning" @click="handleResetForm">
+    <el-button type="warning" @click="handleResetForm(false)">
       {{ t('workOrder.actions.reset') }}
     </el-button>
 
@@ -232,6 +232,10 @@ import { useI18n } from 'vue-i18n'
 import 'vue-tel-input/vue-tel-input.css'
 import { useUserStore } from '@/store'
 import { emitter } from '@/utils/mitt'
+
+defineExpose( {
+  handleResetForm
+} )
 
 const prop = defineProps( {
   user : {
@@ -294,7 +298,7 @@ function createEmptyUser() {
     id : null,
     first_name : '',
     last_name : '',
-    department_list : [],
+    // department_list : [],
     role_id : null,
     email : '',
     phone_number : '+1',
@@ -331,7 +335,7 @@ function transformIncomingUser( user ) {
     ...createEmptyUser(),
     ...user,
     user_certificates : ( user.certificate_list || [] ).map( c => transformIncomingCertificate( c ) ),
-    department_list : user.department_ids || [],
+    // department_list : user.department_ids || [],
     role_id : user.role_list[0]?.id || null
   }
 }
@@ -431,7 +435,7 @@ const userFormValidationRules = computed( () => {
         trigger : 'blur'
       }
     ],
-    department_list : [{ required : false, message : t( 'user.validation.departmentRequired' ), trigger : 'blur' }],
+    // department_list : [{ required : false, message : t( 'user.validation.departmentRequired' ), trigger : 'blur' }],
     role_id : [{ required : true, message : t( 'user.validation.roleRequired' ), trigger : 'blur' }],
     phone_number : [
       {
@@ -767,14 +771,16 @@ async function handleConfirm() {
   }
 }
 
-async function handleResetForm() {
+async function handleResetForm( skipConfirmation ) {
   try {
-    await ElMessageBox.confirm( 'This will reset all fields to their original values. Continue?', 'Warning', {
-      type : 'warning',
-      confirmButtonText : t( 'common.confirm' ),
-      cancelButtonText : t( 'common.cancel' ),
-      distinguishCancelAndClose : true
-    } )
+    if ( !skipConfirmation ) {
+      await ElMessageBox.confirm( 'This will reset all fields to their original values. Continue?', 'Warning', {
+        type : 'warning',
+        confirmButtonText : t( 'common.confirm' ),
+        cancelButtonText : t( 'common.cancel' ),
+        distinguishCancelAndClose : true
+      } )
+    }
 
     if ( originalUserSnapshot.value === null ) {
       internalUser.value = createEmptyUser()

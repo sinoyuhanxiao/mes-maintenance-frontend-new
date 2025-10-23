@@ -38,7 +38,7 @@
           <!--          </div>-->
 
           <div class="actions-item">
-            <el-button :icon="Refresh" @click="refreshTable">
+            <el-button :icon="RefreshIcon" @click="refreshTable">
               {{ 'Refresh' }}
             </el-button>
           </div>
@@ -84,7 +84,14 @@
           sortable="custom"
           align="center"
         />
-        <el-table-column prop="created_at" label="Created At" min-width="180" show-overflow-tooltip>
+        <el-table-column
+          sortable="custom"
+          prop="created_at"
+          label="Created At"
+          min-width="180"
+          show-overflow-tooltip
+          align="center"
+        >
           <template #default="scope">
             <el-text>
               {{ formatAsLocalDateTimeString(scope.row.created_at) }}
@@ -92,7 +99,14 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="updated_at" label="Updated At" min-width="180" show-overflow-tooltip>
+        <el-table-column
+          sortable="custom"
+          prop="updated_at"
+          label="Updated At"
+          min-width="180"
+          show-overflow-tooltip
+          align="center"
+        >
           <template #default="scope">
             <el-text>
               {{ formatAsLocalDateTimeString(scope.row.updated_at) }}
@@ -117,12 +131,14 @@
         v-model="isDialogVisible"
         top="10vh"
         width="50%"
+        @close="handleFormClosed"
       >
         <div v-loading="isFormProcessing">
           <ShiftForm
+            ref="shiftFormRef"
             :shift="currentEditingShift"
             @confirm="handleShiftSubmitted"
-            @cancel="() => (isDialogVisible = false)"
+            @cancel="handleFormClosed"
             @update:loading="isFormProcessing = $event"
           />
         </div>
@@ -147,7 +163,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MesLayout from '@/components/MesLayout'
-import { Delete, Edit, EditPen, Refresh, Search } from '@element-plus/icons-vue'
+import { Delete, Edit, EditPen, Refresh as RefreshIcon, Search } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { searchShifts, deactivateShift } from '@/api/shift'
 import { getAllUsers } from '@/api/user'
@@ -171,6 +187,7 @@ const currentEditingShift = ref( null )
 const userOptions = ref( [] )
 const initialFilters = { keyword : '' }
 const localFilters = reactive( { ...initialFilters } )
+const shiftFormRef = ref()
 
 // const userMap = computed( () =>
 //   Object.fromEntries( userOptions.value.map( user => [user.id, user] ) )
@@ -194,6 +211,11 @@ function handleShiftSubmitted() {
 function handleFilterChange() {
   currentPage.value = 1
   loadShifts()
+}
+
+function handleFormClosed() {
+  isDialogVisible.value = false
+  shiftFormRef.value?.handleResetForm( true )
 }
 
 // function clearLocalFilters() {
@@ -317,5 +339,13 @@ onMounted( async() => {
     align-items: center;
     gap: 12px;
   }
+}
+
+:deep(.el-scrollbar__bar.is-horizontal) {
+  height: 14px !important;
+}
+
+:deep(.el-scrollbar__thumb.is-horizontal) {
+  height: 14px !important;
 }
 </style>

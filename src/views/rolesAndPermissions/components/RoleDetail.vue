@@ -42,7 +42,7 @@
         <div class="tab-toolbar">
           <el-input
             v-model="search.users"
-            placeholder="Search by name or email"
+            placeholder="Search by keyword"
             prefix-icon="Search"
             clearable
             class="toolbar-input"
@@ -50,7 +50,6 @@
         </div>
 
         <el-table border :data="paginatedUsers" style="width: 100%" height="500" @sort-change="handleSortChange">
-          <el-table-column prop="id" label="ID" width="80" sortable="custom" align="center" />
           <el-table-column label="Name" min-width="200" sortable="custom" align="center">
             <template #default="scope">
               <span>
@@ -60,28 +59,72 @@
               </span>
             </template>
           </el-table-column>
+
+          <el-table-column prop="id" label="ID" width="80" sortable="custom" align="center" />
+
+          <el-table-column prop="image" label="Profile Picture" min-width="150px" align="center">
+            <template #default="scope">
+              <div class="profile-picture-cell">
+                <!-- image URL missing -->
+                <template v-if="!scope.row.image">
+                  <el-text>
+                    {{ '-' }}
+                  </el-text>
+                </template>
+
+                <el-image
+                  v-else
+                  :src="scope.row.image"
+                  fit="cover"
+                  style="width: 30px; height: 30px; border-radius: 50%"
+                  :preview-src-list="[scope.row.image]"
+                  preview-teleported
+                >
+                  <template #error>
+                    <el-text>
+                      {{ '-' }}
+                    </el-text>
+                  </template>
+                </el-image>
+              </div>
+            </template>
+          </el-table-column>
+
           <el-table-column prop="email" label="Email" min-width="220" align="center" />
           <el-table-column prop="phone_number" label="Phone" min-width="140" align="center" />
+          <el-table-column prop="username" label="Username" min-width="220px" align="center" />
+          <el-table-column :label="'Certificates'" prop="certificate_list" min-width="220px" align="center">
+            <template #default="scope">
+              <certificate-hover-detail :certificates="scope.row.certificate_list || []" />
+            </template>
+          </el-table-column>
+          <el-table-column prop="employee_number" label="Employee Number" min-width="200" align="center">
+            <template #default="scope">
+              <el-text>
+                {{ scope.row.employee_number || '-' }}
+              </el-text>
+            </template>
+          </el-table-column>
         </el-table>
 
         <div class="pagination-container">
+          <!-- left spacer to balance flex -->
+          <div class="pagination-spacer"></div>
+
+          <!-- centered pagination -->
           <el-pagination
-            layout="total, sizes, prev, pager, next"
-            :page-sizes="pageSizeOptions"
-            v-model:page-size="pageSize"
-            :total="filteredUsers.length"
-            v-model:current-page="page"
+              layout="total, sizes, prev, pager, next"
+              :page-sizes="pageSizeOptions"
+              v-model:page-size="pageSize"
+              :total="filteredUsers.length"
+              v-model:current-page="page"
           />
+          <div class="dialog-footer">
+            <el-button @click="visible = false">Close</el-button>
+          </div>
         </div>
       </el-tab-pane>
     </el-tabs>
-
-    <!-- Footer -->
-    <template #footer>
-      <div class="dialog-footer">
-        <el-button @click="visible = false">Close</el-button>
-      </div>
-    </template>
   </el-dialog>
 </template>
 
@@ -89,6 +132,7 @@
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Edit } from '@element-plus/icons-vue'
+import CertificateHoverDetail from '@/views/user/components/CertificateHoverDetail.vue'
 
 const props = defineProps( {
   role : { type : Object, default : null },
@@ -122,15 +166,25 @@ const mappedUsers = computed( () => {
 
 // ===== Filtering =====
 const filterData = ( list, q, fields ) => {
-  if ( !list ) return []
+  if ( !list ) {
+    return []
+  }
   const keyword = q.trim().toLowerCase()
-  if ( !keyword ) return list
+  if ( !keyword ) {
+    return list
+  }
+
   return list.filter( item =>
-    fields.some( f =>
-      String( item[f] || '' )
+    fields.some( f => {
+      if ( f === 'full_name' ) {
+        const fullName = `${item.first_name || ''} ${item.last_name || ''}`.toLowerCase().trim()
+        return fullName.includes( keyword )
+      }
+
+      return String( item[f] || '' )
         .toLowerCase()
         .includes( keyword )
-    )
+    } )
   )
 }
 
@@ -150,7 +204,7 @@ const handleSortChange = ( { prop, order } ) => {
 
 // ===== Computed lists =====
 const filteredUsers = computed( () => {
-  const f = filterData( mappedUsers.value, search.value.users, ['id', 'first_name', 'last_name', 'email'] )
+  const f = filterData( mappedUsers.value, search.value.users, ['id', 'full_name', 'username'] )
   return sortData( f, sort.value )
 } )
 
@@ -217,14 +271,28 @@ function goToUserDetail( id ) {
 }
 
 .pagination-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* space for three zones */
   margin-top: 12px;
-  display: flex;
-  justify-content: center;
-}
+  width: 100%;
+  position: relative;
 
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
+  /* keep pagination centered visually */
+  .el-pagination {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .pagination-spacer {
+    width: 120px; /* roughly same width as button area, tweak as needed */
+  }
+
+  .dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    width: 120px; /* same as spacer to stay balanced */
+  }
 }
 </style>

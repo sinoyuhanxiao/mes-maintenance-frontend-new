@@ -6,27 +6,27 @@
       <!-- local filters -->
       <div class="toolbar">
         <div class="filters-container">
-          <div class="filter-item">
-            <el-select
-              v-model="localFilters.assigned_user_ids"
-              :placeholder="'Filter By Assigned Users'"
-              clearable
-              multiple
-              collapse-tags
-              collapse-tags-tooltip
-              filterable
-              size="default"
-              style="width: 240px"
-              @change="handleFilterChange"
-            >
-              <el-option
-                v-for="user in userOptions"
-                :key="user.id"
-                :label="user.first_name + ' ' + user.last_name"
-                :value="user.id"
-              />
-            </el-select>
-          </div>
+          <!--          <div class="filter-item">-->
+          <!--            <el-select-->
+          <!--              v-model="localFilters.assigned_user_ids"-->
+          <!--              :placeholder="'Filter By Assigned Users'"-->
+          <!--              clearable-->
+          <!--              multiple-->
+          <!--              collapse-tags-->
+          <!--              collapse-tags-tooltip-->
+          <!--              filterable-->
+          <!--              size="default"-->
+          <!--              style="width: 240px"-->
+          <!--              @change="handleFilterChange"-->
+          <!--            >-->
+          <!--              <el-option-->
+          <!--                v-for="user in userOptions"-->
+          <!--                :key="user.id"-->
+          <!--                :label="user.first_name + ' ' + user.last_name"-->
+          <!--                :value="user.id"-->
+          <!--              />-->
+          <!--            </el-select>-->
+          <!--          </div>-->
 
           <div class="filter-item">
             <el-select
@@ -92,7 +92,7 @@
           </div>
 
           <div class="actions-item">
-            <el-button :icon="Refresh" @click="refreshTable">
+            <el-button :icon="RefreshIcon" @click="refreshTable">
               {{ 'Refresh' }}
             </el-button>
           </div>
@@ -173,7 +173,7 @@
           align="center"
         />
 
-        <el-table-column prop="created_at" label="Created At" min-width="180">
+        <el-table-column sortable prop="created_at" label="Created At" min-width="180" align="center">
           <template #default="scope">
             <el-text>
               {{ formatAsLocalDateTimeString(scope.row.created_at) }}
@@ -181,7 +181,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="updated_at" label="Updated At" min-width="180">
+        <el-table-column sortable prop="updated_at" label="Updated At" min-width="180" align="center">
           <template #default="scope">
             <el-text>
               {{ formatAsLocalDateTimeString(scope.row.updated_at) }}
@@ -210,12 +210,14 @@
         v-model="isDialogVisible"
         top="10vh"
         width="50%"
+        @close="handleFormClosed"
       >
         <div v-loading="isFormProcessing">
           <RoleForm
+            ref="roleFormRef"
             :role="currentEditingRole"
             @confirm="handleRoleSubmitted"
-            @cancel="() => (isDialogVisible = false)"
+            @cancel="handleFormClosed"
             @update:loading="isFormProcessing = $event"
           />
         </div>
@@ -247,7 +249,7 @@
 import { ref, reactive, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MesLayout from 'src/components/MesLayout'
-import { Delete, Edit, EditPen, Refresh, Remove, Search, View } from '@element-plus/icons-vue'
+import { Delete, Edit, EditPen, Refresh as RefreshIcon, Remove, Search, View } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { searchUsers } from '@/api/user.js'
 // import EquipmentTag from '@/views/team/components/EquipmentTag.vue'
@@ -263,6 +265,7 @@ const loading = ref( false )
 const isFormProcessing = ref( false )
 const isDialogVisible = ref( false )
 const rolesTableData = ref( [] )
+const roleFormRef = ref()
 const sortSettings = ref( { prop : 'id', order : 'ascending' } )
 const currentPage = ref( 1 )
 const pageSize = ref( 20 )
@@ -274,7 +277,7 @@ const userOptions = ref( [] )
 const currentEditingRole = ref( null )
 const initialFilters = {
   keyword : '',
-  assigned_user_ids : [],
+  // assigned_user_ids : [],
   permission_ids : [],
   module : null
 }
@@ -368,6 +371,11 @@ function handleSizeChange( val ) {
 function handleSortChange( { prop, order } ) {
   sortSettings.value = { prop, order }
   loadRoles()
+}
+
+function handleFormClosed() {
+  isDialogVisible.value = false
+  roleFormRef.value?.handleResetForm( true )
 }
 
 async function loadRoles() {
@@ -505,5 +513,13 @@ onMounted( async() => {
     align-items: center;
     gap: 12px;
   }
+}
+
+:deep(.el-scrollbar__bar.is-horizontal) {
+  height: 14px !important;
+}
+
+:deep(.el-scrollbar__thumb.is-horizontal) {
+  height: 14px !important;
 }
 </style>

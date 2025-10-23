@@ -64,10 +64,10 @@
       </template>
 
       <template #reference>
-        <el-button :type="'info'" plain :size="'small'">
+        <el-tag :type="'info'" plain :size="'small'">
           {{ certificates.length }}
           {{ certificates.length === 1 ? 'certificate' : 'certificates' }}
-        </el-button>
+        </el-tag>
       </template>
     </el-popover>
   </template>

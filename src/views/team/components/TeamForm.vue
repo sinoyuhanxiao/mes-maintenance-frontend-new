@@ -21,13 +21,9 @@
         <el-form-item :label="'Parent Group'" class="full-width">
           <div class="parent-team-row">
             <el-switch v-model="isChildTeam" active-text="Assign under another group" />
-            <TeamTreeSelect
-              v-if="isChildTeam"
-              v-model="internalTeam.parent_id"
-              :multiple="false"
-              :disable-team-id="internalTeam.id"
-              style="flex: 1"
-            />
+            <div v-if="isChildTeam" style="width: 100%">
+              <TeamTreeSelect v-model="internalTeam.parent_id" :disable-team-id="internalTeam.id" style="flex: 1" />
+            </div>
           </div>
         </el-form-item>
       </div>
@@ -114,11 +110,11 @@
 
             <template #footer>
               <div class="select-header">
-                <el-button type="primary" size="small" @click="checkAllMembers">
+                <el-button type="primary" size="small" @click="selectAllUserForMember">
                   {{ 'Select All' }}
                 </el-button>
 
-                <el-button type="warning" size="small" @click="uncheckAllMembers">
+                <el-button type="warning" size="small" @click="removeAllSelectedMemberUser">
                   {{ 'Clear All' }}
                 </el-button>
               </div>
@@ -129,7 +125,7 @@
       </div>
 
       <div class="form-row">
-        <el-form-item :label="'Working Shift'" prop="shift_id">
+        <el-form-item :label="'Assigned Shift'" prop="shift_id">
           <el-select v-model="internalTeam.shift_id" filterable clearable :placeholder="'Select a shift'">
             <el-option v-for="s in props.shiftOptions" :key="s.id" :label="s.name" :value="s.id" />
           </el-select>
@@ -160,12 +156,6 @@
       </div>
 
       <div class="form-row">
-        <!--      <el-form-item prop="department_id" :label="t('user.department')">-->
-        <!--        <el-select v-model="internalTeam.department_id" clearable>-->
-        <!--          <el-option v-for="d in departmentOptions" :key="d.id" :label="d.name" :value="d.id" />-->
-        <!--        </el-select>-->
-        <!--      </el-form-item>-->
-
         <el-form-item prop="equipment_node_ids" :label="t('team.assignedEquipment')" class="full-width">
           <EquipmentTreeSelect
             v-model="internalTeam.equipment_node_ids"
@@ -189,21 +179,13 @@
         <el-form-item class="full-width" :label="'Approval Flow Capability'" prop="type">
           <el-switch v-model="isDepartmentType" :active-text="'Enabled'" :inactive-text="'Disabled'" />
 
-          <el-alert
-            v-if="isDepartmentType"
-            title="This group will be able to create approval flows."
-            type="success"
-            show-icon
-            description="Approval steps will be limited to members of this group."
-          />
+          <el-text v-if="isDepartmentType" style="margin-left: 20px">
+            {{ "This group's will be able to utilize approval functionality" }}
+          </el-text>
 
-          <el-alert
-            v-else
-            title="Approval flow creation is disabled."
-            type="info"
-            show-icon
-            description="Enable this option if this group needs to manage approvals."
-          />
+          <el-text v-else style="margin-left: 20px">
+            {{ "This group's approval functionality is disabled" }}
+          </el-text>
         </el-form-item>
       </div>
     </el-form>
@@ -212,7 +194,7 @@
         {{ t('common.cancel') }}
       </el-button>
 
-      <el-button type="warning" @click="handleResetForm">
+      <el-button type="warning" @click="handleResetForm(false)">
         {{ t('workOrder.actions.reset') }}
       </el-button>
 
@@ -232,15 +214,15 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import TeamTreeSelect from '@/views/team/components/TeamTreeSelect.vue'
 
+defineExpose( {
+  handleResetForm
+} )
+
 const props = defineProps( {
   team : {
     type : Object,
     default : null
   },
-  // departmentOptions : {
-  //   type : Array,
-  //   default : () => []
-  // },
   userOptions : {
     type : Array,
     default : () => []
@@ -270,7 +252,6 @@ const buildCreateTeamPayload = entry => ( {
   name : entry.name,
   code : entry.code,
   description : entry.description,
-  // department_id : entry.department_id,
   member_requests : entry.member_requests,
   location_ids : entry.location_ids,
   equipment_node_ids : entry.equipment_node_ids,
@@ -297,10 +278,6 @@ const buildUpdateTeamPayload = ( entry, original ) => {
   if ( entry.description !== original.description ) {
     payload.description = entry.description
   }
-
-  // if ( entry.department_id !== original.department_id ) {
-  //   payload.department_id = entry.department_id
-  // }
 
   if ( entry.member_requests !== original.member_requests ) {
     payload.member_requests = entry.member_requests
@@ -388,7 +365,6 @@ const filteredUserOptions = computed( () => {
 } )
 
 const selectedShift = computed( () => props.shiftOptions.find( s => s.id === internalTeam.value.shift_id ) )
-
 const selectedShiftStart = computed( () => selectedShift.value?.start_time || null )
 const selectedShiftEnd = computed( () => selectedShift.value?.end_time || null )
 
@@ -396,6 +372,8 @@ watch(
   () => props.team,
   async team => {
     isFormLoading.value = true
+
+    console.log( 'detect changed in team prop by watch' )
 
     try {
       if ( team ) {
@@ -432,7 +410,7 @@ watch(
       return
     }
 
-    console.log( 'new leader id detected on watch' )
+    console.log( 'detect changed in leader_id by watch' )
     // Remove leader_id if it exists in team_members_id to prevent duplicate selection
     const index = internalTeam.value.team_members_id.indexOf( newLeaderId )
     if ( index !== -1 ) {
@@ -440,13 +418,34 @@ watch(
       internalTeam.value.team_members_id.splice( index, 1 )
     }
   }
-) // ensure this API exists or use searchTeams({id}) if needed
+)
 
 // Fetch Parent Team info when Parent Team id is changed
 watch(
   () => internalTeam.value.parent_id,
   async newPid => {
+    console.log( 'detect changed in parent_id by watch' )
     await handleParentTeamChange( newPid )
+  }
+)
+
+// Cleanup leader and member when cascade add is changed to false
+watch(
+  () => internalTeam.value.cascade_add_to_parents,
+  newVal => {
+    console.log( 'detect changed in cascade_add_to_parents by watch' )
+
+    if ( newVal === false && internalTeam.value.parent_id !== null ) {
+      // IDs of parent team members
+      const parentIds = parentTeamMembers.value || []
+
+      // Clean up not allowed selected users by filter away user with id not included in parentTeamMembers
+      internalTeam.value.team_members_id = internalTeam.value.team_members_id?.filter( id => parentIds.includes( id ) )
+
+      if ( !parentIds.includes( internalTeam.value.leader_id ) ) {
+        internalTeam.value.leader_id = null
+      }
+    }
   }
 )
 
@@ -458,7 +457,6 @@ function createEmptyTeam() {
     name : '',
     code : '',
     description : '',
-    // department_id : null,
     leader_id : null,
     member_requests : [],
     location_ids : [],
@@ -475,7 +473,6 @@ function transformIncomingTeam( team ) {
   return {
     ...createEmptyTeam(),
     ...team,
-    // department_id : team.department?.id || null,
     leader_id : team.leader_id || null,
     location_ids : team.team_locations_id,
     equipment_node_ids : team.team_equipment_nodes_id,
@@ -483,19 +480,22 @@ function transformIncomingTeam( team ) {
   }
 }
 
-async function handleResetForm() {
+async function handleResetForm( skipConfirmation ) {
   try {
-    await ElMessageBox.confirm( 'This will reset all fields to their original values. Continue?', 'Warning', {
-      type : 'warning',
-      confirmButtonText : t( 'common.confirm' ),
-      cancelButtonText : t( 'common.cancel' ),
-      distinguishCancelAndClose : true
-    } )
+    if ( !skipConfirmation ) {
+      await ElMessageBox.confirm( 'This will reset all fields to their original values. Continue?', 'Warning', {
+        type : 'warning',
+        confirmButtonText : t( 'common.confirm' ),
+        cancelButtonText : t( 'common.cancel' ),
+        distinguishCancelAndClose : true
+      } )
+    }
 
     if ( originalTeamSnapshot.value === null ) {
       internalTeam.value = createEmptyTeam()
     } else {
       internalTeam.value = JSON.parse( JSON.stringify( originalTeamSnapshot.value ) )
+      isChildTeam.value = internalTeam.value.parent_id !== null
     }
 
     formRef.value.clearValidate()
@@ -556,7 +556,7 @@ function buildMemberRequests( leaderId, memberIds ) {
   return requests
 }
 
-function checkAllMembers() {
+function selectAllUserForMember() {
   // Select all users that are not disabled
   internalTeam.value.team_members_id = filteredUserOptions.value
     .filter(
@@ -569,10 +569,11 @@ function checkAllMembers() {
     .map( u => u.id )
 }
 
-function uncheckAllMembers() {
+function removeAllSelectedMemberUser() {
   internalTeam.value.team_members_id = []
 }
 
+// Reload parent team users, and clear current team's leader/user if not included in parent team users
 async function handleParentTeamChange( newPid ) {
   if ( !newPid ) {
     parentTeam.value = null

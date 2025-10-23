@@ -86,11 +86,9 @@
               <div class="profile-picture-cell">
                 <!-- image URL missing -->
                 <template v-if="!scope.row.image">
-                  <el-tooltip content="No image available">
-                    <div class="image-slot-circle">
-                      <el-icon><Picture /></el-icon>
-                    </div>
-                  </el-tooltip>
+                  <el-text>
+                    {{ '-' }}
+                  </el-text>
                 </template>
 
                 <el-image
@@ -102,11 +100,9 @@
                   preview-teleported
                 >
                   <template #error>
-                    <el-tooltip content="Image failed to load">
-                      <div class="image-slot-circle">
-                        <el-icon><Picture /></el-icon>
-                      </div>
-                    </el-tooltip>
+                    <el-text>
+                      {{ '-' }}
+                    </el-text>
                   </template>
                 </el-image>
               </div>
@@ -177,7 +173,7 @@
           @sort-change="handleSortChange('equipment')"
           border
         >
-          <el-table-column label="Name" sortable="custom" min-width="200px" align="center" fixed="left">
+          <el-table-column label="Name" sortable="custom" min-width="250px" align="center" fixed="left">
             <template #default="scope">
               <span>
                 <el-link @click="goToDetail(scope.row.id, 'equipment')">
@@ -235,9 +231,9 @@
           @sort-change="handleSortChange('locations')"
           border
         >
-          <el-table-column prop="name" label="Name" sortable="custom" min-width="150" align="center" />
+          <el-table-column prop="name" label="Name" sortable="custom" min-width="250px" align="center" />
           <el-table-column prop="id" label="ID" sortable="custom" min-width="80" align="center" />
-          <el-table-column prop="image_list" label="Image" min-width="100" align="center">
+          <el-table-column prop="image_list" label="Image" min-width="150" align="center">
             <template #default="scope">
               <div v-if="scope.row.image_list?.length > 0">
                 <el-image
@@ -314,7 +310,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { Edit, Picture } from '@element-plus/icons-vue'
+import { Edit } from '@element-plus/icons-vue'
 import CertificateHoverDetail from '@/views/user/components/CertificateHoverDetail.vue'
 
 const props = defineProps( {

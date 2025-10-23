@@ -3,8 +3,8 @@
     v-model="selectedValue"
     :data="treeData"
     :props="defaultProps"
-    :multiple="multiple"
-    :show-checkbox="multiple"
+    :multiple="false"
+    :show-checkbox="false"
     check-strictly
     node-key="id"
     :filterable="true"
@@ -26,15 +26,10 @@ import { ElTreeSelect } from 'element-plus'
 import { getAllTeamTree } from '@/api/team'
 
 const props = defineProps( {
-  /** v-model for selected team ids */
+  /** v-model for selected team id */
   modelValue : {
-    type : [Array, Number, String, null],
+    type : [Number, String, null],
     default : null
-  },
-  /** Control single or multiple selection */
-  multiple : {
-    type : Boolean,
-    default : true
   },
   /** ID of team that should be disabled (e.g. current team when editing) */
   disableTeamId : {
@@ -72,36 +67,39 @@ function markDisabled( nodes, disabledId ) {
   } )
 }
 
+// Helper to load tree and disable target nodes
+async function reloadTree( disableId ) {
+  try {
+    const res = await getAllTeamTree()
+    let tree = res.data || []
+
+    if ( disableId ) {
+      tree = markDisabled( tree, disableId )
+    }
+
+    treeData.value = tree
+  } catch ( err ) {
+    console.error( 'Failed to load team tree:', err )
+  }
+}
+
 /**
  * Computed binding for el-tree-select
  * Keeps consistent type between single and multi modes
  */
 const selectedValue = computed( {
   get() {
-    if ( props.multiple ) {
-      return Array.isArray( props.modelValue ) ? props.modelValue : props.modelValue ? [props.modelValue] : []
-    } else {
-      return Array.isArray( props.modelValue ) ? props.modelValue[0] || null : props.modelValue
-    }
+    return props.modelValue
   },
   set( val ) {
-    if ( props.multiple ) {
-      emit( 'update:modelValue', Array.isArray( val ) ? val : [val] )
-    } else {
-      // Emit scalar number/string/null in single mode
-      emit( 'update:modelValue', val ?? null )
-    }
+    emit( 'update:modelValue', val ?? null )
   }
 } )
 
 // Tree node rendering
 const defaultProps = {
   label : node => {
-    // Safely compute member count (placeholder for now)
-    // const memberCount = 'x' // ← or node.team_members_id?.length ?? 0 later
-
-    // Compose label: name (code) - member count
-    const namePart = node.code ? `${node.name} (${node.code})` : node.name
+    const namePart = `${node.name}  (ID: ${node.id}, Code: ${node.code || '-'})`
     return `${namePart}`
   },
   value : 'id',
@@ -110,29 +108,23 @@ const defaultProps = {
 
 // Load tree data
 onMounted( async() => {
-  try {
-    const res = await getAllTeamTree()
-    let tree = res.data || []
-
-    // Disable specific node and its descendants if applicable
-    if ( props.disableTeamId ) {
-      tree = markDisabled( tree, props.disableTeamId )
-    }
-
-    treeData.value = tree
-  } catch ( err ) {
-    console.error( 'Failed to load team tree:', err )
-  }
+  await reloadTree( props.disableTeamId )
 } )
 
 // Watch prop updates
 watch(
   () => props.disableTeamId,
   async newId => {
-    if ( !treeData.value.length || !newId ) return
+    await reloadTree( newId )
+  }
+)
 
-    // Re-mark tree
-    treeData.value = markDisabled( treeData.value, newId )
+// --- Watch for modelValue changes ---
+watch(
+  () => props.modelValue,
+  async newVal => {
+    // Reload the tree each time the selected team changes
+    await reloadTree( props.disableTeamId )
   }
 )
 </script>

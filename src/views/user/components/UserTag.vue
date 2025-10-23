@@ -81,10 +81,6 @@ const props = defineProps( {
   user : {
     type : Object,
     default : null
-  },
-  departmentOptions : {
-    type : Array,
-    default : () => []
   }
 } )
 

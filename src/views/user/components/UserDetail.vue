@@ -116,6 +116,14 @@
             </template>
           </el-descriptions-item>
 
+          <el-descriptions-item :label="t('user.employeeNumber')" :span="1">
+            <template #default>
+              <div style="display: flex; align-items: center">
+                <span>{{ rawUser?.employee_number || '-' }}</span>
+              </div>
+            </template>
+          </el-descriptions-item>
+
           <el-descriptions-item :label="t('user.table.phoneNumber')" :span="1">
             <template #default>
               <div style="display: flex; align-items: center">
@@ -272,7 +280,6 @@
         <UserForm
           :user="rawUser"
           :role-options="roleOptions"
-          :department-options="departmentOptions"
           @confirm="handleUserSubmit"
           @cancel="() => (isUserFormDialogVisible = false)"
           @update:loading="isFormProcessing = $event"
@@ -292,7 +299,7 @@ import { useUserStore } from '@/store'
 import { useI18n } from 'vue-i18n'
 import UserForm from '@/views/user/components/UserForm.vue'
 import { gotoCognitoLogin } from '@/utils/cognito/cognito'
-import { searchDepartments } from '@/api/department'
+// import { searchDepartments } from '@/api/department'
 import { searchRoles } from '@/api/rbac'
 import { searchTeams } from '@/api/team'
 import { formatAsLocalDateTimeString } from '@/utils/datetime'
@@ -302,7 +309,7 @@ const route = useRoute()
 const userStore = useUserStore()
 
 const roleOptions = ref( [] )
-const departmentOptions = ref( [] )
+// const departmentOptions = ref( [] )
 const isFormProcessing = ref( false )
 const isUserFormDialogVisible = ref( false )
 const rawUser = ref( null )
@@ -315,7 +322,7 @@ onMounted( async() => {
   try {
     loading.value = true
     await loadRoles()
-    await loadDepartments()
+    // await loadDepartments()
     await loadUser( viewedUserId.value )
     await loadUserTeams( viewedUserId.value )
   } catch ( e ) {
@@ -362,14 +369,14 @@ async function loadRoles() {
   }
 }
 
-async function loadDepartments() {
-  try {
-    const response = await searchDepartments( {}, 1, 1000 )
-    departmentOptions.value = response.data.content
-  } catch ( e ) {
-    ElMessage.error( e )
-  }
-}
+// async function loadDepartments() {
+//   try {
+//     const response = await searchDepartments( {}, 1, 1000 )
+//     departmentOptions.value = response.data.content
+//   } catch ( e ) {
+//     ElMessage.error( e )
+//   }
+// }
 
 async function loadUserTeams( userId ) {
   if ( !userId ) {
