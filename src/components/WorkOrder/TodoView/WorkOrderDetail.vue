@@ -196,6 +196,63 @@
       </el-descriptions>
     </div>
 
+    <!-- Recurrence Information Section -->
+    <div class="detail-section recurrence-info-section" v-if="hasRecurrenceSummary">
+      <el-divider />
+      <div class="section-title-with-icon">
+        <h3 class="section-title">{{ recurrenceHeading }} ({{ totalInstances }} Total Work Orders)</h3>
+        <el-tooltip content="View work order timeline" placement="top">
+          <el-icon class="timeline-view-icon" @click="openTimelineModal">
+            <View />
+          </el-icon>
+        </el-tooltip>
+      </div>
+
+      <!-- Occurrence Cards Grid -->
+      <div class="occurrence-grid">
+        <!-- Last Occurrence -->
+        <div v-if="lastOccurrence" class="occurrence-card-wrapper">
+          <div class="occurrence-label">Last Occurrence</div>
+          <div class="occurrence-card" @click="handleOccurrenceClick(lastOccurrence.id)">
+            <div class="occurrence-icon">
+              <el-icon><DocumentCopy /></el-icon>
+            </div>
+            <div class="occurrence-info">
+              <div class="occurrence-name-link">{{ lastOccurrence.name }}</div>
+              <div class="occurrence-id">ID: {{ lastOccurrence.id }}</div>
+              <div class="occurrence-date">Started At: {{ formatDate(lastOccurrence.occurrence_start_date) }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Next Occurrence -->
+        <div v-if="nextOccurrence" class="occurrence-card-wrapper">
+          <div class="occurrence-label">Next Occurrence</div>
+          <div class="occurrence-card" @click="handleOccurrenceClick(nextOccurrence.id)">
+            <div class="occurrence-icon">
+              <el-icon><DocumentCopy /></el-icon>
+            </div>
+            <div class="occurrence-info">
+              <div class="occurrence-name-link">{{ nextOccurrence.name }}</div>
+              <div class="occurrence-id">ID: {{ nextOccurrence.id }}</div>
+              <div class="occurrence-date">Start Date Time: {{ formatDate(nextOccurrence.occurrence_start_date) }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- States Summary -->
+      <div v-if="Object.keys(statesSummary).length" class="states-summary" :class="{ 'no-occurrences': !lastOccurrence && !nextOccurrence }">
+        <div class="states-summary-label">States Summary:</div>
+        <div class="states-grid">
+          <div v-for="(count, stateName) in statesSummary" :key="stateName" class="state-item">
+            <span class="state-name">{{ stateName }}:</span>
+            <span class="state-count">{{ count }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Related Equipment Section -->
     <div class="detail-section" v-if="workOrder.equipment_node_ids?.length">
       <el-divider />
@@ -969,6 +1026,42 @@ const isRecurring = computed( () => {
   }
 
   return false
+} )
+
+// Recurrence summary computed properties
+const hasRecurrenceSummary = computed( () => {
+  return isRecurring.value && props.workOrder?.recurrence_summary
+} )
+
+const lastOccurrence = computed( () => {
+  return props.workOrder?.recurrence_summary?.last_occurrence_wo || null
+} )
+
+const nextOccurrence = computed( () => {
+  return props.workOrder?.recurrence_summary?.next_occurrence_wo || null
+} )
+
+const totalInstances = computed( () => {
+  return props.workOrder?.recurrence_summary?.total_instances || 0
+} )
+
+const statesSummary = computed( () => {
+  return props.workOrder?.recurrence_summary?.states_summary || {}
+} )
+
+const recurrenceHeading = computed( () => {
+  const recurrenceType = props.workOrder?.recurrence_type
+  if ( !recurrenceType ) return 'Recurrence Information'
+
+  const typeName = recurrenceType.name || ''
+  const lowerTypeName = typeName.toLowerCase()
+
+  if ( lowerTypeName === 'daily' ) return 'Daily Recurrence Information'
+  if ( lowerTypeName === 'weekly' ) return 'Weekly Recurrence Information'
+  if ( lowerTypeName === 'monthly' ) return 'Monthly Recurrence Information'
+  if ( lowerTypeName === 'yearly' ) return 'Yearly Recurrence Information'
+
+  return 'Recurrence Information'
 } )
 
 const workOrderProgress = computed( () => {
@@ -1841,6 +1934,18 @@ const handleEquipmentClick = equipment => {
   } )
 }
 
+// Handle occurrence click (placeholder for navigation implementation)
+const handleOccurrenceClick = occurrenceId => {
+  if ( !occurrenceId ) {
+    ElMessage.warning( 'Occurrence information is not available' )
+    return
+  }
+
+  console.log( 'Navigate to work order:', occurrenceId )
+  // TODO: Implement navigation to work order detail
+  // router.push({ path: '/work-order', query: { id: occurrenceId } })
+}
+
 // Handle search input with debounce (300ms)
 const handleSearchInput = value => {
   if ( searchDebounceTimer ) {
@@ -1984,6 +2089,28 @@ defineOptions( {
     font-weight: 500;
     color: var(--el-text-color-primary);
     margin: 36px 0px;
+  }
+
+  .section-title-with-icon {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .section-title {
+      margin: 36px 0px;
+    }
+
+    .timeline-view-icon {
+      font-size: 20px;
+      color: var(--el-color-primary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        color: var(--el-color-primary-dark-2);
+        transform: scale(1.1);
+      }
+    }
   }
 
   .section-row {
@@ -2531,6 +2658,150 @@ defineOptions( {
       .request-code {
         font-size: 12px;
         color: var(--el-text-color-secondary);
+      }
+    }
+  }
+}
+
+// Recurrence Information Styles
+.occurrence-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+  margin-bottom: 24px;
+
+  .occurrence-card-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .occurrence-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--el-text-color-secondary);
+      padding-left: 4px;
+    }
+
+    .occurrence-card {
+      display: flex;
+      align-items: center;
+      padding: 16px;
+      border: 1px solid var(--el-border-color-light);
+      border-radius: 8px;
+      background: var(--el-bg-color);
+      transition: all 0.2s ease;
+      cursor: pointer;
+
+      &:hover {
+        border-color: var(--el-color-primary);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+      }
+
+      .occurrence-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
+        background: var(--el-color-primary-light-9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+
+        .el-icon {
+          font-size: 22px;
+          color: var(--el-color-primary);
+        }
+      }
+
+      .occurrence-info {
+        flex: 1;
+        margin-left: 12px;
+        min-width: 0;
+
+        .occurrence-name-link {
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--el-text-color-primary);
+          margin-bottom: 6px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .occurrence-id {
+          font-size: 12px;
+          color: var(--el-text-color-secondary);
+          margin-bottom: 6px;
+        }
+
+        .occurrence-date {
+          font-size: 12px;
+          color: var(--el-text-color-regular);
+        }
+      }
+    }
+  }
+}
+
+.recurrence-metric {
+  padding: 12px 16px;
+  background: var(--el-fill-color-lighter);
+  border-radius: 8px;
+  margin-bottom: 16px;
+
+  .metric-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--el-text-color-secondary);
+    margin-right: 8px;
+  }
+
+  .metric-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--el-color-primary);
+  }
+}
+
+.states-summary {
+  margin-bottom: 36px;
+
+  &.no-occurrences {
+    margin-top: -32px;
+  }
+
+  .states-summary-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--el-text-color-secondary);
+    margin-bottom: 12px;
+  }
+
+  .states-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+
+    .state-item {
+      padding: 8px 12px;
+      background: var(--el-bg-color);
+      border: 1px solid var(--el-border-color-light);
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .state-name {
+        font-size: 13px;
+        color: var(--el-text-color-primary);
+        font-weight: 500;
+      }
+
+      .state-count {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--el-color-primary);
       }
     }
   }
