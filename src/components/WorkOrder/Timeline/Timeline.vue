@@ -131,6 +131,19 @@
         </el-timeline-item>
       </el-timeline>
     </div>
+
+    <!-- Pagination -->
+    <div class="timeline-pagination">
+      <el-pagination
+        :current-page="currentPage"
+        :page-size="pageSize"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="totalElements"
+        layout="total, sizes, prev, pager, next"
+        @current-change="handlePageChange"
+        @size-change="handlePageSizeChange"
+      />
+    </div>
   </div>
 </template>
 
@@ -149,8 +162,31 @@ const props = defineProps( {
   currentWorkOrderId : {
     type : [String, Number],
     default : null
+  },
+  currentPage : {
+    type : Number,
+    default : 1
+  },
+  pageSize : {
+    type : Number,
+    default : 10
+  },
+  totalElements : {
+    type : Number,
+    default : 0
+  },
+  sortField : {
+    type : String,
+    default : 'createdAt'
+  },
+  sortDirection : {
+    type : String,
+    default : 'DESC'
   }
 } )
+
+// Emits
+const emit = defineEmits( ['page-change', 'page-size-change', 'sort-change'] )
 
 // Timeline filter state
 const timelineFilter = ref( {
@@ -233,6 +269,15 @@ const getPriorityClass = priority => {
 
 const isCurrentWorkOrder = event => {
   return props.currentWorkOrderId && event.id && String( event.id ) === String( props.currentWorkOrderId )
+}
+
+// Pagination handlers
+const handlePageChange = newPage => {
+  emit( 'page-change', newPage )
+}
+
+const handlePageSizeChange = newSize => {
+  emit( 'page-size-change', newSize )
 }
 
 defineOptions( {
@@ -503,6 +548,19 @@ defineOptions( {
           }
         }
       }
+    }
+  }
+
+  .timeline-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px 24px;
+    background: var(--el-fill-color-lighter);
+    border-top: 1px solid var(--el-border-color-light);
+
+    :deep(.el-pagination) {
+      --el-pagination-button-disabled-bg-color: transparent;
     }
   }
 }

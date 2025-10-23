@@ -126,12 +126,13 @@ class HttpRequest {
   }
 
   getParams( payload ) {
-    const { data } = payload
+    const { data, params } = payload
     const method = ( payload.method || 'get' ).toLowerCase()
     if ( ['post', 'put', 'patch', 'delete'].includes( method ) ) {
       payload.data = data
     } else {
-      payload.params = data
+      // For GET requests, use params if already provided, otherwise use data
+      payload.params = params || data
       delete payload.data
     }
     return payload

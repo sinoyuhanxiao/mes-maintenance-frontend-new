@@ -579,7 +579,18 @@
       <div v-else-if="timelineEvents.length === 0" class="timeline-empty">
         <el-empty description="No recurring work orders found" :image-size="80" />
       </div>
-      <Timeline v-else :timeline-events="timelineEvents" :current-work-order-id="workOrder.id" />
+      <Timeline
+        v-else
+        :timeline-events="timelineEvents"
+        :current-work-order-id="workOrder.id"
+        :current-page="timelinePage"
+        :page-size="timelinePageSize"
+        :total-elements="timelineTotalElements"
+        :sort-field="timelineSortField"
+        :sort-direction="timelineSortDirection"
+        @page-change="handleTimelinePageChange"
+        @page-size-change="handleTimelinePageSizeChange"
+      />
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="timelineModalVisible = false" style="margin-right: 12px">{{
@@ -870,6 +881,13 @@ const standalonePreviewTab = ref( 'general' )
 
 // Timeline events data - Populated from recurring work orders
 const timelineEvents = ref( [] )
+
+// Timeline pagination state
+const timelinePage = ref( 1 )
+const timelinePageSize = ref( 10 )
+const timelineTotalElements = ref( 0 )
+const timelineSortField = ref( 'createdAt' )
+const timelineSortDirection = ref( 'DESC' )
 
 // Task filters
 const taskFilters = ref( {
@@ -1481,16 +1499,33 @@ const handleDeleteConfirmation = async type => {
 const openTimelineModal = async() => {
   timelineModalVisible.value = true
 
+  // Reset pagination state when opening modal
+  timelinePage.value = 1
+  timelinePageSize.value = 10
+  timelineTotalElements.value = 0
+
   // Only fetch timeline data if this is a recurring work order
   if ( !isRecurring.value || !props.workOrder?.recurrence_uuid ) {
     timelineEvents.value = []
     return
   }
 
+  await fetchTimelineData()
+}
+
+const fetchTimelineData = async() => {
   try {
     timelineLoading.value = true
-    const response = await getWorkOrdersByRecurrence( props.workOrder.recurrence_uuid, 1, 50 )
+    const response = await getWorkOrdersByRecurrence(
+      props.workOrder.recurrence_uuid,
+      timelinePage.value,
+      timelinePageSize.value,
+      timelineSortField.value,
+      timelineSortDirection.value
+    )
+
     const workOrders = response.data.content || []
+    timelineTotalElements.value = response.data.totalElements || 0
 
     // Transform work orders into timeline events
     timelineEvents.value = transformWorkOrdersToTimeline( workOrders )
@@ -1498,6 +1533,7 @@ const openTimelineModal = async() => {
     console.error( 'Failed to load recurring work orders for timeline:', error )
     ElMessage.error( 'Failed to load timeline data' )
     timelineEvents.value = []
+    timelineTotalElements.value = 0
   } finally {
     timelineLoading.value = false
   }
@@ -1505,6 +1541,17 @@ const openTimelineModal = async() => {
 
 const handleTimelineModalClose = () => {
   timelineModalVisible.value = false
+}
+
+const handleTimelinePageChange = async newPage => {
+  timelinePage.value = newPage
+  await fetchTimelineData()
+}
+
+const handleTimelinePageSizeChange = async newSize => {
+  timelinePageSize.value = newSize
+  timelinePage.value = 1 // Reset to first page when changing page size
+  await fetchTimelineData()
 }
 
 const handleExportFormat = async format => {
