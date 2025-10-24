@@ -10,7 +10,8 @@ import {
   getWorkOrdersByRecurrence,
   searchWorkOrdersByList,
   deleteIndividualWorkOrder,
-  deleteRecurrenceWorkOrders
+  deleteRecurrenceWorkOrders,
+  setIncompleteWorkOrders
 } from '@/api/work-order'
 import { useCommonDataStore } from '@/store/modules/commonData'
 
@@ -44,6 +45,7 @@ export function useWorkOrder() {
     dueDate : undefined,
     customDateRange : undefined,
     recurrence : undefined,
+    equipment_node_ids : undefined,
     sort : 'created_at_desc' // Use consistent created_at desc sorting for most recent first
   } )
 
@@ -55,6 +57,9 @@ export function useWorkOrder() {
   const fetchWorkOrders = async( additionalFilters = {} ) => {
     loading.value = true
     try {
+      // Update incomplete work orders before searching
+      await setIncompleteWorkOrders()
+
       // Prepare filters for API call
       const filters = {
         ...additionalFilters
@@ -386,11 +391,13 @@ export function useWorkOrder() {
       priority_ids : q.priority ? [q.priority] : [],
       state_ids : q.state ? [q.state] : [],
       category_ids : q.category ? [q.category] : [],
+      equipment_node_ids : q.equipment_node_ids || [],
       recurrence_type_id : q.recurrence || null,
       latest_per_recurrence : q.latest_per_recurrence,
       start_date_from : q.start_date_from,
-      end_date_to : q.end_date_to
-      // TODO: add more supported filter param later (equipment_node, approved/finished at)
+      end_date_to : q.end_date_to,
+      user_ids : q.assignedTo ? [q.assignedTo] : []
+      // TODO: add more supported filter param later (approved/finished at)
     }
 
     // Only include one of keyword or work_order_ids, not both

@@ -141,7 +141,6 @@
 <script setup>
 import { ref, onMounted, nextTick, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import axios from 'axios'
 
 import VendorCard from './VendorCard.vue'
 import VendorDetail from './VendorDetail.vue'
@@ -149,7 +148,7 @@ import VendorForm from './VendorForm.vue'
 import LocationForm from '@/views/vendorsAndLocations/Locations/LocationForm.vue'
 import LocationTree from '@/views/vendorsAndLocations/Locations/LocationTree.vue'
 import LocationDetail from '@/views/vendorsAndLocations/Locations/LocationDetail.vue'
-import { getLocationTree, getLocationById, createLocation } from '@/api/location.js'
+import { getLocationTree, getLocationById, createLocation, getLocationTypes } from '@/api/location.js'
 import { createVendor, searchVendorsGeneral } from '@/api/vendor.js'
 import { uploadMultipleToMinio } from '@/api/minio.js'
 
@@ -275,8 +274,20 @@ const fetchVendors = async() => {
 }
 
 const fetchLocationTypes = async() => {
-  const res = await axios.get( 'http://10.10.12.12:8095/api/location/location-types' )
-  locationTypes.value = res.data?.data || []
+  try {
+    const res = await getLocationTypes()
+    const payload = res?.data ?? res
+    const list = Array.isArray( payload?.data ) ? payload.data : Array.isArray( payload ) ? payload : []
+    // normalize ids (and sequence_order just in case you sort)
+    locationTypes.value = list.map( t => ( {
+      ...t,
+      id : Number( t.id ),
+      sequence_order : t.sequence_order != null ? Number( t.sequence_order ) : 0
+    } ) )
+  } catch ( e ) {
+    console.error( 'fetchLocationTypes failed:', e?.response?.data || e )
+    locationTypes.value = []
+  }
 }
 
 const fetchLocationTree = async() => {

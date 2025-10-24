@@ -24,6 +24,9 @@
               >{{ wo.priority?.name }}</el-text
             >
           </div>
+          <div v-if="wo.recurrence_type && wo.recurrence_type.id !== 1">
+            <RecurrenceTag :recurrence-type="wo.recurrence_type" />
+          </div>
         </div>
       </div>
     </el-card>
@@ -35,6 +38,7 @@
 import { ref, onMounted } from 'vue'
 import router from '../../../router/index'
 import { convertToLocalTime } from '../../../utils/datetime'
+import RecurrenceTag from '@/components/WorkOrder/Display/RecurrenceTag.vue'
 
 const woData = defineProps( {
   wo : Object,

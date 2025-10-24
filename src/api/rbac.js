@@ -205,6 +205,17 @@ export const getRolesByUserId = userId => {
 }
 
 /**
+ * Get role by role ID.
+ */
+export const getRoleId = roleId => {
+  return http.request( {
+    method : 'get',
+    url : `/rbac/${roleId}`,
+    baseURL : USER_CLIENT_URL
+  } )
+}
+
+/**
  * Get roles by permission ID.
  */
 export const getRolesByPermissionId = permissionId => {

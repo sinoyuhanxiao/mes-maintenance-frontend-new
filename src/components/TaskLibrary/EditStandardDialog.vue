@@ -23,6 +23,10 @@ const props = defineProps( {
   standard : {
     type : Object,
     default : () => ( {} )
+  },
+  isWorkOrderContext : {
+    type : Boolean,
+    default : false
   }
 } )
 
@@ -37,10 +41,13 @@ const handleClose = () => {
 const handleSubmit = async updatedStandard => {
   loading.value = true
   try {
-    if ( props.standard.isStandalone ) {
-      emit( 'update:standard', { ...props.standard, ...updatedStandard, isStandalone : true } )
+    if ( props.isWorkOrderContext || props.standard.isStandalone ) {
+      // Work order context: just emit the updated standard without API call
+      // The parent component (WorkOrderEdit/WorkOrderCreate) will handle tracking changes
+      emit( 'update:standard', { ...props.standard, ...updatedStandard } )
       ElMessage.success( 'Standard updated for this work order.' )
     } else {
+      // Template library context: update via API
       await updateStandard( props.standard.standardId, updatedStandard )
       ElMessage.success( 'Standard template updated successfully.' )
       // Also update the local standard to reflect the change

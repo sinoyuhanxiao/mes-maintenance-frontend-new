@@ -159,6 +159,7 @@ const {
   handleSizeChange,
   handleCurrentChange,
   toggleRowHighlight,
+  // eslint-disable-next-line no-unused-vars
   handleDelete : deleteWorkOrder,
   initializeCommonData
 } = useWorkOrder()
@@ -193,6 +194,10 @@ watch(
   () => workOrderDraftStore.shouldOpenCreatePanel,
   value => {
     if ( value ) {
+      // Ensure we're in todo view
+      if ( currentView.value !== 'todo' ) {
+        currentView.value = 'todo'
+      }
       nextTick( () => {
         todoViewRef.value?.showCreateForm()
         workOrderDraftStore.setShouldOpenCreatePanel( false )
@@ -221,13 +226,14 @@ const handleUpdate = row => {
 }
 
 const handleDelete = async( row, index ) => {
+  // WorkOrderDetail component already handles the deletion and shows confirmation dialogs
+  // This handler just needs to refresh the list after the delete event is emitted
   try {
-    await deleteWorkOrder( row, index )
     showSuccess( t( 'workOrder.messages.deleteSuccess' ) )
     // Refresh the work order list to reflect the deletion
     await fetchWorkOrders()
   } catch ( error ) {
-    // Error handled by deleteWorkOrder composable
+    // Error handled by fetchWorkOrders
   }
 }
 
@@ -404,11 +410,28 @@ watch(
 // Lifecycle
 onMounted( async() => {
   try {
+    // Set currentView from query parameter if provided
+    if ( route.query.view ) {
+      currentView.value = route.query.view
+    }
+
     await initializeCommonData()
     await fetchWorkOrders()
 
     // Handle query parameters for creating work order from maintenance request
     await handleCreateFromRequest()
+
+    // Handle shouldOpenCreatePanel flag after everything is initialized
+    // This ensures todoViewRef is available
+    await nextTick()
+    if ( workOrderDraftStore.shouldOpenCreatePanel ) {
+      if ( currentView.value !== 'todo' ) {
+        currentView.value = 'todo'
+      }
+      await nextTick()
+      todoViewRef.value?.showCreateForm()
+      workOrderDraftStore.setShouldOpenCreatePanel( false )
+    }
   } catch ( error ) {
     // Error handled by individual initialization functions
   }

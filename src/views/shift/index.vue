@@ -8,12 +8,6 @@
         <div class="filters-container">
           <!-- Keyword Filter -->
           <div class="filter-item"></div>
-
-          <!--          <div class="filter-item">-->
-          <!--            <el-button :icon="Remove" type="warning" plain @click="clearLocalFilters">-->
-          <!--              {{ t('workOrder.filters.clearAll') }}-->
-          <!--            </el-button>-->
-          <!--          </div>-->
         </div>
 
         <div class="actions-row">
@@ -33,7 +27,19 @@
 
           <div class="actions-item">
             <el-button :icon="EditPen" type="primary" @click="openCreateForm">
-              {{ t('shift.createShift') }}
+              {{ t('workOrder.actions.create') }}
+            </el-button>
+          </div>
+
+          <!--          <div class="actions-item">-->
+          <!--            <el-button :icon="Remove" type="warning" plain @click="clearLocalFilters">-->
+          <!--              {{ 'Clear Filters' }}-->
+          <!--            </el-button>-->
+          <!--          </div>-->
+
+          <div class="actions-item">
+            <el-button :icon="RefreshIcon" @click="refreshTable">
+              {{ 'Refresh' }}
             </el-button>
           </div>
         </div>
@@ -44,30 +50,69 @@
       <el-table
         v-loading="loading"
         :data="shiftsTableData"
-        border
         fit
         highlight-current-row
         style="width: 100%"
         :height="tableHeight"
         :empty-text="t('common.noData')"
         @sort-change="handleSortChange"
+        border
       >
-        <el-table-column prop="id" :label="'ID'" width="100" sortable="custom" align="center" fixed="left" />
         <el-table-column
           prop="name"
           :label="t('common.name')"
-          width="300"
+          width="200"
           sortable="custom"
           align="center"
           fixed="left"
+          show-overflow-tooltip
         >
           <template #default="scope">
-            <el-text tag="b">{{ scope.row.name }}</el-text>
+            <el-text>{{ scope.row.name }}</el-text>
           </template>
         </el-table-column>
+
+        <el-table-column prop="id" :label="'ID'" width="100" sortable="custom" align="center" fixed="left" />
+
         <el-table-column prop="start_time" :label="t('shift.startTime')" width="200" sortable="custom" align="center" />
         <el-table-column prop="end_time" :label="t('shift.endTime')" width="200" sortable="custom" align="center" />
-        <el-table-column prop="description" :label="t('common.description')" sortable="custom" align="center" />
+        <el-table-column
+          prop="description"
+          :label="t('common.description')"
+          show-overflow-tooltip
+          width="400"
+          sortable="custom"
+          align="center"
+        />
+        <el-table-column
+          sortable="custom"
+          prop="created_at"
+          label="Created At"
+          min-width="180"
+          show-overflow-tooltip
+          align="center"
+        >
+          <template #default="scope">
+            <el-text>
+              {{ formatAsLocalDateTimeString(scope.row.created_at) }}
+            </el-text>
+          </template>
+        </el-table-column>
+
+        <el-table-column
+          sortable="custom"
+          prop="updated_at"
+          label="Updated At"
+          min-width="180"
+          show-overflow-tooltip
+          align="center"
+        >
+          <template #default="scope">
+            <el-text>
+              {{ formatAsLocalDateTimeString(scope.row.updated_at) }}
+            </el-text>
+          </template>
+        </el-table-column>
         <el-table-column :label="t('common.actions')" fixed="right" align="center" width="200">
           <template #default="scope">
             <el-button :icon="Edit" size="small" type="primary" @click="handleEdit(scope.row)">{{
@@ -86,12 +131,14 @@
         v-model="isDialogVisible"
         top="10vh"
         width="50%"
+        @close="handleFormClosed"
       >
         <div v-loading="isFormProcessing">
           <ShiftForm
+            ref="shiftFormRef"
             :shift="currentEditingShift"
             @confirm="handleShiftSubmitted"
-            @cancel="() => (isDialogVisible = false)"
+            @cancel="handleFormClosed"
             @update:loading="isFormProcessing = $event"
           />
         </div>
@@ -116,12 +163,13 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import MesLayout from '@/components/MesLayout'
-import { Delete, Edit, EditPen, Search } from '@element-plus/icons-vue'
+import { Delete, Edit, EditPen, Refresh as RefreshIcon, Search } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { searchShifts, deactivateShift } from '@/api/shift'
 import { getAllUsers } from '@/api/user'
 // import UserTag from '@/views/user/components/UserTag.vue'
 import ShiftForm from '@/views/shift/components/shiftForm.vue'
+import { formatAsLocalDateTimeString } from '@/utils/datetime'
 // import { convertToLocalTime } from '@/utils/datetime'
 
 const { t } = useI18n()
@@ -139,6 +187,7 @@ const currentEditingShift = ref( null )
 const userOptions = ref( [] )
 const initialFilters = { keyword : '' }
 const localFilters = reactive( { ...initialFilters } )
+const shiftFormRef = ref()
 
 // const userMap = computed( () =>
 //   Object.fromEntries( userOptions.value.map( user => [user.id, user] ) )
@@ -162,6 +211,11 @@ function handleShiftSubmitted() {
 function handleFilterChange() {
   currentPage.value = 1
   loadShifts()
+}
+
+function handleFormClosed() {
+  isDialogVisible.value = false
+  shiftFormRef.value?.handleResetForm( true )
 }
 
 // function clearLocalFilters() {
@@ -244,6 +298,18 @@ async function loadUsers() {
   }
 }
 
+async function refreshTable() {
+  try {
+    loading.value = true
+
+    await loadUsers()
+    await loadShifts()
+  } catch ( e ) {
+  } finally {
+    loading.value = false
+  }
+}
+
 onMounted( async() => {
   await loadUsers()
   await loadShifts()
@@ -273,5 +339,13 @@ onMounted( async() => {
     align-items: center;
     gap: 12px;
   }
+}
+
+:deep(.el-scrollbar__bar.is-horizontal) {
+  height: 14px !important;
+}
+
+:deep(.el-scrollbar__thumb.is-horizontal) {
+  height: 14px !important;
 }
 </style>

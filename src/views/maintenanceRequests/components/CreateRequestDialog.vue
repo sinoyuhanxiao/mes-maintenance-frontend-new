@@ -95,12 +95,13 @@ const formRules = {
   name : [
     { required : true, message : 'Please enter request name', trigger : 'blur' },
     { min : 2, max : 100, message : 'Name should be between 2 and 100 characters', trigger : 'blur' }
-  ]
+  ],
+  equipment_node_id : [{ required : true, message : 'Please select equipment', trigger : 'change' }]
 }
 
 // Computed
 const isFormValid = computed( () => {
-  return formData.value.name && formData.value.name.length >= 2
+  return formData.value.name && formData.value.name.length >= 2 && formData.value.equipment_node_id !== null
 } )
 
 // Image upload handling

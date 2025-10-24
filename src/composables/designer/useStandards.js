@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { ElMessage, ElNotification } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import {
   searchStandards,
   getStandard,
@@ -71,11 +71,6 @@ export function useStandards() {
       const response = await createStandardApi( standardData )
       const newstandard = response.data
       standards.value.push( newstandard )
-      ElNotification( {
-        title : 'Success',
-        message : 'Standard created successfully',
-        type : 'success'
-      } )
       return newstandard
     } catch ( error ) {
       ElMessage.error( 'Failed to create standard' )
@@ -124,11 +119,7 @@ export function useStandards() {
         currentstandard.value = null
       }
 
-      ElNotification( {
-        title : 'Success',
-        message : 'Standard deleted successfully',
-        type : 'success'
-      } )
+      ElMessage.success( 'Standard deleted successfully' )
     } catch ( error ) {
       ElMessage.error( 'Failed to delete standard' )
       console.error( 'Failed to delete standard:', error )

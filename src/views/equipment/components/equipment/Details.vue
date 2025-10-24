@@ -5,9 +5,9 @@
         <el-descriptions :column="3" direction="vertical">
           <el-descriptions-item label="Name">{{ equipmentData.name }}</el-descriptions-item>
           <el-descriptions-item label="Code">{{ equipmentData.code }}</el-descriptions-item>
-          <el-descriptions-item label="Model">{{ equipmentData.serial_number || 'N/A' }}</el-descriptions-item>
-          <el-descriptions-item label="PLC">{{ equipmentData.plc }}</el-descriptions-item>
-          <el-descriptions-item label="Power">{{ equipmentData.power }}V</el-descriptions-item>
+          <el-descriptions-item label="Model">{{ equipmentData.serial_number || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="PLC">{{ equipmentData.plc || '--' }}</el-descriptions-item>
+          <el-descriptions-item label="Power">{{ equipmentData.power || '--' }}V</el-descriptions-item>
           <el-descriptions-item label="Install Date">{{
             formatInstallDate(equipmentData.installation_date)
           }}</el-descriptions-item>
@@ -37,7 +37,7 @@
               <el-image
                 :src="equipmentData.exploded_view_drawing"
                 :preview-src-list="[equipmentData.exploded_view_drawing]"
-                :hide-on-click-modal="true"
+                :close-on-click-modal="true"
                 fit="contain"
                 class="equipment-image"
               />
@@ -235,19 +235,19 @@ function getFileTypeFromName( fileName ) {
 }
 
 function formatInstallDate( dateString ) {
-  if ( !dateString ) return 'N/A'
+  if ( !dateString ) return '--'
 
   try {
     // Handle ISO datetime string (e.g., "2025-08-03T00:00:00Z")
     const date = new Date( dateString )
 
     // Check if date is valid
-    if ( isNaN( date.getTime() ) ) return 'N/A'
+    if ( isNaN( date.getTime() ) ) return '--'
 
     // Format as YYYY-MM-DD
     return date.toISOString().split( 'T' )[0]
   } catch ( error ) {
-    return 'N/A'
+    return '--'
   }
 }
 

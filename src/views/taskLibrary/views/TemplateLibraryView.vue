@@ -66,7 +66,12 @@
               style="width: 140px"
               @change="handleCategoryFilter"
             >
-              <el-option v-for="category in availableCategories" :key="category" :label="category" :value="category" />
+              <el-option
+                v-for="category in availableCategories"
+                :key="category.id"
+                :label="category.name"
+                :value="category.id"
+              />
             </el-select>
 
             <el-button size="small" @click="clearAllFilters"> Clear Filters </el-button>
@@ -565,7 +570,8 @@ const fetchEquipmentTreeData = async() => {
 const fetchCategories = async() => {
   try {
     const response = await getAllCategories()
-    allCategories.value = response.data.map( category => category.name )
+    // Store full category objects with id and name
+    allCategories.value = response.data
   } catch ( error ) {
     console.error( 'Categories load failed:', error )
     ElMessage.error( 'Failed to load category filter data.' )
@@ -579,8 +585,9 @@ const handleAssetFilter = () => {
 
 // Computed properties
 const availableCategories = computed( () => {
+  // Sort category objects by name
   // eslint-disable-next-line vue/no-side-effects-in-computed-properties
-  return allCategories.value.sort()
+  return allCategories.value.sort( ( a, b ) => a.name.localeCompare( b.name ) )
 } )
 
 const displayedTemplates = computed( () => {

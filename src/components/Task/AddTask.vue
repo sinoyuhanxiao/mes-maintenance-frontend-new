@@ -43,8 +43,7 @@
             </el-select>
           </div>
 
-          <CardTable
-            :module="5"
+          <WorkOrderTaskSelector
             :data="taskTemplates"
             :maxHeight="'60vh'"
             :totalItems="totalItems"
@@ -52,8 +51,6 @@
             :pageSize="pageSize"
             :showBorder="true"
             :showPagination="true"
-            :showSearch="false"
-            :loading="loading"
             :focusedCardId="focusedCardId"
             :selectedItems="selectedTemplates"
             @selection="handleTaskAction"
@@ -114,7 +111,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { Search, ArrowLeft } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import CardTable from '../Tables/CardTable.vue'
+import WorkOrderTaskSelector from '@/components/WorkOrder/Selectors/WorkOrderTaskSelector.vue'
 import StepsPreview from '@/components/TaskLibrary/StepsPreview.vue'
 import { searchTaskTemplates, getTaskTemplateById } from '@/api/task-library'
 import { debounce } from 'lodash-es'
@@ -228,8 +225,12 @@ const handleTaskAction = selectionData => {
 
   if ( action === 'check' ) {
     selectedTemplates.value.add( id )
+    // Force reactivity by creating a new Set
+    selectedTemplates.value = new Set( selectedTemplates.value )
   } else if ( action === 'uncheck' ) {
     selectedTemplates.value.delete( id )
+    // Force reactivity by creating a new Set
+    selectedTemplates.value = new Set( selectedTemplates.value )
   } else if ( action === 'focus' ) {
     focusedCardId.value = id
   }

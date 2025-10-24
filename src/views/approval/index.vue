@@ -7,7 +7,7 @@
       </div>
 
       <div class="approval-management-details">
-        <approval-designer :selected-department-id="selectedDepartmentId"></approval-designer>
+        <approval-designer :selected-template-id="selectedTemplateId"></approval-designer>
       </div>
     </div>
   </div>
@@ -18,11 +18,13 @@ import { ref } from 'vue'
 import approvalTree from './components/approvalTree/index.vue'
 import approvalDesigner from './components/approvalDesigner/index.vue'
 
-const selectedDepartmentId = ref( null )
+const selectedTemplateId = ref( null )
 
-const handleNodeSelected = id => {
-  console.log( 'Department selected:', id )
-  selectedDepartmentId.value = id
+const handleNodeSelected = templateId => {
+  console.log( 'Parent received template ID:', templateId )
+  console.log( 'Previous template ID:', selectedTemplateId.value )
+  selectedTemplateId.value = templateId
+  console.log( 'Updated template ID to:', selectedTemplateId.value )
 }
 </script>
 

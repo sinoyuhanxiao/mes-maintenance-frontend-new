@@ -172,7 +172,7 @@ onBeforeUnmount( () => {
 }
 
 .standards-list {
-  max-height: 60vh;
+  height: 60vh;
   overflow-y: auto;
   display: flex;
   flex-direction: column;

@@ -92,7 +92,7 @@
                 :item-key="m => m.id"
               >
                 <template #default="{ item }">
-                  <UserTag :user="userMap[item.id]" :department-options="departmentsTableData" />
+                  <UserTag :user="userMap[item.id]"/>
                 </template>
               </TagPopover>
             </template>
@@ -141,7 +141,7 @@
         <el-table-column prop="manager_id" label="Manager" align="center" width="200">
           <template #default="scope">
             <div class="tag-list">
-              <UserTag :user="userMap[scope.row.manager_id]" :department-options="departmentsTableData" />
+              <UserTag :user="userMap[scope.row.manager_id]"/>
             </div>
           </template>
         </el-table-column>

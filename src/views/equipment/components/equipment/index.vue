@@ -41,12 +41,6 @@
         <el-tab-pane label="Personnel" name="personnel">
           <PersonnelTab :key="`personnel-${refreshKey}`" />
         </el-tab-pane>
-        <el-tab-pane label="Documents Load" name="documentsLoad">
-          <DocumentsLoadTab :key="`documentsLoad-${refreshKey}`" />
-        </el-tab-pane>
-        <el-tab-pane label="Documents View" name="documentsView">
-          <DocumentsViewTab :key="`documentsView-${refreshKey}`" />
-        </el-tab-pane>
       </el-tabs>
     </div>
 
@@ -90,8 +84,6 @@ import SubItems from '../equipmentGroup/SubItems.vue'
 import WorkOrderTab from './WorkOrders.vue'
 import TasksTab from './Tasks.vue'
 import PersonnelTab from './Personnel.vue'
-import DocumentsLoadTab from './DocumentsLoad.vue'
-import DocumentsViewTab from './DocumentsView.vue'
 import AddEquipment from './components/AddEquipment.vue'
 import EditEquipment from './components/EditEquipment.vue'
 import DeactivateNode from '../common/DeactivateNode.vue'

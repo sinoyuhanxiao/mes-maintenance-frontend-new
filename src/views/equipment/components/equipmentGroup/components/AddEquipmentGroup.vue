@@ -268,9 +268,16 @@ const handleConfirm = async() => {
   submitLoading.value = true
 
   try {
-    if ( formData.imageList.length > 0 || formData.filesList.length > 0 ) {
+    if ( formData.imageList.length > 0 || formData.filesList.length > 0 || formData.explodedViewDrawing.length > 0 ) {
       await uploadFilesToServer()
     }
+
+    // Safety: coerce any objects from the upload component into URL strings
+    const toUrlArray = arr => ( arr || [] ).map( x => ( typeof x === 'string' ? x : x?.url ) ).filter( Boolean )
+
+    const image_list = toUrlArray( formData.imageList )
+    const exploded_view_drawing = toUrlArray( formData.explodedViewDrawing )
+    const file_list = toUrlArray( formData.filesList )
 
     const submissionData = {
       name : formData.name,
@@ -280,9 +287,9 @@ const handleConfirm = async() => {
       parent_id : formData.parentId, // parent from props
       location_id : formData.selectedLocationId,
       sequence_order : Number( formData.sequenceOrder ),
-      image_list : formData.imageList,
-      exploded_view_drawing : formData.explodedViewDrawing,
-      file_list : formData.filesList
+      image_list,
+      exploded_view_drawing,
+      file_list
     }
 
     const response = await createNewNode( submissionData )

@@ -538,13 +538,14 @@ export default {
     locations : '地址',
     vendors : '供应商',
     vendorsAndLocations : '供应商和地址',
+    resources : '资源',
     userCenter : '个人中心',
     userDetail : '用户信息',
     user : '用户',
     team : '班组',
     shift : '班次',
     department : '部门',
-    systemManagement : '系统管理',
+    administration : '系统管理',
     myAccount : '我的账号',
     nested : '嵌套路由',
     menu1 : '菜单1',
@@ -693,6 +694,7 @@ export default {
     teamManagement : '班组管理',
     editTeam : '编辑班组',
     newTeam : '新增班组',
+    newChildTeam : '新增子班组',
     assignedLocation : '负责设备',
     assignedEquipment : '负责区域',
     team : '班组',
@@ -754,7 +756,15 @@ export default {
     startTimeRequired : '开始时间为必填项',
     endTimeRequired : '结束时间为必填项',
     endTime : '结束时间',
-    minute : '分鐘'
+    minute : '分鐘',
+    message : {
+      fetchFailed : '获取班次数据失败',
+      deactivateSuccess : '班次已删除',
+      deactivateFailed : '删除班次失败',
+      created : '班次创建成功',
+      updated : '班次更新成功',
+      shiftUpdatedFailed : '获取班次数据失败'
+    }
   },
   userCenter : {
     myAccount : '我的账号',

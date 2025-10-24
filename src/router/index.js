@@ -134,6 +134,20 @@ export const asyncRoutes = [
   // },
   // nested,
   {
+    path : '/maintenance',
+    name : 'Equipment',
+    component : Layout,
+    meta : { title : 'router.maintenanceEquipment', icon : 'setting', noCache : true },
+    children : [
+      {
+        path : 'equipment',
+        component : () => import( '@/views/equipment/index.vue' ),
+        name : 'Maintenance Test',
+        meta : { title : 'router.maintenanceEquipment', noCache : true }
+      }
+    ]
+  },
+  {
     path : '/work-order',
     name : 'Table',
     component : Layout,
@@ -167,20 +181,8 @@ export const asyncRoutes = [
       }
     ]
   },
-  {
-    path : '/maintenance',
-    name : 'Equipment',
-    component : Layout,
-    meta : { title : 'router.maintenanceEquipment', icon : 'setting', noCache : true },
-    children : [
-      {
-        path : 'equipment',
-        component : () => import( '@/views/equipment/index.vue' ),
-        name : 'Maintenance Test',
-        meta : { title : 'router.maintenanceEquipment', noCache : true }
-      }
-    ]
-  },
+  // Maintenance Library Routes
+  taskLibraryRoutes,
   // {
   //   path : '/task',
   //   name : 'Task',
@@ -240,12 +242,13 @@ export const asyncRoutes = [
       }
     ]
   },
+
   {
-    path : '/system-management',
-    name : 'SystemManagement',
+    path : '/administration',
+    name : 'Administration',
     component : Layout,
-    redirect : '/system-management/user-management',
-    meta : { title : 'router.systemManagement', icon : 'users', noCache : true },
+    redirect : '/administration/user-management',
+    meta : { title : 'router.administration', icon : 'users', noCache : true },
     children : [
       {
         path : 'user-management',
@@ -254,22 +257,22 @@ export const asyncRoutes = [
         meta : { title : 'router.user', icon : 'users', noCache : false }
       },
       {
-        path : 'team-management',
+        path : 'work-group-management',
         component : () => import( '@/views/team/index.vue' ),
-        name : 'TeamManagement',
-        meta : { title : 'router.team', icon : 'users', noCache : true }
-      },
-      {
-        path : 'department-management',
-        component : () => import( '@/views/department/index.vue' ),
-        name : 'DepartmentManagement',
-        meta : { title : 'router.department', icon : 'users', noCache : true }
+        name : 'WorkGroupManagement',
+        meta : { title : 'router.team', icon : 'users', noCache : false }
       },
       {
         path : 'shift-management',
         component : () => import( '@/views/shift/index.vue' ),
         name : 'ShiftManagement',
         meta : { title : 'router.shift', icon : 'users', noCache : true }
+      },
+      {
+        path : 'role-management',
+        component : () => import( '@/views/rolesAndPermissions/index.vue' ),
+        name : 'RoleManagement',
+        meta : { title : 'Role', icon : 'users', noCache : true }
       },
       {
         path : 'approval-management',
@@ -289,11 +292,14 @@ export const asyncRoutes = [
         name : 'UserDetail',
         meta : { title : 'router.userDetail', icon : 'users', noCache : true, hidden : true }
       }
+      // {
+      //   path : 'team-detail/:id',
+      //   component : () => import( '@/views/team/components/TeamDetail.vue' ),
+      //   name : 'TeamDetail',
+      //   meta : { title : 'Group Detail', icon : 'users', noCache : true, hidden : true }
+      // }
     ]
   },
-
-  // Maintenance Library Routes
-  taskLibraryRoutes,
 
   {
     path : '/:pathMatch(.*)',

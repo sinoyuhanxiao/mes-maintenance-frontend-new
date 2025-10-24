@@ -21,6 +21,23 @@ export const searchTeams = ( search = {}, page = 1, size = 10, sortField = 'crea
   } )
 }
 
+export const getAllTeamTree = () => {
+  return http.request( {
+    method : 'get',
+    url : '/team/team-tree',
+    baseURL : USER_CLIENT_URL
+  } )
+}
+
+export const getTeamTreeByIds = team_ids => {
+  return http.request( {
+    method : 'post',
+    url : '/team/team-tree',
+    baseURL : USER_CLIENT_URL,
+    data : team_ids
+  } )
+}
+
 /**
  * Get a team by ID.
  * @param {number} id - Team ID.

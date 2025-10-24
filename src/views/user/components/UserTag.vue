@@ -33,16 +33,16 @@
 
         <!-- Contact -->
         <div class="user-card-body">
-          <div class="line" v-if="user.department_ids?.length">
-            <span class="label">{{ t('user.department') }}:</span>
+          <!--          <div class="line" v-if="user.department_ids?.length">-->
+          <!--            <span class="label">{{ t('user.department') }}:</span>-->
 
-            <span class="value">
-              <template v-for="(id, idx) in user.department_ids" :key="id">
-                {{ getDepartmentById(id)?.name || id }}
-                <span v-if="idx < user.department_ids.length - 1">, </span>
-              </template>
-            </span>
-          </div>
+          <!--            <span class="value">-->
+          <!--              <template v-for="(id, idx) in user.department_ids" :key="id">-->
+          <!--                {{ getDepartmentById(id)?.name || id }}-->
+          <!--                <span v-if="idx < user.department_ids.length - 1">, </span>-->
+          <!--              </template>-->
+          <!--            </span>-->
+          <!--          </div>-->
 
           <div v-if="user.email" class="line">
             <span class="label">{{ t('user.table.email') }}:</span>
@@ -81,10 +81,6 @@ const props = defineProps( {
   user : {
     type : Object,
     default : null
-  },
-  departmentOptions : {
-    type : Array,
-    default : () => []
   }
 } )
 
@@ -103,9 +99,9 @@ const avatarUrl = computed( () => {
   )
 } )
 
-function getDepartmentById( id ) {
-  return props.departmentOptions.find( dep => dep.id === id ) || null
-}
+// function getDepartmentById( id ) {
+//   return props.departmentOptions.find( dep => dep.id === id ) || null
+// }
 
 function goToDetail() {
   if ( props.user?.id ) {

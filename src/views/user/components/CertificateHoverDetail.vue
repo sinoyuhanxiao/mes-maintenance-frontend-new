@@ -1,24 +1,41 @@
 <template>
   <template v-if="certificates && certificates.length">
-    <el-popover trigger="click" placement="top" :width="400" popper-class="cert-popover">
+    <el-popover placement="top" :width="400" popper-class="cert-popover">
       <template #default>
         <div class="cert-list">
           <el-card v-for="c in certificates" :key="c.id" class="cert-card" shadow="never">
             <!-- left: preview (30%) -->
             <div class="image-preview">
-              <el-image
-                v-if="c.file_list && c.file_list.length > 0"
-                :src="c.file_list[0]"
-                fit="cover"
-                :preview-src-list="c.file_list"
-                class="thumb"
-              />
+              <div v-if="c.file_list.length > 1">
+                <el-carousel height="100px">
+                  <el-carousel-item v-for="(img, index) in c.file_list" :key="img">
+                    <el-image
+                      :src="img"
+                      :preview-src-list="c.file_list"
+                      :initial-index="index"
+                      fit="cover"
+                      style="width: 100%; height: 100%; object-fit: cover"
+                      preview-teleported
+                    />
+                  </el-carousel-item>
+                </el-carousel>
+              </div>
 
-              <el-image v-else src="" fit="cover" class="thumb">
-                <template #error>
-                  <div class="image-placeholder">No Image</div>
-                </template>
-              </el-image>
+              <div v-else>
+                <el-image
+                  :src="c.file_list?.[0] || ''"
+                  :preview-src-list="c.file_list"
+                  :initial-index="0"
+                  fit="contain"
+                  style="width: 100px; height: 100px; object-fit: cover"
+                >
+                  <template #error>
+                    <el-tooltip content="No Image">
+                      <el-empty style="padding: 0 0" :image-size="80" />
+                    </el-tooltip>
+                  </template>
+                </el-image>
+              </div>
             </div>
 
             <!-- right: grid (70%), stacked vertically -->
@@ -47,10 +64,10 @@
       </template>
 
       <template #reference>
-        <el-button :type="'info'" plain :size="'small'">
+        <el-tag :type="'info'" plain :size="'small'">
           {{ certificates.length }}
           {{ certificates.length === 1 ? 'certificate' : 'certificates' }}
-        </el-button>
+        </el-tag>
       </template>
     </el-popover>
   </template>
@@ -68,7 +85,7 @@ const { t } = useI18n()
 defineProps( { certificates : { type : Array, default : () => [] }} )
 
 function fmt( iso ) {
-  if ( !iso ) return '—'
+  if ( !iso ) return '-'
   const d = new Date( iso )
   return `${d.getFullYear()}-${String( d.getMonth() + 1 ).padStart( 2, '0' )}-${String( d.getDate() ).padStart( 2, '0' )}`
 }

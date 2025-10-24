@@ -9,12 +9,13 @@
     node-key="id"
     :default-expand-all="false"
     :filterable="true"
-    :placeholder="t('common.filterByLocationPlaceholder')"
-    style="width: 100%"
+    :placeholder="inputPlaceholder"
+    :style="{ width }"
     clearable
     collapse-tags
     collapse-tags-tooltip
-    :max-collapse-tags="2"
+    :max-collapse-tags="maxCollapseTags"
+    :default-expanded-keys="expandedKeys"
     @change="emitSelection"
   />
 </template>
@@ -23,9 +24,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { getLocationTree } from '@/api/location.js'
 import { ElTreeSelect } from 'element-plus'
-import { useI18n } from 'vue-i18n'
 
-const { t } = useI18n()
 const props = defineProps( {
   modelValue : {
     type : [Array, Number, String],
@@ -34,12 +33,25 @@ const props = defineProps( {
   multiple : {
     type : Boolean,
     default : true
+  },
+  maxCollapseTags : {
+    type : Number,
+    default : 2
+  },
+  width : {
+    type : String,
+    default : '100%'
+  },
+  inputPlaceholder : {
+    type : String,
+    default : 'Filter by Location'
   }
 } )
 
 const emit = defineEmits( ['update:modelValue', 'change'] )
 const selectedLocationIds = ref( [] )
 const locationTree = ref( [] )
+const expandedKeys = ref( [] )
 
 const locationNodeDefaultProps = {
   label : node => node.name,
@@ -67,6 +79,44 @@ function emitSelection() {
     emit( 'update:modelValue', val ? [val] : [] )
     emit( 'change', val ? [val] : [] )
   }
+  updateExpandedKeys()
+}
+
+/**
+ * Compute ancestor IDs for all selected nodes.
+ * When a node is selected, recursively find all its parent nodes and add them to expandedKeys.
+ */
+function updateExpandedKeys() {
+  if ( !Array.isArray( selectedLocationIds.value ) || !selectedLocationIds.value.length ) {
+    expandedKeys.value = []
+    return
+  }
+
+  const parentMap = buildParentMap( locationTree.value )
+  const expanded = new Set()
+
+  for ( const id of selectedLocationIds.value ) {
+    let current = parentMap[id]
+    while ( current ) {
+      expanded.add( current )
+      current = parentMap[current]
+    }
+  }
+
+  expandedKeys.value = Array.from( expanded )
+}
+
+/**
+ * Build a map of node.id → parent.id
+ */
+function buildParentMap( tree, parentId = null, map = {} ) {
+  for ( const node of tree ) {
+    map[node.id] = parentId
+    if ( node.children?.length ) {
+      buildParentMap( node.children, node.id, map )
+    }
+  }
+  return map
 }
 
 // keep local state in sync with parent
@@ -80,6 +130,7 @@ watch(
       // expect single value
       selectedLocationIds.value = Array.isArray( newVal ) ? newVal[0] || null : newVal
     }
+    updateExpandedKeys()
   },
   { immediate : true }
 )

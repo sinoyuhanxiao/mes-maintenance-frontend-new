@@ -165,15 +165,45 @@ export const updateTool = update => {
 }
 
 /**
- * Delete tool
- * @param {number} - Tool ID
+ * Delete spare part
+ * @param {number} id - Spare part ID
  * @returns {Promise} Nothing
  */
-export const deleteTool = id => {
+export const deleteSparePart = id => {
   return http.request( {
     method : 'delete',
-    url : `/resource/tool/delete/${id}`
+    url : `/resource/spare-parts/${id}`
   } )
+}
+
+// api/resources.js
+export const deleteTool = async id => {
+  // ✅ match your backend's URL (note the /api prefix!)
+  const url = `/api/resource/tool/delete/${encodeURIComponent( id )}`
+
+  try {
+    const res = await fetch( url, {
+      method : 'DELETE',
+      headers : { Accept : '*/*' }
+    } )
+
+    if ( res.status === 404 ) {
+      // Optional: treat already-deleted items as success
+      console.warn( `Tool ${id} not found (already deleted).` )
+      return null
+    }
+
+    if ( !res.ok ) {
+      const text = await res.text().catch( () => '' )
+      throw new Error( text || res.statusText || `HTTP ${res.status}` )
+    }
+
+    // 204 success → no content
+    return null
+  } catch ( err ) {
+    console.error( 'deleteTool error:', err )
+    throw err
+  }
 }
 
 // Inventory APIs

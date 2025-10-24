@@ -80,6 +80,13 @@ export const useTaskLibraryStore = defineStore( 'taskLibrary', {
           filter.equipment_node_ids = equipmentIds
         }
 
+        // Add category_ids if category filter has a value
+        const category = this.filters.category
+        if ( category ) {
+          // Category filter now contains the numeric category ID
+          filter.category_ids = [category]
+        }
+
         // Add reference_id if provided in params
         if ( params.reference_id ) {
           filter.reference_id = params.reference_id
