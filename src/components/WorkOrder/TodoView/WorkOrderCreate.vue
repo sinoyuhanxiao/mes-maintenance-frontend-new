@@ -344,6 +344,7 @@
         v-if="editingStandard"
         :visible="showEditStandardDialog"
         :standard="editingStandard"
+        :is-work-order-context="true"
         @update:visible="showEditStandardDialog = false"
         @update:standard="onStandardUpdate"
       />
@@ -483,12 +484,12 @@
             {{ $t('workOrder.actions.cancel') }}
           </el-button>
           <el-button
+            v-show="false"
             type="info"
             @click="logCurrentPayload"
             class="logs-button"
             :loading="isLoggingInProgress"
             :disabled="isLoggingInProgress"
-            v-show="false"
           >
             {{ isLoggingInProgress ? 'Loading...' : 'Logs' }}
           </el-button>
@@ -608,6 +609,7 @@ import EditStandardDialog from '@/components/TaskLibrary/EditStandardDialog.vue'
 import StepsPreview from '@/components/TaskLibrary/StepsPreview.vue'
 import StandardsPreview from '@/components/TaskLibrary/StandardsPreview.vue'
 import { uploadMultipleToMinio } from '@/api/minio.js'
+import { searchUsers } from '@/api/user.js'
 import {
   getAllWorkTypes,
   getAllPriorities,
@@ -616,6 +618,7 @@ import {
   getEquipmentNodeTrees,
   createWorkOrder
 } from '@/api/work-order'
+import { approveMaintenanceRequest } from '@/api/maintenance-requests'
 import { useRouter, useRoute } from 'vue-router'
 import { useTaskLibraryStore } from '@/store/modules/taskLibrary'
 import { useWorkOrderDraftStore } from '@/store/modules/workOrderDraft'
@@ -1382,14 +1385,18 @@ const preFillFromRequestData = requestData => {
   }
 
   // Pre-fill equipment (convert single ID to array for tree-select)
-  if ( requestData.equipment_node_id ) {
+  // Handle both equipment_node object and equipment_node_id
+  if ( requestData.equipment_node?.id ) {
+    form.equipment_node_ids = [requestData.equipment_node.id]
+  } else if ( requestData.equipment_node_id ) {
     form.equipment_node_ids = [requestData.equipment_node_id]
   }
 
   // Pre-fill existing images
-  const existingImages = parseImageList( requestData.image_list )
-  if ( existingImages.length > 0 ) {
-    form.existing_image_list = existingImages
+  const parsedImages = parseImageList( requestData.image_list )
+  if ( parsedImages.length > 0 ) {
+    form.existing_image_list = parsedImages
+    existingImages.value = parsedImages
   }
 
   // Pre-fill request_id to link work order with maintenance request
@@ -1743,20 +1750,9 @@ const stateOptions = ref( [] )
 const assetTreeData = ref( [] )
 const loading = ref( false )
 
-const assigneeOptions = ref( [
-  { id : 84, name : 'System' },
-  { id : 37, name : 'Erik Yu' },
-  { id : 43, name : 'Chang Shi' },
-  { id : 45, name : 'Maxwell Wang' },
-  { id : 46, name : 'Justin Li' },
-  { id : 47, name : 'Justin Tung' },
-  { id : 48, name : 'Eric Huang' }
-] )
+const assigneeOptions = ref( [] )
 
-const supervisorOptions = ref( [
-  { id : 36, name : 'Yao Li' },
-  { id : 41, name : 'John Li' }
-] )
+const supervisorOptions = ref( [] )
 const formRef = ref( null )
 
 // Load data from APIs
@@ -1764,12 +1760,13 @@ const loadFormData = async() => {
   try {
     loading.value = true
 
-    const [workTypesRes, prioritiesRes, categoriesRes, statesRes, equipmentRes] = await Promise.all( [
+    const [workTypesRes, prioritiesRes, categoriesRes, statesRes, equipmentRes, usersRes] = await Promise.all( [
       getAllWorkTypes(),
       getAllPriorities(),
       getAllCategories(),
       getAllStates(),
-      getEquipmentNodeTrees()
+      getEquipmentNodeTrees(),
+      searchUsers( { status_ids : [1] }, 1, 1000 )
     ] )
 
     if ( workTypesRes.data ) {
@@ -1778,6 +1775,18 @@ const loadFormData = async() => {
 
     if ( prioritiesRes.data ) {
       priorityOptions.value = prioritiesRes.data
+    }
+
+    // Set user options from API
+    if ( usersRes?.data?.content ) {
+      const users = usersRes.data.content
+      assigneeOptions.value = users.map( user => ( {
+        id : user.id,
+        name : `${user.first_name} ${user.last_name}`
+      } ) )
+
+      // Set supervisor options (same as assignee options)
+      supervisorOptions.value = assigneeOptions.value
     }
 
     if ( categoriesRes.data ) {
@@ -2271,6 +2280,18 @@ const submitForm = async() => {
     // Call backend API
     const response = await createWorkOrder( finalPayload )
 
+    // If this work order was created from a maintenance request, approve the request
+    if ( finalPayload.request_id ) {
+      try {
+        await approveMaintenanceRequest( finalPayload.request_id )
+        console.log( `Maintenance request ${finalPayload.request_id} approved successfully` )
+      } catch ( approvalError ) {
+        console.error( 'Failed to approve maintenance request:', approvalError )
+        // Don't fail the entire operation if approval fails
+        ElMessage.warning( 'Work order created, but failed to approve the maintenance request' )
+      }
+    }
+
     // Show success message
     ElMessage.success( 'Work order created successfully!' )
 
@@ -2699,6 +2720,28 @@ defineOptions( {
 
   .details-tabs {
     height: 100%;
+
+    :deep(.el-tabs__header) {
+      margin: 0 0 16px 0;
+    }
+
+    :deep(.el-tabs__nav-wrap::after) {
+      height: 1px;
+    }
+
+    :deep(.el-tabs__item) {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    :deep(.el-tabs__item.is-top) {
+      font-size: 16px;
+      width: 50%;
+    }
+
+    :deep(.el-tabs__nav.is-top) {
+      width: 100%;
+    }
   }
 
   // Card Components - matching StandardsPreview exactly

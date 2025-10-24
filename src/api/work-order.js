@@ -237,3 +237,15 @@ export const rejectWorkOrder = id => {
     url : `/work-order/${id}/reject`
   } )
 }
+
+/**
+ * Sets incomplete work orders.
+ * Updates work orders that are marked as incomplete.
+ * @returns {Promise} API response containing list of work orders that were set to incomplete.
+ */
+export const setIncompleteWorkOrders = () => {
+  return http.request( {
+    method : 'put',
+    url : '/work-order/incomplete'
+  } )
+}

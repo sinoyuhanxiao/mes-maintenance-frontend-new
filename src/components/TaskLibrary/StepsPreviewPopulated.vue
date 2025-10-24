@@ -34,19 +34,15 @@
                   :interactive="false"
                 />
 
-                <!-- Completion Metadata -->
-                <div v-if="step.completed_by || step.completed_at" class="step-metadata">
-                  <div v-if="step.completed_by" class="metadata-item">
-                    <el-icon><User /></el-icon>
-                    <span>Completed by: {{ step.completed_by }}</span>
-                  </div>
-                  <div v-if="step.completed_at" class="metadata-item">
+                <!-- Completion Metadata (only show timestamp, not user) -->
+                <div v-if="step.completed_at" class="step-metadata">
+                  <div class="metadata-item">
                     <el-icon><Clock /></el-icon>
                     <span>{{ formatTimestamp(step.completed_at) }}</span>
                   </div>
                 </div>
 
-                <!-- Bottom section for uploaded images or files -->
+                <!-- Bottom section for uploaded images -->
                 <div v-if="step.uploaded_images && step.uploaded_images.length > 0" class="preview-bottom-section">
                   <div class="uploaded-images-section">
                     <h4>Uploaded Images</h4>
@@ -55,6 +51,21 @@
                         <el-image :src="img" fit="cover" :preview-src-list="step.uploaded_images" />
                       </div>
                     </div>
+                  </div>
+                </div>
+
+                <!-- Bottom section for uploaded files (attachment steps) -->
+                <div v-if="step.uploaded_files && step.uploaded_files.length > 0" class="preview-bottom-section">
+                  <div class="uploaded-files-section">
+                    <h4>Uploaded Files</h4>
+                    <ul class="file-list">
+                      <li v-for="(file, fileIdx) in step.uploaded_files" :key="fileIdx" class="file-item">
+                        <a :href="file" target="_blank" class="file-link">
+                          <el-icon><Document /></el-icon>
+                          <span class="file-name">{{ extractFilenameFromUrl(file) }}</span>
+                        </a>
+                      </li>
+                    </ul>
                   </div>
                 </div>
 
@@ -87,7 +98,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { Search, Tools, User, Clock } from '@element-plus/icons-vue'
+import { Search, Tools, Clock, Document } from '@element-plus/icons-vue'
 import { convertToLocalTime } from '@/utils/datetime'
 
 // Preview components reused from Procedure Designer
@@ -109,6 +120,26 @@ const props = defineProps( {
 const loading = ref( false )
 const error = ref( false )
 const stepSearchQuery = ref( '' )
+
+// Helper function to extract and clean filename from URL
+const removeTimestampFromFilename = filename => {
+  if ( !filename || typeof filename !== 'string' ) return filename
+  // Remove timestamp suffix pattern: -20251021180840125 (dash followed by 17 digits)
+  return filename.replace( /-\d{17}(\.[^.]+)$/, '$1' )
+}
+
+const extractFilenameFromUrl = url => {
+  if ( !url || typeof url !== 'string' ) return 'file'
+  try {
+    const parts = url.split( '/' )
+    const lastPart = parts[parts.length - 1]
+    let filename = decodeURIComponent( lastPart )
+    filename = removeTimestampFromFilename( filename )
+    return filename
+  } catch ( error ) {
+    return 'file'
+  }
+}
 
 // Map backend step value types to preview component types
 const mapValueTypeToPreviewType = valueType => {
@@ -164,13 +195,15 @@ const processPopulatedStep = ( s, idx ) => {
   const type = mapValueTypeToPreviewType( v.type )
   const tools = Array.isArray( s.tools ) && s.tools.length > 0 ? s.tools : s.relevant_tools || []
 
-  // Extract uploaded images from different possible locations
+  // Extract uploaded images and files separately
   const uploadedImages = []
+  const uploadedFiles = []
+
   if ( v.image && Array.isArray( v.image ) ) {
     uploadedImages.push( ...v.image )
   }
   if ( v.file && Array.isArray( v.file ) ) {
-    uploadedImages.push( ...v.file )
+    uploadedFiles.push( ...v.file )
   }
 
   const base = {
@@ -183,6 +216,7 @@ const processPopulatedStep = ( s, idx ) => {
     completed_by : s.completed_by,
     completed_at : s.completed_at,
     uploaded_images : uploadedImages,
+    uploaded_files : uploadedFiles,
     relevant_tools : tools
       .filter( t => t && ( t.id || t.tool_id ) )
       .map( t => ( {
@@ -211,10 +245,14 @@ const processPopulatedStep = ( s, idx ) => {
       default : Boolean( v.value )
     }
   } else if ( type === 'text' ) {
+    console.log( '[StepsPreviewPopulated] Processing text step:', s.name || s.label )
+    console.log( '[StepsPreviewPopulated] Value object v:', v )
+    console.log( '[StepsPreviewPopulated] v.value:', v.value )
     base.config = {
       default : v.value ?? '',
       default_value : v.value ?? ''
     }
+    console.log( '[StepsPreviewPopulated] Created config:', base.config )
   } else if ( type === 'inspection' ) {
     // For inspection, show the actual result (pass/fail) and remarks
     const result = v.value === true ? 'pass' : v.value === false ? 'fail' : 'pass'
@@ -223,14 +261,11 @@ const processPopulatedStep = ( s, idx ) => {
       result,
       remarks : v.remarks || ''
     }
-    // Add remarks to description if present
-    if ( v.remarks ) {
-      base.description = base.description ? `${base.description}\n\nRemarks: ${v.remarks}` : `Remarks: ${v.remarks}`
-    }
+    // Note: remarks are now displayed by InspectionStepPreview component, not in description
   } else if ( type === 'attachments' ) {
     base.config = {
       upload_style : { list_type : 'picture-card' },
-      files : uploadedImages
+      files : uploadedFiles
     }
   }
 
@@ -396,7 +431,8 @@ defineOptions( {
   border-top: 1px dashed #e4e7ed;
 }
 
-.uploaded-images-section h4 {
+.uploaded-images-section h4,
+.uploaded-files-section h4 {
   margin: 0 0 8px 0;
   font-size: 13px;
   font-weight: 600;
@@ -419,6 +455,48 @@ defineOptions( {
 .image-item .el-image {
   width: 100%;
   height: 100%;
+}
+
+.file-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+}
+
+.file-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: #f8f9fb;
+  border-radius: 4px;
+  color: #606266;
+  text-decoration: none;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.file-link:hover {
+  background: #ecf5ff;
+  color: #409eff;
+}
+
+.file-link .el-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.file-name {
+  font-size: 13px;
+  word-break: break-word;
 }
 
 /* Tools Styling */

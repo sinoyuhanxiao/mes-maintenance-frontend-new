@@ -346,12 +346,12 @@
             {{ $t('workOrder.actions.cancel') }}
           </el-button>
           <el-button
+            v-show="false"
             @click="logCurrentPayload"
             size="default"
             plain
             :loading="isLoggingInProgress"
             :disabled="isLoggingInProgress"
-            v-show="false"
           >
             {{ isLoggingInProgress ? 'Loading...' : 'Logs' }}
           </el-button>
@@ -395,6 +395,7 @@
       v-if="editingStandard"
       :visible="showEditStandardDialog"
       :standard="editingStandard"
+      :is-work-order-context="true"
       @update:visible="showEditStandardDialog = false"
       @update:standard="onStandardUpdate"
     />
@@ -634,6 +635,7 @@ import EditStandardDialog from '@/components/TaskLibrary/EditStandardDialog.vue'
 import StepsPreview from '@/components/TaskLibrary/StepsPreview.vue'
 import StandardsPreview from '@/components/TaskLibrary/StandardsPreview.vue'
 import { uploadMultipleToMinio } from '@/api/minio.js'
+import { searchUsers } from '@/api/user.js'
 import {
   getAllWorkTypes,
   getAllPriorities,
@@ -1145,9 +1147,12 @@ const calculateStandardChanges = () => {
       } )
     } else if ( isStandardModified( currentStandard, originalStandard ) ) {
       // Modified standard - add to updated list
+      // Destructure to remove 'id' field and use 'standard_id' instead
+      // eslint-disable-next-line no-unused-vars
+      const { id, ...standardWithoutId } = currentStandard
       standardChanges.updated.push( {
-        ...currentStandard,
-        id : originalStandard.id || originalStandard.standard_id,
+        ...standardWithoutId,
+        standard_id : originalStandard.id || originalStandard.standard_id,
         module : 200
       } )
     }
@@ -1370,20 +1375,9 @@ const newImageUrls = ref( [] )
 const newFileUrls = ref( [] )
 
 // Options data
-const assigneeOptions = ref( [
-  { id : 84, name : 'System' },
-  { id : 37, name : 'Erik Yu' },
-  { id : 43, name : 'Chang Shi' },
-  { id : 45, name : 'Maxwell Wang' },
-  { id : 46, name : 'Justin Li' },
-  { id : 47, name : 'Justin Tung' },
-  { id : 48, name : 'Eric Huang' }
-] )
+const assigneeOptions = ref( [] )
 
-const supervisorOptions = ref( [
-  { id : 36, name : 'Yao Li' },
-  { id : 41, name : 'John Li' }
-] )
+const supervisorOptions = ref( [] )
 const workTypeOptions = ref( [] )
 const priorityOptions = ref( [] )
 const categoryOptions = ref( [] )
@@ -2385,14 +2379,21 @@ const loadFormData = async() => {
     loading.value = true
 
     // Load all dropdown options in parallel
-    const [workTypesResponse, prioritiesResponse, categoriesResponse, statesResponse, equipmentResponse] =
-      await Promise.all( [
-        getAllWorkTypes(),
-        getAllPriorities(),
-        getAllCategories(),
-        getAllStates(),
-        getEquipmentNodeTrees()
-      ] )
+    const [
+      workTypesResponse,
+      prioritiesResponse,
+      categoriesResponse,
+      statesResponse,
+      equipmentResponse,
+      usersResponse
+    ] = await Promise.all( [
+      getAllWorkTypes(),
+      getAllPriorities(),
+      getAllCategories(),
+      getAllStates(),
+      getEquipmentNodeTrees(),
+      searchUsers( { status_ids : [1] }, 1, 1000 )
+    ] )
 
     // Set options
     workTypeOptions.value = workTypesResponse.data || []
@@ -2401,8 +2402,15 @@ const loadFormData = async() => {
     stateOptions.value = statesResponse.data || []
     assetTreeData.value = equipmentResponse.data || []
 
-    // For now, using mock data for assignees/supervisors - data already set at component level
-    // In production, these would come from a users API
+    // Set user options from API
+    const users = usersResponse?.data?.content || []
+    assigneeOptions.value = users.map( user => ( {
+      id : user.id,
+      name : `${user.first_name} ${user.last_name}`
+    } ) )
+
+    // Set supervisor options (same as assignee options for now)
+    supervisorOptions.value = assigneeOptions.value
 
     // Populate form with work order data
     populateFormFromWorkOrder( props.workOrder )
@@ -3157,7 +3165,25 @@ onActivated( () => {
       .standard-tabs-header {
         .details-tabs {
           :deep(.el-tabs__header) {
-            margin-bottom: 0;
+            margin: 0 0 16px 0;
+          }
+
+          :deep(.el-tabs__nav-wrap::after) {
+            height: 1px;
+          }
+
+          :deep(.el-tabs__item) {
+            font-size: 14px;
+            font-weight: 500;
+          }
+
+          :deep(.el-tabs__item.is-top) {
+            font-size: 16px;
+            width: 50%;
+          }
+
+          :deep(.el-tabs__nav.is-top) {
+            width: 100%;
           }
         }
       }

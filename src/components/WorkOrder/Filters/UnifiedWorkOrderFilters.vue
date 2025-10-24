@@ -10,6 +10,7 @@
             v-model="localFilters.assignedTo"
             :placeholder="$t('workOrder.filters.assignedTo')"
             clearable
+            filterable
             size="default"
             style="width: 140px"
             :class="{ 'highlight-animation': animatingFilters.assignedTo }"
@@ -129,42 +130,23 @@
 
         <!-- Equipment Filter -->
         <div v-if="isFilterVisible('equipment')" class="filter-item">
-          <el-select
+          <el-tree-select
             v-model="localFilters.equipment"
-            :placeholder="$t('workOrder.filters.equipment')"
+            placeholder="Equipment"
+            :data="equipmentTreeData"
+            filterable
             clearable
+            check-strictly
+            node-key="value"
+            :props="{ children: 'children', label: 'label' }"
             size="default"
             style="width: 140px"
+            class="equipment-tree-select"
+            popper-class="equipment-tree-select-popper"
+            :teleported="false"
             :class="{ 'highlight-animation': animatingFilters.equipment }"
             @change="handleFilterChange"
-          >
-            <el-option
-              v-for="equipment in equipmentOptions"
-              :key="equipment.id"
-              :label="equipment.name"
-              :value="equipment.id"
-            />
-          </el-select>
-        </div>
-
-        <!-- Location Filter -->
-        <div v-if="isFilterVisible('location')" class="filter-item">
-          <el-select
-            v-model="localFilters.location"
-            :placeholder="$t('workOrder.filters.location')"
-            clearable
-            size="default"
-            style="width: 140px"
-            :class="{ 'highlight-animation': animatingFilters.location }"
-            @change="handleFilterChange"
-          >
-            <el-option
-              v-for="location in locationOptions"
-              :key="location.id"
-              :label="location.name"
-              :value="location.id"
-            />
-          </el-select>
+          />
         </div>
 
         <!-- Recurrence Filter -->
@@ -390,6 +372,8 @@ import {
   CircleClose
 } from '@element-plus/icons-vue'
 import { useCommonDataStore } from '@/store/modules/commonData'
+import { getEquipmentTree } from '@/api/equipment.js'
+import { searchUsers } from '@/api/user.js'
 
 // Props
 const props = defineProps( {
@@ -421,6 +405,12 @@ const searchQuery = ref( '' )
 const searchByIdMode = ref( false )
 let searchDebounceTimer = null
 
+// Equipment tree data
+const equipmentTreeData = ref( [] )
+
+// User options for Assigned To filter
+const userOptions = ref( [] )
+
 // Local filters state
 const localFilters = reactive( {
   assignedTo : props.modelValue.assignedTo || null,
@@ -434,7 +424,7 @@ const localFilters = reactive( {
   latest_per_recurrence : props.currentView !== 'calendar',
   status : props.modelValue.status || null,
   equipment : props.modelValue.equipment || null,
-  location : props.modelValue.location || null,
+  equipment_node_ids : props.modelValue.equipment_node_ids || null,
   recurrence : props.modelValue.recurrence || null
 } )
 
@@ -453,8 +443,38 @@ const updateScreenWidth = () => {
   screenWidth.value = window.innerWidth
 }
 
+// Fetch equipment tree data
+const fetchEquipmentTreeData = async() => {
+  try {
+    const response = await getEquipmentTree()
+    const transformNode = node => ( {
+      value : node.id,
+      label : node.name,
+      children : node.children ? node.children.map( transformNode ) : undefined
+    } )
+    const dataArray = Array.isArray( response.data ) ? response.data : [response.data]
+    equipmentTreeData.value = dataArray.map( node => transformNode( node ) )
+  } catch ( error ) {
+    console.error( 'Equipment tree load failed:', error )
+    ElMessage.error( 'Failed to load equipment filter data.' )
+  }
+}
+
+// Fetch users for Assigned To filter
+const fetchUsers = async() => {
+  try {
+    const response = await searchUsers( { status_ids : [1] }, 1, 1000 )
+    userOptions.value = response?.data?.content || []
+  } catch ( error ) {
+    console.error( 'Failed to load users:', error )
+    ElMessage.error( 'Failed to load user filter data.' )
+  }
+}
+
 onMounted( () => {
   window.addEventListener( 'resize', updateScreenWidth )
+  fetchEquipmentTreeData()
+  fetchUsers()
 } )
 
 onUnmounted( () => {
@@ -502,7 +522,6 @@ const animatingFilters = reactive( {
   status : false,
   category : false,
   equipment : false,
-  location : false,
   recurrence : false
 } )
 
@@ -517,18 +536,15 @@ const availableFilters = reactive( {
   status : { visible : false, category : 'advanced' },
   category : { visible : false, category : 'advanced' },
   equipment : { visible : false, category : 'advanced' },
-  location : { visible : false, category : 'advanced' },
   recurrence : { visible : false, category : 'advanced' }
 } )
 
 // Filter options
 const assignedToOptions = computed( () => {
-  // TODO: Get from user store or API
-  return [
-    { id : 1, name : 'Erik Yu' },
-    { id : 2, name : 'Jane Smith' },
-    { id : 3, name : 'Mike Johnson' }
-  ]
+  return userOptions.value.map( user => ( {
+    id : user.id,
+    name : `${user.first_name} ${user.last_name}`
+  } ) )
 } )
 
 const workTypeOptions = computed( () => commonDataStore.workTypes || [] )
@@ -542,20 +558,6 @@ const statusOptions = computed( () => [
   { id : 'in_progress', name : t( 'workOrder.status.inProgress' ) },
   { id : 'completed', name : t( 'workOrder.status.completed' ) },
   { id : 'cancelled', name : t( 'workOrder.status.cancelled' ) }
-] )
-
-const equipmentOptions = computed( () => [
-  { id : 1, name : 'Production Line A' },
-  { id : 2, name : 'Production Line B' },
-  { id : 3, name : 'Packaging Machine 1' },
-  { id : 4, name : 'Packaging Machine 2' }
-] )
-
-const locationOptions = computed( () => [
-  { id : 1, name : 'Factory Floor 1' },
-  { id : 2, name : 'Factory Floor 2' },
-  { id : 3, name : 'Warehouse' },
-  { id : 4, name : 'Office Building' }
 ] )
 
 const recurrenceOptions = computed( () => [
@@ -620,12 +622,6 @@ const filterDefinitions = computed( () => ( {
     key : 'equipment',
     label : t( 'workOrder.filters.equipment' ),
     icon : 'Setting',
-    category : 'advanced'
-  },
-  location : {
-    key : 'location',
-    label : t( 'workOrder.filters.location' ),
-    icon : 'Location',
     category : 'advanced'
   },
   recurrence : {
@@ -736,18 +732,21 @@ const activeFilterTags = computed( () => {
   }
 
   if ( localFilters.equipment ) {
-    const equipment = equipmentOptions.value.find( e => e.id === localFilters.equipment )
+    // Find the equipment node label from tree data
+    const findNodeLabel = ( nodes, targetValue ) => {
+      for ( const node of nodes ) {
+        if ( node.value === targetValue ) return node.label
+        if ( node.children ) {
+          const label = findNodeLabel( node.children, targetValue )
+          if ( label ) return label
+        }
+      }
+      return null
+    }
+    const equipmentLabel = findNodeLabel( equipmentTreeData.value, localFilters.equipment )
     tags.push( {
       key : 'equipment',
-      label : `${t( 'workOrder.filters.equipment' )}: ${equipment?.name || localFilters.equipment}`
-    } )
-  }
-
-  if ( localFilters.location ) {
-    const location = locationOptions.value.find( l => l.id === localFilters.location )
-    tags.push( {
-      key : 'location',
-      label : `${t( 'workOrder.filters.location' )}: ${location?.name || localFilters.location}`
+      label : `${t( 'workOrder.filters.equipment' )}: ${equipmentLabel || localFilters.equipment}`
     } )
   }
 
@@ -812,6 +811,13 @@ const toggleSearchMode = () => {
 }
 
 const handleFilterChange = async() => {
+  // Convert equipment to equipment_node_ids array format for API
+  if ( localFilters.equipment ) {
+    localFilters.equipment_node_ids = [localFilters.equipment]
+  } else {
+    localFilters.equipment_node_ids = null
+  }
+
   emit( 'update:modelValue', { ...localFilters } )
 }
 
@@ -1371,6 +1377,29 @@ defineOptions( {
       margin-left: 0;
       align-self: flex-end;
     }
+  }
+}
+
+// Equipment tree select styling (match TemplateLibraryView pattern)
+:deep(.equipment-tree-select) {
+  .el-tree-select__popper {
+    min-width: 300px !important;
+  }
+}
+
+:deep(.el-tree-node) {
+  width: 300px !important;
+}
+
+:deep(.equipment-tree-select-popper) {
+  min-width: 300px !important;
+
+  .el-scrollbar__wrap {
+    max-height: 400px;
+  }
+
+  .el-select-dropdown {
+    min-width: 300px !important;
   }
 }
 </style>

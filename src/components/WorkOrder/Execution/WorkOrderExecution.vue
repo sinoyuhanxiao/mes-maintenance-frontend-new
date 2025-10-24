@@ -2,8 +2,10 @@
   <div class="work-order-execution">
     <header class="execution-header">
       <div>
-        <h2>{{ workOrder?.name || 'Work Order' }}</h2>
-        <p class="subtitle">Execute tasks and record progress</p>
+        <h2>Execute Work Order Tasks</h2>
+        <p class="subtitle">
+          {{ workOrder?.description || 'Review steps and submit progress' }}
+        </p>
       </div>
       <div class="header-right">
         <el-tag v-if="hasDrafts" type="warning" effect="light">Drafts saved locally — available offline.</el-tag>
@@ -14,16 +16,83 @@
       </div>
     </header>
 
-    <section class="tasks-summary" v-if="displayCards.length">
-      <TaskExecutionSummary
-        v-for="(card, index) in displayCards"
-        :key="card.id"
-        :task="card.task"
-        :progress="card.progress"
-        :index="index"
-        @select="openTaskDrawer(card.task)"
-      />
-      <el-button v-if="taskCards.length > 3" type="text" class="view-all"> View all tasks </el-button>
+    <section class="tasks-summary" v-if="taskCards.length">
+      <!-- Filter Bar -->
+      <div class="tasks-filter-bar">
+        <el-input
+          v-model="searchInput"
+          placeholder="Search by task name or code"
+          clearable
+          class="filter-search"
+          size="default"
+          @input="handleSearchInput"
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
+        <el-select v-model="taskFilters.state" placeholder="State" clearable class="filter-select" size="default">
+          <el-option label="Ready" value="Ready" />
+          <el-option label="In progress" value="In progress" />
+          <el-option label="Completed" value="Completed" />
+          <el-option label="Failed" value="Failed" />
+        </el-select>
+        <el-select
+          v-model="taskFilters.assignee"
+          placeholder="Personnel"
+          clearable
+          class="filter-select"
+          size="default"
+        >
+          <el-option v-for="assignee in uniqueAssignees" :key="assignee" :label="assignee" :value="assignee" />
+        </el-select>
+        <el-select
+          v-model="taskFilters.timeSpent"
+          placeholder="Actual Time"
+          clearable
+          class="filter-select"
+          size="default"
+        >
+          <el-option label="Less than 15 min" value="lt15" />
+          <el-option label="15 - 30 min" value="15to30" />
+          <el-option label="More than 30 min" value="gt30" />
+          <el-option label="Custom Range" value="custom" class="custom-range-option" />
+        </el-select>
+        <div v-if="taskFilters.timeSpent === 'custom'" class="custom-time-range">
+          <el-input-number
+            v-model="customTimeRange.start"
+            :min="0"
+            placeholder="Min"
+            size="default"
+            class="time-range-input"
+            controls-position="right"
+          />
+          <span class="range-separator">-</span>
+          <el-input-number
+            v-model="customTimeRange.end"
+            :min="customTimeRange.start || 0"
+            placeholder="Max"
+            size="default"
+            class="time-range-input"
+            controls-position="right"
+          />
+          <span class="time-unit">min</span>
+        </div>
+      </div>
+
+      <!-- Scrollable Tasks List -->
+      <div class="tasks-list-container">
+        <TaskExecutionSummary
+          v-for="(card, index) in filteredTaskCards"
+          :key="card.id"
+          :task="card.task"
+          :progress="card.progress"
+          :index="index"
+          :is-highlighted="isTaskHighlighted(card.task)"
+          @select="openTaskDrawer(card.task)"
+          @view-log="openTaskLogViewer(card.task)"
+        />
+      </div>
     </section>
     <el-empty v-else description="No tasks available" :image-size="120" />
 
@@ -34,15 +103,14 @@
       destroy-on-close
       append-to-body
       class="work-order-task-drawer"
+      :before-close="handleDrawerClose"
     >
       <template #header>
         <div class="drawer-header-container" style="margin-bottom: -32px !important">
-          <!-- Title and ID on left side -->
           <div class="drawer-header-left">
             <div class="drawer-title">{{ drawerTitle }}</div>
             <div v-if="activeTask" class="task-id-header">ID: {{ activeTask.id || activeTask.task_id || 'N/A' }}</div>
           </div>
-          <!-- Description -->
           <div v-if="activeTask && activeTask.description" class="drawer-header-description">
             {{ activeTask.description }}
           </div>
@@ -51,39 +119,89 @@
 
       <div class="task-drawer-content" v-loading="drawerLoading">
         <div v-if="activeTask && !drawerLoading" class="drawer-inner">
-          <!-- Steps Content -->
           <div class="steps-content">
-            <StepsPreview :steps="activeTask.steps" :interactive="true" />
+            <StepsExecution ref="stepsExecutionRef" :steps="activeTask.steps" />
           </div>
 
-          <!-- Action Buttons -->
+          <div class="time-entry-section">
+            <div class="time-entry-content">
+              <div class="time-entry-label">Time Spent (minutes)</div>
+              <el-input-number
+                v-model="manualTimeMinutes"
+                :min="0"
+                :step="5"
+                :precision="0"
+                placeholder="Enter total time"
+                controls-position="right"
+              />
+            </div>
+          </div>
+
           <div class="task-actions">
-            <el-button @click="closeDrawer">Cancel</el-button>
-            <el-button type="info" @click="handleLogStepValues">Logs</el-button>
-            <el-button type="primary" @click="handleSubmitTask">Submit</el-button>
+            <el-button v-show="false" type="info" @click="handleLogStepValues">Logs</el-button>
+            <el-button type="primary" @click="handleFinalSubmit" :loading="isSubmitting">Submit</el-button>
           </div>
         </div>
       </div>
     </el-drawer>
 
-    <!-- JSON Debug Drawer -->
     <JsonDebugDrawer
       v-model="showJsonDisplayer"
       :payload-data="currentPayload"
       title="Task Step Values"
       subtitle="User input values for each step"
     />
+
+    <!-- Task Log Viewer Dialog -->
+    <el-dialog
+      v-model="showTaskLogDialog"
+      :title="`Task Logs: ${selectedTaskForLog?.name || selectedTaskForLog?.task_name || 'Task'}`"
+      width="1000px"
+      top="10vh"
+      class="task-log-dialog"
+    >
+      <el-tabs v-model="activeLogTab" class="task-log-tabs">
+        <!-- Logs Tab -->
+        <el-tab-pane label="Logs" name="logs">
+          <TaskLogsView
+            v-if="showTaskLogDialog && selectedTaskForLog?.id"
+            :task-entry-id="selectedTaskForLog.id || selectedTaskForLog.task_entry_id"
+            :task="selectedTaskForLog"
+            style="height: 53vh !important; overflow-y: auto"
+          />
+        </el-tab-pane>
+
+        <!-- Steps Tab -->
+        <el-tab-pane label="Original Template" name="steps">
+          <StepsPreview
+            v-if="showTaskLogDialog && selectedTaskForLog?.steps"
+            :steps="selectedTaskForLog.steps"
+            :interactive="false"
+            :show-mode-switch="false"
+            style="height: 54vh !important"
+          />
+        </el-tab-pane>
+      </el-tabs>
+
+      <template #footer>
+        <el-button @click="closeTaskLogViewer">Close</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { ArrowLeft } from '@element-plus/icons-vue'
+import { ArrowLeft, Search } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import TaskExecutionSummary from './TaskExecutionSummary.vue'
+import StepsExecution from '@/components/TaskLibrary/StepsExecution.vue'
+import TaskLogsView from '@/components/WorkOrder/Logs/TaskLogsView.vue'
 import StepsPreview from '@/components/TaskLibrary/StepsPreview.vue'
-import { getTaskEntryById } from '@/api/task-entry'
+import { getTaskEntryById, updateTaskEntry } from '@/api/task-entry'
 import { JsonDebugDrawer, usePayloadLogger } from '@/utils/logs'
+import useUserStore from '@/store/modules/users'
 
 const props = defineProps( {
   workOrder : {
@@ -94,23 +212,79 @@ const props = defineProps( {
 
 const emit = defineEmits( ['close', 'update:progress', 'back-to-detail'] )
 
-// Handler for back to detail navigation with debug logging
-const handleBackToDetail = () => {
-  console.log( '🔄 WorkOrderExecution: Back to Detail button clicked' )
-  console.log( '🔄 WorkOrderExecution: Emitting back-to-detail event' )
-  emit( 'back-to-detail' )
-  console.log( '🔄 WorkOrderExecution: back-to-detail event emitted' )
-}
-
 // eslint-disable-next-line no-unused-vars
 const { t } = useI18n()
 const { currentPayload, showJsonDisplayer, logPayload } = usePayloadLogger()
+const userStore = useUserStore()
 
 const draftsLoaded = ref( false )
 const taskCards = reactive( [] )
 const drawerVisible = ref( false )
 const activeTask = ref( null )
 const drawerLoading = ref( false )
+const stepsExecutionRef = ref( null )
+const manualTimeMinutes = ref( null )
+const isSubmitting = ref( false )
+const showTaskLogDialog = ref( false )
+const selectedTaskForLog = ref( null )
+const activeLogTab = ref( 'logs' )
+const highlightedTaskId = ref( null )
+
+// Filter state
+const taskFilters = ref( {
+  search : '',
+  state : '',
+  assignee : '',
+  timeSpent : ''
+} )
+
+const customTimeRange = ref( { start : null, end : null } ) // Custom time range in minutes
+const searchInput = ref( '' )
+let searchDebounceTimer = null
+
+const handleBackToDetail = async() => {
+  const shouldLeave = await confirmNavigation()
+  if ( shouldLeave ) {
+    emit( 'back-to-detail' )
+  }
+}
+
+// Check if there's work in progress
+const hasWorkInProgress = () => {
+  // Check if drawer is open
+  if ( drawerVisible.value ) {
+    return true
+  }
+  // Check if there are any drafts
+  if ( hasDrafts.value ) {
+    return true
+  }
+  return false
+}
+
+// Show confirmation dialog before navigation
+const confirmNavigation = async() => {
+  if ( !hasWorkInProgress() ) {
+    return true
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      'You have work in progress. Are you sure you want to leave the execution? Any unsaved changes will be lost.',
+      'Confirm Navigation',
+      {
+        confirmButtonText : 'Yes, Leave',
+        cancelButtonText : 'Stay',
+        type : 'warning',
+        distinguishCancelAndClose : true
+      }
+    )
+    return true
+  } catch ( error ) {
+    // User clicked cancel or close
+    return false
+  }
+}
 
 const buildTaskList = () => {
   taskCards.splice( 0, taskCards.length )
@@ -144,14 +318,159 @@ const buildTaskList = () => {
 const hasDrafts = computed( () =>
   taskCards.some( card => card.progress.status === 'in_progress' && card.progress.updated_at )
 )
-computed( () => taskCards.filter( card => card.progress.status === 'completed' ).length )
-computed( () => taskCards.filter( card => card.progress.status === 'in_progress' && card.progress.updated_at ).length )
-const displayCards = computed( () => taskCards.slice( 0, 3 ) )
+
 const drawerTitle = computed( () => activeTask.value?.name || 'Task Details' )
 
+// Unique assignees for filter dropdown
+const uniqueAssignees = computed( () => {
+  const assigneesSet = new Set()
+
+  taskCards.forEach( card => {
+    const personnel = card.task?.personnel
+    if ( !personnel ) return
+
+    if ( Array.isArray( personnel ) ) {
+      personnel.forEach( p => {
+        if ( typeof p === 'string' && p ) assigneesSet.add( p )
+        if ( typeof p === 'object' && p.name ) assigneesSet.add( p.name )
+      } )
+    } else if ( typeof personnel === 'object' && personnel.name ) {
+      assigneesSet.add( personnel.name )
+    } else if ( typeof personnel === 'string' && personnel ) {
+      assigneesSet.add( personnel )
+    }
+  } )
+
+  return Array.from( assigneesSet ).sort()
+} )
+
+// Filtered task cards based on search and filters
+const filteredTaskCards = computed( () => {
+  // Start with a copy of all task cards
+  let filtered = [...taskCards]
+
+  // Filter by search
+  if ( taskFilters.value.search ) {
+    const searchLower = taskFilters.value.search.toLowerCase()
+    filtered = filtered.filter( card => {
+      const task = card.task
+      const name = task?.name || task?.task_name || task?.label || task?.taskListText || ''
+      const id = task?.id || ''
+      return name.toLowerCase().includes( searchLower ) || String( id ).toLowerCase().includes( searchLower )
+    } )
+  }
+
+  // Filter by state
+  if ( taskFilters.value.state ) {
+    filtered = filtered.filter( card => {
+      const stateName = card.task?.state?.name || ''
+      return stateName.toLowerCase() === taskFilters.value.state.toLowerCase()
+    } )
+  }
+
+  // Filter by assignee
+  if ( taskFilters.value.assignee ) {
+    filtered = filtered.filter( card => {
+      const personnel = card.task?.personnel
+      if ( !personnel ) return false
+
+      if ( Array.isArray( personnel ) ) {
+        return personnel.some( p => {
+          const name = typeof p === 'string' ? p : p?.name || ''
+          return name === taskFilters.value.assignee
+        } )
+      } else if ( typeof personnel === 'object' && personnel.name ) {
+        return personnel.name === taskFilters.value.assignee
+      } else if ( typeof personnel === 'string' ) {
+        return personnel === taskFilters.value.assignee
+      }
+
+      return false
+    } )
+  }
+
+  // Filter by time spent
+  if ( taskFilters.value.timeSpent ) {
+    filtered = filtered.filter( card => {
+      const timeTakenSec = card.task?.time_taken_sec || 0
+      const minutes = Math.round( timeTakenSec / 60 )
+
+      switch ( taskFilters.value.timeSpent ) {
+        case 'custom':
+          // Custom range filter
+          if ( customTimeRange.value.start !== null && customTimeRange.value.end !== null ) {
+            return minutes >= customTimeRange.value.start && minutes <= customTimeRange.value.end
+          } else if ( customTimeRange.value.start !== null ) {
+            return minutes >= customTimeRange.value.start
+          } else if ( customTimeRange.value.end !== null ) {
+            return minutes <= customTimeRange.value.end
+          }
+          return true
+        case 'lt15':
+          return minutes < 15
+        case '15to30':
+          return minutes >= 15 && minutes <= 30
+        case 'gt30':
+          return minutes > 30
+        default:
+          return true
+      }
+    } )
+  }
+
+  return filtered
+} )
+
 const loadDrafts = async() => {
-  // TODO: Offline storage will be implemented later
   draftsLoaded.value = true
+}
+
+const extractTimeTakenMinutes = task => {
+  if ( !task ) return null
+
+  const directSeconds = task.time_taken_sec ?? task.time_taken ?? task.timeTakenSec
+  if ( typeof directSeconds === 'number' && Number.isFinite( directSeconds ) && directSeconds > 0 ) {
+    return directSeconds / 60
+  }
+
+  const progressSeconds = task.progress?.time_taken_sec ?? task.progress?.timeTakenSec
+  if ( typeof progressSeconds === 'number' && Number.isFinite( progressSeconds ) && progressSeconds > 0 ) {
+    return progressSeconds / 60
+  }
+
+  const timeSpent = task.progress?.time_spent || task.progress?.timeSpent
+  if ( timeSpent && typeof timeSpent === 'object' ) {
+    const value = Number( timeSpent.value )
+    if ( Number.isFinite( value ) ) {
+      const unit = ( timeSpent.unit || '' ).toString().toLowerCase()
+      if ( unit.startsWith( 'min' ) ) {
+        return value
+      }
+      if ( unit.startsWith( 'sec' ) ) {
+        return value / 60
+      }
+      if ( unit.startsWith( 'hour' ) ) {
+        return value * 60
+      }
+    }
+  }
+
+  const estimateSeconds = task.time_estimate_sec ?? task.timeEstimateSec
+  if ( typeof estimateSeconds === 'number' && Number.isFinite( estimateSeconds ) && estimateSeconds > 0 ) {
+    return estimateSeconds / 60
+  }
+
+  return null
+}
+
+const prefillManualTime = () => {
+  const minutes = extractTimeTakenMinutes( activeTask.value )
+  if ( minutes === null ) {
+    manualTimeMinutes.value = null
+    return
+  }
+
+  manualTimeMinutes.value = Math.max( 0, Math.round( minutes ) )
 }
 
 const openTaskDrawer = async task => {
@@ -160,11 +479,9 @@ const openTaskDrawer = async task => {
   activeTask.value = null
 
   try {
-    // Get task entry ID from various possible locations
     const taskEntryId = task.task_entry_id || task.taskEntryId || task.id || task.task_id
 
     if ( taskEntryId ) {
-      // Fetch full task entry details from backend
       const response = await getTaskEntryById( taskEntryId )
       const taskData = response?.data
 
@@ -175,182 +492,290 @@ const openTaskDrawer = async task => {
           steps : Array.isArray( taskData.steps ) && taskData.steps.length ? taskData.steps : task.steps || []
         }
       } else {
-        // Fallback to original task data if API call fails
         activeTask.value = task
       }
     } else {
-      // Use original task data if no ID available
       activeTask.value = task
     }
+
+    prefillManualTime()
   } catch ( error ) {
     console.warn( 'Failed to load task entry details:', error )
-    // Fallback to original task data on error
     activeTask.value = task
+    prefillManualTime()
   } finally {
     drawerLoading.value = false
+  }
+}
+
+const handleDrawerClose = async done => {
+  // Auto-save draft before closing
+  try {
+    await autoSaveDraft()
+    done()
+  } catch ( error ) {
+    // If auto-save fails, still allow closing
+    console.warn( 'Auto-save failed, but allowing drawer to close:', error )
+    done()
   }
 }
 
 const closeDrawer = () => {
   drawerVisible.value = false
   activeTask.value = null
+  stepsExecutionRef.value = null
+  manualTimeMinutes.value = null
+}
+
+const prepareTaskEntryPayload = ( saveAsDraft = false ) => {
+  const taskEntryId = activeTask.value?.id || activeTask.value?.task_id || activeTask.value?.task_entry_id
+
+  if ( !taskEntryId ) {
+    throw new Error( 'Task entry ID not found' )
+  }
+
+  const stepUpdateList = stepsExecutionRef.value?.getExecutionPayload()
+
+  if ( stepUpdateList === null || stepUpdateList === undefined ) {
+    throw new Error( 'Failed to collect step values' )
+  }
+
+  if ( !saveAsDraft ) {
+    const missingSteps = stepsExecutionRef.value?.validateRequiredSteps?.() || []
+    if ( missingSteps.length ) {
+      throw new Error( `Please complete required steps: ${missingSteps.join( ', ' )}` )
+    }
+  }
+
+  let minutesValue = Number( manualTimeMinutes.value )
+  if ( manualTimeMinutes.value === null || manualTimeMinutes.value === undefined || Number.isNaN( minutesValue ) ) {
+    if ( saveAsDraft ) {
+      minutesValue = 0
+    } else {
+      throw new Error( 'Please enter the time spent in minutes.' )
+    }
+  }
+
+  const timeTakenSec = Math.max( 0, Math.round( minutesValue * 60 ) )
+  const userId = userStore.uid || '999'
+
+  return {
+    taskEntryId,
+    payload : {
+      step_update_list : stepUpdateList,
+      time_taken_sec : timeTakenSec,
+      submit : !saveAsDraft,
+      updated_by : String( userId )
+    }
+  }
+}
+
+const buildDebugPayload = () => {
+  const taskEntryId = activeTask.value?.id || activeTask.value?.task_id || activeTask.value?.task_entry_id
+  const stepUpdateList = stepsExecutionRef.value?.getExecutionPayload()
+
+  if ( !taskEntryId || !stepUpdateList ) {
+    return null
+  }
+
+  const minutesValue = Number( manualTimeMinutes.value )
+  const timeTakenSec = Number.isNaN( minutesValue ) ? 0 : Math.max( 0, Math.round( minutesValue * 60 ) )
+  const userId = userStore.uid || '999'
+
+  return {
+    taskEntryId,
+    payload : {
+      step_update_list : stepUpdateList,
+      time_taken_sec : timeTakenSec,
+      submit : false,
+      updated_by : String( userId )
+    }
+  }
 }
 
 const handleLogStepValues = () => {
-  // Collect step values from the DOM
-  const stepValues = collectStepValues()
-
-  const payload = {
-    taskInfo : {
-      id : activeTask.value?.id || activeTask.value?.task_id,
-      name : activeTask.value?.name,
-      description : activeTask.value?.description
-    },
-    workOrderInfo : {
-      id : props.workOrder?.id,
-      name : props.workOrder?.name
-    },
-    stepValues,
-    timestamp : new Date().toISOString(),
-    totalSteps : activeTask.value?.steps?.length || 0
+  const debugPayload = buildDebugPayload()
+  if ( !debugPayload ) {
+    ElMessage.error( 'Unable to prepare payload for logging.' )
+    return
   }
 
-  logPayload( payload, 'taskStepValues', {
-    taskId : activeTask.value?.id,
-    workOrderId : props.workOrder?.id,
-    stepCount : Object.keys( stepValues ).length
-  } )
+  const { taskEntryId, payload } = debugPayload
+
+  console.groupCollapsed( '🧾 WorkOrderExecution: Task payload preview' )
+  console.log( 'Task Entry ID:', taskEntryId )
+  console.log( 'API Endpoint:', `/api/task/entry/${taskEntryId}` )
+  console.log( 'Preview Payload:', payload )
+  console.groupEnd()
+
+  logPayload( payload, 'taskEntry', { showMessage : false } )
 }
 
-const collectStepValues = () => {
-  const stepValues = {}
+const handleSubmitTask = async( saveAsDraft = false ) => {
+  if ( isSubmitting.value ) return
 
   try {
-    // Find the steps preview container
-    const stepsContainer = document.querySelector( '.drawer-inner .steps-content .steps-preview-container' )
-    if ( !stepsContainer ) {
-      console.warn( 'Steps preview container not found' )
-      return stepValues
-    }
+    const { taskEntryId, payload } = prepareTaskEntryPayload( saveAsDraft )
 
-    // Find all step components within the preview
-    const stepElements = stepsContainer.querySelectorAll( '.preview-step-simple' )
+    const action = saveAsDraft ? 'save as draft' : 'submit'
 
-    stepElements.forEach( ( stepElement, index ) => {
-      const stepData = collectStepValue( stepElement, index )
-      if ( stepData ) {
-        stepValues[`step_${index + 1}`] = stepData
-      }
+    console.groupCollapsed( '🧾 WorkOrderExecution: Prepared task entry payload' )
+    console.log( 'Task Entry ID:', taskEntryId )
+    console.log( 'API Endpoint:', `/api/task/entry/${taskEntryId}` )
+    console.log( 'Submit Action:', action )
+    console.log( 'Request Payload:', payload )
+    console.groupEnd()
+
+    await ElMessageBox.confirm( `Are you sure you want to ${action} this task?`, 'Confirmation', {
+      confirmButtonText : 'Yes',
+      cancelButtonText : 'Cancel',
+      type : 'warning'
     } )
 
-    console.log( 'Collected step values:', stepValues )
-    return stepValues
+    isSubmitting.value = true
+
+    const response = await updateTaskEntry( taskEntryId, payload )
+
+    if ( response?.status === 'success' || response?.data ) {
+      ElMessage.success( `Task ${saveAsDraft ? 'saved as draft' : 'submitted'} successfully` )
+
+      // Highlight the updated task
+      highlightedTaskId.value = taskEntryId
+
+      // Remove highlight after 3 seconds
+      setTimeout( () => {
+        highlightedTaskId.value = null
+      }, 3000 )
+
+      closeDrawer()
+      emit( 'update:progress' )
+    } else {
+      ElMessage.error( `Failed to ${action} task` )
+    }
   } catch ( error ) {
-    console.error( 'Error collecting step values:', error )
-    return stepValues
+    if ( error !== 'cancel' ) {
+      console.error( 'Error submitting task:', error )
+      ElMessage.error( error?.message || 'Failed to submit task' )
+    }
+  } finally {
+    isSubmitting.value = false
   }
 }
 
-const collectStepValue = ( stepElement, index ) => {
+const autoSaveDraft = async() => {
+  if ( isSubmitting.value ) return
+  if ( !activeTask.value ) return
+
   try {
-    const stepInfo = {
-      stepIndex : index + 1,
-      stepType : 'unknown',
-      value : null,
-      label : null,
-      required : false
+    const { taskEntryId, payload } = prepareTaskEntryPayload( true )
+
+    console.groupCollapsed( '🧾 WorkOrderExecution: Auto-saving draft' )
+    console.log( 'Task Entry ID:', taskEntryId )
+    console.log( 'API Endpoint:', `/api/task/entry/${taskEntryId}` )
+    console.log( 'Request Payload:', payload )
+    console.groupEnd()
+
+    isSubmitting.value = true
+
+    const response = await updateTaskEntry( taskEntryId, payload )
+
+    if ( response?.status === 'success' || response?.data ) {
+      ElMessage.success( 'Draft saved automatically' )
+
+      // Highlight the updated task
+      highlightedTaskId.value = taskEntryId
+
+      // Remove highlight after 3 seconds
+      setTimeout( () => {
+        highlightedTaskId.value = null
+      }, 3000 )
+
+      emit( 'update:progress' )
+    } else {
+      console.warn( 'Auto-save draft response not successful:', response )
     }
-
-    // Try to find step label
-    const labelElement = stepElement.querySelector( '.preview-label, .step-label, .checkbox-step-preview label' )
-    if ( labelElement ) {
-      stepInfo.label = labelElement.textContent?.replace( '*', '' ).trim()
-      stepInfo.required = labelElement.textContent?.includes( '*' ) || false
-    }
-
-    // Check for different input types and collect values
-
-    // Number input
-    const numberInput = stepElement.querySelector( '.el-input-number input' )
-    if ( numberInput ) {
-      stepInfo.stepType = 'number'
-      stepInfo.value = numberInput.value ? parseFloat( numberInput.value ) : null
-
-      // Get unit if available
-      const unitLabel = stepElement.querySelector( '.unit-label' )
-      if ( unitLabel ) {
-        stepInfo.unit = unitLabel.textContent?.trim()
-      }
-
-      return stepInfo
-    }
-
-    // Checkbox input
-    const checkboxInput = stepElement.querySelector( '.el-checkbox input[type="checkbox"]' )
-    if ( checkboxInput ) {
-      stepInfo.stepType = 'checkbox'
-      stepInfo.value = checkboxInput.checked
-      return stepInfo
-    }
-
-    // Text input/textarea
-    const textInput = stepElement.querySelector( '.el-input input, .el-textarea textarea' )
-    if ( textInput ) {
-      stepInfo.stepType = 'text'
-      stepInfo.value = textInput.value
-      return stepInfo
-    }
-
-    // Inspection/radio buttons
-    const inspectionRadio = stepElement.querySelector( 'input[type="radio"]:checked' )
-    if ( inspectionRadio ) {
-      stepInfo.stepType = 'inspection'
-      stepInfo.value = inspectionRadio.value
-      return stepInfo
-    }
-
-    // File uploads
-    const fileUpload = stepElement.querySelector( '.el-upload' )
-    if ( fileUpload ) {
-      stepInfo.stepType = 'attachment'
-      // For file uploads, we can try to get the file list
-      const fileList = stepElement.querySelectorAll( '.el-upload-list__item' )
-      stepInfo.value = {
-        uploadedFiles : fileList.length,
-        files : Array.from( fileList ).map( item => {
-          const fileName = item.querySelector( '.el-upload-list__item-name' )
-          return fileName ? fileName.textContent?.trim() : 'Unknown file'
-        } )
-      }
-      return stepInfo
-    }
-
-    // Default case - try to get any input value
-    const anyInput = stepElement.querySelector( 'input, textarea, select' )
-    if ( anyInput ) {
-      stepInfo.stepType = anyInput.type || 'unknown'
-      stepInfo.value = anyInput.value
-      return stepInfo
-    }
-
-    return stepInfo
   } catch ( error ) {
-    console.error( `Error collecting value for step ${index + 1}:`, error )
-    return {
-      stepIndex : index + 1,
-      stepType : 'error',
-      value : null,
-      error : error.message
-    }
+    // Only log errors, don't show to user (silent save)
+    console.warn( 'Auto-save draft error:', error )
+  } finally {
+    isSubmitting.value = false
   }
 }
 
-const handleSubmitTask = () => {
-  // TODO: Collect step values and submit task
-  console.log( 'Submitting task:', activeTask.value )
-  // For now, just close the drawer
-  closeDrawer()
+const handleFinalSubmit = () => {
+  handleSubmitTask( false )
 }
+
+const openTaskLogViewer = async task => {
+  try {
+    const taskEntryId = task.task_entry_id || task.taskEntryId || task.id || task.task_id
+
+    if ( taskEntryId ) {
+      const response = await getTaskEntryById( taskEntryId )
+      const taskData = response?.data
+
+      if ( taskData ) {
+        selectedTaskForLog.value = {
+          ...task,
+          ...taskData,
+          steps : Array.isArray( taskData.steps ) && taskData.steps.length ? taskData.steps : task.steps || []
+        }
+      } else {
+        selectedTaskForLog.value = task
+      }
+    } else {
+      selectedTaskForLog.value = task
+    }
+
+    showTaskLogDialog.value = true
+    activeLogTab.value = 'logs'
+  } catch ( error ) {
+    console.warn( 'Failed to load task entry details for log viewer:', error )
+    selectedTaskForLog.value = task
+    showTaskLogDialog.value = true
+    activeLogTab.value = 'logs'
+  }
+}
+
+const closeTaskLogViewer = () => {
+  showTaskLogDialog.value = false
+  selectedTaskForLog.value = null
+  activeLogTab.value = 'logs'
+}
+
+// Handle search input with debounce (300ms)
+const handleSearchInput = value => {
+  if ( searchDebounceTimer ) {
+    clearTimeout( searchDebounceTimer )
+  }
+
+  searchDebounceTimer = setTimeout( () => {
+    taskFilters.value.search = value
+  }, 300 )
+}
+
+const isTaskHighlighted = task => {
+  if ( !highlightedTaskId.value ) return false
+  const taskId = task?.id || task?.task_id || task?.task_entry_id
+  return taskId === highlightedTaskId.value
+}
+
+// Removed: scrollToHighlightedTask function - no longer needed as per user requirements
+// User wants only highlight effect without automatic scrolling
+// const scrollToHighlightedTask = async() => {
+//   await nextTick()
+//   setTimeout( () => {
+//     const highlightedCard = document.querySelector( '.template-card.highlighted' )
+//     if ( highlightedCard ) {
+//       highlightedCard.scrollIntoView( { behavior : 'smooth', block : 'center' } )
+//     }
+//   }, 100 )
+// }
+
+// Expose method to parent for navigation guard
+defineExpose( {
+  confirmNavigation
+} )
 
 onMounted( async() => {
   buildTaskList()
@@ -362,11 +787,12 @@ watch(
   async() => {
     buildTaskList()
     await loadDrafts()
-  }
+  },
+  { deep : true, immediate : true }
 )
 </script>
 
-<style scoped>
+<style scoped lang="scss">
 .work-order-execution {
   display: flex;
   flex-direction: column;
@@ -406,15 +832,108 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 12px;
-  overflow-y: auto;
-  padding-right: 8px;
-  margin-right: -8px;
+  overflow: hidden;
+  min-height: 0;
 }
 
-.tasks-summary .view-all {
-  align-self: flex-start;
-  padding: 0;
+.tasks-filter-bar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  background: var(--el-bg-color);
+  z-index: 5;
+  flex-shrink: 0;
+}
+
+.filter-search {
+  flex: 1;
+  min-width: 200px;
+}
+
+.filter-select {
+  width: 150px;
+}
+
+.custom-time-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.time-range-input {
+  width: 100px;
+}
+
+.range-separator {
+  color: var(--el-text-color-secondary);
+  font-weight: 500;
+}
+
+.time-unit {
+  color: var(--el-text-color-secondary);
   font-size: 13px;
+  white-space: nowrap;
+}
+
+:deep(.custom-range-option) {
+  color: var(--el-color-primary);
+  font-weight: 500;
+}
+
+.tasks-list-container {
+  flex: 1 0 auto;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  padding-right: 8px;
+  margin-right: -8px;
+  min-height: 0;
+  max-height: 90%;
+}
+
+.tasks-list-container :deep(.template-card) {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin-bottom: 12px;
+}
+
+.tasks-list-container :deep(.template-card:last-child) {
+  margin-bottom: 0;
+}
+
+.tasks-list-container :deep(.template-card:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Scrollbar styling for tasks list */
+.tasks-list-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tasks-list-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.tasks-list-container::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.tasks-list-container::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+@media (max-width: 768px) {
+  .tasks-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-search,
+  .filter-select {
+    width: 100%;
+  }
 }
 
 .task-drawer-content {
@@ -477,11 +996,31 @@ watch(
 
 .task-actions {
   padding: 20px;
-  border-top: 1px solid var(--el-border-color-lighter);
   display: flex;
   justify-content: flex-start;
   gap: 12px;
   flex-shrink: 0;
+}
+
+.time-entry-section {
+  padding: 16px 20px 8px;
+  border-top: 1px solid var(--el-border-color-lighter);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--el-bg-color);
+}
+
+.time-entry-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.time-entry-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--el-text-color-primary);
 }
 
 header.el-drawer__header {
@@ -489,6 +1028,45 @@ header.el-drawer__header {
 }
 
 :deep(.el-drawer__body) {
-  margin-top: 0;
+  padding: unset !important;
+}
+
+.task-log-dialog {
+  :deep(.el-dialog__body) {
+    padding: 20px;
+  }
+
+  .task-log-tabs {
+    :deep(.el-tabs__header) {
+      margin: 0 0 16px 0;
+    }
+
+    :deep(.el-tabs__nav-wrap::after) {
+      height: 1px;
+    }
+
+    :deep(.el-tabs__nav-prev),
+    :deep(.el-tabs__nav-next) {
+      display: none;
+    }
+
+    :deep(.el-tabs__item) {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    :deep(.el-tabs__item.is-top) {
+      font-size: 16px;
+      width: 45%;
+    }
+
+    :deep(.el-tabs__nav.is-top) {
+      width: 100%;
+    }
+
+    :deep(.el-tabs__content) {
+      overflow: visible;
+    }
+  }
 }
 </style>

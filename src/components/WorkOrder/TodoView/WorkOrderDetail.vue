@@ -35,6 +35,20 @@
               {{ $t('workOrder.actions.edit') }}
             </el-button>
 
+            <!-- Start Work Order Button -->
+            <el-button
+              v-if="!shouldShowApprovalButtons"
+              class="start-work-order-button"
+              type="success"
+              plain
+              size="default"
+              @click="handleStartWorkOrder"
+              aria-label="Start Work Order"
+            >
+              <el-icon style="margin-right: 4px"><VideoPlay /></el-icon>
+              Start Work Order
+            </el-button>
+
             <!-- Approve and Reject Buttons (shown when all tasks are finished) -->
             <template v-if="shouldShowApprovalButtons">
               <el-button
@@ -75,7 +89,6 @@
                     <el-icon><Download /></el-icon>
                     {{ $t('workOrder.actions.export') }}
                   </el-dropdown-item>
-                  <StartWorkOrderAction :work-order="workOrder" @start="handleStartWorkOrder" disabled />
                   <el-dropdown-item v-if="workOrder.state?.id === 12" command="recreate" divided>
                     <el-icon><DocumentCopy /></el-icon>
                     {{ $t('workOrder.actions.recreate') }}
@@ -104,8 +117,30 @@
         <el-descriptions-item :label="$t('workOrder.table.priority')">
           <PriorityTag :priority="workOrder.priority" />
         </el-descriptions-item>
-        <el-descriptions-item :label="$t('workOrder.table.assignedTo')">
-          <span class="field-value">{{ workOrder.created_by || 'Unassigned' }}</span>
+        <el-descriptions-item>
+          <template #label>
+            <div class="label-with-icon">
+              <span>{{ $t('workOrder.table.assignedTo') }}</span>
+              <el-tooltip
+                v-if="workOrder.user_list && workOrder.user_list.length > 0"
+                content="View all assigned users"
+                placement="top"
+              >
+                <el-icon class="view-icon" @click="openUserListDialog">
+                  <View />
+                </el-icon>
+              </el-tooltip>
+            </div>
+          </template>
+          <span class="field-value">
+            <template v-if="workOrder.user_list && workOrder.user_list.length > 2">
+              {{ displayedAssignedUsersText }}
+              <span class="total-count-link" @click="openUserListDialog">({{ workOrder.user_list.length }} total)</span>
+            </template>
+            <template v-else>
+              {{ displayedAssignedUsers }}
+            </template>
+          </span>
         </el-descriptions-item>
         <el-descriptions-item label="Updated By">
           <span class="field-value">{{ workOrder.updated_by || '-' }}</span>
@@ -148,26 +183,20 @@
             {{ workOrder.due_date ? formatDate(workOrder.due_date) : '-' }}
           </span>
         </el-descriptions-item>
-        <el-descriptions-item label="Recurrence Type">
-          <div class="recurrence-value-container">
-            <div class="recurrence-value-container">
-              <span
-                class="detail-value"
-                :class="{ 'recurrence-clickable': isRecurring }"
-                v-if="isRecurring"
-                @click="openTimelineModal"
-                :style="{ cursor: isRecurring ? 'pointer' : 'default' }"
-              >
-                {{ workOrder.recurrence_type.name }}
-              </span>
-              <span v-else class="detail-value">
-                {{ workOrder.recurrence_type.name }}
-              </span>
-              <el-icon v-if="isRecurring" class="timeline-icon" @click="openTimelineModal">
-                <View />
-              </el-icon>
+        <el-descriptions-item>
+          <template #label>
+            <div class="label-with-icon">
+              <span>Recurrence Type</span>
+              <el-tooltip v-if="isRecurring" content="View recurrence timeline" placement="top">
+                <el-icon class="view-icon" @click="openTimelineModal">
+                  <View />
+                </el-icon>
+              </el-tooltip>
             </div>
-          </div>
+          </template>
+          <span class="detail-value">
+            {{ workOrder.recurrence_type?.name || '-' }}
+          </span>
         </el-descriptions-item>
       </el-descriptions>
     </div>
@@ -181,6 +210,67 @@
           </div>
         </el-descriptions-item>
       </el-descriptions>
+    </div>
+
+    <!-- Recurrence Information Section -->
+    <div class="detail-section recurrence-info-section" v-if="hasRecurrenceSummary">
+      <el-divider />
+      <div class="section-title-with-icon">
+        <h3 class="section-title">{{ recurrenceHeading }} ({{ totalInstances }} Total Work Orders)</h3>
+        <el-tooltip content="View work order timeline" placement="top">
+          <el-icon class="timeline-view-icon" @click="openTimelineModal">
+            <View />
+          </el-icon>
+        </el-tooltip>
+      </div>
+
+      <!-- Occurrence Cards Grid -->
+      <div class="occurrence-grid">
+        <!-- Last Occurrence -->
+        <div v-if="lastOccurrence" class="occurrence-card-wrapper">
+          <div class="occurrence-label">Last Occurrence</div>
+          <div class="occurrence-card" @click="handleOccurrenceClick(lastOccurrence.id)">
+            <div class="occurrence-icon">
+              <el-icon><DocumentCopy /></el-icon>
+            </div>
+            <div class="occurrence-info">
+              <div class="occurrence-name-link">{{ lastOccurrence.name }}</div>
+              <div class="occurrence-id">ID: {{ lastOccurrence.id }}</div>
+              <div class="occurrence-date">Started At: {{ formatDate(lastOccurrence.occurrence_start_date) }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Next Occurrence -->
+        <div v-if="nextOccurrence" class="occurrence-card-wrapper">
+          <div class="occurrence-label">Next Occurrence</div>
+          <div class="occurrence-card" @click="handleOccurrenceClick(nextOccurrence.id)">
+            <div class="occurrence-icon">
+              <el-icon><DocumentCopy /></el-icon>
+            </div>
+            <div class="occurrence-info">
+              <div class="occurrence-name-link">{{ nextOccurrence.name }}</div>
+              <div class="occurrence-id">ID: {{ nextOccurrence.id }}</div>
+              <div class="occurrence-date">Start Date Time: {{ formatDate(nextOccurrence.occurrence_start_date) }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- States Summary -->
+      <div
+        v-if="Object.keys(statesSummary).length"
+        class="states-summary"
+        :class="{ 'no-occurrences': !lastOccurrence && !nextOccurrence }"
+      >
+        <div class="states-summary-label">States Summary:</div>
+        <div class="states-grid">
+          <div v-for="(count, stateName) in statesSummary" :key="stateName" class="state-item">
+            <span class="state-name">{{ stateName }}:</span>
+            <span class="state-count">{{ count }}</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Related Equipment Section -->
@@ -452,7 +542,7 @@
                 </el-select>
                 <el-select
                   v-model="taskFilters.timeSpent"
-                  placeholder="Time spent"
+                  placeholder="Actual Time"
                   clearable
                   class="filter-select"
                   size="default"
@@ -460,7 +550,28 @@
                   <el-option label="Less than 15 min" value="lt15" />
                   <el-option label="15 - 30 min" value="15to30" />
                   <el-option label="More than 30 min" value="gt30" />
+                  <el-option label="Custom Range" value="custom" class="custom-range-option" />
                 </el-select>
+                <div v-if="taskFilters.timeSpent === 'custom'" class="custom-time-range">
+                  <el-input-number
+                    v-model="customTimeRange.start"
+                    :min="0"
+                    placeholder="Min"
+                    size="default"
+                    class="time-range-input"
+                    controls-position="right"
+                  />
+                  <span class="range-separator">-</span>
+                  <el-input-number
+                    v-model="customTimeRange.end"
+                    :min="customTimeRange.start || 0"
+                    placeholder="Max"
+                    size="default"
+                    class="time-range-input"
+                    controls-position="right"
+                  />
+                  <span class="time-unit">min</span>
+                </div>
               </div>
 
               <!-- Tasks List -->
@@ -545,7 +656,18 @@
       <div v-else-if="timelineEvents.length === 0" class="timeline-empty">
         <el-empty description="No recurring work orders found" :image-size="80" />
       </div>
-      <Timeline v-else :timeline-events="timelineEvents" :current-work-order-id="workOrder.id" />
+      <Timeline
+        v-else
+        :timeline-events="timelineEvents"
+        :current-work-order-id="workOrder.id"
+        :current-page="timelinePage"
+        :page-size="timelinePageSize"
+        :total-elements="timelineTotalElements"
+        :sort-field="timelineSortField"
+        :sort-direction="timelineSortDirection"
+        @page-change="handleTimelinePageChange"
+        @page-size-change="handleTimelinePageSizeChange"
+      />
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="timelineModalVisible = false" style="margin-right: 12px">{{
@@ -629,7 +751,7 @@
       </el-tab-pane>
 
       <!-- Steps Tab -->
-      <el-tab-pane label="Steps Template" name="steps">
+      <el-tab-pane label="Original Template" name="steps">
         <StepsPreview
           v-if="showTaskPreviewDialog"
           :key="selectedTaskTemplateId || selectedTaskForPreview?.id || 'task-preview'"
@@ -736,6 +858,83 @@
     </div>
   </el-dialog>
 
+  <!-- User List Dialog -->
+  <el-dialog v-model="userListDialogVisible" title="Assigned Users" width="900px" top="10vh" class="user-list-dialog">
+    <div class="tab-toolbar">
+      <el-input
+        v-model="userSearchQuery"
+        placeholder="Search by name or email"
+        prefix-icon="Search"
+        clearable
+        class="toolbar-input"
+      />
+    </div>
+
+    <el-table :data="filteredUserList" style="width: 100%" height="400">
+      <el-table-column label="Name" min-width="170px" align="center" fixed="left">
+        <template #default="scope">
+          <span>{{ scope.row.first_name + ' ' + scope.row.last_name }}</span>
+        </template>
+      </el-table-column>
+
+      <el-table-column prop="id" label="ID" min-width="80px" align="center" fixed="left" />
+
+      <el-table-column prop="image" label="Profile Picture" min-width="150px" align="center">
+        <template #default="scope">
+          <div class="profile-picture-cell">
+            <template v-if="!scope.row.image">
+              <el-tooltip content="No image available">
+                <div class="image-slot-circle">
+                  <el-icon><Picture /></el-icon>
+                </div>
+              </el-tooltip>
+            </template>
+
+            <el-image
+              v-else
+              :src="scope.row.image"
+              fit="cover"
+              style="width: 30px; height: 30px; border-radius: 50%"
+              :preview-src-list="[scope.row.image]"
+              preview-teleported
+            >
+              <template #error>
+                <el-tooltip content="Image failed to load">
+                  <div class="image-slot-circle">
+                    <el-icon><Picture /></el-icon>
+                  </div>
+                </el-tooltip>
+              </template>
+            </el-image>
+          </div>
+        </template>
+      </el-table-column>
+
+      <el-table-column prop="role_list" label="Role" min-width="200px" align="center">
+        <template #default="scope">
+          <el-tag v-if="scope.row.role_list && scope.row.role_list.length > 0">
+            {{ scope.row.role_list[0].name || '-' }}
+          </el-tag>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+
+      <el-table-column prop="email" label="Email" min-width="220px" align="center" />
+      <el-table-column prop="phone_number" label="Phone" min-width="220px" align="center" />
+      <el-table-column prop="username" label="Username" min-width="220px" align="center" />
+
+      <el-table-column prop="employee_number" label="Employee Number" min-width="200" align="center">
+        <template #default="scope">
+          <el-text>{{ scope.row.employee_number || '-' }}</el-text>
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <template #footer>
+      <el-button @click="userListDialogVisible = false">Close</el-button>
+    </template>
+  </el-dialog>
+
   <!-- Empty State -->
   <div v-if="!workOrder" class="empty-detail">
     <el-empty :description="$t('workOrder.selectWorkOrder')" :image-size="120" />
@@ -763,7 +962,8 @@ import {
   DocumentCopy,
   Search,
   Select,
-  CloseBold
+  CloseBold,
+  VideoPlay
 } from '@element-plus/icons-vue'
 import { convertToLocalTime } from '@/utils/datetime'
 import { exportTimeline as exportTimelineData, generateTimestampedFilename } from '@/utils/timelineExport'
@@ -782,7 +982,6 @@ import Timeline from '../Timeline/Timeline.vue'
 import WorkOrderTaskCard from './WorkOrderTaskCard.vue'
 import StepsPreview from '@/components/TaskLibrary/StepsPreview.vue'
 import StandardsPreview from '@/components/TaskLibrary/StandardsPreview.vue'
-import StartWorkOrderAction from '@/components/WorkOrder/Actions/StartWorkOrderAction.vue'
 import TaskLogsView from '@/components/WorkOrder/Logs/TaskLogsView.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
@@ -837,6 +1036,13 @@ const standalonePreviewTab = ref( 'general' )
 // Timeline events data - Populated from recurring work orders
 const timelineEvents = ref( [] )
 
+// Timeline pagination state
+const timelinePage = ref( 1 )
+const timelinePageSize = ref( 10 )
+const timelineTotalElements = ref( 0 )
+const timelineSortField = ref( 'createdAt' )
+const timelineSortDirection = ref( 'DESC' )
+
 // Task filters
 const taskFilters = ref( {
   search : '',
@@ -845,8 +1051,14 @@ const taskFilters = ref( {
   timeSpent : ''
 } )
 
+const customTimeRange = ref( { start : null, end : null } ) // Custom time range in minutes
+
 // Task preview tab state
 const activeTaskPreviewTab = ref( 'logs' )
+
+// User list dialog state
+const userListDialogVisible = ref( false )
+const userSearchQuery = ref( '' )
 
 // Search input with debounce
 const searchInput = ref( '' )
@@ -915,6 +1127,42 @@ const isRecurring = computed( () => {
   }
 
   return false
+} )
+
+// Recurrence summary computed properties
+const hasRecurrenceSummary = computed( () => {
+  return isRecurring.value && props.workOrder?.recurrence_summary
+} )
+
+const lastOccurrence = computed( () => {
+  return props.workOrder?.recurrence_summary?.last_occurrence_wo || null
+} )
+
+const nextOccurrence = computed( () => {
+  return props.workOrder?.recurrence_summary?.next_occurrence_wo || null
+} )
+
+const totalInstances = computed( () => {
+  return props.workOrder?.recurrence_summary?.total_instances || 0
+} )
+
+const statesSummary = computed( () => {
+  return props.workOrder?.recurrence_summary?.states_summary || {}
+} )
+
+const recurrenceHeading = computed( () => {
+  const recurrenceType = props.workOrder?.recurrence_type
+  if ( !recurrenceType ) return 'Recurrence Information'
+
+  const typeName = recurrenceType.name || ''
+  const lowerTypeName = typeName.toLowerCase()
+
+  if ( lowerTypeName === 'daily' ) return 'Daily Recurrence Information'
+  if ( lowerTypeName === 'weekly' ) return 'Weekly Recurrence Information'
+  if ( lowerTypeName === 'monthly' ) return 'Monthly Recurrence Information'
+  if ( lowerTypeName === 'yearly' ) return 'Yearly Recurrence Information'
+
+  return 'Recurrence Information'
 } )
 
 const workOrderProgress = computed( () => {
@@ -1032,6 +1280,16 @@ const filteredTaskEntries = computed( () => {
       const minutes = Math.round( timeTakenSec / 60 )
 
       switch ( taskFilters.value.timeSpent ) {
+        case 'custom':
+          // Custom range filter
+          if ( customTimeRange.value.start !== null && customTimeRange.value.end !== null ) {
+            return minutes >= customTimeRange.value.start && minutes <= customTimeRange.value.end
+          } else if ( customTimeRange.value.start !== null ) {
+            return minutes >= customTimeRange.value.start
+          } else if ( customTimeRange.value.end !== null ) {
+            return minutes <= customTimeRange.value.end
+          }
+          return true
         case 'lt15':
           return minutes < 15
         case '15to30':
@@ -1066,6 +1324,61 @@ const processedFileList = computed( () => {
       url,
       type : getFileTypeFromName( cleanFilename )
     }
+  } )
+} )
+
+// Computed property for displaying assigned users (first 2 + ellipsis if more)
+const displayedAssignedUsers = computed( () => {
+  const userList = props.workOrder?.user_list
+  if ( !userList || !Array.isArray( userList ) || userList.length === 0 ) {
+    return 'Unassigned'
+  }
+
+  const formatUser = user => `${user.first_name} ${user.last_name}`
+
+  if ( userList.length === 1 ) {
+    return formatUser( userList[0] )
+  } else if ( userList.length === 2 ) {
+    return `${formatUser( userList[0] )}, ${formatUser( userList[1] )}`
+  } else {
+    return `${formatUser( userList[0] )}, ${formatUser( userList[1] )}...`
+  }
+} )
+
+// Computed property for displaying assigned users text with ellipsis (for use with total count)
+const displayedAssignedUsersText = computed( () => {
+  const userList = props.workOrder?.user_list
+  if ( !userList || !Array.isArray( userList ) || userList.length === 0 ) {
+    return 'Unassigned'
+  }
+
+  const formatUser = user => `${user.first_name} ${user.last_name}`
+
+  if ( userList.length === 1 ) {
+    return formatUser( userList[0] )
+  } else if ( userList.length === 2 ) {
+    return `${formatUser( userList[0] )}, ${formatUser( userList[1] )}`
+  } else {
+    return `${formatUser( userList[0] )}, ${formatUser( userList[1] )}...`
+  }
+} )
+
+// Filtered user list based on search query
+const filteredUserList = computed( () => {
+  const userList = props.workOrder?.user_list
+  if ( !userList || !Array.isArray( userList ) ) {
+    return []
+  }
+
+  if ( !userSearchQuery.value ) {
+    return userList
+  }
+
+  const query = userSearchQuery.value.toLowerCase()
+  return userList.filter( user => {
+    const fullName = `${user.first_name} ${user.last_name}`.toLowerCase()
+    const email = ( user.email || '' ).toLowerCase()
+    return fullName.includes( query ) || email.includes( query )
   } )
 } )
 
@@ -1287,6 +1600,10 @@ const handleStartWorkOrder = () => {
   emit( 'start-work-order', props.workOrder )
 }
 
+const openUserListDialog = () => {
+  userListDialogVisible.value = true
+}
+
 const handleApprove = async() => {
   try {
     await ElMessageBox.confirm( 'Are you sure you want to approve this work order?', 'Confirm Approval', {
@@ -1422,6 +1739,7 @@ const performDeleteRecurrence = async() => {
 }
 
 const handleDeleteConfirmation = async type => {
+  // User has already confirmed via the custom dialog, proceed directly
   if ( type === 'individual' ) {
     await performDeleteIndividual()
     deleteDialogVisible.value = false
@@ -1434,16 +1752,33 @@ const handleDeleteConfirmation = async type => {
 const openTimelineModal = async() => {
   timelineModalVisible.value = true
 
+  // Reset pagination state when opening modal
+  timelinePage.value = 1
+  timelinePageSize.value = 10
+  timelineTotalElements.value = 0
+
   // Only fetch timeline data if this is a recurring work order
   if ( !isRecurring.value || !props.workOrder?.recurrence_uuid ) {
     timelineEvents.value = []
     return
   }
 
+  await fetchTimelineData()
+}
+
+const fetchTimelineData = async() => {
   try {
     timelineLoading.value = true
-    const response = await getWorkOrdersByRecurrence( props.workOrder.recurrence_uuid, 1, 50 )
+    const response = await getWorkOrdersByRecurrence(
+      props.workOrder.recurrence_uuid,
+      timelinePage.value,
+      timelinePageSize.value,
+      timelineSortField.value,
+      timelineSortDirection.value
+    )
+
     const workOrders = response.data.content || []
+    timelineTotalElements.value = response.data.totalElements || 0
 
     // Transform work orders into timeline events
     timelineEvents.value = transformWorkOrdersToTimeline( workOrders )
@@ -1451,6 +1786,7 @@ const openTimelineModal = async() => {
     console.error( 'Failed to load recurring work orders for timeline:', error )
     ElMessage.error( 'Failed to load timeline data' )
     timelineEvents.value = []
+    timelineTotalElements.value = 0
   } finally {
     timelineLoading.value = false
   }
@@ -1458,6 +1794,17 @@ const openTimelineModal = async() => {
 
 const handleTimelineModalClose = () => {
   timelineModalVisible.value = false
+}
+
+const handleTimelinePageChange = async newPage => {
+  timelinePage.value = newPage
+  await fetchTimelineData()
+}
+
+const handleTimelinePageSizeChange = async newSize => {
+  timelinePageSize.value = newSize
+  timelinePage.value = 1 // Reset to first page when changing page size
+  await fetchTimelineData()
 }
 
 const handleExportFormat = async format => {
@@ -1516,7 +1863,8 @@ const transformWorkOrdersToTimeline = workOrders => {
         category : workOrder.category || workOrder.categories,
         priority : workOrder.priority,
         taskCount,
-        duration : workOrder.estimated_minutes ? `${workOrder.estimated_minutes}m` : null,
+        estimatedTime : workOrder.estimated_minutes ? `${workOrder.estimated_minutes} min` : null,
+        actualTimeConsumed : workOrder.actual_time_consumed ? `${workOrder.actual_time_consumed} min` : null,
         plannedEnd : workOrder.due_date,
         actualEnd : workOrder.finished_at,
         assignees : workOrder.created_by
@@ -1746,6 +2094,18 @@ const handleEquipmentClick = equipment => {
   } )
 }
 
+// Handle occurrence click (placeholder for navigation implementation)
+const handleOccurrenceClick = occurrenceId => {
+  if ( !occurrenceId ) {
+    ElMessage.warning( 'Occurrence information is not available' )
+    return
+  }
+
+  console.log( 'Navigate to work order:', occurrenceId )
+  // TODO: Implement navigation to work order detail
+  // router.push({ path: '/work-order', query: { id: occurrenceId } })
+}
+
 // Handle search input with debounce (300ms)
 const handleSearchInput = value => {
   if ( searchDebounceTimer ) {
@@ -1891,6 +2251,28 @@ defineOptions( {
     margin: 36px 0px;
   }
 
+  .section-title-with-icon {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .section-title {
+      margin: 36px 0px;
+    }
+
+    .timeline-view-icon {
+      font-size: 20px;
+      color: var(--el-color-primary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+
+      &:hover {
+        color: var(--el-color-primary-dark-2);
+        transform: scale(1.1);
+      }
+    }
+  }
+
   .section-row {
     display: flex;
     gap: 12px;
@@ -1911,6 +2293,23 @@ defineOptions( {
     .field-value {
       font-size: 14px;
       color: var(--el-text-color-primary);
+
+      .total-count-link {
+        color: var(--el-color-primary);
+        cursor: pointer;
+        margin-left: 4px;
+        transition: all 0.2s ease;
+        font-weight: 500;
+
+        &:hover {
+          text-decoration: underline;
+          color: var(--el-color-primary-light-3);
+        }
+
+        &:active {
+          color: var(--el-color-primary-dark-2);
+        }
+      }
     }
   }
 
@@ -1953,6 +2352,23 @@ defineOptions( {
     :deep(.el-descriptions__content) {
       font-size: 14px;
       color: var(--el-text-color-primary);
+
+      .total-count-link {
+        color: var(--el-color-primary);
+        cursor: pointer;
+        margin-left: 4px;
+        transition: all 0.2s ease;
+        font-weight: 500;
+
+        &:hover {
+          text-decoration: underline;
+          color: var(--el-color-primary-light-3);
+        }
+
+        &:active {
+          color: var(--el-color-primary-dark-2);
+        }
+      }
     }
   }
 
@@ -2000,19 +2416,6 @@ defineOptions( {
       font-size: 14px;
       color: var(--el-text-color-primary);
       line-height: 1.4;
-
-      .recurrence-clickable {
-        color: var(--el-color-primary) !important;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        font-weight: 500;
-
-        &:hover {
-          color: var(--el-color-primary-dark-2) !important;
-          text-decoration: underline;
-          transform: translateY(-1px);
-        }
-      }
     }
   }
 }
@@ -2055,27 +2458,6 @@ defineOptions( {
         color: var(--el-color-danger);
         font-weight: 500;
       }
-    }
-  }
-}
-
-// Recurrence value container styling
-.recurrence-value-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  .timeline-icon {
-    font-size: 16px;
-    color: var(--el-color-primary);
-    cursor: pointer;
-    opacity: 0.7;
-    transition: all 0.2s ease;
-
-    &:hover {
-      opacity: 1;
-      color: var(--el-color-primary-dark-2);
-      transform: scale(1.1);
     }
   }
 }
@@ -2178,8 +2560,13 @@ defineOptions( {
     }
 
     :deep(.el-tabs__item) {
-      font-size: 14px;
+      font-size: 16px;
       font-weight: 500;
+      width: 50%;
+    }
+
+    :deep(.el-tabs__nav.is-top) {
+      width: 100%;
     }
 
     .tab-content {
@@ -2431,6 +2818,150 @@ defineOptions( {
       .request-code {
         font-size: 12px;
         color: var(--el-text-color-secondary);
+      }
+    }
+  }
+}
+
+// Recurrence Information Styles
+.occurrence-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+  margin-bottom: 24px;
+
+  .occurrence-card-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .occurrence-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--el-text-color-secondary);
+      padding-left: 4px;
+    }
+
+    .occurrence-card {
+      display: flex;
+      align-items: center;
+      padding: 16px;
+      border: 1px solid var(--el-border-color-light);
+      border-radius: 8px;
+      background: var(--el-bg-color);
+      transition: all 0.2s ease;
+      cursor: pointer;
+
+      &:hover {
+        border-color: var(--el-color-primary);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+      }
+
+      .occurrence-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
+        background: var(--el-color-primary-light-9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+
+        .el-icon {
+          font-size: 22px;
+          color: var(--el-color-primary);
+        }
+      }
+
+      .occurrence-info {
+        flex: 1;
+        margin-left: 12px;
+        min-width: 0;
+
+        .occurrence-name-link {
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--el-text-color-primary);
+          margin-bottom: 6px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .occurrence-id {
+          font-size: 12px;
+          color: var(--el-text-color-secondary);
+          margin-bottom: 6px;
+        }
+
+        .occurrence-date {
+          font-size: 12px;
+          color: var(--el-text-color-regular);
+        }
+      }
+    }
+  }
+}
+
+.recurrence-metric {
+  padding: 12px 16px;
+  background: var(--el-fill-color-lighter);
+  border-radius: 8px;
+  margin-bottom: 16px;
+
+  .metric-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--el-text-color-secondary);
+    margin-right: 8px;
+  }
+
+  .metric-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--el-color-primary);
+  }
+}
+
+.states-summary {
+  margin-bottom: 36px;
+
+  &.no-occurrences {
+    margin-top: -32px;
+  }
+
+  .states-summary-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--el-text-color-secondary);
+    margin-bottom: 12px;
+  }
+
+  .states-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+
+    .state-item {
+      padding: 8px 12px;
+      background: var(--el-bg-color);
+      border: 1px solid var(--el-border-color-light);
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .state-name {
+        font-size: 13px;
+        color: var(--el-text-color-primary);
+        font-weight: 500;
+      }
+
+      .state-count {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--el-color-primary);
       }
     }
   }
@@ -2947,6 +3478,32 @@ defineOptions( {
   width: 150px;
 }
 
+.custom-time-range {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.time-range-input {
+  width: 100px;
+}
+
+.range-separator {
+  color: var(--el-text-color-secondary);
+  font-weight: 500;
+}
+
+.time-unit {
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+:deep(.custom-range-option) {
+  color: var(--el-color-primary);
+  font-weight: 500;
+}
+
 @media (max-width: 768px) {
   .tasks-filter-bar {
     flex-direction: column;
@@ -3039,6 +3596,28 @@ defineOptions( {
 
   .details-tabs {
     height: 100%;
+
+    :deep(.el-tabs__header) {
+      margin: 0 0 16px 0;
+    }
+
+    :deep(.el-tabs__nav-wrap::after) {
+      height: 1px;
+    }
+
+    :deep(.el-tabs__item) {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    :deep(.el-tabs__item.is-top) {
+      font-size: 16px;
+      width: 50%;
+    }
+
+    :deep(.el-tabs__nav.is-top) {
+      width: 100%;
+    }
   }
 
   // Card Components - matching StandardsPreview exactly
@@ -3210,6 +3789,57 @@ defineOptions( {
 @media (max-width: 1600px) {
   .task-preview-responsive {
     height: 85vh;
+  }
+}
+
+/* Label with icon styles */
+.label-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .view-icon {
+    font-size: 16px;
+    color: var(--el-color-primary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      transform: scale(1.2);
+      color: var(--el-color-primary-dark-2);
+    }
+  }
+}
+
+/* User list dialog styles */
+.user-list-dialog {
+  .tab-toolbar {
+    margin-bottom: 16px;
+
+    .toolbar-input {
+      width: 300px;
+    }
+  }
+
+  .profile-picture-cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    .image-slot-circle {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background-color: var(--el-fill-color-light);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--el-text-color-secondary);
+
+      .el-icon {
+        font-size: 16px;
+      }
+    }
   }
 }
 </style>

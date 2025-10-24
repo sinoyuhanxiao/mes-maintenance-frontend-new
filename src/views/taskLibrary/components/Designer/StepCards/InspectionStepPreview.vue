@@ -25,6 +25,26 @@
         </el-button>
       </el-button-group>
     </div>
+    <!-- Remarks textarea - shown when Failed is selected in interactive mode -->
+    <div v-if="currentResult === 'fail' && interactive" class="remarks-section">
+      <div class="remarks-label-required">
+        <span class="required-asterisk">*</span>
+        Remarks
+      </div>
+      <el-input
+        v-model="remarks"
+        type="textarea"
+        :rows="3"
+        placeholder="Please enter remarks explaining why this inspection failed (required)"
+        :disabled="!interactive"
+        class="remarks-textarea"
+      />
+    </div>
+    <!-- Remarks display - shown in read-only mode when there are remarks -->
+    <div v-else-if="currentResult === 'fail' && !interactive && remarks" class="remarks-display">
+      <div class="remarks-label">Remarks:</div>
+      <div class="remarks-content">{{ remarks }}</div>
+    </div>
     <div v-if="step.config?.require_comment_on_fail" class="config-note">
       <el-icon><InfoFilled /></el-icon>
       Comment required on fail
@@ -37,6 +57,8 @@ import { ref, watch } from 'vue'
 import { InfoFilled, Check, Close } from '@element-plus/icons-vue'
 
 // eslint-disable-next-line no-unused-vars
+const emit = defineEmits( ['value-change', 'update:modelValue'] )
+
 const props = defineProps( {
   step : {
     type : Object,
@@ -49,19 +71,47 @@ const props = defineProps( {
   interactive : {
     type : Boolean,
     default : false
+  },
+  modelValue : {
+    type : [Boolean, String, null],
+    default : null
   }
 } )
 
 // Reactive state for user input
 // Default to 'pass' in preview modes when no explicit result is provided
-const currentResult = ref( props.step?.config?.result ?? ( props.previewMode ? 'pass' : null ) )
+const currentResult = ref( null )
+const remarks = ref( '' )
+
+const mapModelToResult = value => {
+  if ( value === true ) return 'pass'
+  if ( value === false ) return 'fail'
+  if ( typeof value === 'string' ) {
+    const normalized = value.trim().toLowerCase()
+    if ( normalized === 'pass' || normalized === 'fail' ) {
+      return normalized
+    }
+  }
+  return value ?? null
+}
+
+const mapResultToBoolean = result => {
+  if ( result === 'pass' ) return true
+  if ( result === 'fail' ) return false
+  return null
+}
 
 // Watch for prop changes to sync initial values
 watch(
-  () => props.step?.config?.result,
-  newValue => {
-    if ( !props.interactive ) {
-      currentResult.value = newValue ?? ( props.previewMode ? 'pass' : null )
+  () => [props.modelValue, props.step?.config?.result, props.step?.config?.remarks],
+  ( [modelValue, configResult, configRemarks] ) => {
+    const mapped = mapModelToResult( modelValue ?? configResult )
+    currentResult.value = mapped ?? ( props.previewMode ? 'pass' : null )
+
+    // Initialize remarks from config if available
+    if ( configRemarks !== undefined && configRemarks !== null ) {
+      remarks.value = String( configRemarks )
+      console.log( '[InspectionStepPreview] Updated remarks from config:', remarks.value )
     }
   },
   { immediate : true }
@@ -85,8 +135,42 @@ const getOptionType = option => {
 const setInspectionResult = result => {
   if ( props.interactive ) {
     currentResult.value = result
+    // Clear remarks when switching to "pass"
+    if ( result === 'pass' ) {
+      remarks.value = ''
+    }
+    // Emit the updated value
+    emitValue()
   }
 }
+
+const emitValue = () => {
+  if ( !props.interactive ) return
+
+  const booleanValue = mapResultToBoolean( currentResult.value )
+
+  // For inspection steps, emit an object with both value and remarks
+  const inspectionData = {
+    value : booleanValue,
+    remarks : currentResult.value === 'fail' ? remarks.value : ''
+  }
+
+  emit( 'value-change', inspectionData )
+  emit( 'update:modelValue', booleanValue )
+}
+
+watch( currentResult, () => {
+  if ( props.interactive ) {
+    emitValue()
+  }
+} )
+
+// Watch remarks changes and emit them
+watch( remarks, () => {
+  if ( props.interactive && currentResult.value === 'fail' ) {
+    emitValue()
+  }
+} )
 </script>
 
 <style scoped>
@@ -137,5 +221,53 @@ const setInspectionResult = result => {
   padding: 6px 8px;
   background: #f5f5f5;
   border-radius: 4px;
+}
+
+.remarks-section {
+  margin-top: 8px;
+}
+
+.remarks-label-required {
+  font-size: 13px;
+  color: #606266;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.remarks-textarea {
+  width: 100%;
+}
+
+.remarks-textarea :deep(.el-textarea__inner) {
+  border-color: #f56c6c;
+  resize: vertical;
+}
+
+.remarks-textarea :deep(.el-textarea__inner::placeholder) {
+  color: #909399;
+  font-size: 13px;
+}
+
+.remarks-display {
+  margin-top: 8px;
+  padding: 12px;
+  background: #fff3f3;
+  border: 1px solid #fbd4d4;
+  border-radius: 4px;
+}
+
+.remarks-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f56c6c;
+  margin-bottom: 6px;
+}
+
+.remarks-content {
+  font-size: 13px;
+  color: #606266;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 </style>

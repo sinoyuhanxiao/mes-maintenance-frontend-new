@@ -135,6 +135,8 @@
         :work-order="workOrderInExecution"
         @close="handleExecutionClose"
         @back-to-detail="showDetailView"
+        @update:progress="handleExecutionProgressUpdate"
+        ref="workOrderExecutionRef"
       />
     </div>
 
@@ -227,6 +229,8 @@ const pdfPreviewData = ref( null )
 
 // WorkOrderCreate component ref
 const workOrderCreateRef = ref( null )
+// WorkOrderExecution component ref
+const workOrderExecutionRef = ref( null )
 
 const router = useRouter()
 const route = useRoute()
@@ -251,31 +255,6 @@ const executionStandards = computed( () => {
   }
   return []
 } )
-
-// Function to scroll to tasks section after template designer return
-const scrollToTasksSection = () => {
-  if ( !workOrderCreateRef.value ) return
-
-  try {
-    // Look for the tasks section in the WorkOrderCreate component
-    const createComponent = workOrderCreateRef.value.$el || workOrderCreateRef.value
-    const tasksSection = createComponent.querySelector( '.tasks-section' )
-
-    if ( tasksSection ) {
-      // Scroll the main container to bring tasks section into view
-      const scrollContainer = createComponent.querySelector( '.work-order-create-enhanced' )
-      if ( scrollContainer ) {
-        const tasksSectionTop = tasksSection.offsetTop
-        scrollContainer.scrollTo( {
-          top : tasksSectionTop - 50, // 50px padding from top
-          behavior : 'smooth'
-        } )
-      }
-    }
-  } catch ( error ) {
-    console.warn( 'Could not scroll to tasks section:', error )
-  }
-}
 
 // Fixed pager count to prevent overflow (matches StandardsLibraryView pattern)
 const pagerCount = 3
@@ -332,7 +311,20 @@ const checkUnsavedChanges = async() => {
       return true // Proceed with action on error
     }
   }
-  return true // No create mode, proceed with action
+
+  // If we're currently in execution mode, check for work in progress
+  if ( currentRightPanelView.value === 'execution' && workOrderExecutionRef.value ) {
+    try {
+      // Call the confirmNavigation method exposed by WorkOrderExecution
+      const canLeave = await workOrderExecutionRef.value.confirmNavigation()
+      return canLeave
+    } catch ( error ) {
+      console.error( 'Error checking execution progress:', error )
+      return true // Proceed with action on error
+    }
+  }
+
+  return true // No create or execution mode, proceed with action
 }
 
 // Methods
@@ -585,7 +577,73 @@ const handleExecutionClose = () => {
   pendingExecutionWorkOrder.value = null
 }
 
+const handleExecutionProgressUpdate = async() => {
+  try {
+    // Refresh the work order data to get updated task states
+    const workOrderId = workOrderInExecution.value?.id
+    if ( !workOrderId ) return
+
+    const response = await getWorkOrderById( workOrderId )
+    if ( response && response.data ) {
+      // Update the work order in execution with fresh data
+      workOrderInExecution.value = response.data
+      selectedWorkOrder.value = response.data
+    }
+
+    // Also emit refresh to parent to update the work order list
+    emit( 'refresh' )
+  } catch ( error ) {
+    console.error( 'Failed to refresh work order after task submission:', error )
+  }
+}
+
 const isProcessingReturnContext = ref( false )
+
+// Function to scroll to tasks section after template designer return
+const scrollToTasksSection = () => {
+  if ( !workOrderCreateRef.value ) return
+
+  try {
+    // Look for the tasks section in the WorkOrderCreate component
+    const createComponent = workOrderCreateRef.value.$el || workOrderCreateRef.value
+    const tasksSection = createComponent.querySelector( '.tasks-section' )
+
+    if ( tasksSection ) {
+      // Scroll the main container to bring tasks section into view
+      const scrollContainer = createComponent.querySelector( '.work-order-create-enhanced' )
+      if ( scrollContainer ) {
+        const tasksSectionTop = tasksSection.offsetTop
+        scrollContainer.scrollTo( {
+          top : tasksSectionTop - 50, // 50px padding from top
+          behavior : 'smooth'
+        } )
+      }
+    }
+  } catch ( error ) {
+    console.warn( 'Could not scroll to tasks section:', error )
+  }
+}
+
+const showCreateForm = ( options = {} ) => {
+  // Clear any previous recreation data to ensure fresh form
+  requestDataForCreate.value = null
+
+  // Always increment counter to force component recreation and clear stale data
+  createPanelRefreshCounter.value += 1
+
+  currentRightPanelView.value = 'create'
+  selectedWorkOrder.value = null
+
+  // If coming from template designer, scroll to tasks section after component refreshes
+  if ( options.fromTemplateDesigner || workOrderDraftStore.shouldOpenCreatePanel ) {
+    // After component refreshes, scroll to tasks section
+    nextTick( () => {
+      setTimeout( () => {
+        scrollToTasksSection()
+      }, 100 ) // Small delay to ensure DOM is fully rendered
+    } )
+  }
+}
 
 const processReturnPanel = async( panel, workOrderId ) => {
   if ( !panel || isProcessingReturnContext.value ) return
@@ -790,27 +848,6 @@ watch(
   },
   { deep : true }
 )
-
-const showCreateForm = ( options = {} ) => {
-  // Clear any previous recreation data to ensure fresh form
-  requestDataForCreate.value = null
-
-  // Always increment counter to force component recreation and clear stale data
-  createPanelRefreshCounter.value += 1
-
-  currentRightPanelView.value = 'create'
-  selectedWorkOrder.value = null
-
-  // If coming from template designer, scroll to tasks section after component refreshes
-  if ( options.fromTemplateDesigner || workOrderDraftStore.shouldOpenCreatePanel ) {
-    // After component refreshes, scroll to tasks section
-    nextTick( () => {
-      setTimeout( () => {
-        scrollToTasksSection()
-      }, 100 ) // Small delay to ensure DOM is fully rendered
-    } )
-  }
-}
 
 const showDetailView = () => {
   currentRightPanelView.value = 'detail'

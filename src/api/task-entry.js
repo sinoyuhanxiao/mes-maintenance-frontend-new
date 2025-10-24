@@ -25,3 +25,21 @@ export const getTaskLogsByTaskId = ( taskId, change = null ) => {
     params : change ? { change } : {}
   } )
 }
+
+/**
+ * Update a task entry with step values and execution data.
+ * @param {string} id - Task entry identifier.
+ * @param {Object} data - Task entry update payload.
+ * @param {Array} data.step_update_list - Array of steps with updated values.
+ * @param {number} data.time_taken_sec - Time taken in seconds.
+ * @param {boolean} data.submit - Whether to submit (true) or save as draft (false).
+ * @param {string} data.updated_by - User ID who updated the task.
+ * @returns {Promise<Object>} API response containing the updated task entry.
+ */
+export const updateTaskEntry = ( id, data ) => {
+  return http.request( {
+    method : 'patch',
+    url : `/task/entry/${id}`,
+    data
+  } )
+}
