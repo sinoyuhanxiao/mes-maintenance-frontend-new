@@ -113,11 +113,11 @@
 
           <!-- centered pagination -->
           <el-pagination
-              layout="total, sizes, prev, pager, next"
-              :page-sizes="pageSizeOptions"
-              v-model:page-size="pageSize"
-              :total="filteredUsers.length"
-              v-model:current-page="page"
+            layout="total, sizes, prev, pager, next"
+            :page-sizes="pageSizeOptions"
+            v-model:page-size="pageSize"
+            :total="filteredUsers.length"
+            v-model:current-page="page"
           />
           <div class="dialog-footer">
             <el-button @click="visible = false">Close</el-button>

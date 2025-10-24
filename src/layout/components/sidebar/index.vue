@@ -1,9 +1,10 @@
 <template>
-  <div :class="{ 'has-logo': set.showLogo }">
+  <div :class="{ 'has-logo': set.showLogo, 'has-version': true }" class="sidebar-wrapper">
     <Logo :class="set.layoutMod + '-logo'" v-if="set.showLogo" :collapse="set.isCollapse" />
     <el-scrollbar wrap-class="scrollbar-wrapper">
       <Menu />
     </el-scrollbar>
+    <VersionInfo :collapse="set.isCollapse" />
   </div>
 </template>
 
@@ -12,6 +13,7 @@ import { computed, reactive } from 'vue'
 import { useAppStore, useSettingsStore } from '@/store'
 import Logo from './Logo'
 import Menu from './Menu'
+import VersionInfo from './VersionInfo'
 
 const appStore = useAppStore()
 const settingsStore = useSettingsStore()
@@ -30,6 +32,12 @@ const set = reactive( {
 </script>
 
 <style scoped lang="scss">
+.sidebar-wrapper {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
 .horizontal-logo {
   width: 210px;
   display: flex;

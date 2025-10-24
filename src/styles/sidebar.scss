@@ -46,6 +46,15 @@
       }
     }
 
+    &.has-version {
+      .el-scrollbar {
+        height: calc(100% - 80px);
+      }
+      &.has-logo .el-scrollbar {
+        height: calc(100% - 115px);
+      }
+    }
+
     .is-horizontal {
       display: none;
     }

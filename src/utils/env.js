@@ -13,6 +13,8 @@ export const ENV_CONFIG = {
   // Application Information
   APP_TITLE : env.VITE_APP_TITLE || 'MES Maintenance Frontend',
   APP_VERSION : env.VITE_APP_VERSION || '3.0.0',
+  VERSION : env.VITE_VERSION || 'v1.0.0',
+  RELEASE_DATE : env.VITE_RELEASE_DATE || '',
 
   // Server Configuration
   PORT : Number( env.VITE_PORT ) || 9527,
@@ -153,6 +155,8 @@ if ( ENV_UTILS.isDev() ) {
 export const {
   APP_TITLE,
   APP_VERSION,
+  VERSION,
+  RELEASE_DATE,
   PORT,
   PUBLIC_PATH,
   BACKEND_URL,

@@ -330,11 +330,10 @@ function onChildRequestsClose() {
 .pagination {
   margin: 10px 0;
   display: flex;
-  justify-content: center;   /* ⬅ center it */
-  width: 100%;               /* helps in some layouts */
+  justify-content: center; /* ⬅ center it */
+  width: 100%; /* helps in some layouts */
   flex-shrink: 0;
 }
-
 
 /* action column */
 .action-column :deep(.cell) {
