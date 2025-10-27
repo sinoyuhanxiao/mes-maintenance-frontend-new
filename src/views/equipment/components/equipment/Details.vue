@@ -7,7 +7,9 @@
           <el-descriptions-item label="Code">{{ equipmentData.code }}</el-descriptions-item>
           <el-descriptions-item label="Model">{{ equipmentData.serial_number || '--' }}</el-descriptions-item>
           <el-descriptions-item label="PLC">{{ equipmentData.plc || '--' }}</el-descriptions-item>
-          <el-descriptions-item label="Power">{{ equipmentData.power || '--' }}V</el-descriptions-item>
+          <el-descriptions-item label="Power">
+            {{ equipmentData.power ? Math.round(equipmentData.power) + 'V' : '--' }}
+          </el-descriptions-item>
           <el-descriptions-item label="Install Date">{{
             formatInstallDate(equipmentData.installation_date)
           }}</el-descriptions-item>

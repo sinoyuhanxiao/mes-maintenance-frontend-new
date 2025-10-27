@@ -37,15 +37,15 @@
         </el-tab-pane>
 
         <el-tab-pane label="Work Orders" name="workOrders">
-          <WorkOrderTab :key="`workorders-${refreshKey}`" />
+          <WorkOrderTab :equipmentId="props.node.id" :key="`workorders-${refreshKey}`" />
         </el-tab-pane>
 
-        <el-tab-pane label="Tasks" name="tasks">
-          <TasksTab :key="`tasks-${refreshKey}`" />
+        <el-tab-pane label="Task Templates" name="tasks">
+          <TasksTab :equipmentId="props.node.id" :key="`tasks-${refreshKey}`" />
         </el-tab-pane>
 
         <el-tab-pane label="Personnel" name="personnel">
-          <PersonnelTab :key="`personnel-${refreshKey}`" />
+          <PersonnelTab :equipmentId="props.node.id" :key="`personnel-${refreshKey}`" />
         </el-tab-pane>
       </el-tabs>
     </div>

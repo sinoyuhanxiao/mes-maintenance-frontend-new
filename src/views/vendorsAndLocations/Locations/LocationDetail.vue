@@ -1,3 +1,4 @@
+<!-- src/views/vendorsAndLocations/Locations/LocationDetail.vue -->
 <template>
   <div class="location-detail" v-if="location">
     <!-- Header -->
@@ -35,13 +36,17 @@
         </el-descriptions>
 
         <!-- Address -->
-        <el-descriptions v-if="location?.address?.length" :column="1" direction="vertical">
-          <el-descriptions-item label="Address">{{ location.address || '--' }}</el-descriptions-item>
+        <el-descriptions :column="1" direction="vertical">
+          <el-descriptions-item label="Address">
+            {{ location?.address?.length ? location.address : 'No address available' }}
+          </el-descriptions-item>
         </el-descriptions>
 
         <!-- Description -->
-        <el-descriptions v-if="location?.description?.length" :column="1" direction="vertical">
-          <el-descriptions-item label="Description">{{ location.description || '--' }}</el-descriptions-item>
+        <el-descriptions :column="1" direction="vertical">
+          <el-descriptions-item label="Description">
+            {{ location?.description?.length ? location.description : 'No description available' }}
+          </el-descriptions-item>
         </el-descriptions>
 
         <!-- Images -->
@@ -88,11 +93,77 @@
           </el-descriptions>
         </div>
 
-        <!-- Related Equipment -->
-        <div v-if="showEquipSection" style="margin-bottom: 48px">
-          <el-divider />
-          <el-descriptions :column="1" direction="horizontal" class="section">
-            <el-descriptions-item label="Related Equipment">
+        <el-divider />
+        <!-- ================= Location Path ================= -->
+        <el-descriptions :column="1" direction="vertical" class="section" style="margin-bottom: 8px">
+          <el-descriptions-item label="Location Path">
+            <div v-if="pathLoading" class="path-row">
+              <el-skeleton animated style="width: 100%">
+                <template #template>
+                  <el-skeleton-item variant="text" style="width: 18%; height: 20px; margin-right: 8px" />
+                  <el-skeleton-item variant="text" style="width: 18%; height: 20px; margin-right: 8px" />
+                  <el-skeleton-item variant="text" style="width: 18%; height: 20px; margin-right: 8px" />
+                </template>
+              </el-skeleton>
+            </div>
+
+            <div v-else-if="locationPath.length" class="path-row" role="list" aria-label="Location path">
+              <template v-for="(node, idx) in locationPath" :key="node.id">
+                <span class="node-chip" role="listitem" :title="node.locationTypeName || ''">
+                  <span class="node-name">{{ node.name }}</span>
+                </span>
+                <span v-if="idx < locationPath.length - 1" class="sep" aria-hidden="true">›</span>
+              </template>
+            </div>
+
+            <div v-else class="no-path">
+              <el-text>No path available</el-text>
+            </div>
+          </el-descriptions-item>
+        </el-descriptions>
+
+        <el-divider />
+        <!-- ================= Sub Locations Tree ================= -->
+        <el-descriptions :column="1" direction="vertical" class="section" style="margin-bottom: 8px">
+          <el-descriptions-item label="Sub Locations">
+            <div v-if="subLoading" style="margin-top: 6px">
+              <el-skeleton animated>
+                <template #template>
+                  <el-skeleton-item variant="text" style="width: 40%; height: 18px; margin-bottom: 8px" />
+                  <el-skeleton-item variant="text" style="width: 60%; height: 18px; margin-bottom: 8px" />
+                </template>
+              </el-skeleton>
+            </div>
+
+            <div v-else-if="subTree.length">
+              <el-tree
+                :data="subTree"
+                node-key="id"
+                :props="subTreeProps"
+                :expand-on-click-node="false"
+                :default-expand-all="true"
+                :highlight-current="true"
+                style="max-width: 800px"
+              >
+                <template #default="{ data }">
+                  <div class="sub-node" :class="{ 'is-root': data.id === props.location?.id }">
+                    <span class="sub-node-name">{{ data.name }}</span>
+                  </div>
+                </template>
+              </el-tree>
+            </div>
+
+            <div v-else class="no-subs" style="margin-top: 6px">
+              <el-text>No sub locations available</el-text>
+            </div>
+          </el-descriptions-item>
+        </el-descriptions>
+
+        <!-- Related Equipment (always shown) -->
+        <el-divider />
+        <el-descriptions :column="1" direction="horizontal" class="section" style="margin-bottom: 48px">
+          <el-descriptions-item label="Related Equipment">
+            <template v-if="equipmentSearch.trim().length">
               <SearchTable
                 :key="`loc-equip-${location?.id}`"
                 :data="equipmentList"
@@ -109,9 +180,34 @@
                 empty-text="No match found"
                 @update:page="onEquipmentPageChange"
               />
-            </el-descriptions-item>
-          </el-descriptions>
-        </div>
+            </template>
+
+            <template v-else-if="!equipmentList.length">
+              <div style="margin-top: 6px">
+                <el-text>No related equipment available</el-text>
+              </div>
+            </template>
+
+            <template v-else>
+              <SearchTable
+                :key="`loc-equip-${location?.id}`"
+                :data="equipmentList"
+                :columns="[
+                  { label: 'Name', prop: 'name' },
+                  { label: 'Code', prop: 'code' },
+                  { label: 'Group', prop: 'equipment_group' },
+                ]"
+                :total="equipmentTotal"
+                :page="equipmentPage"
+                :page-size="equipmentPageSize"
+                :enable-search="true"
+                v-model:search="equipmentSearch"
+                empty-text="No match found"
+                @update:page="onEquipmentPageChange"
+              />
+            </template>
+          </el-descriptions-item>
+        </el-descriptions>
 
         <!-- Related Parts Batches -->
         <el-divider v-if="sparePartsBatchList?.length" />
@@ -169,7 +265,7 @@ import SearchTable from '@/views/vendorsAndLocations/Locations/SearchTable.vue'
 import LocationForm from './LocationForm.vue'
 import { useErrorHandler } from '@/composables/useErrorHandler'
 import { ElMessage } from 'element-plus'
-import { updateLocationById } from '@/api/location'
+import { updateLocationById, getLocationPathById, getLocationById } from '@/api/location'
 import { getEquipmentNodes } from '@/api/equipment.js'
 import { uploadMultipleToMinio, deleteObjectList } from '@/api/minio'
 
@@ -184,16 +280,94 @@ const editForm = ref( {} )
 const editFormRef = ref( null )
 const saving = ref( false )
 
+/** ================= LOCATION PATH ================= **/
+const locationPath = ref( [] )
+const pathLoading = ref( false )
+const fetchLocationPath = async id => {
+  if ( id === undefined || id === null ) {
+    locationPath.value = []
+    return
+  }
+  pathLoading.value = true
+  try {
+    const res = await getLocationPathById( id )
+    // handle both shapes: res -> {data:{data:[]}} OR res -> {data:[]} OR res -> []
+    const payload = res?.data ?? res
+    const data = Array.isArray( payload?.data ) ? payload.data : Array.isArray( payload ) ? payload : []
+    locationPath.value = data ?? []
+  } catch ( e ) {
+    console.error( 'Failed to fetch location path:', e )
+    locationPath.value = []
+  } finally {
+    pathLoading.value = false
+  }
+}
+
+/** ================= SUB LOCATIONS TREE ================= **/
+const subLoading = ref( false )
+const subTree = ref( [] )
+const subTreeProps = { label : 'name', children : 'children' }
+
+const unwrap = res => {
+  const p = res?.data ?? res
+  return p?.data ?? p
+}
+
+/**
+ * Build a one-level tree with the current location as the root node
+ * and its immediate children nested under it.
+ */
+const fetchSubLocationsTree = async id => {
+  subLoading.value = true
+  subTree.value = []
+  try {
+    const root = unwrap( await getLocationById( id ) )
+    const childIds = Array.isArray( root?.active_children_locations_ids ) ? root.active_children_locations_ids : []
+
+    if ( !childIds.length ) {
+      subTree.value = []
+      return
+    }
+
+    const results = await Promise.allSettled( childIds.map( cid => getLocationById( cid ) ) )
+    const children = results
+      .map( ( r, i ) => {
+        if ( r.status !== 'fulfilled' ) return null
+        const d = unwrap( r.value )
+        return {
+          id : d?.id,
+          name : d?.name ?? `#${childIds[i]}`,
+          code : d?.code ?? '',
+          children : [] // single level only
+        }
+      } )
+      .filter( Boolean )
+
+    subTree.value = [
+      {
+        id : root.id,
+        name : root.name,
+        code : root.code,
+        children
+      }
+    ]
+  } catch ( err ) {
+    console.error( 'fetchSubLocationsTree failed:', err )
+    subTree.value = []
+  } finally {
+    subLoading.value = false
+  }
+}
+
+/** ================= IMAGES ================= **/
 const imageUrls = computed( () => {
   const list = props.location?.image_list || []
   return list.map( x => ( typeof x === 'string' ? x : x?.url ) ).filter( Boolean )
 } )
-
 const validImageUrls = ref( [] )
 const isImagesLoading = ref( false )
 let imgReqSeq = 0
 
-/** check each URL with a HEAD request (cheap, no download) */
 const checkImageUrls = async() => {
   const seq = ++imgReqSeq
   isImagesLoading.value = true
@@ -208,21 +382,19 @@ const checkImageUrls = async() => {
         }
       } )
     )
-    if ( seq !== imgReqSeq ) return // newer run started; ignore
+    if ( seq !== imgReqSeq ) return
     validImageUrls.value = checks.filter( Boolean )
   } finally {
     if ( seq === imgReqSeq ) isImagesLoading.value = false
   }
 }
 
-// re-check whenever imageUrls changes
 watch(
   imageUrls,
   () => {
-    if ( imageUrls.value.length ) {
-      checkImageUrls()
-    } else {
-      imgReqSeq++ // cancel in-flight
+    if ( imageUrls.value.length ) checkImageUrls()
+    else {
+      imgReqSeq++
       validImageUrls.value = []
       isImagesLoading.value = false
     }
@@ -230,109 +402,20 @@ watch(
   { immediate : true }
 )
 
-/** Simple preview dialog state */
 const preview = ref( { open : false, url : '' } )
 const openPreview = u => {
   preview.value.url = u
   preview.value.open = true
 }
 
-/** Equipment table state (server-side search/pagination) */
+/** ================= EQUIPMENT ================= **/
 const equipmentList = ref( [] )
 const equipmentTotal = ref( 0 )
-
 const equipmentPage = ref( 1 )
 const equipmentPageSize = ref( 5 )
 const equipmentSearch = ref( '' )
-
-// Sticky visibility: based on unfiltered/base total
-const equipmentBaseTotal = ref( 0 )
-const showEquipSection = ref( false )
-
-// Request guards to avoid races
-let equipBaseReqSeq = 0
 let equipDataReqSeq = 0
 
-/** Spare parts */
-const sparePartsBatchList = ref( [] )
-
-const { showSuccess } = useErrorHandler()
-
-// ========== Watch location change ==========
-watch(
-  () => props.location?.id,
-  id => {
-    // reset state for new location
-    equipmentSearch.value = ''
-    equipmentPage.value = 1
-    equipmentList.value = []
-    equipmentTotal.value = 0
-    equipmentBaseTotal.value = 0
-    showEquipSection.value = false
-
-    if ( id ) {
-      fetchEquipmentBase( id )
-      fetchEquipmentData( id )
-      fetchSparePartsBatch( id )
-    }
-  },
-  { immediate : true }
-)
-
-// ========== Search watcher (debounced) ==========
-let searchTimer = null
-watch( equipmentSearch, val => {
-  equipmentPage.value = 1
-  clearTimeout( searchTimer )
-
-  if ( !val?.trim() ) {
-    fetchEquipmentBase()
-    fetchEquipmentData()
-  } else {
-    searchTimer = setTimeout( () => fetchEquipmentData(), 250 )
-  }
-} )
-
-const onEquipmentPageChange = p => {
-  equipmentPage.value = p
-  fetchEquipmentData()
-}
-
-// ========== Base fetch (no keyword) sets sticky visibility ==========
-const fetchEquipmentBase = async( id = props.location?.id ) => {
-  const locId = Number( id )
-  if ( !Number.isFinite( locId ) ) {
-    equipmentBaseTotal.value = 0
-    showEquipSection.value = false
-    return
-  }
-
-  const seq = ++equipBaseReqSeq
-  try {
-    const res = await getEquipmentNodes(
-      1, // page
-      1, // we only need totals
-      'createdAt',
-      'DESC',
-      { location_ids : [locId] } // NO keyword
-    )
-    if ( seq !== equipBaseReqSeq ) return
-
-    const payload = res?.data ?? res
-    const page = payload?.data ?? payload
-    const total = Number( page?.totalElements ?? page?.total ?? ( Array.isArray( page?.content ) ? page.content.length : 0 ) )
-
-    equipmentBaseTotal.value = total
-    showEquipSection.value = total > 0
-  } catch ( err ) {
-    if ( seq !== equipBaseReqSeq ) return
-    console.error( 'fetchEquipmentBase failed:', err )
-    equipmentBaseTotal.value = 0
-    showEquipSection.value = false
-  }
-}
-
-// ========== Data fetch (with keyword/paging) fills the table ==========
 const fetchEquipmentData = async( id = props.location?.id ) => {
   const locId = Number( id )
   if ( !Number.isFinite( locId ) ) {
@@ -340,7 +423,6 @@ const fetchEquipmentData = async( id = props.location?.id ) => {
     equipmentTotal.value = 0
     return
   }
-
   const seq = ++equipDataReqSeq
   try {
     const term = equipmentSearch.value?.trim()
@@ -363,8 +445,13 @@ const fetchEquipmentData = async( id = props.location?.id ) => {
     equipmentTotal.value = 0
   }
 }
+const onEquipmentPageChange = p => {
+  equipmentPage.value = p
+  fetchEquipmentData()
+}
 
-// ========== Spare parts ==========
+/** ================= SPARE PARTS ================= **/
+const sparePartsBatchList = ref( [] )
 const fetchSparePartsBatch = async id => {
   try {
     const res = await axios.get( `http://10.10.12.12:8095/api/location/correlative-spare-part-batch/${id}` )
@@ -375,12 +462,32 @@ const fetchSparePartsBatch = async id => {
   }
 }
 
-// ========== Edit / Save ==========
+const { showSuccess } = useErrorHandler()
+
+watch(
+  () => props.location?.id,
+  async id => {
+    equipmentSearch.value = ''
+    equipmentPage.value = 1
+    equipmentList.value = []
+    equipmentTotal.value = 0
+
+    if ( id !== undefined && id !== null ) {
+      fetchLocationPath( id )
+      fetchEquipmentData( id )
+      fetchSparePartsBatch( id )
+      await fetchSubLocationsTree( id ) // 👈 new
+    } else {
+      locationPath.value = []
+      subTree.value = []
+    }
+  },
+  { immediate : true }
+)
+
+/** ================= EDIT ================= **/
 const enterEditMode = () => {
-  editForm.value = {
-    ...JSON.parse( JSON.stringify( props.location ) ),
-    id : props.location.id
-  }
+  editForm.value = { ...JSON.parse( JSON.stringify( props.location ) ), id : props.location.id }
   editLocation.value = true
 }
 
@@ -394,20 +501,9 @@ const saveEdit = async() => {
     showed = true
   }, 150 )
 
-  // helper: normalize uploaded URLs from various possible shapes
   const extractUploadedUrls = resp => {
-    // Common shapes to support:
-    // { uploadedFiles: [{url}] }
-    // { data: { uploadedFiles: [{url}] } }
-    // { data: { uploadedFiles: [{fileUrl|path|location}] } }
-    // { uploadedFiles: [{fileUrl|path|location}] }
     const list =
-      resp?.uploadedFiles ??
-      resp?.data?.uploadedFiles ??
-      resp?.data?.data?.uploadedFiles ??
-      resp?.files ?? // just in case
-      []
-
+      resp?.uploadedFiles ?? resp?.data?.uploadedFiles ?? resp?.data?.data?.uploadedFiles ?? resp?.files ?? []
     return ( Array.isArray( list ) ? list : [] ).map( f => f?.url || f?.fileUrl || f?.location || f?.path ).filter( Boolean )
   }
 
@@ -415,50 +511,31 @@ const saveEdit = async() => {
     const id = Number( props.location?.id )
     if ( !Number.isFinite( id ) ) throw new Error( 'Invalid location id' )
 
-    // 1) original URLs from current location
     const originalUrls = ( props.location?.image_list ?? [] )
       .map( x => ( typeof x === 'string' ? x : x?.url ) )
       .filter( Boolean )
-
-    // 2) removed URLs from child form
     const removed = Array.isArray( editForm.value?.removed_existing_images ) ? editForm.value.removed_existing_images : []
-
-    // 3) keep existing minus removed
     const keptExisting = originalUrls.filter( u => !removed.includes( u ) )
-
     const newFiles = Array.isArray( editForm.value?.image_files )
       ? editForm.value.image_files.filter( f => f instanceof File )
       : []
 
-    // 5) upload new files (if any)
     let uploadedUrls = []
     if ( newFiles.length ) {
       const uploadResp = await uploadMultipleToMinio( newFiles )
-      // console.log('uploadMultipleToMinio response:', uploadResp) // <- uncomment to inspect
       uploadedUrls = extractUploadedUrls( uploadResp )
     }
 
-    // 6) final list = kept existing + newly uploaded (dedup)
     const finalImageList = Array.from( new Set( [...keptExisting, ...uploadedUrls] ) )
-
-    // 7) build payload; do not leak the helper field
-    const payload = {
-      ...editForm.value,
-      image_list : finalImageList
-    }
+    const payload = { ...editForm.value, image_list : finalImageList }
     delete payload.removed_existing_images
 
-    // 8) update record
     await updateLocationById( id, payload )
 
-    // 9) best-effort delete removed objects after save
     if ( removed.length ) {
       Promise.resolve().then( async() => {
         try {
-          await deleteObjectList( {
-            bucketName : 'sv-file-bucket',
-            objectUrls : removed
-          } )
+          await deleteObjectList( { bucketName : 'sv-file-bucket', objectUrls : removed } )
         } catch {}
       } )
     }
@@ -470,7 +547,7 @@ const saveEdit = async() => {
     const s = e?.response?.status
     const m = ( e?.response?.data?.message || '' ).toLowerCase()
     if ( s === 409 || /code.*(exist|in use|already)/.test( m ) ) {
-      ElMessage.error( 'Update failed: location code already exists. Please use a different code.' )
+      ElMessage.error( 'Update failed: location code already exists.' )
     } else {
       ElMessage.error( 'Update failed' )
     }
@@ -494,7 +571,7 @@ const saveEdit = async() => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  overflow: hidden; /* keep if you want; dialog is teleported so no clipping */
+  overflow: hidden;
 }
 
 /* The scrolling area starts below the header */
@@ -503,6 +580,100 @@ const saveEdit = async() => {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   padding-top: 24px;
+}
+
+/* ================================
+   Location Path
+   ================================ */
+.path-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+}
+.node-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: var(--el-fill-color-light);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 999px;
+  line-height: 1;
+  font-size: 13px;
+  color: var(--el-text-color-primary);
+}
+.node-code {
+  color: var(--el-text-color-secondary);
+  font-weight: 400;
+}
+.sep {
+  user-select: none;
+  opacity: 0.6;
+  margin: 0 2px;
+}
+.no-path {
+  margin-top: 6px;
+}
+
+/* ================================
+   Descriptions: two equal columns
+   ================================ */
+.two-col {
+  :deep(.el-descriptions__table) {
+    table-layout: fixed;
+    width: 100%;
+  }
+  :deep(col) {
+    width: 50% !important;
+  }
+  :deep(.el-descriptions__label),
+  :deep(.el-descriptions__content) {
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* ================================
+   Image grid
+   ================================ */
+.image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  margin-top: 8px;
+}
+.thumb {
+  display: block;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+.thumb img {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  display: block;
+}
+
+/* Preview dialog content */
+.preview-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: min(80vh, 70vw);
+}
+.preview-image {
+  max-width: 100%;
+  max-height: 75vh;
+  display: block;
+  border-radius: 6px;
 }
 
 /* ================================
@@ -528,20 +699,6 @@ const saveEdit = async() => {
       margin: 0 0 8px 0;
       line-height: 1.4;
     }
-    .header-meta {
-      display: flex;
-      gap: 16px;
-      font-size: 14px;
-      color: var(--el-text-color-secondary);
-
-      .location-id {
-        color: var(--el-color-primary);
-        font-weight: 500;
-      }
-      .location-code {
-        font-weight: 500;
-      }
-    }
   }
 
   .header-actions {
@@ -552,89 +709,17 @@ const saveEdit = async() => {
   }
 }
 
-/* ================================
-   Body container
-   ================================ */
-.descriptions-container {
-  max-width: 1200px;
-  width: 100%;
-}
-
-/* ================================
-   Image grid
-   ================================ */
-.image-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 12px;
-  margin-top: 8px;
-}
-
-.thumb {
-  display: block;
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-  border-radius: 6px;
-  overflow: hidden;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-}
-
-.thumb img {
-  width: 100%;
-  height: 160px;
-  object-fit: cover;
-  display: block;
-}
-
-/* Preview dialog content */
-.preview-wrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: min(80vh, 70vw);
-}
-
-.preview-image {
-  max-width: 100%;
-  max-height: 75vh;
-  display: block;
-  border-radius: 6px;
-}
-
-/* ================================
-   Descriptions: two equal columns
-   ================================ */
-.two-col {
-  :deep(.el-descriptions__table) {
-    table-layout: fixed;
-    width: 100%;
-  }
-  :deep(col) {
-    width: 50% !important;
-  }
-  :deep(.el-descriptions__label),
-  :deep(.el-descriptions__content) {
-    white-space: normal;
-    word-break: break-word;
-    overflow-wrap: anywhere;
-  }
-}
 /* Only affects THIS dialog instance because we use the classes we set on the tag */
 :deep(.ld-edit-overlay) {
   display: flex;
   align-items: center;
   justify-content: center;
 }
-
 :deep(.ld-edit-dialog) {
-  margin: 0 !important; /* remove default top offset */
-  transform: none !important; /* kill slide-from-corner */
+  margin: 0 !important;
+  transform: none !important;
   animation: ld-fade-in 0.22s ease;
 }
-
-/* Match the custom transition="ld-fade" set on the dialog */
 :deep(.ld-fade-enter-active),
 :deep(.ld-fade-leave-active) {
   transition: opacity 0.22s ease;
@@ -652,6 +737,7 @@ const saveEdit = async() => {
     opacity: 1;
   }
 }
+
 .kebab-trigger {
   display: inline-flex;
   align-items: center;
@@ -660,7 +746,6 @@ const saveEdit = async() => {
   height: 32px;
   cursor: pointer;
 }
-
 .kebab-icon {
   transform: rotate(90deg);
   cursor: pointer;

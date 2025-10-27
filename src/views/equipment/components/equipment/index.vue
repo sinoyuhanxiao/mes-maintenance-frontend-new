@@ -33,13 +33,13 @@
           />
         </el-tab-pane>
         <el-tab-pane label="Work Orders" name="workOrders">
-          <WorkOrderTab :key="`workorders-${refreshKey}`" />
+          <WorkOrderTab :equipmentId="props.node.id" :key="`workorders-${refreshKey}`" />
         </el-tab-pane>
         <el-tab-pane label="Tasks" name="tasks">
-          <TasksTab :key="`tasks-${refreshKey}`" />
+          <TasksTab :equipmentId="props.node.id" :key="`tasks-${refreshKey}`" />
         </el-tab-pane>
         <el-tab-pane label="Personnel" name="personnel">
-          <PersonnelTab :key="`personnel-${refreshKey}`" />
+          <PersonnelTab :equipmentId="props.node.id" :key="`personnel-${refreshKey}`" />
         </el-tab-pane>
       </el-tabs>
     </div>
@@ -81,9 +81,9 @@ import { ref, computed } from 'vue'
 import { MoreFilled } from '@element-plus/icons-vue'
 import EquipmentDetailsTab from './Details.vue'
 import SubItems from '../equipmentGroup/SubItems.vue'
-import WorkOrderTab from './WorkOrders.vue'
-import TasksTab from './Tasks.vue'
-import PersonnelTab from './Personnel.vue'
+import WorkOrderTab from '@/views/equipment/components/equipmentGroup/WorkOrders.vue'
+import TasksTab from './../equipmentGroup/Tasks.vue'
+import PersonnelTab from '../equipmentGroup/Personnel.vue'
 import AddEquipment from './components/AddEquipment.vue'
 import EditEquipment from './components/EditEquipment.vue'
 import DeactivateNode from '../common/DeactivateNode.vue'

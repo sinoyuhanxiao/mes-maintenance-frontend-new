@@ -531,6 +531,7 @@ async function filterFullTreeAndLoadPartialTreeAndSetTeamTable() {
 
   // Perform recursive search on team tree
   filterTeams( teamTree.value, matchedIds )
+
   matchedTeamIds.value = new Set( matchedIds )
 
   const resultIds = Array.from( matchedIds )

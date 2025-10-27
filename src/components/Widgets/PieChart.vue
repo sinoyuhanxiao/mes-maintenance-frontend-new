@@ -8,6 +8,7 @@
         :name="item.name"
         :value="item.value"
         :color="item.color"
+        @click="handleSelect(item.name)"
       />
     </div>
     <div ref="chart" class="chart-container"></div>
@@ -24,9 +25,18 @@ const props = defineProps( {
   data : { type : Array, required : true }
 } )
 
+/* ✅ NEW: emit events without changing props */
+const emit = defineEmits( ['slice-click', 'legend-click'] )
+
 const chart = ref( null )
 const myChart = ref( null )
 let resizeObserver = null
+
+/* ✅ NEW: label/button click -> emit */
+function handleSelect( name ) {
+  if ( !name ) return
+  emit( 'legend-click', name )
+}
 
 function renderChart() {
   if ( !chart.value ) return
@@ -38,19 +48,12 @@ function renderChart() {
   }
 
   const existing = echarts.getInstanceByDom( chart.value )
-  if ( existing ) {
-    existing.dispose()
-  }
+  if ( existing ) existing.dispose()
 
   myChart.value = echarts.init( chart.value )
   myChart.value.setOption( {
-    title : {
-      text : '',
-      left : 'center'
-    },
-    tooltip : {
-      trigger : 'item'
-    },
+    title : { text : '', left : 'center' },
+    tooltip : { trigger : 'item' },
     color : props.data.map( item => item.color ),
     series : [
       {
@@ -58,50 +61,36 @@ function renderChart() {
         type : 'pie',
         radius : ['40%', '70%'],
         avoidLabelOverlap : false,
-        itemStyle : {
-          borderRadius : 10,
-          borderColor : '#fff',
-          borderWidth : 2
-        },
+        itemStyle : { borderRadius : 10, borderColor : '#fff', borderWidth : 2 },
         label : { show : false, position : 'center' },
-        emphasis : {
-          label : {
-            show : true,
-            fontSize : 25,
-            fontWeight : 'bold'
-          }
-        },
+        emphasis : { label : { show : true, fontSize : 25, fontWeight : 'bold' }},
         labelLine : { show : false },
         data : props.data
       }
     ]
   } )
+
+  /* ✅ NEW: slice click -> emit */
+  myChart.value.off( 'click' )
+  myChart.value.on( 'click', params => {
+    const name = params?.name
+    if ( name ) emit( 'slice-click', name )
+  } )
 }
 
 onMounted( async() => {
   await nextTick()
-  setTimeout( () => {
-    renderChart()
-  }, 50 )
+  setTimeout( renderChart, 50 )
 
   resizeObserver = new ResizeObserver( () => {
-    if ( myChart.value ) {
-      myChart.value.resize()
-    }
+    myChart.value && myChart.value.resize()
   } )
-
-  if ( chart.value ) {
-    resizeObserver.observe( chart.value )
-  }
+  chart.value && resizeObserver.observe( chart.value )
 } )
 
 onBeforeUnmount( () => {
-  if ( resizeObserver && chart.value ) {
-    resizeObserver.unobserve( chart.value )
-  }
-  if ( myChart.value ) {
-    myChart.value.dispose()
-  }
+  if ( resizeObserver && chart.value ) resizeObserver.unobserve( chart.value )
+  if ( myChart.value ) myChart.value.dispose()
 } )
 
 watch(
@@ -112,6 +101,8 @@ watch(
         color : newData.map( item => item.color ),
         series : [{ data : newData }]
       } )
+    } else {
+      renderChart()
     }
   }
 )
@@ -119,11 +110,7 @@ watch(
 watch(
   () => props.title,
   newTitle => {
-    if ( myChart.value ) {
-      myChart.value.setOption( {
-        title : { text : newTitle }
-      } )
-    }
+    myChart.value && myChart.value.setOption( { title : { text : newTitle }} )
   }
 )
 </script>
@@ -135,13 +122,11 @@ watch(
   flex-direction: column;
   min-height: 0;
 }
-
 .title {
   flex-shrink: 0;
   margin: 0 0 16px 0;
   text-align: center;
 }
-
 .buttons-grid {
   flex-shrink: 0;
   display: flex;
@@ -154,7 +139,6 @@ watch(
   padding: 0 10px;
   box-sizing: border-box;
 }
-
 .chart-container {
   flex: 1;
   display: flex;

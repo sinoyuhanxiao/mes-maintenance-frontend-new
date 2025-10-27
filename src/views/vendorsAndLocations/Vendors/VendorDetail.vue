@@ -36,16 +36,25 @@
           <el-descriptions-item label="Email">{{ vendor.email || '--' }}</el-descriptions-item>
         </el-descriptions>
 
-        <el-descriptions v-if="vendor.website?.length" :column="1" direction="vertical">
-          <el-descriptions-item label="Website">{{ vendor.website || '--' }}</el-descriptions-item>
+        <!-- Website -->
+        <el-descriptions :column="1" direction="vertical">
+          <el-descriptions-item label="Website">
+            {{ vendor?.website?.length ? vendor.website : 'No website available' }}
+          </el-descriptions-item>
         </el-descriptions>
 
-        <el-descriptions v-if="vendor.address?.length" :column="1" direction="vertical">
-          <el-descriptions-item label="Address">{{ vendor.address || '--' }}</el-descriptions-item>
+        <!-- Address -->
+        <el-descriptions :column="1" direction="vertical">
+          <el-descriptions-item label="Address">
+            {{ vendor?.address?.length ? vendor.address : 'No address available' }}
+          </el-descriptions-item>
         </el-descriptions>
 
-        <el-descriptions v-if="vendor.description?.length" :column="1" direction="vertical">
-          <el-descriptions-item label="Description">{{ vendor.description || '--' }}</el-descriptions-item>
+        <!-- Description -->
+        <el-descriptions :column="1" direction="vertical">
+          <el-descriptions-item label="Description">
+            {{ vendor?.description?.length ? vendor.description : 'No description available' }}
+          </el-descriptions-item>
         </el-descriptions>
 
         <!-- Images -->
