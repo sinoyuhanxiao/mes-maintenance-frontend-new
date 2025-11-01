@@ -7,9 +7,9 @@
 <script setup>
 import MaintenanceRequestsView from './views/MaintenanceRequestsView.vue'
 
-defineOptions({
-  name: 'MaintenanceRequestsIndex',
-})
+defineOptions( {
+  name : 'MaintenanceRequestsIndex'
+} )
 </script>
 
 <style scoped>

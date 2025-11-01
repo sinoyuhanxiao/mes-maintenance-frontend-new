@@ -101,56 +101,56 @@ import FileDisplay from '@/components/common/FileDisplay.vue'
 import { getEquipmentById } from '@/api/equipment.js'
 import { getLocationPathById } from '@/api/location.js'
 
-const props = defineProps({ equipmentId: Number })
+const props = defineProps( { equipmentId : Number } )
 
-const equipmentData = ref(null)
-const locationPath = ref([])
-const loading = ref(false)
-const error = ref(null)
+const equipmentData = ref( null )
+const locationPath = ref( [] )
+const loading = ref( false )
+const error = ref( null )
 
 /* -------- Fetching -------- */
 async function fetchEquipmentData() {
-  if (!props.equipmentId) return
+  if ( !props.equipmentId ) return
   try {
     loading.value = true
     error.value = null
-    const res = await getEquipmentById(props.equipmentId)
+    const res = await getEquipmentById( props.equipmentId )
     equipmentData.value = res.data
 
     const loc = equipmentData.value?.location
-    if (loc?.id && loc?.status !== 0) {
-      const resp = await getLocationPathById(loc.id)
+    if ( loc?.id && loc?.status !== 0 ) {
+      const resp = await getLocationPathById( loc.id )
       locationPath.value = resp.data || []
     } else {
       locationPath.value = []
     }
-  } catch (e) {
+  } catch ( e ) {
     error.value = e.message || 'Failed to fetch equipment data'
   } finally {
     loading.value = false
   }
 }
 
-onMounted(fetchEquipmentData)
+onMounted( fetchEquipmentData )
 watch(
   () => props.equipmentId,
   id => id && fetchEquipmentData()
 )
 
 /* -------- Optional listeners (you can remove if unused) -------- */
-function onPreview(file) {
+function onPreview( file ) {
   // Hook if you want analytics or custom behavior
   // Default preview is already handled by FileList when nativePreview=true
 }
 
-function onDownload(file) {
+function onDownload( file ) {
   // Hook if you want analytics or custom behavior
   // Default download is already handled by FileList when nativeDownload=true
 }
 
-function onDownloadError(err) {
-  ElMessage.error('Download failed')
-  console.error(err)
+function onDownloadError( err ) {
+  ElMessage.error( 'Download failed' )
+  console.error( err )
 }
 </script>
 

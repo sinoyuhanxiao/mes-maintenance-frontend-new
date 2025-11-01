@@ -62,47 +62,47 @@ import { ElMessage } from 'element-plus'
 import FileUploadMultiple from '@/components/FileUpload/FileUploadMultiple.vue'
 import { uploadMultipleToMinio } from '@/api/minio.js'
 
-const props = defineProps({
-  visible: {
-    type: Boolean,
-    default: false,
+const props = defineProps( {
+  visible : {
+    type : Boolean,
+    default : false
   },
-  equipmentTreeData: {
-    type: Array,
-    default: () => [],
+  equipmentTreeData : {
+    type : Array,
+    default : () => []
   },
-  loading: {
-    type: Boolean,
-    default: false,
-  },
-})
+  loading : {
+    type : Boolean,
+    default : false
+  }
+} )
 
-const emit = defineEmits(['update:visible', 'submit'])
+const emit = defineEmits( ['update:visible', 'submit'] )
 
 // Form state
-const requestForm = ref(null)
-const fileUploadRef = ref(null)
-const uploadedImageFiles = ref([])
-const formData = ref({
-  name: '',
-  description: '',
-  equipment_node_id: null,
-  image_list: [],
-})
+const requestForm = ref( null )
+const fileUploadRef = ref( null )
+const uploadedImageFiles = ref( [] )
+const formData = ref( {
+  name : '',
+  description : '',
+  equipment_node_id : null,
+  image_list : []
+} )
 
 // Form validation rules
 const formRules = {
-  name: [
-    { required: true, message: 'Please enter request name', trigger: 'blur' },
-    { min: 2, max: 100, message: 'Name should be between 2 and 100 characters', trigger: 'blur' },
+  name : [
+    { required : true, message : 'Please enter request name', trigger : 'blur' },
+    { min : 2, max : 100, message : 'Name should be between 2 and 100 characters', trigger : 'blur' }
   ],
-  equipment_node_id: [{ required: true, message: 'Please select equipment', trigger: 'change' }],
+  equipment_node_id : [{ required : true, message : 'Please select equipment', trigger : 'change' }]
 }
 
 // Computed
-const isFormValid = computed(() => {
+const isFormValid = computed( () => {
   return formData.value.name && formData.value.name.length >= 2 && formData.value.equipment_node_id !== null
-})
+} )
 
 // Image upload handling
 const handleImageListUpdate = imageFiles => {
@@ -112,31 +112,31 @@ const handleImageListUpdate = imageFiles => {
 
 // Dialog handlers
 const handleClose = value => {
-  emit('update:visible', value)
+  emit( 'update:visible', value )
 }
 
 const handleFormCancel = () => {
   resetForm()
-  emit('update:visible', false)
+  emit( 'update:visible', false )
 }
 
 // Upload files to MinIO and return URLs
-const uploadFilesToMinio = async () => {
-  if (uploadedImageFiles.value.length === 0) {
+const uploadFilesToMinio = async() => {
+  if ( uploadedImageFiles.value.length === 0 ) {
     return []
   }
 
   try {
-    const imageRes = await uploadMultipleToMinio(uploadedImageFiles.value)
+    const imageRes = await uploadMultipleToMinio( uploadedImageFiles.value )
     const uploadedFiles = imageRes.data.uploadedFiles || []
-    return uploadedFiles.map(file => file.url)
-  } catch (error) {
-    throw new Error('File upload to MinIO failed')
+    return uploadedFiles.map( file => file.url )
+  } catch ( error ) {
+    throw new Error( 'File upload to MinIO failed' )
   }
 }
 
-const handleFormSubmit = async () => {
-  if (!requestForm.value) return
+const handleFormSubmit = async() => {
+  if ( !requestForm.value ) return
 
   try {
     await requestForm.value.validate()
@@ -146,35 +146,35 @@ const handleFormSubmit = async () => {
 
     // Prepare submission data with URLs instead of base64
     const submitData = {
-      name: formData.value.name,
-      description: formData.value.description,
-      equipment_node_id: formData.value.equipment_node_id,
-      image_list: imageUrls,
+      name : formData.value.name,
+      description : formData.value.description,
+      equipment_node_id : formData.value.equipment_node_id,
+      image_list : imageUrls
     }
 
-    emit('submit', submitData)
-  } catch (error) {
-    if (error.message.includes('MinIO')) {
-      ElMessage.error('Failed to upload images. Please try again.')
+    emit( 'submit', submitData )
+  } catch ( error ) {
+    if ( error.message.includes( 'MinIO' ) ) {
+      ElMessage.error( 'Failed to upload images. Please try again.' )
     } else {
-      ElMessage.warning('Please fill in all required fields')
+      ElMessage.warning( 'Please fill in all required fields' )
     }
   }
 }
 
 const resetForm = () => {
   formData.value = {
-    name: '',
-    description: '',
-    equipment_node_id: null,
-    image_list: [],
+    name : '',
+    description : '',
+    equipment_node_id : null,
+    image_list : []
   }
   uploadedImageFiles.value = []
-  if (requestForm.value) {
+  if ( requestForm.value ) {
     requestForm.value.clearValidate()
   }
   // Clear the file upload component's image list
-  if (fileUploadRef.value) {
+  if ( fileUploadRef.value ) {
     fileUploadRef.value.resetNewFileLists()
   }
 }
@@ -183,15 +183,15 @@ const resetForm = () => {
 watch(
   () => props.visible,
   newVal => {
-    if (!newVal) {
+    if ( !newVal ) {
       resetForm()
     }
   }
 )
 
-defineOptions({
-  name: 'CreateRequestDialog',
-})
+defineOptions( {
+  name : 'CreateRequestDialog'
+} )
 </script>
 
 <style scoped>

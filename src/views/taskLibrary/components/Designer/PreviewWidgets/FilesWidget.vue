@@ -80,119 +80,119 @@ import {
   Document,
   Picture,
   Film,
-  VideoCamera,
+  VideoCamera
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
-const props = defineProps({
-  step: {
-    type: Object,
-    required: true,
+const props = defineProps( {
+  step : {
+    type : Object,
+    required : true
   },
-  interactive: {
-    type: Boolean,
-    default: false,
+  interactive : {
+    type : Boolean,
+    default : false
   },
-  config: {
-    type: Object,
-    default: () => ({
-      acceptImages: true,
-      acceptDocuments: true,
-    }),
-  },
-})
+  config : {
+    type : Object,
+    default : () => ( {
+      acceptImages : true,
+      acceptDocuments : true
+    } )
+  }
+} )
 
-const fileList = ref([])
-const existingAttachments = ref(props.step.ui.existing_files || [])
+const fileList = ref( [] )
+const existingAttachments = ref( props.step.ui.existing_files || [] )
 
-const allowMultiple = computed(() => {
-  return (props.step.ui.max_files || 1) > 1
-})
+const allowMultiple = computed( () => {
+  return ( props.step.ui.max_files || 1 ) > 1
+} )
 
-const maxFiles = computed(() => {
+const maxFiles = computed( () => {
   return props.step.ui.max_files || 5
-})
+} )
 
-const acceptTypes = computed(() => {
+const acceptTypes = computed( () => {
   const types = []
 
-  if (props.config.acceptImages) {
-    types.push('.jpg', '.jpeg', '.png', '.gif', '.webp')
+  if ( props.config.acceptImages ) {
+    types.push( '.jpg', '.jpeg', '.png', '.gif', '.webp' )
   }
 
-  if (props.config.acceptDocuments) {
-    types.push('.pdf', '.doc', '.docx', '.txt')
+  if ( props.config.acceptDocuments ) {
+    types.push( '.pdf', '.doc', '.docx', '.txt' )
   }
 
-  if (props.step.ui.allow_types) {
+  if ( props.step.ui.allow_types ) {
     const allowedTypes = props.step.ui.allow_types
-    if (allowedTypes.includes('video')) {
-      types.push('.mp4', '.avi', '.mov', '.wmv')
+    if ( allowedTypes.includes( 'video' ) ) {
+      types.push( '.mp4', '.avi', '.mov', '.wmv' )
     }
-    if (allowedTypes.includes('audio')) {
-      types.push('.mp3', '.wav', '.ogg')
+    if ( allowedTypes.includes( 'audio' ) ) {
+      types.push( '.mp3', '.wav', '.ogg' )
     }
   }
 
-  return types.join(',')
-})
+  return types.join( ',' )
+} )
 
-const uploadConstraints = computed(() => {
+const uploadConstraints = computed( () => {
   const constraints = []
 
-  if (maxFiles.value > 1) {
-    constraints.push(`Maximum ${maxFiles.value} files`)
+  if ( maxFiles.value > 1 ) {
+    constraints.push( `Maximum ${maxFiles.value} files` )
   }
 
-  if (props.step.ui.max_file_size_mb) {
-    constraints.push(`Max size: ${props.step.ui.max_file_size_mb}MB per file`)
+  if ( props.step.ui.max_file_size_mb ) {
+    constraints.push( `Max size: ${props.step.ui.max_file_size_mb}MB per file` )
   }
 
   const acceptedFormats = []
-  if (props.config.acceptImages) acceptedFormats.push('Images')
-  if (props.config.acceptDocuments) acceptedFormats.push('Documents')
-  if (props.step.ui.allow_types?.includes('video')) acceptedFormats.push('Videos')
+  if ( props.config.acceptImages ) acceptedFormats.push( 'Images' )
+  if ( props.config.acceptDocuments ) acceptedFormats.push( 'Documents' )
+  if ( props.step.ui.allow_types?.includes( 'video' ) ) acceptedFormats.push( 'Videos' )
 
-  if (acceptedFormats.length > 0) {
-    constraints.push(`Accepted: ${acceptedFormats.join(', ')}`)
+  if ( acceptedFormats.length > 0 ) {
+    constraints.push( `Accepted: ${acceptedFormats.join( ', ' )}` )
   }
 
   return constraints
-})
+} )
 
 const getUploadTip = () => {
-  if (!props.interactive) {
+  if ( !props.interactive ) {
     return 'Preview mode - uploads disabled'
   }
 
   const parts = []
-  if (allowMultiple.value) {
-    parts.push(`Up to ${maxFiles.value} files`)
+  if ( allowMultiple.value ) {
+    parts.push( `Up to ${maxFiles.value} files` )
   } else {
-    parts.push('Single file')
+    parts.push( 'Single file' )
   }
 
-  if (props.step.ui.max_file_size_mb) {
-    parts.push(`max ${props.step.ui.max_file_size_mb}MB each`)
+  if ( props.step.ui.max_file_size_mb ) {
+    parts.push( `max ${props.step.ui.max_file_size_mb}MB each` )
   }
 
-  return parts.join(', ')
+  return parts.join( ', ' )
 }
 
-const handleFileChange = (file, fileListParam) => {
+const handleFileChange = ( file, fileListParam ) => {
   // eslint-disable-next-line no-useless-return
-  if (!props.interactive) return
+  if ( !props.interactive ) return
 
   // Handle file validation and processing
 }
 
 const beforeUpload = file => {
-  if (!props.interactive) return false
+  if ( !props.interactive ) return false
 
-  const maxSize = (props.step.ui.max_file_size_mb || 25) * 1024 * 1024
+  const maxSize = ( props.step.ui.max_file_size_mb || 25 ) * 1024 * 1024
 
-  if (file.size > maxSize) {
-    ElMessage.error(`File size cannot exceed ${props.step.ui.max_file_size_mb || 25}MB`)
+  if ( file.size > maxSize ) {
+    ElMessage.error( `File size cannot exceed ${props.step.ui.max_file_size_mb || 25}MB` )
     return false
   }
 
@@ -201,30 +201,30 @@ const beforeUpload = file => {
 
 const viewFile = file => {
   // Open file viewer
-  if (file.url) {
-    window.open(file.url, '_blank')
+  if ( file.url ) {
+    window.open( file.url, '_blank' )
   }
 }
 
 const removeFile = fileId => {
-  existingAttachments.value = existingAttachments.value.filter(f => f.id !== fileId)
+  existingAttachments.value = existingAttachments.value.filter( f => f.id !== fileId )
 }
 
 const getFileIcon = fileType => {
-  if (fileType?.startsWith('image/')) return Picture
-  if (fileType?.startsWith('video/')) return VideoCamera
-  if (fileType?.startsWith('audio/')) return Film
+  if ( fileType?.startsWith( 'image/' ) ) return Picture
+  if ( fileType?.startsWith( 'video/' ) ) return VideoCamera
+  if ( fileType?.startsWith( 'audio/' ) ) return Film
   return Document
 }
 
 const formatFileSize = bytes => {
-  if (!bytes) return '0 B'
+  if ( !bytes ) return '0 B'
 
   const k = 1024
   const sizes = ['B', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  const i = Math.floor( Math.log( bytes ) / Math.log( k ) )
 
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  return parseFloat( ( bytes / Math.pow( k, i ) ).toFixed( 2 ) ) + ' ' + sizes[i]
 }
 </script>
 

@@ -252,21 +252,21 @@ import { getEquipmentNodes } from '@/api/equipment.js'
 import { uploadMultipleToMinio, deleteObjectList } from '@/api/minio'
 import LocationPath from '@/components/common/LocationPath.vue'
 
-const props = defineProps({
-  location: Object,
-  locationTypes: { type: Array, default: () => [] },
-})
-const emit = defineEmits(['deleted', 'updated', 'add-child'])
+const props = defineProps( {
+  location : Object,
+  locationTypes : { type : Array, default : () => [] }
+} )
+const emit = defineEmits( ['deleted', 'updated', 'add-child'] )
 
 /** ================= EDIT DIALOG STATE ================= **/
-const editLocation = ref(false)
-const editForm = ref({})
-const editFormRef = ref(null)
-const saving = ref(false)
+const editLocation = ref( false )
+const editForm = ref( {} )
+const editFormRef = ref( null )
+const saving = ref( false )
 
 /** ================= LOCATION PATH ================= **/
-const locationPath = ref([])
-const pathLoading = ref(false)
+const locationPath = ref( [] )
+const pathLoading = ref( false )
 const rawPIC = computed(
   () =>
     props.location?.person_in_charge ??
@@ -276,37 +276,37 @@ const rawPIC = computed(
     null
 )
 
-const personInCharge = computed(() => {
+const personInCharge = computed( () => {
   const p = rawPIC.value
-  if (!p) return null
-  if (typeof p === 'object') return p
-  const id = Number(p)
-  return Number.isFinite(id) ? { id } : null
-})
+  if ( !p ) return null
+  if ( typeof p === 'object' ) return p
+  const id = Number( p )
+  return Number.isFinite( id ) ? { id } : null
+} )
 
-const picName = computed(() => {
+const picName = computed( () => {
   const p = personInCharge.value
-  if (!p) return ''
+  if ( !p ) return ''
   const first = p.first_name ?? p.firstName ?? ''
   const last = p.last_name ?? p.lastName ?? ''
   const uname = p.username ?? ''
-  const full = [first, last].filter(Boolean).join(' ')
-  return full || uname || (p.id != null ? `#${p.id}` : '')
-})
+  const full = [first, last].filter( Boolean ).join( ' ' )
+  return full || uname || ( p.id != null ? `#${p.id}` : '' )
+} )
 
 const fetchLocationPath = async id => {
-  if (id === undefined || id === null) {
+  if ( id === undefined || id === null ) {
     locationPath.value = []
     return
   }
   pathLoading.value = true
   try {
-    const res = await getLocationPathById(id)
+    const res = await getLocationPathById( id )
     const payload = res?.data ?? res
-    const data = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : []
+    const data = Array.isArray( payload?.data ) ? payload.data : Array.isArray( payload ) ? payload : []
     locationPath.value = data ?? []
-  } catch (e) {
-    console.error('Failed to fetch location path:', e)
+  } catch ( e ) {
+    console.error( 'Failed to fetch location path:', e )
     locationPath.value = []
   } finally {
     pathLoading.value = false
@@ -314,9 +314,9 @@ const fetchLocationPath = async id => {
 }
 
 /** ================= SUB LOCATIONS TREE ================= **/
-const subLoading = ref(false)
-const subTree = ref([])
-const subTreeProps = { label: 'name', children: 'children' }
+const subLoading = ref( false )
+const subTree = ref( [] )
+const subTreeProps = { label : 'name', children : 'children' }
 
 const unwrap = res => {
   const p = res?.data ?? res
@@ -327,38 +327,38 @@ const fetchSubLocationsTree = async id => {
   subLoading.value = true
   subTree.value = []
   try {
-    const root = unwrap(await getLocationById(id))
-    const childIds = Array.isArray(root?.active_children_locations_ids) ? root.active_children_locations_ids : []
+    const root = unwrap( await getLocationById( id ) )
+    const childIds = Array.isArray( root?.active_children_locations_ids ) ? root.active_children_locations_ids : []
 
-    if (!childIds.length) {
+    if ( !childIds.length ) {
       subTree.value = []
       return
     }
 
-    const results = await Promise.allSettled(childIds.map(cid => getLocationById(cid)))
+    const results = await Promise.allSettled( childIds.map( cid => getLocationById( cid ) ) )
     const children = results
-      .map((r, i) => {
-        if (r.status !== 'fulfilled') return null
-        const d = unwrap(r.value)
+      .map( ( r, i ) => {
+        if ( r.status !== 'fulfilled' ) return null
+        const d = unwrap( r.value )
         return {
-          id: d?.id,
-          name: d?.name ?? `#${childIds[i]}`,
-          code: d?.code ?? '',
-          children: [],
+          id : d?.id,
+          name : d?.name ?? `#${childIds[i]}`,
+          code : d?.code ?? '',
+          children : []
         }
-      })
-      .filter(Boolean)
+      } )
+      .filter( Boolean )
 
     subTree.value = [
       {
-        id: root.id,
-        name: root.name,
-        code: root.code,
-        children,
-      },
+        id : root.id,
+        name : root.name,
+        code : root.code,
+        children
+      }
     ]
-  } catch (err) {
-    console.error('fetchSubLocationsTree failed:', err)
+  } catch ( err ) {
+    console.error( 'fetchSubLocationsTree failed:', err )
     subTree.value = []
   } finally {
     subLoading.value = false
@@ -366,81 +366,81 @@ const fetchSubLocationsTree = async id => {
 }
 
 /** ================= IMAGES ================= **/
-const imageUrls = computed(() => {
+const imageUrls = computed( () => {
   const list = props.location?.image_list || []
-  return list.map(x => (typeof x === 'string' ? x : x?.url)).filter(Boolean)
-})
-const validImageUrls = ref([])
-const isImagesLoading = ref(false)
+  return list.map( x => ( typeof x === 'string' ? x : x?.url ) ).filter( Boolean )
+} )
+const validImageUrls = ref( [] )
+const isImagesLoading = ref( false )
 let imgReqSeq = 0
 
-const checkImageUrls = async () => {
+const checkImageUrls = async() => {
   const seq = ++imgReqSeq
   isImagesLoading.value = true
   try {
     const checks = await Promise.all(
-      imageUrls.value.map(async u => {
+      imageUrls.value.map( async u => {
         try {
-          const res = await fetch(u, { method: 'HEAD' })
+          const res = await fetch( u, { method : 'HEAD' } )
           return res.ok ? u : null
         } catch {
           return null
         }
-      })
+      } )
     )
-    if (seq !== imgReqSeq) return
-    validImageUrls.value = checks.filter(Boolean)
+    if ( seq !== imgReqSeq ) return
+    validImageUrls.value = checks.filter( Boolean )
   } finally {
-    if (seq === imgReqSeq) isImagesLoading.value = false
+    if ( seq === imgReqSeq ) isImagesLoading.value = false
   }
 }
 
 watch(
   imageUrls,
   () => {
-    if (imageUrls.value.length) checkImageUrls()
+    if ( imageUrls.value.length ) checkImageUrls()
     else {
       imgReqSeq++
       validImageUrls.value = []
       isImagesLoading.value = false
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
 
-const preview = ref({ open: false, url: '' })
+const preview = ref( { open : false, url : '' } )
 const openPreview = u => {
   preview.value.url = u
   preview.value.open = true
 }
 
 /** ================= RELATED EQUIPMENT ================= **/
-const equipmentList = ref([])
-const equipmentTotal = ref(0)
-const equipmentPage = ref(1)
-const equipmentPageSize = ref(5)
-const equipmentSearch = ref('')
+const equipmentList = ref( [] )
+const equipmentTotal = ref( 0 )
+const equipmentPage = ref( 1 )
+const equipmentPageSize = ref( 5 )
+const equipmentSearch = ref( '' )
 let equipDataReqSeq = 0
 
 /** Helper: get auth header once (from local/session storage) */
 const getAuthHeaders = () => {
   const token =
-    localStorage.getItem('access_token') ||
-    localStorage.getItem('token') ||
-    sessionStorage.getItem('access_token') ||
+    localStorage.getItem( 'access_token' ) ||
+    localStorage.getItem( 'token' ) ||
+    sessionStorage.getItem( 'access_token' ) ||
     ''
-  return token ? { Authorization: `Bearer ${token}` } : {}
+  return token ? { Authorization : `Bearer ${token}` } : {}
 }
 
 /** Helper: pick the T2 node name from a variable-length path */
 const pickT2Name = pathArr => {
-  if (!Array.isArray(pathArr) || !pathArr.length) return ''
+  if ( !Array.isArray( pathArr ) || !pathArr.length ) return ''
   // canonical: T0, T1, T2, ...
-  if (pathArr.length >= 3) return (pathArr[2]?.name || '').trim()
+  if ( pathArr.length >= 3 ) return ( pathArr[2]?.name || '' ).trim()
   // fallback to parent if path shorter
-  if (pathArr.length >= 2) return (pathArr[pathArr.length - 2]?.name || '').trim()
+  if ( pathArr.length >= 2 ) return ( pathArr[pathArr.length - 2]?.name || '' ).trim()
   // otherwise root name
-  return (pathArr[0]?.name || '').trim()
+  return ( pathArr[0]?.name || '' ).trim()
 }
 
 /** Cache nodeId -> T2 group string */
@@ -448,42 +448,42 @@ const nodePathCache = new Map()
 
 /** Fetch T2 group name for a node id */
 const getT2FromNodePath = async nodeId => {
-  const id = Number(nodeId)
-  if (!Number.isFinite(id)) return ''
-  if (nodePathCache.has(id)) return nodePathCache.get(id)
+  const id = Number( nodeId )
+  if ( !Number.isFinite( id ) ) return ''
+  if ( nodePathCache.has( id ) ) return nodePathCache.get( id )
 
   try {
-    const resp = await axios.get(`http://10.10.12.12:8095/api/equipment/node-path/${id}`, { headers: getAuthHeaders() })
+    const resp = await axios.get( `http://10.10.12.12:8095/api/equipment/node-path/${id}`, { headers : getAuthHeaders() } )
     const payload = resp?.data ?? resp
-    const path = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : []
-    const t2 = pickT2Name(path)
-    nodePathCache.set(id, t2)
+    const path = Array.isArray( payload?.data ) ? payload.data : Array.isArray( payload ) ? payload : []
+    const t2 = pickT2Name( path )
+    nodePathCache.set( id, t2 )
     return t2
-  } catch (e) {
-    console.error(`[node-path] failed for nodeId=${id}`, e?.response?.status, e?.response?.data || e)
-    nodePathCache.set(id, '')
+  } catch ( e ) {
+    console.error( `[node-path] failed for nodeId=${id}`, e?.response?.status, e?.response?.data || e )
+    nodePathCache.set( id, '' )
     return ''
   }
 }
 
 /** Enrich rows with equipment_group (T2) asynchronously */
-const enrichEquipmentWithGroup = async (rows, seqAtStart) => {
+const enrichEquipmentWithGroup = async( rows, seqAtStart ) => {
   const enriched = await Promise.all(
-    rows.map(async r => {
+    rows.map( async r => {
       // IMPORTANT: use the NODE id (r.id), not diagram_id or business id.
-      const nodeId = Number(r?.id)
-      const group = await getT2FromNodePath(nodeId)
-      return { ...r, equipment_group: group || '--' }
-    })
+      const nodeId = Number( r?.id )
+      const group = await getT2FromNodePath( nodeId )
+      return { ...r, equipment_group : group || '--' }
+    } )
   )
-  if (seqAtStart === equipDataReqSeq) {
+  if ( seqAtStart === equipDataReqSeq ) {
     equipmentList.value = enriched
   }
 }
 
-const fetchEquipmentData = async (id = props.location?.id) => {
-  const locId = Number(id)
-  if (!Number.isFinite(locId)) {
+const fetchEquipmentData = async( id = props.location?.id ) => {
+  const locId = Number( id )
+  if ( !Number.isFinite( locId ) ) {
     equipmentList.value = []
     equipmentTotal.value = 0
     return
@@ -491,27 +491,27 @@ const fetchEquipmentData = async (id = props.location?.id) => {
   const seq = ++equipDataReqSeq
   try {
     const term = equipmentSearch.value?.trim()
-    const body = { location_ids: [locId] }
-    if (term) body.keyword = term
+    const body = { location_ids : [locId] }
+    if ( term ) body.keyword = term
 
-    const res = await getEquipmentNodes(equipmentPage.value, equipmentPageSize.value, 'createdAt', 'DESC', body)
-    if (seq !== equipDataReqSeq) return
+    const res = await getEquipmentNodes( equipmentPage.value, equipmentPageSize.value, 'createdAt', 'DESC', body )
+    if ( seq !== equipDataReqSeq ) return
 
     const payload = res?.data ?? res
     const page = payload?.data ?? payload
-    const list = Array.isArray(page?.content) ? page.content : Array.isArray(page) ? page : []
+    const list = Array.isArray( page?.content ) ? page.content : Array.isArray( page ) ? page : []
 
     // Normalize & set placeholder for T2 to avoid table jitter
-    const normalized = list.map(e => ({ ...e, id: Number(e.id), equipment_group: '--' }))
+    const normalized = list.map( e => ( { ...e, id : Number( e.id ), equipment_group : '--' } ) )
 
     equipmentList.value = normalized
-    equipmentTotal.value = Number(page?.totalElements ?? page?.total ?? list.length)
+    equipmentTotal.value = Number( page?.totalElements ?? page?.total ?? list.length )
 
     // Enrich with T2 (async, guarded by seq)
-    await enrichEquipmentWithGroup(normalized, seq)
-  } catch (err) {
-    if (seq !== equipDataReqSeq) return
-    console.error('fetchEquipmentData failed:', err)
+    await enrichEquipmentWithGroup( normalized, seq )
+  } catch ( err ) {
+    if ( seq !== equipDataReqSeq ) return
+    console.error( 'fetchEquipmentData failed:', err )
     equipmentList.value = []
     equipmentTotal.value = 0
   }
@@ -523,15 +523,15 @@ const onEquipmentPageChange = p => {
 }
 
 /** ================= SPARE PARTS ================= **/
-const sparePartsBatchList = ref([])
+const sparePartsBatchList = ref( [] )
 const fetchSparePartsBatch = async id => {
   try {
-    const res = await axios.get(`http://10.10.12.12:8095/api/location/correlative-spare-part-batch/${id}`, {
-      headers: getAuthHeaders(),
-    })
+    const res = await axios.get( `http://10.10.12.12:8095/api/location/correlative-spare-part-batch/${id}`, {
+      headers : getAuthHeaders()
+    } )
     sparePartsBatchList.value = res.data?.data || []
-  } catch (err) {
-    console.error('Failed to fetch spare parts batch:', err)
+  } catch ( err ) {
+    console.error( 'Failed to fetch spare parts batch:', err )
     sparePartsBatchList.value = []
   }
 }
@@ -547,94 +547,94 @@ watch(
     equipmentList.value = []
     equipmentTotal.value = 0
 
-    if (id !== undefined && id !== null) {
-      fetchLocationPath(id)
-      fetchEquipmentData(id)
-      fetchSparePartsBatch(id)
-      await fetchSubLocationsTree(id)
+    if ( id !== undefined && id !== null ) {
+      fetchLocationPath( id )
+      fetchEquipmentData( id )
+      fetchSparePartsBatch( id )
+      await fetchSubLocationsTree( id )
     } else {
       locationPath.value = []
       subTree.value = []
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
 
-watch(equipmentSearch, () => {
+watch( equipmentSearch, () => {
   equipmentPage.value = 1
   fetchEquipmentData()
-})
+} )
 
 /** ================= EDIT HANDLERS ================= **/
 const enterEditMode = () => {
-  editForm.value = { ...JSON.parse(JSON.stringify(props.location)), id: props.location.id }
+  editForm.value = { ...JSON.parse( JSON.stringify( props.location ) ), id : props.location.id }
   editLocation.value = true
 }
 
-const saveEdit = async () => {
+const saveEdit = async() => {
   const valid = await editFormRef.value?.validate?.()
-  if (!valid) return
+  if ( !valid ) return
 
   let showed = false
-  const showTimer = setTimeout(() => {
+  const showTimer = setTimeout( () => {
     saving.value = true
     showed = true
-  }, 150)
+  }, 150 )
 
   const extractUploadedUrls = resp => {
     const list =
       resp?.uploadedFiles ?? resp?.data?.uploadedFiles ?? resp?.data?.data?.uploadedFiles ?? resp?.files ?? []
-    return (Array.isArray(list) ? list : []).map(f => f?.url || f?.fileUrl || f?.location || f?.path).filter(Boolean)
+    return ( Array.isArray( list ) ? list : [] ).map( f => f?.url || f?.fileUrl || f?.location || f?.path ).filter( Boolean )
   }
 
   try {
-    const id = Number(props.location?.id)
-    if (!Number.isFinite(id)) throw new Error('Invalid location id')
+    const id = Number( props.location?.id )
+    if ( !Number.isFinite( id ) ) throw new Error( 'Invalid location id' )
 
-    const originalUrls = (props.location?.image_list ?? [])
-      .map(x => (typeof x === 'string' ? x : x?.url))
-      .filter(Boolean)
-    const removed = Array.isArray(editForm.value?.removed_existing_images) ? editForm.value.removed_existing_images : []
-    const keptExisting = originalUrls.filter(u => !removed.includes(u))
-    const newFiles = Array.isArray(editForm.value?.image_files)
-      ? editForm.value.image_files.filter(f => f instanceof File)
+    const originalUrls = ( props.location?.image_list ?? [] )
+      .map( x => ( typeof x === 'string' ? x : x?.url ) )
+      .filter( Boolean )
+    const removed = Array.isArray( editForm.value?.removed_existing_images ) ? editForm.value.removed_existing_images : []
+    const keptExisting = originalUrls.filter( u => !removed.includes( u ) )
+    const newFiles = Array.isArray( editForm.value?.image_files )
+      ? editForm.value.image_files.filter( f => f instanceof File )
       : []
 
     let uploadedUrls = []
-    if (newFiles.length) {
-      const uploadResp = await uploadMultipleToMinio(newFiles)
-      uploadedUrls = extractUploadedUrls(uploadResp)
+    if ( newFiles.length ) {
+      const uploadResp = await uploadMultipleToMinio( newFiles )
+      uploadedUrls = extractUploadedUrls( uploadResp )
     }
 
-    const finalImageList = Array.from(new Set([...keptExisting, ...uploadedUrls]))
-    const payload = { ...editForm.value, image_list: finalImageList }
+    const finalImageList = Array.from( new Set( [...keptExisting, ...uploadedUrls] ) )
+    const payload = { ...editForm.value, image_list : finalImageList }
     delete payload.removed_existing_images
 
-    await updateLocationById(id, payload)
+    await updateLocationById( id, payload )
 
-    if (removed.length) {
-      Promise.resolve().then(async () => {
+    if ( removed.length ) {
+      Promise.resolve().then( async() => {
         try {
-          await deleteObjectList({ bucketName: 'sv-file-bucket', objectUrls: removed })
+          await deleteObjectList( { bucketName : 'sv-file-bucket', objectUrls : removed } )
         } catch {}
-      })
+      } )
     }
 
-    showSuccess('Location updated')
+    showSuccess( 'Location updated' )
     editLocation.value = false
-    emit('updated', { id })
-  } catch (e) {
+    emit( 'updated', { id } )
+  } catch ( e ) {
     const s = e?.response?.status
-    const m = (e?.response?.data?.message || '').toLowerCase()
-    if (s === 409 || /code.*(exist|in use|already)/.test(m)) {
-      ElMessage.error('Update failed: location code already exists.')
+    const m = ( e?.response?.data?.message || '' ).toLowerCase()
+    if ( s === 409 || /code.*(exist|in use|already)/.test( m ) ) {
+      ElMessage.error( 'Update failed: location code already exists.' )
     } else {
-      ElMessage.error('Update failed')
+      ElMessage.error( 'Update failed' )
     }
-    console.error('Update location failed:', e?.response?.data || e)
+    console.error( 'Update location failed:', e?.response?.data || e )
   } finally {
-    clearTimeout(showTimer)
-    if (showed) saving.value = false
+    clearTimeout( showTimer )
+    if ( showed ) saving.value = false
   }
 }
 </script>

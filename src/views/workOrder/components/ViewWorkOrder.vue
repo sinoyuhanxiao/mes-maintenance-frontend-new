@@ -1,604 +1,250 @@
 <template>
-  <div>
-    <div v-if="!loading" class="el-row card-row">
-      <!-- 基本信息卡片 -->
-      <div class="el-col el-col-24 is-guttered card-container">
-        <el-card class="card-shadow">
-          <div class="el-card__header">
-            <div class="card-header">
-              <span>Work Order Basic Information</span>
-              <span class="workorder-id">#{{ workOrder.id }}</span>
-            </div>
-          </div>
-          <div class="el-card__body">
-            <el-descriptions border :column="2">
-              <el-descriptions-item label="Work Order Name" :width="labelWidth" :span="1">
-                <template #default>
-                  <div style="display: flex; align-items: center">
-                    <el-input v-if="editing" v-model="workOrder.name" ref="nameInputRef" size="default" />
-                    <template v-else>
-                      <span>{{ workOrder.name }}</span>
-                      <el-icon
-                        style="cursor: pointer; margin-left: 8px; color: var(--el-color-primary)"
-                        @click="copyToClipboard(workOrder.name)"
-                      >
-                        <CopyDocument />
-                      </el-icon>
-                    </template>
-                  </div>
-                </template>
-              </el-descriptions-item>
-              <el-descriptions-item label="Work Order Number" :width="labelWidth" :span="1">
-                <template #default>
-                  <div style="display: flex; align-items: center">
-                    <span>{{ workOrder.code }}</span>
-                    <el-icon
-                      style="cursor: pointer; margin-left: 8px; color: var(--el-color-primary)"
-                      @click="copyToClipboard(workOrder.code)"
-                    >
-                      <CopyDocument />
-                    </el-icon>
-                  </div>
-                </template>
-              </el-descriptions-item>
-              <el-descriptions-item label="Halt" :width="labelWidth" :span="2">
-                <template #default>
-                  <el-switch
-                    v-if="editing"
-                    v-model="workOrder.halt_type"
-                    :active-value="1"
-                    :inactive-value="0"
-                    inline-prompt
-                    active-text="Yes"
-                    inactive-text="No"
-                  />
-                  <span v-else>{{ workOrder.halt_type === 1 ? 'Yes' : 'No' }}</span>
-                </template>
-              </el-descriptions-item>
-              <el-descriptions-item label="Description" :width="labelWidth" :span="2">
-                <template #default>
-                  <el-input v-if="editing" v-model="workOrder.description" type="textarea" />
-                  <span v-else>{{ workOrder.description }}</span>
-                </template>
-              </el-descriptions-item>
-            </el-descriptions>
-          </div>
-        </el-card>
-      </div>
-
-      <!-- 资产信息卡片 -->
-      <div class="el-col el-col-24 is-guttered card-container">
-        <el-card class="card-shadow">
-          <div class="el-card__header">
-            <div class="card-header"><span>Equipment & Asset Information</span></div>
-          </div>
-          <div class="el-card__body">
-            <el-descriptions border :column="2">
-              <el-descriptions-item label="Production Line" :width="labelWidth">
-                <template #default>
-                  <el-select v-if="editing" v-model="workOrder.production_line.id" placeholder="Production Line">
-                    <el-option
-                      v-for="item in commonDataStore.productionLines"
-                      :key="item.id"
-                      :label="item.name"
-                      :value="item.id"
-                    />
-                  </el-select>
-                  <span v-else>{{ workOrder.production_line?.name }}</span>
-                </template>
-              </el-descriptions-item>
-              <el-descriptions-item label="Equipment Group" :width="labelWidth">
-                <template #default>
-                  <el-select v-if="editing" v-model="workOrder.equipment_group.id" placeholder="Equipment Group">
-                    <el-option v-for="item in equipmentGroups" :key="item.id" :label="item.name" :value="item.id" />
-                  </el-select>
-                  <span v-else>{{ workOrder.equipment_group?.name }}</span>
-                </template>
-              </el-descriptions-item>
-              <el-descriptions-item label="Equipment" :width="labelWidth">
-                <template #default>
-                  <el-select v-if="editing" v-model="workOrder.equipment.id" placeholder="Equipment">
-                    <el-option v-for="item in equipments" :key="item.id" :label="item.name" :value="item.id" />
-                  </el-select>
-                  <span v-else>{{ workOrder.equipment?.name }}</span>
-                </template>
-              </el-descriptions-item>
-              <el-descriptions-item label="Component" :width="labelWidth">
-                <template #default>
-                  <el-select v-if="editing" v-model="workOrder.component.id" placeholder="Component">
-                    <el-option v-for="item in components" :key="item.id" :label="item.name" :value="item.id" />
-                  </el-select>
-                  <span v-else>{{ workOrder.component?.name }}</span>
-                </template>
-              </el-descriptions-item>
-            </el-descriptions>
-          </div>
-        </el-card>
-      </div>
-
-      <!-- 分类信息卡片 -->
-      <div class="el-col el-col-24 is-guttered card-container">
-        <el-card class="card-shadow">
-          <div class="el-card__header">
-            <div class="card-header"><span>Classification Information</span></div>
-          </div>
-          <div class="el-card__body">
-            <el-descriptions border :column="2">
-              <el-descriptions-item label="Priority" :width="labelWidth">
-                <template #default>
-                  <el-select v-if="editing" v-model="workOrder.priority.id" placeholder="Priority" style="width: 100%">
-                    <el-option
-                      v-for="item in commonDataStore.priorities"
-                      :key="item.id"
-                      :label="item.name"
-                      :value="item.id"
-                    />
-                  </el-select>
-                  <el-tag v-else type="danger">{{ workOrder.priority?.name }}</el-tag>
-                </template>
-              </el-descriptions-item>
-
-              <el-descriptions-item label="Work Order Category" :width="labelWidth">
-                <template #default>
-                  <el-select
-                    v-if="editing"
-                    v-model="workOrder.category.id"
-                    placeholder="Work Order Category"
-                    style="width: 100%"
-                  >
-                    <el-option
-                      v-for="item in commonDataStore.categories"
-                      :key="item.id"
-                      :label="item.name"
-                      :value="item.id"
-                    />
-                  </el-select>
-                  <el-tag v-else>{{ workOrder.category?.name }}</el-tag>
-                </template>
-              </el-descriptions-item>
-
-              <el-descriptions-item label="Work Type" :width="labelWidth">
-                <template #default>
-                  <el-select
-                    v-if="editing"
-                    v-model="workOrder.work_type.id"
-                    placeholder="Work Type"
-                    style="width: 100%"
-                  >
-                    <el-option
-                      v-for="item in commonDataStore.workTypes"
-                      :key="item.id"
-                      :label="item.name"
-                      :value="item.id"
-                    />
-                  </el-select>
-                  <el-tag v-else type="success">{{ workOrder.work_type?.name }}</el-tag>
-                </template>
-              </el-descriptions-item>
-            </el-descriptions>
-          </div>
-        </el-card>
-      </div>
-
-      <!-- 附件信息Common卡片 -->
-      <div class="el-col el-col-24 is-guttered">
-        <ImagesAndFiles
-          :mode="editing ? 'edit' : 'view'"
-          :imageListUrl="workOrder.image_list"
-          :fileListUrl="workOrder.file_list"
-          v-model:image_list_multipart_added="imageListMultipartAdded"
-          v-model:file_list_multipart_added="fileListMultipartAdded"
-          v-model:image_list_url_deleted="imageListUrlDeleted"
-          v-model:file_list_url_deleted="fileListUrlDeleted"
-        />
-      </div>
-
-      <!-- 任务进度卡片11 -->
-      <div class="el-col el-col-24 is-guttered card-container">
-        <el-card class="card-shadow">
-          <div class="el-card__header">
-            <div class="card-header"><span>Task Progress</span></div>
-          </div>
-          <div class="el-card__body progress-body">
-            <div class="progress-left">
-              <el-progress type="circle" :percentage="taskProgress" :stroke-width="8" status="success" />
-              <div class="progress-text">
-                Completed {{ workOrder.work_order_progress.completed_task_amount || 0 }} /
-                {{ workOrder.work_order_progress.total_task_amount || 0 }}
-              </div>
-            </div>
-            <el-descriptions border :column="1" class="progress-descriptions">
-              <el-descriptions-item label="Start Time">
-                {{ convertToLocalTime(workOrder.start_date) }}
-              </el-descriptions-item>
-              <el-descriptions-item label="End Time">
-                {{ convertToLocalTime(workOrder.end_date) }}
-              </el-descriptions-item>
-              <el-descriptions-item label="Status">In Progress</el-descriptions-item>
-            </el-descriptions>
-          </div>
-        </el-card>
-      </div>
-
-      <!-- 评论卡片 -->
-      <div class="el-col el-col-24 is-guttered card-container">
-        <el-card class="card-shadow">
-          <div class="el-card__header">
-            <div class="card-header"><span>Comments</span></div>
-          </div>
-          <div class="el-card__body">
-            <el-input
-              v-model="newComment"
-              placeholder="Write a comment..."
-              type="textarea"
-              :autosize="{ minRows: 3, maxRows: 5 }"
-              style="margin-bottom: 10px"
-            />
-            <div style="text-align: right">
-              <el-button type="primary" size="default" @click="addComment">Send</el-button>
-            </div>
-            <div v-for="(comment, index) in comments" :key="index" style="margin-top: 15px">
-              <div style="font-weight: bold">Erik Yu <span style="color: #999; font-size: 12px">2:15 PM</span></div>
-              <div>{{ comment }}</div>
-            </div>
-          </div>
-        </el-card>
-      </div>
+  <div class="view-work-order-wrapper">
+    <!-- Loading State -->
+    <div v-if="loading" class="loading-container">
+      <el-skeleton :rows="5" animated />
+      <div class="loading-text">Loading work order details...</div>
     </div>
-    <div v-else>
-      <el-skeleton :rows="8" animated />
-      <!-- optional skeleton UI -->
-    </div>
-    <el-tooltip :content="editing ? 'Save Changes' : 'Edit Work Order'" placement="top">
-      <el-button
-        class="floating-edit-button"
-        :type="editing ? 'success' : 'primary'"
-        circle
-        size="large"
-        :icon="editing ? 'Check' : 'Edit'"
-        @click="editing = !editing"
-      />
-    </el-tooltip>
 
-    <transition name="slide-fade">
-      <el-tooltip v-if="editing" content="Delete Work Order" placement="bottom">
-        <el-button class="floating-delete-button" type="danger" circle size="large" icon="Delete" />
-      </el-tooltip>
-    </transition>
+    <!-- Work Order Detail -->
+    <WorkOrderDetail
+      v-else-if="workOrder"
+      :work-order="workOrder"
+      :disable-actions="true"
+      @edit="handleEdit"
+      @share="handleShare"
+      @export="handleExport"
+      @add-parts="handleAddParts"
+      @add-time="handleAddTime"
+      @add-costs="handleAddCosts"
+      @view-procedure="handleViewProcedure"
+      @add-comment="handleAddComment"
+      @start-work-order="handleStartWorkOrder"
+      @refresh="handleRefresh"
+      @recreate="handleRecreate"
+      @delete="handleDelete"
+    />
+
+    <!-- Error State -->
+    <div v-else class="error-container">
+      <el-empty description="Work order not found" :image-size="120" />
+      <el-button type="primary" @click="goBack">Go Back</el-button>
+    </div>
+
+    <!-- PDF Preview Modal -->
+    <PdfPreviewModal v-model:visible="showPdfPreview" :work-order="pdfPreviewData" @close="handlePdfPreviewClose" />
   </div>
 </template>
 
 <script setup>
-import { onMounted, ref, computed, watch, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
-import { getWorkOrderById } from '@/api/work-order'
-import { convertToLocalTime } from '@/utils/datetime'
-import { updateTabTitle } from '@/utils/tabs'
-import { useCommonDataStore } from '@/store/modules/commonData'
-import { getEquipmentGroups, getEquipments, getEquipmentComponents } from '@/api/equipment'
-import ImagesAndFiles from '@/views/workOrder/components/ImagesAndFiles.vue'
-import { CopyDocument } from '@element-plus/icons-vue'
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { getWorkOrderById } from '@/api/work-order'
+import WorkOrderDetail from '@/components/WorkOrder/TodoView/WorkOrderDetail.vue'
+import PdfPreviewModal from '@/components/WorkOrder/PdfPreview/PdfPreviewModal.vue'
+import { useTagsViewStore } from '@/store'
 
+// Router
 const route = useRoute()
-const workOrder = ref({
-  estimated_minutes: 0,
-  priority: {},
-  category: {},
-  work_type: {},
-  production_line: {},
-  equipment_group: {},
-  equipment: {},
-  component: {},
-  image_list: [],
-  file_list: [],
-})
-const originalWorkOrder = ref({})
-const updatedWorkOrder = ref({})
-const loading = ref(true)
-const labelWidth = ref('100')
-const editing = ref(false)
-const nameInputRef = ref(null)
-const commonDataStore = useCommonDataStore()
-const taskProgress = computed(() => {
-  const progress = workOrder.value.work_order_progress
-  if (!progress || !progress.total_task_amount) return 0
-  return Math.round((progress.completed_task_amount / progress.total_task_amount) * 100)
-})
-const equipmentGroups = ref([])
-const equipments = ref([])
-const components = ref([])
-const imageListMultipartAdded = ref([])
-const fileListMultipartAdded = ref([])
-const imageListUrlDeleted = ref([])
-const fileListUrlDeleted = ref([])
-const comments = ref(['Sample comment 1', 'Sample comment 2'])
-const newComment = ref('')
-const addComment = () => {
-  if (newComment.value.trim()) {
-    comments.value.push(newComment.value.trim())
-    newComment.value = ''
-  }
-}
-const copyToClipboard = text => {
-  navigator.clipboard.writeText(text).then(() => {
-    ElMessage.success('Copied to clipboard')
-  })
-}
+const router = useRouter()
+const tagsViewStore = useTagsViewStore()
 
-onMounted(async () => {
-  const id = route.params.id
-  const res = await getWorkOrderById(id)
-  const data = res.data
-  await commonDataStore.fetchPriorities()
-  await commonDataStore.fetchWorkTypes()
-  await commonDataStore.fetchCategories()
+// State
+const workOrder = ref( null )
+const loading = ref( true )
+const showPdfPreview = ref( false )
+const pdfPreviewData = ref( null )
 
-  originalWorkOrder.value = JSON.parse(JSON.stringify(workOrder.value))
+// Methods
+const loadWorkOrder = async() => {
+  try {
+    loading.value = true
+    const workOrderId = route.params.id
 
-  workOrder.value = {
-    id: data.id,
-    code: data.code,
-    name: data.name,
-    description: data.description,
-    halt_type: data.halt_type,
-    estimated_minutes: data.estimated_minutes || 0,
-    priority: data.priority || {},
-    category: data.category || {},
-    work_type: data.work_type || {},
-    production_line: data.production_line || {},
-    equipment_group: data.equipment_group || {},
-    equipment: data.equipment || {},
-    component: data.component || {},
-    image_list: data.image_list || [],
-    file_list: data.file_list || [],
-    start_date: data.start_date,
-    end_date: data.end_date,
-    due_date: data.due_date,
-    state_id: data.state_id,
-    recurrence_type: data.recurrence_type || {},
-    work_order_progress: data.work_order_progress || {},
-    created_by: data.created_by,
-    created_at: data.created_at,
-    approved_by_id: data.approved_by_id,
-  }
+    if ( !workOrderId ) {
+      ElMessage.error( 'Work order ID is missing' )
+      loading.value = false
+      return
+    }
 
-  loading.value = false
-
-  const shortName = workOrder.value.name.length > 5 ? `${workOrder.value.name.slice(0, 5)}...` : workOrder.value.name
-  updateTabTitle(route, `Work Order #${workOrder.value.id} - ${shortName}`)
-})
-
-function calculateUpdatedWorkOrder() {
-  const updated = {}
-
-  for (const key in workOrder.value) {
-    if (typeof workOrder.value[key] === 'object' && workOrder.value[key] !== null) {
-      if ('id' in workOrder.value[key]) {
-        const originalId = originalWorkOrder.value[key]?.id
-        const currentId = workOrder.value[key]?.id
-        if (originalId !== currentId) {
-          updated[key + '_id'] = currentId
-        }
-      } else if (Array.isArray(workOrder.value[key])) {
-      } else {
-      }
+    const response = await getWorkOrderById( workOrderId )
+    if ( response && response.data ) {
+      workOrder.value = response.data
+      // Update tags view title with work order ID
+      tagsViewStore.UPDATE_VISITED_VIEW_TITLE( route.path, `Work Order - ${workOrderId}` )
     } else {
-      if (workOrder.value[key] !== originalWorkOrder.value[key]) {
-        updated[key] = workOrder.value[key]
-      }
+      ElMessage.error( 'Failed to load work order details' )
     }
+  } catch ( error ) {
+    console.error( 'Failed to fetch work order:', error )
+    ElMessage.error( 'Failed to load work order details' )
+  } finally {
+    loading.value = false
   }
-
-  updated.updated_by = 37
-  updated.updated_at = new Date().toISOString()
-  delete updated.created_by
-  delete updated.created_at
-
-  updatedWorkOrder.value = updated
 }
 
-function highlightAllInputs() {
-  nextTick(() => {
-    const inputWrappers = document.querySelectorAll('.el-input__wrapper, .el-textarea__inner, .el-select__wrapper')
-    inputWrappers.forEach(wrapper => {
-      wrapper.classList.add('highlight-border')
-    })
-    setTimeout(() => {
-      inputWrappers.forEach(wrapper => {
-        wrapper.classList.remove('highlight-border')
-      })
-    }, 1500)
-  })
+const handleEdit = async workOrderToEdit => {
+  // Navigate to work order management page with edit panel
+  router.push( {
+    path : '/work-order/table',
+    query : {
+      panel : 'edit',
+      workOrderId : workOrderToEdit.id
+    }
+  } )
 }
 
-watch(editing, newVal => {
-  if (newVal) {
-    highlightAllInputs()
+const handleShare = workOrderToShare => {
+  ElMessage.success( 'Share functionality coming soon' )
+}
+
+const handleExport = async workOrderToExport => {
+  try {
+    // Show PDF preview
+    pdfPreviewData.value = workOrderToExport
+    showPdfPreview.value = true
+    ElMessage.success( 'PDF preview opened' )
+  } catch ( error ) {
+    console.error( 'Export error:', error )
+    ElMessage.error( 'Failed to open PDF preview. Please try again.' )
   }
-})
+}
 
-watch(workOrder, newVal => {}, { deep: true })
+const handlePdfPreviewClose = () => {
+  showPdfPreview.value = false
+  pdfPreviewData.value = null
+}
 
-watch(
-  () => workOrder.value.production_line?.id,
-  async val => {
-    if (val) {
-      const { data } = await getEquipmentGroups(val)
-      equipmentGroups.value = data.data
+const handleAddParts = () => {
+  ElMessage.info( 'Add parts functionality coming soon' )
+}
+
+const handleAddTime = () => {
+  ElMessage.info( 'Add time functionality coming soon' )
+}
+
+const handleAddCosts = () => {
+  ElMessage.info( 'Add costs functionality coming soon' )
+}
+
+const handleViewProcedure = () => {
+  ElMessage.info( 'View procedure functionality coming soon' )
+}
+
+const handleAddComment = () => {
+  ElMessage.success( 'Comment added' )
+}
+
+const handleStartWorkOrder = async workOrderToStart => {
+  // Navigate to work order management page with execution panel
+  router.push( {
+    path : '/work-order/table',
+    query : {
+      panel : 'execution',
+      workOrderId : workOrderToStart.id
     }
-  }
-)
+  } )
+}
 
-watch(
-  () => workOrder.value.equipment_group?.id,
-  async val => {
-    if (val) {
-      const { data } = await getEquipments(val)
-      equipments.value = data.data
+const handleRefresh = async() => {
+  await loadWorkOrder()
+  ElMessage.success( 'Work order refreshed' )
+}
+
+const handleRecreate = async workOrderToRecreate => {
+  // Navigate to work order management page with create panel for recreation
+  router.push( {
+    path : '/work-order/table',
+    query : {
+      panel : 'create',
+      workOrderId : workOrderToRecreate.id,
+      recreate : 'true'
     }
-  }
-)
+  } )
+}
 
-watch(
-  () => workOrder.value.equipment?.id,
-  async val => {
-    if (val) {
-      const { data } = await getEquipmentComponents(val)
-      components.value = data.data
-    }
-  }
-)
+const handleDelete = async( { workOrder : workOrderToDelete, type } ) => {
+  // After delete, go back to the work order list
+  ElMessage.success( `Work order deleted (${type})` )
+  router.push( '/work-order/table' )
+}
 
-watch(editing, newVal => {
-  if (!newVal) {
-    calculateUpdatedWorkOrder()
-  }
-})
+const goBack = () => {
+  router.push( '/work-order/table' )
+}
 
-watch(
-  [
-    imageListMultipartAdded,
-    fileListMultipartAdded,
-    imageListUrlDeleted,
-    fileListUrlDeleted,
-    () => workOrder.value.image_list,
-    () => workOrder.value.file_list,
-    editing,
-  ],
-  ([newImagesAdded, newFilesAdded, deletedImages, deletedFiles, imageListUrl, fileListUrl, mode]) => {},
-  { deep: true }
-)
+// Lifecycle
+onMounted( () => {
+  loadWorkOrder()
+} )
 
-watch(
-  () => workOrder.value.production_line?.id,
-  async val => {
-    if (val) {
-      const { data } = await getEquipmentGroups(val)
-      equipmentGroups.value = data.data
-    }
-    workOrder.value.equipment_group.id = null
-    workOrder.value.equipment.id = null
-    workOrder.value.component.id = null
-  }
-)
-
-watch(
-  () => workOrder.value.equipment_group?.id,
-  async val => {
-    if (val) {
-      const { data } = await getEquipments(val)
-      equipments.value = data.data
-    }
-    workOrder.value.equipment.id = null
-    workOrder.value.component.id = null
-  }
-)
-
-watch(
-  () => workOrder.value.equipment?.id,
-  async val => {
-    if (val) {
-      const { data } = await getEquipmentComponents(val)
-      components.value = data.data
-    }
-    workOrder.value.component.id = null
-  }
-)
-
-defineExpose({
-  workOrderExpose: {
-    id: workOrder.value.id,
-    name: workOrder.value.name,
-  },
-})
+defineOptions( {
+  name : 'ViewWorkOrder'
+} )
 </script>
 
-<style scoped>
-.card-container {
-  padding: 7.5px 140px;
-}
-.card-shadow {
-  box-shadow: var(--el-box-shadow-light);
-}
-.card-header {
-  font-weight: bold;
-}
-.image-list {
-  display: flex;
-  flex-wrap: wrap;
-}
-.floating-edit-button {
-  position: absolute;
-  top: 35px;
-  right: 40px;
-  z-index: 1000;
-  transform: scale(1.2);
-}
-.floating-edit-button :deep(.el-icon) {
-  font-size: 20px;
-  font-weight: bold;
-}
-.floating-edit-button {
-  position: absolute;
-  top: 35px;
-  right: 50px;
-  z-index: 1000;
-  transform: scale(1.2);
-}
-.floating-edit-button :deep(.el-icon) {
-  font-size: 20px;
-  font-weight: bold;
-}
-
-.floating-delete-button {
-  position: absolute;
-  top: 95px; /* 10px below the edit button */
-  right: 50px;
-  z-index: 999;
-  transform: scale(1.2);
-}
-
-/* Slide down animation */
-.slide-fade-enter-active,
-.slide-fade-leave-active {
-  transition: all 0.4s ease;
-}
-.slide-fade-enter-from,
-.slide-fade-leave-to {
-  opacity: 0;
-  transform: translateY(-10px);
-}
-.workorder-id {
-  color: #999;
-  margin-left: 10px;
-}
-.progress-body {
-  display: flex;
-  align-items: center;
-  justify-content: space-around;
-}
-
-.progress-left {
+<style scoped lang="scss">
+.view-work-order-wrapper {
+  height: 100%;
+  background: var(--el-bg-color);
+  border-radius: 8px;
+  border: 1px solid var(--el-border-color-light);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  margin-right: 30px; /* spacing between progress and descriptions */
-  flex-shrink: 0;
+
+  .loading-container {
+    padding: 24px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    .loading-text {
+      text-align: center;
+      color: var(--el-text-color-secondary);
+      font-size: 14px;
+      margin-top: 16px;
+    }
+  }
+
+  .error-container {
+    padding: 24px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
 }
 
-.progress-text {
-  margin-top: 10px;
-  color: #666;
-}
+// Override WorkOrderDetail styles to remove duplicate top margin
+:deep(.work-order-detail) {
+  margin: 24px 12px;
+  border-radius: 0 !important;
+  height: 100%;
+  overflow-y: auto;
 
-.progress-descriptions {
-  flex-grow: 1; /* only take remaining space */
-  max-width: 300px; /* limit descriptions width */
-}
+  // Custom scrollbar
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
 
-:deep(.el-input__wrapper.highlight-border),
-:deep(.el-textarea__inner.highlight-border) {
-  box-shadow: 0 0 0 2px var(--el-color-primary) !important;
+  &::-webkit-scrollbar-track {
+    background: var(--el-fill-color-lighter);
+    border-radius: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--el-fill-color-dark);
+    border-radius: 4px;
+
+    &:hover {
+      background: var(--el-fill-color-darker);
+    }
+  }
 }
 </style>

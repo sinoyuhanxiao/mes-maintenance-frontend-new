@@ -14,14 +14,14 @@
 import { computed } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 
-const props = defineProps({
-  activeTab: {
-    type: String,
-    required: true,
-  },
-})
+const props = defineProps( {
+  activeTab : {
+    type : String,
+    required : true
+  }
+} )
 
-const createButtonText = computed(() => (props.activeTab === 'vendors' ? 'Vendor' : 'Location'))
+const createButtonText = computed( () => ( props.activeTab === 'vendors' ? 'Vendor' : 'Location' ) )
 </script>
 
 <style scoped>

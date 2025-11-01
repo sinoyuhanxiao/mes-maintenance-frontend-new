@@ -76,110 +76,110 @@ import { Delete, ArrowUp, ArrowDown } from '@element-plus/icons-vue'
 import { searchRoles } from '@/api/rbac'
 import { searchUsers } from '@/api/user'
 
-const props = defineProps({
-  stepNumber: {
-    type: Number,
-    default: 1,
+const props = defineProps( {
+  stepNumber : {
+    type : Number,
+    default : 1
   },
-  stepData: {
-    type: Object,
-    default: () => ({
-      approverType: '',
-      approverId: null,
-      approverName: '',
-      requiresApproval: false,
-      approvalAmount: '',
-    }),
+  stepData : {
+    type : Object,
+    default : () => ( {
+      approverType : '',
+      approverId : null,
+      approverName : '',
+      requiresApproval : false,
+      approvalAmount : ''
+    } )
   },
-  isFirst: {
-    type: Boolean,
-    default: false,
+  isFirst : {
+    type : Boolean,
+    default : false
   },
-  isLast: {
-    type: Boolean,
-    default: false,
-  },
-})
+  isLast : {
+    type : Boolean,
+    default : false
+  }
+} )
 
-const emit = defineEmits(['update', 'remove', 'move-up', 'move-down'])
+const emit = defineEmits( ['update', 'remove', 'move-up', 'move-down'] )
 
 // Local copy of step data for v-model binding
-const localStepData = ref({
-  approverType: props.stepData.approverType || '',
-  approverId: props.stepData.approverId || null,
-  approverName: props.stepData.approverName || '',
-  requiresApproval: props.stepData.requiresApproval || false,
-  approvalAmount: props.stepData.approvalAmount || '',
-})
+const localStepData = ref( {
+  approverType : props.stepData.approverType || '',
+  approverId : props.stepData.approverId || null,
+  approverName : props.stepData.approverName || '',
+  requiresApproval : props.stepData.requiresApproval || false,
+  approvalAmount : props.stepData.approvalAmount || ''
+} )
 
 // Roles data from API
-const roles = ref([])
+const roles = ref( [] )
 
 // Individuals data from API
-const individuals = ref([])
+const individuals = ref( [] )
 
 // Fetch roles from API
-const fetchRoles = async () => {
+const fetchRoles = async() => {
   try {
-    const response = await searchRoles({
-      module: 'Maintenance',
-      status_ids: [1],
-    })
+    const response = await searchRoles( {
+      module : 'Maintenance',
+      status_ids : [1]
+    } )
 
     // Extract roles from response
     const rolesData = response.data?.data?.content || response.data?.content || []
-    roles.value = rolesData.map(role => ({
-      id: role.id,
-      name: role.name || role.roleName || 'Unknown Role',
-    }))
-  } catch (error) {
-    console.error('Failed to fetch roles:', error)
+    roles.value = rolesData.map( role => ( {
+      id : role.id,
+      name : role.name || role.roleName || 'Unknown Role'
+    } ) )
+  } catch ( error ) {
+    console.error( 'Failed to fetch roles:', error )
     roles.value = []
   }
 }
 
 // Fetch users from API
-const fetchUsers = async () => {
+const fetchUsers = async() => {
   try {
-    const response = await searchUsers({
-      department_ids: [1],
-    })
+    const response = await searchUsers( {
+      department_ids : [1]
+    } )
 
     // Extract users from response
     const usersData = response.data?.data?.content || response.data?.content || []
-    individuals.value = usersData.map(user => ({
-      id: user.id,
-      name: `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'Unknown User',
-    }))
-  } catch (error) {
-    console.error('Failed to fetch users:', error)
+    individuals.value = usersData.map( user => ( {
+      id : user.id,
+      name : `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'Unknown User'
+    } ) )
+  } catch ( error ) {
+    console.error( 'Failed to fetch users:', error )
     individuals.value = []
   }
 }
 
 // Computed property for approver options based on type
-const approverOptions = computed(() => {
-  if (localStepData.value.approverType === 'role') {
+const approverOptions = computed( () => {
+  if ( localStepData.value.approverType === 'role' ) {
     return roles.value
-  } else if (localStepData.value.approverType === 'individual') {
+  } else if ( localStepData.value.approverType === 'individual' ) {
     return individuals.value
   }
   return []
-})
+} )
 
 // Watch for prop changes (in case parent updates the data)
 watch(
   () => props.stepData,
   newVal => {
     localStepData.value = {
-      approverType: newVal.approverType || '',
-      approverId: newVal.approverId || null,
-      approverName: newVal.approverName || '',
-      requiresApproval: newVal.requiresApproval || false,
-      approvalAmount: newVal.approvalAmount || '',
+      approverType : newVal.approverType || '',
+      approverId : newVal.approverId || null,
+      approverName : newVal.approverName || '',
+      requiresApproval : newVal.requiresApproval || false,
+      approvalAmount : newVal.approvalAmount || ''
     }
   },
-  { deep: true }
+  { deep : true }
 )
 
 // Handle approver type change
@@ -193,8 +193,8 @@ const handleApproverTypeChange = () => {
 // Handle approver selection change
 const handleApproverChange = () => {
   // Find the selected approver name
-  const selectedApprover = approverOptions.value.find(option => option.id === localStepData.value.approverId)
-  if (selectedApprover) {
+  const selectedApprover = approverOptions.value.find( option => option.id === localStepData.value.approverId )
+  if ( selectedApprover ) {
     localStepData.value.approverName = selectedApprover.name
   }
   handleUpdate()
@@ -202,29 +202,29 @@ const handleApproverChange = () => {
 
 // Emit update to parent
 const handleUpdate = () => {
-  emit('update', localStepData.value)
+  emit( 'update', localStepData.value )
 }
 
 // Emit remove event
 const handleRemove = () => {
-  emit('remove')
+  emit( 'remove' )
 }
 
 // Emit move up event
 const handleMoveUp = () => {
-  emit('move-up')
+  emit( 'move-up' )
 }
 
 // Emit move down event
 const handleMoveDown = () => {
-  emit('move-down')
+  emit( 'move-down' )
 }
 
 // Fetch roles and users on component mount
-onMounted(() => {
+onMounted( () => {
   fetchRoles()
   fetchUsers()
-})
+} )
 </script>
 
 <style scoped>

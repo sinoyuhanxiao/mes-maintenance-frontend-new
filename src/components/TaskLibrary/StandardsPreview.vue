@@ -96,22 +96,22 @@ import { ref, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getStandard } from '@/api/task-library'
 
-const props = defineProps({
-  standardId: {
-    type: [String, Number],
-    required: true,
-  },
-})
+const props = defineProps( {
+  standardId : {
+    type : [String, Number],
+    required : true
+  }
+} )
 
 // Local state
-const loading = ref(false)
-const error = ref(null)
-const standard = ref(null)
-const activeTab = ref('general')
+const loading = ref( false )
+const error = ref( null )
+const standard = ref( null )
+const activeTab = ref( 'general' )
 
 // Load standard data
-const fetchStandard = async () => {
-  if (!props.standardId) {
+const fetchStandard = async() => {
+  if ( !props.standardId ) {
     error.value = 'No standard ID provided'
     return
   }
@@ -120,19 +120,19 @@ const fetchStandard = async () => {
   error.value = null
 
   try {
-    console.log(`Loading standard: ${props.standardId}`)
-    const response = await getStandard(props.standardId)
+    console.log( `Loading standard: ${props.standardId}` )
+    const response = await getStandard( props.standardId )
 
-    if (response && response.data) {
+    if ( response && response.data ) {
       standard.value = response.data?.data || response.data
-      console.log('Standard loaded:', standard.value)
+      console.log( 'Standard loaded:', standard.value )
     } else {
-      throw new Error('No standard data received')
+      throw new Error( 'No standard data received' )
     }
-  } catch (err) {
-    console.error('Failed to load standard for preview:', err)
+  } catch ( err ) {
+    console.error( 'Failed to load standard for preview:', err )
     error.value = err.response?.data?.message || err.message || 'Failed to load standard details'
-    ElMessage.error('Failed to load standard details')
+    ElMessage.error( 'Failed to load standard details' )
   } finally {
     loading.value = false
   }
@@ -142,22 +142,22 @@ const fetchStandard = async () => {
 watch(
   () => props.standardId,
   newId => {
-    if (newId) {
+    if ( newId ) {
       fetchStandard()
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
 
-onMounted(() => {
-  if (props.standardId) {
+onMounted( () => {
+  if ( props.standardId ) {
     fetchStandard()
   }
-})
+} )
 
-defineOptions({
-  name: 'StandardsPreview',
-})
+defineOptions( {
+  name : 'StandardsPreview'
+} )
 </script>
 
 <style scoped>

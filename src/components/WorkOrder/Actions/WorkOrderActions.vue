@@ -27,49 +27,49 @@ import { useI18n } from 'vue-i18n'
 import { useErrorHandler } from '@/composables/useErrorHandler'
 
 // Props
-const props = defineProps({
-  row: {
-    type: Object,
-    required: true,
+const props = defineProps( {
+  row : {
+    type : Object,
+    required : true
   },
-  index: {
-    type: Number,
-    required: true,
-  },
-})
+  index : {
+    type : Number,
+    required : true
+  }
+} )
 
 // Emits
-const emit = defineEmits(['view', 'edit', 'delete'])
+const emit = defineEmits( ['view', 'edit', 'delete'] )
 
 const { t } = useI18n()
 const { confirmAction } = useErrorHandler()
 
 // State
-const deleteLoading = ref(false)
+const deleteLoading = ref( false )
 
 // Methods
-const handleDelete = async () => {
-  const confirmed = await confirmAction({
-    title: t('common.confirm'),
-    message: t('common.deleteConfirmMessage', { name: props.row.name }),
-    confirmButtonText: t('workOrder.actions.delete'),
-    cancelButtonText: t('workOrder.actions.cancel'),
-    type: 'warning',
-  })
+const handleDelete = async() => {
+  const confirmed = await confirmAction( {
+    title : t( 'common.confirm' ),
+    message : t( 'common.deleteConfirmMessage', { name : props.row.name } ),
+    confirmButtonText : t( 'workOrder.actions.delete' ),
+    cancelButtonText : t( 'workOrder.actions.cancel' ),
+    type : 'warning'
+  } )
 
-  if (confirmed) {
+  if ( confirmed ) {
     deleteLoading.value = true
     try {
-      emit('delete')
+      emit( 'delete' )
     } finally {
       deleteLoading.value = false
     }
   }
 }
 
-defineOptions({
-  name: 'WorkOrderActions',
-})
+defineOptions( {
+  name : 'WorkOrderActions'
+} )
 </script>
 
 <style scoped lang="scss">

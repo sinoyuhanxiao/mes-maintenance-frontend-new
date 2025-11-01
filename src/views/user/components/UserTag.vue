@@ -77,35 +77,35 @@ import { useRouter } from 'vue-router'
 
 const { t } = useI18n()
 const router = useRouter()
-const props = defineProps({
-  user: {
-    type: Object,
-    default: null,
-  },
-})
+const props = defineProps( {
+  user : {
+    type : Object,
+    default : null
+  }
+} )
 
-const fullName = computed(() =>
-  props.user ? `${props.user.first_name} ${props.user.last_name}` : t('user.unknownUser')
+const fullName = computed( () =>
+  props.user ? `${props.user.first_name} ${props.user.last_name}` : t( 'user.unknownUser' )
 )
 
-const avatarUrl = computed(() => {
-  if (!props.user) return ''
-  if (props.user.image) {
+const avatarUrl = computed( () => {
+  if ( !props.user ) return ''
+  if ( props.user.image ) {
     return props.user.image
   }
   return (
     'https://api.dicebear.com/7.x/initials/svg?seed=' +
-    encodeURIComponent(`${props.user.first_name || ''} ${props.user.last_name || ''}`)
+    encodeURIComponent( `${props.user.first_name || ''} ${props.user.last_name || ''}` )
   )
-})
+} )
 
 // function getDepartmentById( id ) {
 //   return props.departmentOptions.find( dep => dep.id === id ) || null
 // }
 
 function goToDetail() {
-  if (props.user?.id) {
-    router.push({ name: 'UserDetail', params: { id: props.user.id } })
+  if ( props.user?.id ) {
+    router.push( { name : 'UserDetail', params : { id : props.user.id }} )
   }
 }
 </script>

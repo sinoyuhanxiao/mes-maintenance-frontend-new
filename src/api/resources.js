@@ -9,19 +9,19 @@ import http from '@/utils/request'
  * @param {object} search - Search filter
  * @returns {Promise} API response with the list of all spare parts.
  */
-export const searchSpareParts = (page = 1, size = 10, sortField = 'name', direction = 'ASC', search = {}) => {
+export const searchSpareParts = ( page = 1, size = 10, sortField = 'name', direction = 'ASC', search = {} ) => {
   console.log(
-    http.request({
-      method: 'post',
-      url: `/resource/spare-parts/search?page=${page}&size=${size}&sortField=${sortField}&direction=${direction}`,
-      data: search,
-    })
+    http.request( {
+      method : 'post',
+      url : `/resource/spare-parts/search?page=${page}&size=${size}&sortField=${sortField}&direction=${direction}`,
+      data : search
+    } )
   )
-  return http.request({
-    method: 'post',
-    url: `/resource/spare-parts/search?page=${page}&size=${size}&sortField=${sortField}&direction=${direction}`,
-    data: search,
-  })
+  return http.request( {
+    method : 'post',
+    url : `/resource/spare-parts/search?page=${page}&size=${size}&sortField=${sortField}&direction=${direction}`,
+    data : search
+  } )
 }
 
 /**
@@ -30,23 +30,23 @@ export const searchSpareParts = (page = 1, size = 10, sortField = 'name', direct
  */
 export const getAllSparePartClasses = () => {
   console.log(
-    http.request({
-      method: 'get',
-      url: '/resource/spare-part-class',
-    })
+    http.request( {
+      method : 'get',
+      url : '/resource/spare-part-class'
+    } )
   )
-  return http.request({
-    method: 'get',
-    url: '/resource/spare-part-class',
-  })
+  return http.request( {
+    method : 'get',
+    url : '/resource/spare-part-class'
+  } )
 }
 
 // Fetch one spare part by ID (returns axios response)
 export const getSparePartById = id => {
-  return http.request({
-    method: 'get',
-    url: `/resource/spare-part/${id}`,
-  })
+  return http.request( {
+    method : 'get',
+    url : `/resource/spare-part/${id}`
+  } )
 }
 
 /**
@@ -64,11 +64,11 @@ export const getSparePartById = id => {
  * @returns {Promise} API response with newly created spare part
  */
 export const createSparePart = data => {
-  return http.request({
-    method: 'post',
-    url: '/resource/spare-part',
-    data,
-  })
+  return http.request( {
+    method : 'post',
+    url : '/resource/spare-part',
+    data
+  } )
 }
 
 /**
@@ -86,13 +86,13 @@ export const createSparePart = data => {
  * @param {number} manufacturer_id - Manufacturer id
  * @returns {Promise} API response with edited spare part
  */
-export const updateSparePart = (id, update) => {
-  console.log(update)
-  return http.request({
-    method: 'patch',
-    url: `/resource/spare-part?id=${id}`,
-    data: update,
-  })
+export const updateSparePart = ( id, update ) => {
+  console.log( update )
+  return http.request( {
+    method : 'patch',
+    url : `/resource/spare-part?id=${id}`,
+    data : update
+  } )
 }
 
 // Tool APIs
@@ -103,15 +103,15 @@ export const updateSparePart = (id, update) => {
  */
 export const getAllToolClasses = () => {
   console.log(
-    http.request({
-      method: 'get',
-      url: '/resource/tools-class',
-    })
+    http.request( {
+      method : 'get',
+      url : '/resource/tools-class'
+    } )
   )
-  return http.request({
-    method: 'get',
-    url: '/resource/tools-class',
-  })
+  return http.request( {
+    method : 'get',
+    url : '/resource/tools-class'
+  } )
 }
 
 /**
@@ -123,19 +123,19 @@ export const getAllToolClasses = () => {
  * @param {object} search - Search filter
  * @returns {Promise} API response with the list of tools.
  */
-export const searchTools = (page = 1, size = 20, sortField = 'name', direction = 'ASC', search = {}) => {
+export const searchTools = ( page = 1, size = 20, sortField = 'name', direction = 'ASC', search = {} ) => {
   console.log(
-    http.request({
-      method: 'post',
-      url: `/resource/tool/search?page=${page}&size=${size}&sortField=${sortField}&direction=${direction}`,
-      data: search,
-    })
+    http.request( {
+      method : 'post',
+      url : `/resource/tool/search?page=${page}&size=${size}&sortField=${sortField}&direction=${direction}`,
+      data : search
+    } )
   )
-  return http.request({
-    method: 'post',
-    url: `/resource/tool/search?page=${page}&size=${size}&sortField=${sortField}&direction=${direction}`,
-    data: search,
-  })
+  return http.request( {
+    method : 'post',
+    url : `/resource/tool/search?page=${page}&size=${size}&sortField=${sortField}&direction=${direction}`,
+    data : search
+  } )
 }
 
 /**
@@ -144,11 +144,11 @@ export const searchTools = (page = 1, size = 20, sortField = 'name', direction =
  * @returns {Promise} API response with newly created tool
  */
 export const createTool = data => {
-  return http.request({
-    method: 'post',
-    url: '/resource/tool/create',
-    data,
-  })
+  return http.request( {
+    method : 'post',
+    url : '/resource/tool/create',
+    data
+  } )
 }
 
 /**
@@ -157,11 +157,11 @@ export const createTool = data => {
  * @returns {Promise} API response with edited tool
  */
 export const updateTool = update => {
-  return http.request({
-    method: 'patch',
-    url: '/resource/tool/update',
-    data: update,
-  })
+  return http.request( {
+    method : 'patch',
+    url : '/resource/tool/update',
+    data : update
+  } )
 }
 
 /**
@@ -170,38 +170,38 @@ export const updateTool = update => {
  * @returns {Promise} Nothing
  */
 export const deleteSparePart = id => {
-  return http.request({
-    method: 'delete',
-    url: `/resource/spare-parts/${id}`,
-  })
+  return http.request( {
+    method : 'delete',
+    url : `/resource/spare-parts/${id}`
+  } )
 }
 
 // api/resources.js
 export const deleteTool = async id => {
   // ✅ match your backend's URL (note the /api prefix!)
-  const url = `/api/resource/tool/delete/${encodeURIComponent(id)}`
+  const url = `/api/resource/tool/delete/${encodeURIComponent( id )}`
 
   try {
-    const res = await fetch(url, {
-      method: 'DELETE',
-      headers: { Accept: '*/*' },
-    })
+    const res = await fetch( url, {
+      method : 'DELETE',
+      headers : { Accept : '*/*' }
+    } )
 
-    if (res.status === 404) {
+    if ( res.status === 404 ) {
       // Optional: treat already-deleted items as success
-      console.warn(`Tool ${id} not found (already deleted).`)
+      console.warn( `Tool ${id} not found (already deleted).` )
       return null
     }
 
-    if (!res.ok) {
-      const text = await res.text().catch(() => '')
-      throw new Error(text || res.statusText || `HTTP ${res.status}`)
+    if ( !res.ok ) {
+      const text = await res.text().catch( () => '' )
+      throw new Error( text || res.statusText || `HTTP ${res.status}` )
     }
 
     // 204 success → no content
     return null
-  } catch (err) {
-    console.error('deleteTool error:', err)
+  } catch ( err ) {
+    console.error( 'deleteTool error:', err )
     throw err
   }
 }
@@ -213,11 +213,11 @@ export const deleteTool = async id => {
  * @returns {Promise} API response with newly created Inventory
  */
 export const createInventory = data => {
-  return http.request({
-    method: 'post',
-    url: '/inventory',
-    data,
-  })
+  return http.request( {
+    method : 'post',
+    url : '/inventory',
+    data
+  } )
 }
 
 /**
@@ -225,12 +225,12 @@ export const createInventory = data => {
  * @param {object} - Inventory data for update
  * @returns {Promise} API response with edited inventory
  */
-export const updateInventory = (id, update) => {
-  return http.request({
-    method: 'patch',
-    url: `/inventory/${id}`,
-    data: update,
-  })
+export const updateInventory = ( id, update ) => {
+  return http.request( {
+    method : 'patch',
+    url : `/inventory/${id}`,
+    data : update
+  } )
 }
 
 /**
@@ -242,12 +242,12 @@ export const updateInventory = (id, update) => {
  * @param {object} search - Search filter
  * @returns {Promise} API response with the list of inventory.
  */
-export const searchInventory = (page = 1, size = 20, sortField = 'id', direction = 'ASC', search = {}) => {
-  return http.request({
-    method: 'post',
-    url: `/inventory/search?page=${page}&size=${size}&sortField=${sortField}&direction=${direction}`,
-    data: search,
-  })
+export const searchInventory = ( page = 1, size = 20, sortField = 'id', direction = 'ASC', search = {} ) => {
+  return http.request( {
+    method : 'post',
+    url : `/inventory/search?page=${page}&size=${size}&sortField=${sortField}&direction=${direction}`,
+    data : search
+  } )
 }
 
 /**
@@ -256,12 +256,12 @@ export const searchInventory = (page = 1, size = 20, sortField = 'id', direction
  * @returns {Promise} API response with transfer target Inventory
  */
 export const transferInventory = transfer => {
-  console.log(transfer)
-  return http.request({
-    method: 'put',
-    url: '/inventory/transfer',
-    data: transfer,
-  })
+  console.log( transfer )
+  return http.request( {
+    method : 'put',
+    url : '/inventory/transfer',
+    data : transfer
+  } )
 }
 
 // Inventory Transaction Logs
@@ -281,10 +281,10 @@ export const searchInventoryTransactionLogs = (
   direction = 'DESC',
   search = {}
 ) => {
-  console.log(search)
-  return http.request({
-    method: 'post',
-    url: `/inventory/transaction-log?page=${page}&size=${size}&sortField=${sortField}&direction=${direction}`,
-    data: search,
-  })
+  console.log( search )
+  return http.request( {
+    method : 'post',
+    url : `/inventory/transaction-log?page=${page}&size=${size}&sortField=${sortField}&direction=${direction}`,
+    data : search
+  } )
 }

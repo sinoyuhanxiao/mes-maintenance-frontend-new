@@ -85,55 +85,55 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { searchRoles } from '@/api/rbac'
 
-const prop = defineProps({
-  department: {
-    type: Object,
-    default: null,
+const prop = defineProps( {
+  department : {
+    type : Object,
+    default : null
   },
-  userOptions: {
-    type: Array,
-    default: () => [],
-  },
-})
+  userOptions : {
+    type : Array,
+    default : () => []
+  }
+} )
 
 const { t } = useI18n()
-const emit = defineEmits(['confirm', 'cancel', 'update:loading'])
+const emit = defineEmits( ['confirm', 'cancel', 'update:loading'] )
 
 const departmentFormRules = {
-  name: [{ required: true, message: t('common.nameRequired'), trigger: 'blur' }],
+  name : [{ required : true, message : t( 'common.nameRequired' ), trigger : 'blur' }]
 }
 
 const formRef = ref()
-const submitting = ref(false)
-const internalDepartment = ref(createEmptyDepartment())
-const originalDepartmentSnapshot = ref(null)
-const roleOptions = ref([])
+const submitting = ref( false )
+const internalDepartment = ref( createEmptyDepartment() )
+const originalDepartmentSnapshot = ref( null )
+const roleOptions = ref( [] )
 
 function createEmptyDepartment() {
   return {
-    id: null,
-    name: '',
-    code: '',
-    description: '',
-    parent_id: null,
-    location_id: [],
-    manager_id: null,
-    role_list: [],
+    id : null,
+    name : '',
+    code : '',
+    description : '',
+    parent_id : null,
+    location_id : [],
+    manager_id : null,
+    role_list : []
   }
 }
 
 watch(
   () => prop.department,
   async department => {
-    if (department) {
+    if ( department ) {
       const normalized = {
         ...createEmptyDepartment(),
         ...department,
-        role_list: (department.role_list || []).map(r => r.id ?? r),
-        location_id: [department.location_id],
+        role_list : ( department.role_list || [] ).map( r => r.id ?? r ),
+        location_id : [department.location_id]
       }
       internalDepartment.value = normalized
-      originalDepartmentSnapshot.value = JSON.parse(JSON.stringify(normalized))
+      originalDepartmentSnapshot.value = JSON.parse( JSON.stringify( normalized ) )
     } else {
       internalDepartment.value = createEmptyDepartment()
       originalDepartmentSnapshot.value = null
@@ -142,22 +142,22 @@ watch(
     await nextTick()
     formRef.value?.clearValidate()
   },
-  { immediate: true }
+  { immediate : true }
 )
 
 async function handleResetForm() {
   try {
-    await ElMessageBox.confirm(t('common.confirmMessage'), t('common.warning'), {
-      type: 'warning',
-      confirmButtonText: t('common.confirm'),
-      cancelButtonText: t('common.cancel'),
-      distinguishCancelAndClose: true,
-    })
+    await ElMessageBox.confirm( t( 'common.confirmMessage' ), t( 'common.warning' ), {
+      type : 'warning',
+      confirmButtonText : t( 'common.confirm' ),
+      cancelButtonText : t( 'common.cancel' ),
+      distinguishCancelAndClose : true
+    } )
 
-    if (originalDepartmentSnapshot.value === null) {
+    if ( originalDepartmentSnapshot.value === null ) {
       internalDepartment.value = createEmptyDepartment()
     } else {
-      internalDepartment.value = JSON.parse(JSON.stringify(originalDepartmentSnapshot.value))
+      internalDepartment.value = JSON.parse( JSON.stringify( originalDepartmentSnapshot.value ) )
     }
 
     formRef.value.clearValidate()
@@ -165,76 +165,76 @@ async function handleResetForm() {
 }
 
 // TODO: add role_list param later
-const buildCreatePayload = entry => ({
-  name: entry.name,
-  code: entry.code,
-  description: entry.description,
-  parent_id: entry.parent_id,
-  location_id: entry.location_id.length > 0 ? entry.location_id[0] : null,
-  manager_id: entry.manager_id,
-  role_list: entry.role_list,
-})
+const buildCreatePayload = entry => ( {
+  name : entry.name,
+  code : entry.code,
+  description : entry.description,
+  parent_id : entry.parent_id,
+  location_id : entry.location_id.length > 0 ? entry.location_id[0] : null,
+  manager_id : entry.manager_id,
+  role_list : entry.role_list
+} )
 
-const buildUpdatePayload = (entry, original) => {
+const buildUpdatePayload = ( entry, original ) => {
   const payload = {}
-  if (entry.name !== original.name) payload.name = entry.name
-  if (entry.code !== original.code) payload.code = entry.code
-  if (entry.description !== original.description) payload.description = entry.description
-  if (entry.parent_id !== original.parent_id) payload.parent_id = entry.parent_id
-  if (entry.location_id !== original.location_id) {
+  if ( entry.name !== original.name ) payload.name = entry.name
+  if ( entry.code !== original.code ) payload.code = entry.code
+  if ( entry.description !== original.description ) payload.description = entry.description
+  if ( entry.parent_id !== original.parent_id ) payload.parent_id = entry.parent_id
+  if ( entry.location_id !== original.location_id ) {
     payload.location_id = entry.location_id.length > 0 ? entry.location_id[0] : null
   }
-  if (entry.role_list !== original.role_list) payload.role_list = entry.role_list
-  if (entry.manager_id !== original.manager_id) payload.manager_id = entry.manager_id
+  if ( entry.role_list !== original.role_list ) payload.role_list = entry.role_list
+  if ( entry.manager_id !== original.manager_id ) payload.manager_id = entry.manager_id
   return payload
 }
 
-const isDepartmentEdited = computed(() => {
-  if (!internalDepartment.value.id || !originalDepartmentSnapshot.value) return true
-  const payload = buildUpdatePayload(internalDepartment.value, originalDepartmentSnapshot.value)
-  return Object.keys(payload).length > 0
-})
+const isDepartmentEdited = computed( () => {
+  if ( !internalDepartment.value.id || !originalDepartmentSnapshot.value ) return true
+  const payload = buildUpdatePayload( internalDepartment.value, originalDepartmentSnapshot.value )
+  return Object.keys( payload ).length > 0
+} )
 
 async function handleConfirmSubmit() {
   const isValid = await formRef.value.validate()
-  if (!isValid) {
-    return ElMessage.error(t('user.message.pleaseCorrectErrors'))
+  if ( !isValid ) {
+    return ElMessage.error( t( 'user.message.pleaseCorrectErrors' ) )
   }
 
   submitting.value = true
-  emit('update:loading', true)
+  emit( 'update:loading', true )
 
   try {
     const payload = internalDepartment.value.id
-      ? buildUpdatePayload(internalDepartment.value, originalDepartmentSnapshot.value)
-      : buildCreatePayload(internalDepartment.value)
+      ? buildUpdatePayload( internalDepartment.value, originalDepartmentSnapshot.value )
+      : buildCreatePayload( internalDepartment.value )
 
-    if (internalDepartment.value.id) {
-      await updateDepartment(internalDepartment.value.id, payload)
-      ElMessage.success(t('department.message.updated'))
+    if ( internalDepartment.value.id ) {
+      await updateDepartment( internalDepartment.value.id, payload )
+      ElMessage.success( t( 'department.message.updated' ) )
     } else {
-      await createDepartment(payload)
-      ElMessage.success(t('department.message.created'))
+      await createDepartment( payload )
+      ElMessage.success( t( 'department.message.created' ) )
     }
 
-    emit('confirm')
-  } catch (err) {
-    console.error('Error submitting department form:', err)
-    ElMessage.error(t('department.message.submitFailed'))
+    emit( 'confirm' )
+  } catch ( err ) {
+    console.error( 'Error submitting department form:', err )
+    ElMessage.error( t( 'department.message.submitFailed' ) )
   } finally {
     submitting.value = false
-    emit('update:loading', false)
+    emit( 'update:loading', false )
   }
 }
 
 async function loadRoles() {
-  const res = await searchRoles({}, 1, 100, 'id', 'ASC')
+  const res = await searchRoles( {}, 1, 100, 'id', 'ASC' )
   roleOptions.value = res.data.content
 }
 
-onMounted(async () => {
+onMounted( async() => {
   await loadRoles()
-})
+} )
 </script>
 
 <style scoped lang="scss">

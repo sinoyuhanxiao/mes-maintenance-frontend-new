@@ -103,22 +103,22 @@
 <script setup>
 import { useI18n } from 'vue-i18n'
 import { Edit, Delete } from '@element-plus/icons-vue'
-defineProps({
-  certificates: {
-    type: Array,
-    required: true,
-  },
-})
-defineEmits(['edit', 'delete', 'add'])
+defineProps( {
+  certificates : {
+    type : Array,
+    required : true
+  }
+} )
+defineEmits( ['edit', 'delete', 'add'] )
 
-function fmt(iso) {
-  if (!iso) return '-'
-  const d = new Date(iso)
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+function fmt( iso ) {
+  if ( !iso ) return '-'
+  const d = new Date( iso )
+  return `${d.getFullYear()}-${String( d.getMonth() + 1 ).padStart( 2, '0' )}-${String( d.getDate() ).padStart( 2, '0' )}`
 }
 
-function isExpired(iso) {
-  return iso && new Date(iso).getTime() < Date.now()
+function isExpired( iso ) {
+  return iso && new Date( iso ).getTime() < Date.now()
 }
 
 const { t } = useI18n()

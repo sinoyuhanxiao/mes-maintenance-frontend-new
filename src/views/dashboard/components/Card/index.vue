@@ -22,36 +22,36 @@
 </template>
 
 <script setup>
-defineProps({
-  start: {
-    type: Number,
-    default: 1,
+defineProps( {
+  start : {
+    type : Number,
+    default : 1
   },
-  end: {
-    type: Number,
-    default: 9527,
+  end : {
+    type : Number,
+    default : 9527
   },
-  duration: {
-    type: Number,
-    default: 3000,
+  duration : {
+    type : Number,
+    default : 3000
   },
-  title: {
-    type: String,
-    default: 'Title',
+  title : {
+    type : String,
+    default : 'Title'
   },
-  prefix: {
-    type: String,
-    default: '',
+  prefix : {
+    type : String,
+    default : ''
   },
-  postfix: {
-    type: String,
-    default: '',
-  },
-})
+  postfix : {
+    type : String,
+    default : ''
+  }
+} )
 
-defineOptions({
-  name: 'Card',
-})
+defineOptions( {
+  name : 'Card'
+} )
 </script>
 
 <style lang="scss">

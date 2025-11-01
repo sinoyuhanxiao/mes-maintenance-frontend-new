@@ -11,31 +11,31 @@ const USER_CLIENT_URL = ENV_CONFIG.USER_CLIENT_URL
  * @param {"ASC"|"DESC"} direction
  * @returns {Promise} API response with PagingResult<TeamDTO>
  */
-export const searchTeams = (search = {}, page = 1, size = 10, sortField = 'createdAt', direction = 'DESC') => {
-  return http.request({
-    method: 'post',
-    url: '/team/search',
-    baseURL: USER_CLIENT_URL,
-    data: search,
-    params: { page, size, sortField, direction },
-  })
+export const searchTeams = ( search = {}, page = 1, size = 10, sortField = 'createdAt', direction = 'DESC' ) => {
+  return http.request( {
+    method : 'post',
+    url : '/team/search',
+    baseURL : USER_CLIENT_URL,
+    data : search,
+    params : { page, size, sortField, direction }
+  } )
 }
 
 export const getAllTeamTree = () => {
-  return http.request({
-    method: 'get',
-    url: '/team/team-tree',
-    baseURL: USER_CLIENT_URL,
-  })
+  return http.request( {
+    method : 'get',
+    url : '/team/team-tree',
+    baseURL : USER_CLIENT_URL
+  } )
 }
 
 export const getTeamTreeByIds = team_ids => {
-  return http.request({
-    method: 'post',
-    url: '/team/team-tree',
-    baseURL: USER_CLIENT_URL,
-    data: team_ids,
-  })
+  return http.request( {
+    method : 'post',
+    url : '/team/team-tree',
+    baseURL : USER_CLIENT_URL,
+    data : team_ids
+  } )
 }
 
 /**
@@ -44,11 +44,11 @@ export const getTeamTreeByIds = team_ids => {
  * @returns {Promise} API response with TeamDTO.
  */
 export const getTeamById = id => {
-  return http.request({
-    method: 'get',
-    url: `/team/${id}`,
-    baseURL: USER_CLIENT_URL,
-  })
+  return http.request( {
+    method : 'get',
+    url : `/team/${id}`,
+    baseURL : USER_CLIENT_URL
+  } )
 }
 
 /**
@@ -57,12 +57,12 @@ export const getTeamById = id => {
  * @returns {Promise} API response with created TeamDTO.
  */
 export const createTeam = data => {
-  return http.request({
-    method: 'post',
-    url: '/team',
-    baseURL: USER_CLIENT_URL,
-    data,
-  })
+  return http.request( {
+    method : 'post',
+    url : '/team',
+    baseURL : USER_CLIENT_URL,
+    data
+  } )
 }
 
 /**
@@ -71,13 +71,13 @@ export const createTeam = data => {
  * @param {Object} data - TeamUpdateRequest payload.
  * @returns {Promise} API response with updated TeamDTO.
  */
-export const updateTeam = (id, data) => {
-  return http.request({
-    method: 'patch',
-    url: `/team/${id}`,
-    baseURL: USER_CLIENT_URL,
-    data,
-  })
+export const updateTeam = ( id, data ) => {
+  return http.request( {
+    method : 'patch',
+    url : `/team/${id}`,
+    baseURL : USER_CLIENT_URL,
+    data
+  } )
 }
 /**
  * Activate a team.
@@ -85,11 +85,11 @@ export const updateTeam = (id, data) => {
  * @returns {Promise} API response (Void).
  */
 export const activateTeam = id => {
-  return http.request({
-    method: 'post',
-    url: `/team/${id}/activate`,
-    baseURL: USER_CLIENT_URL,
-  })
+  return http.request( {
+    method : 'post',
+    url : `/team/${id}/activate`,
+    baseURL : USER_CLIENT_URL
+  } )
 }
 
 /**
@@ -98,9 +98,9 @@ export const activateTeam = id => {
  * @returns {Promise} API response (Void).
  */
 export const deactivateTeam = id => {
-  return http.request({
-    method: 'post',
-    url: `/team/${id}/deactivate`,
-    baseURL: USER_CLIENT_URL,
-  })
+  return http.request( {
+    method : 'post',
+    url : `/team/${id}/deactivate`,
+    baseURL : USER_CLIENT_URL
+  } )
 }

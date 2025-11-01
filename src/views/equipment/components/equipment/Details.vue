@@ -118,53 +118,53 @@ import FileDisplay from '@/components/common/FileDisplay.vue'
 import { getEquipmentById } from '@/api/equipment.js'
 import { getLocationPathById } from '@/api/location.js'
 
-const props = defineProps({ equipmentId: Number })
+const props = defineProps( { equipmentId : Number } )
 
-const equipmentData = ref(null)
-const locationPath = ref([])
-const loading = ref(false)
-const error = ref(null)
+const equipmentData = ref( null )
+const locationPath = ref( [] )
+const loading = ref( false )
+const error = ref( null )
 
-const fetchEquipmentData = async () => {
-  if (!props.equipmentId) return
+const fetchEquipmentData = async() => {
+  if ( !props.equipmentId ) return
   try {
     loading.value = true
     error.value = null
 
-    const response = await getEquipmentById(props.equipmentId)
+    const response = await getEquipmentById( props.equipmentId )
     equipmentData.value = response.data
 
     // Location path
     const loc = equipmentData.value?.location
-    if (loc?.id && loc?.status !== 0) {
-      const res = await getLocationPathById(loc.id)
+    if ( loc?.id && loc?.status !== 0 ) {
+      const res = await getLocationPathById( loc.id )
       locationPath.value = res.data || []
     } else {
       locationPath.value = []
     }
-  } catch (err) {
+  } catch ( err ) {
     error.value = err.message || 'Failed to fetch equipment data'
   } finally {
     loading.value = false
   }
 }
 
-onMounted(fetchEquipmentData)
+onMounted( fetchEquipmentData )
 watch(
   () => props.equipmentId,
   id => id && fetchEquipmentData()
 )
 
 /* Optional hooks (analytics/custom behavior) */
-function onPreview(file) {
+function onPreview( file ) {
   /* no-op by default */
 }
-function onDownload(file) {
+function onDownload( file ) {
   /* no-op by default */
 }
-function onDownloadError(e) {
-  console.error(e)
-  ElMessage.error('Download failed')
+function onDownloadError( e ) {
+  console.error( e )
+  ElMessage.error( 'Download failed' )
 }
 </script>
 

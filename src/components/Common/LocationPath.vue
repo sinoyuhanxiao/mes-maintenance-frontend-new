@@ -29,36 +29,36 @@ import { getLocationPathById } from '@/api/location.js'
  * - Pass `path` directly (array of {id,name})
  * - OR pass `locationId` and let this component fetch the path.
  */
-const props = defineProps({
-  label: { type: String, default: 'Location Path' },
-  emptyText: { type: String, default: 'No location path available' },
-  path: { type: Array, default: () => [] }, // direct data (wins if non-empty)
-  locationId: { type: [Number, String], default: null }, // fetch if provided and path empty
-  clickable: { type: Boolean, default: false }, // emit click events on crumbs
-})
+const props = defineProps( {
+  label : { type : String, default : 'Location Path' },
+  emptyText : { type : String, default : 'No location path available' },
+  path : { type : Array, default : () => [] }, // direct data (wins if non-empty)
+  locationId : { type : [Number, String], default : null }, // fetch if provided and path empty
+  clickable : { type : Boolean, default : false } // emit click events on crumbs
+} )
 
-const emits = defineEmits(['item-click', 'fetch-error'])
+const emits = defineEmits( ['item-click', 'fetch-error'] )
 
-const fetchedPath = ref([])
+const fetchedPath = ref( [] )
 
-const computedPath = computed(() => {
-  if (props.path && props.path.length) return props.path
+const computedPath = computed( () => {
+  if ( props.path && props.path.length ) return props.path
   return fetchedPath.value || []
-})
+} )
 
 async function fetchPath() {
-  if (!props.locationId || (props.path && props.path.length)) return
+  if ( !props.locationId || ( props.path && props.path.length ) ) return
   try {
-    const resp = await getLocationPathById(props.locationId)
+    const resp = await getLocationPathById( props.locationId )
     fetchedPath.value = resp?.data || []
-  } catch (e) {
-    emits('fetch-error', e)
+  } catch ( e ) {
+    emits( 'fetch-error', e )
     fetchedPath.value = []
   }
 }
 
-onMounted(fetchPath)
-watch(() => props.locationId, fetchPath)
+onMounted( fetchPath )
+watch( () => props.locationId, fetchPath )
 </script>
 
 <style scoped>

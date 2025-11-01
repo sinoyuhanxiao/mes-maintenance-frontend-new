@@ -29,37 +29,37 @@ import { ref, computed } from 'vue'
 import CardItem from './SparePartCard.vue'
 import { ElRow, ElCol, ElPagination, ElInput } from 'element-plus'
 
-const props = defineProps({
-  data: {
-    type: Array,
-    default: () => [],
+const props = defineProps( {
+  data : {
+    type : Array,
+    default : () => []
   },
-  rows: {
-    type: Number,
-    default: 2,
+  rows : {
+    type : Number,
+    default : 2
   },
-  heightOffset: {
-    type: String,
-    default: '350px',
-  },
-})
+  heightOffset : {
+    type : String,
+    default : '350px'
+  }
+} )
 
-const currentPage = ref(1)
-const searchQuery = ref('')
+const currentPage = ref( 1 )
+const searchQuery = ref( '' )
 
-const cardsPerPage = computed(() => props.rows * 1)
+const cardsPerPage = computed( () => props.rows * 1 )
 
-const filteredData = computed(() => {
-  if (!searchQuery.value.trim()) return props.data
-  return props.data.filter(item => item.title.toLowerCase().includes(searchQuery.value.toLowerCase()))
-})
+const filteredData = computed( () => {
+  if ( !searchQuery.value.trim() ) return props.data
+  return props.data.filter( item => item.title.toLowerCase().includes( searchQuery.value.toLowerCase() ) )
+} )
 
-const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * cardsPerPage.value
-  return filteredData.value.slice(start, start + cardsPerPage.value)
-})
+const paginatedData = computed( () => {
+  const start = ( currentPage.value - 1 ) * cardsPerPage.value
+  return filteredData.value.slice( start, start + cardsPerPage.value )
+} )
 
-function handlePageChange(page) {
+function handlePageChange( page ) {
   currentPage.value = page
 }
 </script>

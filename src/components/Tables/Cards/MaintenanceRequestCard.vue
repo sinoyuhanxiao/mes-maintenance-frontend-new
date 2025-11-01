@@ -35,14 +35,14 @@
 // import router from '../../router/router'
 import { convertToLocalTime } from '../../../utils/datetime'
 
-const reqData = defineProps({
-  data: Object,
-})
+const reqData = defineProps( {
+  data : Object
+} )
 
-const emit = defineEmits(['selection'])
+const emit = defineEmits( ['selection'] )
 
 function emitSelectRequest() {
-  emit('selection', reqData.data)
+  emit( 'selection', reqData.data )
 }
 </script>
 

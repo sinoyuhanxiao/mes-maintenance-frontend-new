@@ -25,59 +25,59 @@ import { ref, onMounted, watch } from 'vue'
 import { getLocationTree } from '@/api/location.js'
 import { ElTreeSelect } from 'element-plus'
 
-const props = defineProps({
-  modelValue: {
-    type: [Array, Number, String],
-    default: () => [],
+const props = defineProps( {
+  modelValue : {
+    type : [Array, Number, String],
+    default : () => []
   },
-  multiple: {
-    type: Boolean,
-    default: true,
+  multiple : {
+    type : Boolean,
+    default : true
   },
-  maxCollapseTags: {
-    type: Number,
-    default: 2,
+  maxCollapseTags : {
+    type : Number,
+    default : 2
   },
-  width: {
-    type: String,
-    default: '100%',
+  width : {
+    type : String,
+    default : '100%'
   },
-  inputPlaceholder: {
-    type: String,
-    default: 'Filter by Location',
-  },
-})
+  inputPlaceholder : {
+    type : String,
+    default : 'Filter by Location'
+  }
+} )
 
-const emit = defineEmits(['update:modelValue', 'change'])
-const selectedLocationIds = ref([])
-const locationTree = ref([])
-const expandedKeys = ref([])
+const emit = defineEmits( ['update:modelValue', 'change'] )
+const selectedLocationIds = ref( [] )
+const locationTree = ref( [] )
+const expandedKeys = ref( [] )
 
 const locationNodeDefaultProps = {
-  label: node => node.name,
-  children: 'children',
-  value: 'id',
+  label : node => node.name,
+  children : 'children',
+  value : 'id'
 }
 
 async function fetchLocationTree() {
   try {
     const res = await getLocationTree()
     locationTree.value = res.data || []
-  } catch (err) {
-    console.error('Failed to fetch location tree:', err)
+  } catch ( err ) {
+    console.error( 'Failed to fetch location tree:', err )
   }
 }
 
 function emitSelection() {
-  if (props.multiple) {
+  if ( props.multiple ) {
     // Already an array
-    emit('update:modelValue', selectedLocationIds.value || [])
-    emit('change', selectedLocationIds.value || [])
+    emit( 'update:modelValue', selectedLocationIds.value || [] )
+    emit( 'change', selectedLocationIds.value || [] )
   } else {
     // Single selection: wrap as array for consistency
     const val = selectedLocationIds.value
-    emit('update:modelValue', val ? [val] : [])
-    emit('change', val ? [val] : [])
+    emit( 'update:modelValue', val ? [val] : [] )
+    emit( 'change', val ? [val] : [] )
   }
   updateExpandedKeys()
 }
@@ -87,33 +87,33 @@ function emitSelection() {
  * When a node is selected, recursively find all its parent nodes and add them to expandedKeys.
  */
 function updateExpandedKeys() {
-  if (!Array.isArray(selectedLocationIds.value) || !selectedLocationIds.value.length) {
+  if ( !Array.isArray( selectedLocationIds.value ) || !selectedLocationIds.value.length ) {
     expandedKeys.value = []
     return
   }
 
-  const parentMap = buildParentMap(locationTree.value)
+  const parentMap = buildParentMap( locationTree.value )
   const expanded = new Set()
 
-  for (const id of selectedLocationIds.value) {
+  for ( const id of selectedLocationIds.value ) {
     let current = parentMap[id]
-    while (current) {
-      expanded.add(current)
+    while ( current ) {
+      expanded.add( current )
       current = parentMap[current]
     }
   }
 
-  expandedKeys.value = Array.from(expanded)
+  expandedKeys.value = Array.from( expanded )
 }
 
 /**
  * Build a map of node.id → parent.id
  */
-function buildParentMap(tree, parentId = null, map = {}) {
-  for (const node of tree) {
+function buildParentMap( tree, parentId = null, map = {} ) {
+  for ( const node of tree ) {
     map[node.id] = parentId
-    if (node.children?.length) {
-      buildParentMap(node.children, node.id, map)
+    if ( node.children?.length ) {
+      buildParentMap( node.children, node.id, map )
     }
   }
   return map
@@ -123,21 +123,21 @@ function buildParentMap(tree, parentId = null, map = {}) {
 watch(
   () => props.modelValue,
   newVal => {
-    if (props.multiple) {
+    if ( props.multiple ) {
       // expect array
-      selectedLocationIds.value = Array.isArray(newVal) ? newVal : newVal ? [newVal] : []
+      selectedLocationIds.value = Array.isArray( newVal ) ? newVal : newVal ? [newVal] : []
     } else {
       // expect single value
-      selectedLocationIds.value = Array.isArray(newVal) ? newVal[0] || null : newVal
+      selectedLocationIds.value = Array.isArray( newVal ) ? newVal[0] || null : newVal
     }
     updateExpandedKeys()
   },
-  { immediate: true }
+  { immediate : true }
 )
 
-onMounted(async () => {
+onMounted( async() => {
   await fetchLocationTree()
-})
+} )
 </script>
 
 <style scoped></style>

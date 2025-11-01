@@ -86,124 +86,124 @@ import { computed } from 'vue'
 import { ElMessageBox } from 'element-plus'
 import { MoreFilled, User, View } from '@element-plus/icons-vue'
 
-const props = defineProps({
-  template: {
-    type: Object,
-    required: true,
+const props = defineProps( {
+  template : {
+    type : Object,
+    required : true
   },
-  assigneeOptions: {
-    type: Array,
-    default: () => [],
+  assigneeOptions : {
+    type : Array,
+    default : () => []
   },
-  isRecreation: {
-    type: Boolean,
-    default: false,
-  },
-})
+  isRecreation : {
+    type : Boolean,
+    default : false
+  }
+} )
 
-const emit = defineEmits(['selection', 'assignee-update', 'open-assignee-dialog'])
+const emit = defineEmits( ['selection', 'assignee-update', 'open-assignee-dialog'] )
 
-const stepsCount = computed(() => {
+const stepsCount = computed( () => {
   // Use new backend format total_steps if available, fallback to old format
   return props.template?.total_steps ?? props.template?.steps?.length ?? 0
-})
+} )
 
-const categoryLabel = computed(() => {
+const categoryLabel = computed( () => {
   const category = props.template?.category
-  if (!category) return ''
-  if (typeof category === 'object') {
+  if ( !category ) return ''
+  if ( typeof category === 'object' ) {
     return category.name || category.label || ''
   }
-  if (typeof category === 'number') {
+  if ( typeof category === 'number' ) {
     return props.template?.category_name || props.template?.categoryLabel || ''
   }
   return category
-})
+} )
 
-const isAdhoc = computed(() => props.template?.source === 'adhoc')
+const isAdhoc = computed( () => props.template?.source === 'adhoc' )
 
-const assetLabel = computed(() => {
+const assetLabel = computed( () => {
   const a = props.template?.applicable_assets
-  if (!a || a.length === 0) return ''
+  if ( !a || a.length === 0 ) return ''
   return a.length === 1 ? a[0] : `${a.length} assets`
-})
+} )
 
 // Assignee-related computed properties
-const taskAssigneeIds = computed(() => {
+const taskAssigneeIds = computed( () => {
   return props.template?.payload?.assignee_ids || props.template?.assignee_ids || []
-})
+} )
 
-const assignedUsers = computed(() => {
-  return props.assigneeOptions.filter(user => taskAssigneeIds.value.includes(user.id))
-})
+const assignedUsers = computed( () => {
+  return props.assigneeOptions.filter( user => taskAssigneeIds.value.includes( user.id ) )
+} )
 
-const hasAssignees = computed(() => {
+const hasAssignees = computed( () => {
   return assignedUsers.value.length > 0
-})
+} )
 
-const isFailedTask = computed(() => {
+const isFailedTask = computed( () => {
   return props.template?.state?.id === 12
-})
+} )
 
 // eslint-disable-next-line no-unused-vars
-const availableUsers = computed(() => {
+const availableUsers = computed( () => {
   return props.assigneeOptions || []
-})
+} )
 
 // Assignee management methods
 const removeAssignee = userId => {
-  const updatedAssigneeIds = taskAssigneeIds.value.filter(id => id !== userId)
-  updateTaskAssignees(updatedAssigneeIds)
+  const updatedAssigneeIds = taskAssigneeIds.value.filter( id => id !== userId )
+  updateTaskAssignees( updatedAssigneeIds )
 }
 
 const openAssigneeDialog = () => {
-  emit('open-assignee-dialog', {
-    taskId: props.template.id,
-    taskData: props.template,
-    currentAssigneeIds: taskAssigneeIds.value,
-  })
+  emit( 'open-assignee-dialog', {
+    taskId : props.template.id,
+    taskData : props.template,
+    currentAssigneeIds : taskAssigneeIds.value
+  } )
 }
 
 const updateTaskAssignees = newAssigneeIds => {
-  emit('assignee-update', {
-    taskId: props.template.id,
-    assigneeIds: newAssigneeIds,
-    taskData: props.template,
-  })
+  emit( 'assignee-update', {
+    taskId : props.template.id,
+    assigneeIds : newAssigneeIds,
+    taskData : props.template
+  } )
 }
 
 const handleEdit = () => {
-  emit('selection', {
-    id: props.template.id,
-    action: 'edit',
-    data: props.template,
-  })
+  emit( 'selection', {
+    id : props.template.id,
+    action : 'edit',
+    data : props.template
+  } )
 }
 
 const handlePreview = () => {
-  emit('selection', {
-    id: props.template.id,
-    action: 'preview',
-    data: props.template,
-  })
+  emit( 'selection', {
+    id : props.template.id,
+    action : 'preview',
+    data : props.template
+  } )
 }
 
 const handleDelete = () => {
-  ElMessageBox.confirm(`Are you sure you want to delete the task "${props.template.name}"?`, 'Confirm Delete', {
-    confirmButtonText: 'Delete',
-    cancelButtonText: 'Cancel',
-    type: 'warning',
-  })
-    .then(() => {
-      emit('selection', {
-        id: props.template.id,
-        action: 'delete',
-        data: props.template,
-      })
-    })
-    .catch(() => {
+  ElMessageBox.confirm( `Are you sure you want to delete the task "${props.template.name}"?`, 'Confirm Delete', {
+    confirmButtonText : 'Delete',
+    cancelButtonText : 'Cancel',
+    type : 'warning'
+  } )
+    .then( () => {
+      emit( 'selection', {
+        id : props.template.id,
+        action : 'delete',
+        data : props.template
+      } )
+    } )
+    .catch( () => {
       // User cancelled - no action needed
-    })
+    } )
 }
 </script>
 

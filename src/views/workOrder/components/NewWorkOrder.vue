@@ -175,12 +175,12 @@ import { useWorkOrderForm } from '@/composables/useWorkOrder'
 import { useEquipment } from '@/composables/useEquipment'
 import { useErrorHandler } from '@/composables/useErrorHandler'
 
-const props = defineProps({
-  requestData: Object,
-  height: String,
-})
+const props = defineProps( {
+  requestData : Object,
+  height : String
+} )
 
-const emit = defineEmits(['cancel'])
+const emit = defineEmits( ['cancel'] )
 
 // Composables
 const router = useRouter()
@@ -192,13 +192,13 @@ const { handleAsync, showSuccess } = useErrorHandler()
 // Form composable
 const { form, rules, validateForm } = useWorkOrderForm()
 
-watchEffect(() => {
-  if (props.requestData) {
+watchEffect( () => {
+  if ( props.requestData ) {
     form.name = props.requestData.name
     form.description = props.requestData.description
     form.request_id = props.requestData.id
   }
-})
+} )
 
 // Equipment composable
 const {
@@ -212,46 +212,46 @@ const {
   handleProductionLineChange,
   handleEquipmentGroupChange,
   handleEquipmentChange,
-  handleComponentChange,
+  handleComponentChange
 } = useEquipment()
 
 // Refs
-const formRef = ref(null)
-const loading = ref(false)
+const formRef = ref( null )
+const loading = ref( false )
 // Methods
-const uploadFilesToServer = async () => {
+const uploadFilesToServer = async() => {
   try {
     let uploadedImages = []
     let uploadedFiles = []
 
     // Upload images if they exist
-    if (form.image_list.length > 0) {
-      const imageRes = await uploadMultipleToMinio(form.image_list)
+    if ( form.image_list.length > 0 ) {
+      const imageRes = await uploadMultipleToMinio( form.image_list )
       uploadedImages = imageRes.data.uploadedFiles || []
-      form.image_list = uploadedImages.map(file => file.url)
+      form.image_list = uploadedImages.map( file => file.url )
     }
 
     // Upload files if they exist
-    if (form.files_list.length > 0) {
-      const fileRes = await uploadMultipleToMinio(form.files_list)
+    if ( form.files_list.length > 0 ) {
+      const fileRes = await uploadMultipleToMinio( form.files_list )
       uploadedFiles = fileRes.data.uploadedFiles || []
-      form.files_list = uploadedFiles.map(file => file.url)
+      form.files_list = uploadedFiles.map( file => file.url )
     }
-    showSuccess(t('workOrder.messages.uploadSuccess'))
-  } catch (err) {
-    throw new Error(t('workOrder.messages.uploadFailed'))
+    showSuccess( t( 'workOrder.messages.uploadSuccess' ) )
+  } catch ( err ) {
+    throw new Error( t( 'workOrder.messages.uploadFailed' ) )
   }
 }
 
-const submitForm = async () => {
+const submitForm = async() => {
   try {
-    const isValid = await validateForm(formRef.value)
-    if (!isValid) return
+    const isValid = await validateForm( formRef.value )
+    if ( !isValid ) return
 
     loading.value = true
 
     await handleAsync(
-      async () => {
+      async() => {
         // Upload files first
         await uploadFilesToServer()
 
@@ -260,19 +260,19 @@ const submitForm = async () => {
         form.equipment_group_id = selectedValues.equipmentGroupId
         form.equipment_id = selectedValues.equipmentId
         form.component_id = selectedValues.componentId
-        showSuccess(t('workOrder.messages.createSuccess'))
+        showSuccess( t( 'workOrder.messages.createSuccess' ) )
 
         // Close current tab and navigate
-        tagsViewStore.DEL_VIEW(router.currentRoute.value)
-        router.push('/workOrder/complex')
+        tagsViewStore.DEL_VIEW( router.currentRoute.value )
+        router.push( '/workOrder/complex' )
       },
       {
-        context: 'createWorkOrder',
-        customMessage: t('workOrder.messages.createFailed'),
-        loadingRef: loading,
+        context : 'createWorkOrder',
+        customMessage : t( 'workOrder.messages.createFailed' ),
+        loadingRef : loading
       }
     )
-  } catch (error) {
+  } catch ( error ) {
     loading.value = false
   }
 }
@@ -282,27 +282,27 @@ watch(
   newVal => {
     form.recurrence_type = newVal.recurrence_type
   },
-  { deep: true }
+  { deep : true }
 )
 
 // Lifecycle
-onMounted(async () => {
+onMounted( async() => {
   try {
-    await Promise.all([
+    await Promise.all( [
       commonDataStore.fetchPriorities(),
       commonDataStore.fetchWorkTypes(),
-      commonDataStore.fetchCategories(),
+      commonDataStore.fetchCategories()
       // TODO: change to new equipment api
       // commonDataStore.fetchProductionLines()
-    ])
-  } catch (error) {
+    ] )
+  } catch ( error ) {
     // Error handled by individual fetch functions
   }
-})
+} )
 
-defineOptions({
-  name: 'NewWorkOrder',
-})
+defineOptions( {
+  name : 'NewWorkOrder'
+} )
 </script>
 
 <style scoped lang="scss">

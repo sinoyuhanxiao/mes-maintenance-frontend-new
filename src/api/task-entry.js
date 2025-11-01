@@ -6,10 +6,10 @@ import http from '@/utils/request'
  * @returns {Promise<Object>} API response containing the task entry data.
  */
 export const getTaskEntryById = id => {
-  return http.request({
-    method: 'get',
-    url: `/task/entry/${id}`,
-  })
+  return http.request( {
+    method : 'get',
+    url : `/task/entry/${id}`
+  } )
 }
 
 /**
@@ -18,12 +18,12 @@ export const getTaskEntryById = id => {
  * @param {string} [change] - Optional filter by change type.
  * @returns {Promise<Object>} API response containing task logs array.
  */
-export const getTaskLogsByTaskId = (taskId, change = null) => {
-  return http.request({
-    method: 'get',
-    url: `/task/logs/task/${taskId}`,
-    params: change ? { change } : {},
-  })
+export const getTaskLogsByTaskId = ( taskId, change = null ) => {
+  return http.request( {
+    method : 'get',
+    url : `/task/logs/task/${taskId}`,
+    params : change ? { change } : {}
+  } )
 }
 
 /**
@@ -36,10 +36,10 @@ export const getTaskLogsByTaskId = (taskId, change = null) => {
  * @param {string} data.updated_by - User ID who updated the task.
  * @returns {Promise<Object>} API response containing the updated task entry.
  */
-export const updateTaskEntry = (id, data) => {
-  return http.request({
-    method: 'patch',
-    url: `/task/entry/${id}`,
-    data,
-  })
+export const updateTaskEntry = ( id, data ) => {
+  return http.request( {
+    method : 'patch',
+    url : `/task/entry/${id}`,
+    data
+  } )
 }

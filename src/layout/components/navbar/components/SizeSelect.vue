@@ -28,37 +28,37 @@ const appStore = useAppStore()
 const tagsViewStore = useTagsViewStore()
 const route = useRoute()
 const router = useRouter()
-const sizeOptions = reactive([
-  { label: 'Default', value: 'default' },
-  { label: 'Large', value: 'large' },
-  { label: 'Small', value: 'small' },
-])
+const sizeOptions = reactive( [
+  { label : 'Default', value : 'default' },
+  { label : 'Large', value : 'large' },
+  { label : 'Small', value : 'small' }
+] )
 
-const size = computed(() => {
+const size = computed( () => {
   return appStore.size
-})
+} )
 
 const handleSetSize = val => {
-  appStore.SET_SIZE(val)
+  appStore.SET_SIZE( val )
   refreshView()
-  ElMessage({
-    message: '切换成功',
-    type: 'success',
-    duration: 1000,
-  })
+  ElMessage( {
+    message : '切换成功',
+    type : 'success',
+    duration : 1000
+  } )
 }
 // TODO
 const refreshView = () => {
-  tagsViewStore.DEL_ALL_CACHED_VIEWS(route)
+  tagsViewStore.DEL_ALL_CACHED_VIEWS( route )
   const { fullPath } = route
-  nextTick(() => {
-    router.replace({
-      path: '/redirect' + fullPath,
-    })
-  })
+  nextTick( () => {
+    router.replace( {
+      path : '/redirect' + fullPath
+    } )
+  } )
 }
 
-defineOptions({
-  name: 'SizeSelect',
-})
+defineOptions( {
+  name : 'SizeSelect'
+} )
 </script>

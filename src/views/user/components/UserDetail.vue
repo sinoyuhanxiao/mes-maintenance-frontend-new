@@ -308,64 +308,64 @@ const { t } = useI18n()
 const route = useRoute()
 const userStore = useUserStore()
 
-const roleOptions = ref([])
+const roleOptions = ref( [] )
 // const departmentOptions = ref( [] )
-const isFormProcessing = ref(false)
-const isUserFormDialogVisible = ref(false)
-const rawUser = ref(null)
-const viewedUserId = ref(null)
-const loading = ref(false)
-const userTeams = ref([])
+const isFormProcessing = ref( false )
+const isUserFormDialogVisible = ref( false )
+const rawUser = ref( null )
+const viewedUserId = ref( null )
+const loading = ref( false )
+const userTeams = ref( [] )
 
-onMounted(async () => {
-  viewedUserId.value = parseInt(route.params.id)
+onMounted( async() => {
+  viewedUserId.value = parseInt( route.params.id )
   try {
     loading.value = true
     await loadRoles()
     // await loadDepartments()
-    await loadUser(viewedUserId.value)
-    await loadUserTeams(viewedUserId.value)
-  } catch (e) {
+    await loadUser( viewedUserId.value )
+    await loadUserTeams( viewedUserId.value )
+  } catch ( e ) {
   } finally {
     loading.value = false
   }
-})
+} )
 
-const isCurrentUser = computed(() => {
+const isCurrentUser = computed( () => {
   return userStore?.uid === viewedUserId.value
-})
+} )
 
-function handleEdit(user) {
+function handleEdit( user ) {
   isUserFormDialogVisible.value = true
 }
 
 function handleUserSubmit() {
   isUserFormDialogVisible.value = false
-  loadUser(viewedUserId.value)
+  loadUser( viewedUserId.value )
 }
 
-const handleLogout = async () => {
+const handleLogout = async() => {
   try {
-    await ElMessageBox.confirm('Are you sure you want to log out?', 'Warning', { type: 'warning' })
+    await ElMessageBox.confirm( 'Are you sure you want to log out?', 'Warning', { type : 'warning' } )
     await userStore.LOGIN_OUT()
     gotoCognitoLogin()
     window.location.reload()
-  } catch (error) {}
+  } catch ( error ) {}
 }
 
-async function loadUser(id) {
+async function loadUser( id ) {
   try {
-    const response = await getUserById(id)
+    const response = await getUserById( id )
     rawUser.value = { ...response.data }
-  } catch (e) {}
+  } catch ( e ) {}
 }
 
 async function loadRoles() {
   try {
-    const response = await searchRoles({}, 1, 1000)
+    const response = await searchRoles( {}, 1, 1000 )
     roleOptions.value = response.data.content
-  } catch (e) {
-    ElMessage.error(e)
+  } catch ( e ) {
+    ElMessage.error( e )
   }
 }
 
@@ -378,16 +378,16 @@ async function loadRoles() {
 //   }
 // }
 
-async function loadUserTeams(userId) {
-  if (!userId) {
+async function loadUserTeams( userId ) {
+  if ( !userId ) {
     userTeams.value = []
     return
   }
   try {
-    const res = await searchTeams({ member_ids: [userId] }, 1, 1000)
+    const res = await searchTeams( { member_ids : [userId] }, 1, 1000 )
     userTeams.value = res?.data?.content || []
-  } catch (err) {
-    console.error('Failed to load teams for user', err)
+  } catch ( err ) {
+    console.error( 'Failed to load teams for user', err )
     userTeams.value = []
   }
 }

@@ -43,59 +43,59 @@
 <script setup>
 import { computed, onMounted, onBeforeUnmount, ref, watch, nextTick } from 'vue'
 
-const props = defineProps({
-  modelValue: {
-    type: Boolean,
-    default: false,
+const props = defineProps( {
+  modelValue : {
+    type : Boolean,
+    default : false
   },
-  standards: {
-    type: Array,
-    default: () => [],
+  standards : {
+    type : Array,
+    default : () => []
   },
-  workOrderName: {
-    type: String,
-    default: '',
-  },
-})
+  workOrderName : {
+    type : String,
+    default : ''
+  }
+} )
 
-const emit = defineEmits(['update:modelValue', 'confirm', 'cancel'])
+const emit = defineEmits( ['update:modelValue', 'confirm', 'cancel'] )
 
-const hasStandards = computed(() => Array.isArray(props.standards) && props.standards.length > 0)
+const hasStandards = computed( () => Array.isArray( props.standards ) && props.standards.length > 0 )
 
 const listRef = ref()
-const confirmDisabled = ref(true)
+const confirmDisabled = ref( true )
 
 const formatCategory = category => {
-  if (!category) return ''
-  if (typeof category === 'string') return category
-  if (typeof category === 'object') {
+  if ( !category ) return ''
+  if ( typeof category === 'string' ) return category
+  if ( typeof category === 'object' ) {
     return category.name || category.label || ''
   }
   return ''
 }
 
 const closeDialog = value => {
-  emit('update:modelValue', value)
+  emit( 'update:modelValue', value )
 }
 
 const handleCancel = () => {
-  closeDialog(false)
-  emit('cancel')
+  closeDialog( false )
+  emit( 'cancel' )
 }
 
 const handleConfirm = () => {
-  closeDialog(false)
-  emit('confirm')
+  closeDialog( false )
+  emit( 'confirm' )
 }
 
 const updateScrollState = () => {
-  if (!listRef.value) {
+  if ( !listRef.value ) {
     confirmDisabled.value = false
     return
   }
   const el = listRef.value
   const isScrollable = el.scrollHeight > el.clientHeight
-  if (!isScrollable) {
+  if ( !isScrollable ) {
     confirmDisabled.value = false
     return
   }
@@ -108,9 +108,9 @@ const handleScroll = () => {
   updateScrollState()
 }
 
-const resetScrollState = async () => {
+const resetScrollState = async() => {
   await nextTick()
-  if (listRef.value) {
+  if ( listRef.value ) {
     listRef.value.scrollTop = 0
   }
   updateScrollState()
@@ -119,7 +119,7 @@ const resetScrollState = async () => {
 watch(
   () => props.modelValue,
   value => {
-    if (value) {
+    if ( value ) {
       confirmDisabled.value = true
       resetScrollState()
     }
@@ -133,13 +133,13 @@ watch(
   }
 )
 
-onMounted(() => {
+onMounted( () => {
   updateScrollState()
-})
+} )
 
-onBeforeUnmount(() => {
+onBeforeUnmount( () => {
   confirmDisabled.value = false
-})
+} )
 </script>
 
 <style scoped>

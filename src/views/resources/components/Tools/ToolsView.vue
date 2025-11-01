@@ -101,7 +101,10 @@
           <template #default="{ row }">
             <div class="action-row">
               <el-button class="action-btn" size="small" @click="editTool(row)">Edit</el-button>
-              <el-button class="action-btn" type="danger" size="small" @click="openDeactivateDialog(row)"
+              <el-button class="action-btn"
+type="danger"
+size="small"
+@click="openDeactivateDialog(row)"
                 >Delete</el-button
               >
             </div>
@@ -130,64 +133,64 @@ import NewTool from './NewTool.vue'
 import EditTool from './EditTool.vue'
 import { searchTools, createTool, updateTool, deleteTool } from '@/api/resources'
 
-const props = defineProps({
-  newTool: Boolean,
-  keyword: String,
+const props = defineProps( {
+  newTool : Boolean,
+  keyword : String,
   /** ✅ new prop from parent: selected tool class IDs */
-  categoryIds: {
-    type: Array,
-    default: () => [],
-  },
-})
-const emit = defineEmits(['close'])
+  categoryIds : {
+    type : Array,
+    default : () => []
+  }
+} )
+const emit = defineEmits( ['close'] )
 
 /** ----- Dialog state ----- */
-const newToolActive = ref(props.newTool)
-const newToolKey = ref(0)
-const editToolActive = ref(false)
-const selectedTool = ref(null)
-const deactivateDialogVisible = ref(false)
-const deleting = ref(false)
+const newToolActive = ref( props.newTool )
+const newToolKey = ref( 0 )
+const editToolActive = ref( false )
+const selectedTool = ref( null )
+const deactivateDialogVisible = ref( false )
+const deleting = ref( false )
 
 watch(
   () => props.newTool,
   v => {
     newToolActive.value = v
-    if (v) newToolKey.value += 1
+    if ( v ) newToolKey.value += 1
   }
 )
 
 /** ----- Layout height ----- */
-const maxHeight = ref('737px')
+const maxHeight = ref( '737px' )
 function updateHeight() {
   maxHeight.value = window.innerWidth <= 1600 ? '521px' : '737px'
 }
-onMounted(() => {
+onMounted( () => {
   updateHeight()
-  window.addEventListener('resize', updateHeight)
-})
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', updateHeight)
-})
+  window.addEventListener( 'resize', updateHeight )
+} )
+onBeforeUnmount( () => {
+  window.removeEventListener( 'resize', updateHeight )
+} )
 
 /** ----- Table / paging / search state ----- */
-const listQuery = reactive({ page: 1, size: 20 })
-const tools = ref([])
-const totalItems = ref(0)
+const listQuery = reactive( { page : 1, size : 20 } )
+const tools = ref( [] )
+const totalItems = ref( 0 )
 
 /** ✅ Build payload exactly like your curl */
 async function getToolsData() {
   const payload = {}
 
   // include keyword only if non-empty (ok if backend ignores this)
-  if (props.keyword && props.keyword.trim().length > 0) {
+  if ( props.keyword && props.keyword.trim().length > 0 ) {
     payload.keyword = props.keyword.trim()
   }
 
   // include tool_class_ids if any selected
-  if (Array.isArray(props.categoryIds) && props.categoryIds.length > 0) {
+  if ( Array.isArray( props.categoryIds ) && props.categoryIds.length > 0 ) {
     // ensure numbers
-    payload.tool_class_ids = props.categoryIds.map(x => Number(x)).filter(n => !Number.isNaN(n))
+    payload.tool_class_ids = props.categoryIds.map( x => Number( x ) ).filter( n => !Number.isNaN( n ) )
   }
 
   const res = await searchTools(
@@ -218,69 +221,69 @@ watch(
     listQuery.page = 1
     getToolsData()
   },
-  { deep: true }
+  { deep : true }
 )
 
 /** Initial load */
 getToolsData()
 
 /** ----- CRUD handlers ----- */
-const apiSuccess = (header, name) => {
-  ElMessage({ message: header + name, type: 'success' })
+const apiSuccess = ( header, name ) => {
+  ElMessage( { message : header + name, type : 'success' } )
 }
 
-async function handleCreate(data) {
+async function handleCreate( data ) {
   try {
-    const create = await createTool(data)
-    if (create.status == 200) {
-      apiSuccess('Tool Created: ', create.data.name)
+    const create = await createTool( data )
+    if ( create.status == 200 ) {
+      apiSuccess( 'Tool Created: ', create.data.name )
       newToolActive.value = false
-      emit('close')
+      emit( 'close' )
       newToolKey.value += 1
       getToolsData()
     }
-  } catch (err) {
-    console.log('Failed to create tool', err)
+  } catch ( err ) {
+    console.log( 'Failed to create tool', err )
   }
 }
 
-async function handleEdit(data) {
+async function handleEdit( data ) {
   try {
-    const update = await updateTool(data)
-    if (update.status == 200) {
-      apiSuccess('Tool updated: ', data.name)
+    const update = await updateTool( data )
+    if ( update.status == 200 ) {
+      apiSuccess( 'Tool updated: ', data.name )
       editToolActive.value = false
       getToolsData()
     }
-  } catch (err) {
-    console.log('Failed to update tool', err)
+  } catch ( err ) {
+    console.log( 'Failed to update tool', err )
   }
 }
 
-function openDeactivateDialog(row) {
+function openDeactivateDialog( row ) {
   selectedTool.value = row
   deactivateDialogVisible.value = true
 }
 
 async function confirmDeactivate() {
-  if (!selectedTool.value) return
+  if ( !selectedTool.value ) return
   deleting.value = true
   try {
-    await deleteTool(selectedTool.value.id)
-    ElMessage.success(`Tool Deleted: ${selectedTool.value.name}`)
+    await deleteTool( selectedTool.value.id )
+    ElMessage.success( `Tool Deleted: ${selectedTool.value.name}` )
     deactivateDialogVisible.value = false
     await getToolsData()
-  } catch (err) {
+  } catch ( err ) {
     const r = err?.response
     const msg = r?.data?.message || r?.data?.error || r?.statusText || err?.message || 'Unknown error'
-    ElMessage.error(`Delete failed: ${msg}`)
-    console.error('DELETE failed', { status: r?.status, data: r?.data, headers: r?.headers })
+    ElMessage.error( `Delete failed: ${msg}` )
+    console.error( 'DELETE failed', { status : r?.status, data : r?.data, headers : r?.headers } )
   } finally {
     deleting.value = false
   }
 }
 
-function editTool(row) {
+function editTool( row ) {
   row.tool_class_id = row.tool_class?.id
   selectedTool.value = row
   editToolActive.value = true
@@ -292,16 +295,16 @@ const handleCurrentChange = val => {
 }
 
 /** ----- IMAGE HELPERS ----- */
-const toArray = v => (Array.isArray(v) ? v : typeof v === 'string' && v ? [v] : [])
+const toArray = v => ( Array.isArray( v ) ? v : typeof v === 'string' && v ? [v] : [] )
 const firstImage = row => {
-  const list = toArray(row?.image_list)
+  const list = toArray( row?.image_list )
   return list.length ? list[0] : null
 }
 const previewList = row => {
-  return toArray(row?.image_list).filter(u => typeof u === 'string' && u.trim().length > 0)
+  return toArray( row?.image_list ).filter( u => typeof u === 'string' && u.trim().length > 0 )
 }
-function handleImageError(row) {
-  if (Array.isArray(row.image_list) && row.image_list.length > 0) {
+function handleImageError( row ) {
+  if ( Array.isArray( row.image_list ) && row.image_list.length > 0 ) {
     row.image_list = []
   }
 }
@@ -310,12 +313,12 @@ function handleImageError(row) {
 function onAddDialogClose() {
   newToolActive.value = false
   newToolKey.value += 1
-  emit('close')
+  emit( 'close' )
 }
 function onChildRequestsClose() {
   newToolActive.value = false
   newToolKey.value += 1
-  emit('close')
+  emit( 'close' )
 }
 </script>
 

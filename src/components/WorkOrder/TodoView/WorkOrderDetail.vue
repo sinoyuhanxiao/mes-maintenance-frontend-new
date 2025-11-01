@@ -10,6 +10,14 @@
               <span class="work-order-id">#{{ workOrder.id }}</span>
             </div>
             <div class="meta-info">
+              <span v-if="workOrder.created_by" class="created-by">
+                Created By:
+                {{
+                  typeof workOrder.created_by === 'object'
+                    ? `${workOrder.created_by.first_name} ${workOrder.created_by.last_name}`
+                    : workOrder.created_by
+                }}
+              </span>
               <span class="created-date">
                 {{ $t('workOrder.form.createdOn') }}: {{ formatDate(workOrder.created_at) }}
               </span>
@@ -28,6 +36,7 @@
               type="primary"
               plain
               size="default"
+              :disabled="disableActions"
               @click="emit('edit', workOrder)"
               :aria-label="$t('workOrder.actions.edit')"
             >
@@ -42,6 +51,7 @@
               type="success"
               plain
               size="default"
+              :disabled="disableActions"
               @click="handleStartWorkOrder"
               aria-label="Start Work Order"
             >
@@ -56,6 +66,7 @@
                 type="success"
                 plain
                 size="default"
+                :disabled="disableActions"
                 @click="handleApprove"
                 :aria-label="$t('workOrder.actions.approve')"
               >
@@ -67,6 +78,7 @@
                 type="danger"
                 plain
                 size="default"
+                :disabled="disableActions"
                 @click="handleReject"
                 :aria-label="$t('workOrder.actions.reject')"
               >
@@ -75,8 +87,8 @@
               </el-button>
             </template>
 
-            <el-dropdown trigger="click" @command="handleHeaderAction">
-              <el-button type="text" size="default" class="action-button">
+            <el-dropdown trigger="click" @command="handleHeaderAction" :disabled="disableActions">
+              <el-button type="text" size="default" class="action-button" :disabled="disableActions">
                 <el-icon class="rotated-icon"><MoreFilled /></el-icon>
               </el-button>
               <template #dropdown>
@@ -85,15 +97,20 @@
                     <el-icon><Share /></el-icon>
                     {{ $t('workOrder.actions.share') }}
                   </el-dropdown-item>
-                  <el-dropdown-item command="export">
+                  <el-dropdown-item command="export" :disabled="disableActions">
                     <el-icon><Download /></el-icon>
                     {{ $t('workOrder.actions.export') }}
                   </el-dropdown-item>
-                  <el-dropdown-item v-if="workOrder.state?.id === 12" command="recreate" divided>
+                  <el-dropdown-item
+                    v-if="workOrder.state?.id === 12"
+                    command="recreate"
+                    :disabled="disableActions"
+                    divided
+                  >
                     <el-icon><DocumentCopy /></el-icon>
                     {{ $t('workOrder.actions.recreate') }}
                   </el-dropdown-item>
-                  <el-dropdown-item command="delete" divided class="delete-item">
+                  <el-dropdown-item command="delete" :disabled="disableActions" divided class="delete-item">
                     <el-icon><Delete /></el-icon>
                     {{ $t('workOrder.actions.delete') }}
                   </el-dropdown-item>
@@ -143,7 +160,9 @@
           </span>
         </el-descriptions-item>
         <el-descriptions-item label="Updated By">
-          <span class="field-value">{{ workOrder.updated_by || '-' }}</span>
+          <span class="field-value">{{
+            workOrder.updated_by ? `${workOrder.updated_by.first_name} ${workOrder.updated_by.last_name}` : '-'
+          }}</span>
         </el-descriptions-item>
         <el-descriptions-item :label="$t('workOrder.table.workType')">
           <WorkTypeTag :work-type="workOrder.work_type" />
@@ -168,12 +187,12 @@
     <!-- Dates Section -->
     <div class="detail-section dates-section">
       <el-descriptions :column="4" class="dates-descriptions">
-        <el-descriptions-item label="Start Date">
+        <el-descriptions-item label="Start Date Time">
           <span class="detail-value">
             {{ workOrder.start_date ? formatDate(workOrder.start_date) : '-' }}
           </span>
         </el-descriptions-item>
-        <el-descriptions-item label="End Date">
+        <el-descriptions-item v-if="false" label="End Date Time">
           <span class="detail-value">
             {{ workOrder.end_date ? formatDate(workOrder.end_date) : '-' }}
           </span>
@@ -181,6 +200,11 @@
         <el-descriptions-item :label="$t('workOrder.table.dueDate')">
           <span class="detail-value" :class="{ incomplete: isIncomplete }">
             {{ workOrder.due_date ? formatDate(workOrder.due_date) : '-' }}
+          </span>
+        </el-descriptions-item>
+        <el-descriptions-item label="Approval Template">
+          <span class="detail-value">
+            {{ workOrder.approval_entry?.name || '-' }}
           </span>
         </el-descriptions-item>
         <el-descriptions-item>
@@ -198,6 +222,7 @@
             {{ workOrder.recurrence_type?.name || '-' }}
           </span>
         </el-descriptions-item>
+        <el-descriptions-item> </el-descriptions-item>
       </el-descriptions>
     </div>
 
@@ -341,7 +366,12 @@
                 <strong>Equipment:</strong> {{ workOrder.request.equipment_node.name }}
               </div>
               <div v-if="workOrder.request.created_by">
-                <strong>Created By:</strong> {{ workOrder.request.created_by }}
+                <strong>Created By:</strong>
+                {{
+                  typeof workOrder.request.created_by === 'object'
+                    ? `${workOrder.request.created_by.first_name} ${workOrder.request.created_by.last_name}`
+                    : workOrder.request.created_by
+                }}
               </div>
               <div v-if="workOrder.request.status !== undefined">
                 <strong>Status:</strong> {{ getRequestStatusLabel(workOrder.request.status) }}
@@ -447,7 +477,16 @@
         <div class="progress-bar-container">
           <div class="custom-progress-bar">
             <div
-              class="progress-segment completed"
+              :class="[
+                'progress-segment',
+                'completed',
+                {
+                  'all-completed':
+                    workOrderProgress.failed === 0 &&
+                    workOrderProgress.remaining === 0 &&
+                    workOrderProgress.completed === workOrderProgress.total,
+                },
+              ]"
               :style="{ width: `${(workOrderProgress.completed / workOrderProgress.total) * 100}%` }"
             ></div>
             <div
@@ -647,17 +686,15 @@
       top="10vh"
       class="timeline-modal"
     >
-      <div v-if="timelineLoading" class="timeline-loading">
-        <el-skeleton :rows="3" animated />
-      </div>
-      <div v-else-if="!isRecurring" class="timeline-empty">
+      <div v-if="!isRecurring" class="timeline-empty">
         <el-empty description="This work order does not have recurring instances" :image-size="80" />
       </div>
-      <div v-else-if="timelineEvents.length === 0" class="timeline-empty">
+      <div v-else-if="!timelineLoading && timelineEvents.length === 0" class="timeline-empty">
         <el-empty description="No recurring work orders found" :image-size="80" />
       </div>
       <Timeline
         v-else
+        :loading="timelineLoading"
         :timeline-events="timelineEvents"
         :current-work-order-id="workOrder.id"
         :current-page="timelinePage"
@@ -695,11 +732,23 @@
     <!-- Delete Confirmation Modal for Recurring Work Orders -->
     <el-dialog
       v-model="deleteDialogVisible"
-      title="Delete Work Order"
       width="480px"
       :before-close="() => (deleteDialogVisible = false)"
       class="delete-dialog"
     >
+      <template #header>
+        <div class="delete-dialog-title">
+          <span>Delete Work Order</span>
+          <el-tooltip
+            content="Choose whether to delete only this individual work order or the entire recurrence chain"
+            placement="top"
+            effect="dark"
+          >
+            <el-icon class="help-icon"><QuestionFilled /></el-icon>
+          </el-tooltip>
+        </div>
+      </template>
+
       <div class="delete-dialog-content">
         <el-icon class="warning-icon"><Warning /></el-icon>
         <div class="delete-message">
@@ -710,14 +759,13 @@
 
       <template #footer>
         <div class="delete-dialog-footer">
-          <el-button @click="deleteDialogVisible = false" :disabled="deleting"> Cancel </el-button>
           <el-button type="warning" @click="handleDeleteConfirmation('individual')" :loading="deleting">
             <el-icon><DocumentDelete /></el-icon>
-            Individual
+            Delete Individual
           </el-button>
           <el-button type="danger" @click="handleDeleteConfirmation('recurrence')" :loading="deleting">
-            <el-icon><DocumentDelete /></el-icon>
-            Recurrence
+            <el-icon><DeleteFilled /></el-icon>
+            Delete Recurrence
           </el-button>
         </div>
       </template>
@@ -964,6 +1012,7 @@ import {
   Select,
   CloseBold,
   VideoPlay,
+  QuestionFilled
 } from '@element-plus/icons-vue'
 import { convertToLocalTime } from '@/utils/datetime'
 import { exportTimeline as exportTimelineData, generateTimestampedFilename } from '@/utils/timelineExport'
@@ -972,7 +1021,7 @@ import {
   deleteIndividualWorkOrder,
   deleteRecurrenceWorkOrders,
   getWorkOrdersByRecurrence,
-  updateWorkOrder,
+  updateWorkOrder
 } from '@/api/work-order'
 import { getTaskEntryById } from '@/api/task-entry'
 import PriorityTag from '../Display/PriorityTag.vue'
@@ -989,15 +1038,19 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 const router = useRouter()
 
 // Props
-const props = defineProps({
-  workOrder: {
-    type: Object,
-    default: null,
+const props = defineProps( {
+  workOrder : {
+    type : Object,
+    default : null
   },
-})
+  disableActions : {
+    type : Boolean,
+    default : false
+  }
+} )
 
 // Emits
-const emit = defineEmits([
+const emit = defineEmits( [
   'edit',
   'share',
   'export',
@@ -1009,284 +1062,284 @@ const emit = defineEmits([
   'delete',
   'start-work-order',
   'refresh',
-  'recreate',
-])
+  'recreate'
+] )
 
 // State
-const activeTrackingTab = ref('tasks')
-const showTaskPreviewDialog = ref(false)
-const selectedTaskForPreview = ref(null)
-const timelineModalVisible = ref(false)
-const equipmentDetails = ref([])
-const loadingEquipment = ref(false)
-const deleteDialogVisible = ref(false)
-const deleting = ref(false)
-const scheduleSection = ref(null)
-const taskEntries = ref([])
-const taskPreviewLoading = ref(false)
-const selectedTaskTemplateId = ref('')
-const selectedTaskSteps = ref([])
-const timelineLoading = ref(false)
+const activeTrackingTab = ref( 'tasks' )
+const showTaskPreviewDialog = ref( false )
+const selectedTaskForPreview = ref( null )
+const timelineModalVisible = ref( false )
+const equipmentDetails = ref( [] )
+const loadingEquipment = ref( false )
+const deleteDialogVisible = ref( false )
+const deleting = ref( false )
+const scheduleSection = ref( null )
+const taskEntries = ref( [] )
+const taskPreviewLoading = ref( false )
+const selectedTaskTemplateId = ref( '' )
+const selectedTaskSteps = ref( [] )
+const timelineLoading = ref( false )
 
 // Standard preview state
-const showStandardPreviewDialog = ref(false)
-const previewStandardData = ref(null)
-const standalonePreviewTab = ref('general')
+const showStandardPreviewDialog = ref( false )
+const previewStandardData = ref( null )
+const standalonePreviewTab = ref( 'general' )
 
 // Timeline events data - Populated from recurring work orders
-const timelineEvents = ref([])
+const timelineEvents = ref( [] )
 
 // Timeline pagination state
-const timelinePage = ref(1)
-const timelinePageSize = ref(10)
-const timelineTotalElements = ref(0)
-const timelineSortField = ref('createdAt')
-const timelineSortDirection = ref('DESC')
+const timelinePage = ref( 1 )
+const timelinePageSize = ref( 10 )
+const timelineTotalElements = ref( 0 )
+const timelineSortField = ref( 'createdAt' )
+const timelineSortDirection = ref( 'DESC' )
 
 // Task filters
-const taskFilters = ref({
-  search: '',
-  state: '',
-  assignee: '',
-  timeSpent: '',
-})
+const taskFilters = ref( {
+  search : '',
+  state : '',
+  assignee : '',
+  timeSpent : ''
+} )
 
-const customTimeRange = ref({ start: null, end: null }) // Custom time range in minutes
+const customTimeRange = ref( { start : null, end : null } ) // Custom time range in minutes
 
 // Task preview tab state
-const activeTaskPreviewTab = ref('logs')
+const activeTaskPreviewTab = ref( 'logs' )
 
 // User list dialog state
-const userListDialogVisible = ref(false)
-const userSearchQuery = ref('')
+const userListDialogVisible = ref( false )
+const userSearchQuery = ref( '' )
 
 // Search input with debounce
-const searchInput = ref('')
+const searchInput = ref( '' )
 let searchDebounceTimer = null
 
 // Dynamic min-height for lists
-const listsMinHeight = ref('800px')
+const listsMinHeight = ref( '800px' )
 // eslint-disable-next-line no-unused-vars
-const headerElement = ref(null)
+const headerElement = ref( null )
 
 // Computed
-const isIncomplete = computed(() => {
+const isIncomplete = computed( () => {
   return props.workOrder?.state?.id === 13 || props.workOrder?.state?.name === 'Incomplete'
-})
+} )
 
-const hasAttachments = computed(() => {
+const hasAttachments = computed( () => {
   return props.workOrder?.image_list && props.workOrder.image_list.length > 0
-})
+} )
 
-const categoryTags = computed(() => {
+const categoryTags = computed( () => {
   const workOrder = props.workOrder
-  if (!workOrder) return []
-  if (Array.isArray(workOrder.categories) && workOrder.categories.length) {
+  if ( !workOrder ) return []
+  if ( Array.isArray( workOrder.categories ) && workOrder.categories.length ) {
     return workOrder.categories
   }
-  if (Array.isArray(workOrder.category_list) && workOrder.category_list.length) {
+  if ( Array.isArray( workOrder.category_list ) && workOrder.category_list.length ) {
     return workOrder.category_list
   }
-  if (workOrder.category) {
+  if ( workOrder.category ) {
     return [workOrder.category]
   }
   return []
-})
+} )
 
 const categoryKey = category => {
-  if (category && typeof category === 'object') {
-    return category.id ?? category.name ?? JSON.stringify(category)
+  if ( category && typeof category === 'object' ) {
+    return category.id ?? category.name ?? JSON.stringify( category )
   }
   return category
 }
 
-const isRecurring = computed(() => {
+const isRecurring = computed( () => {
   // Check if work order has recurrence (not type 1 which means "Does not repeat")
   const recurrenceType = props.workOrder?.recurrence_type
 
-  if (!recurrenceType) {
+  if ( !recurrenceType ) {
     return false
   }
 
   // Debug: log the recurrence type for debugging
-  console.log('IsRecurring check:', recurrenceType)
+  console.log( 'IsRecurring check:', recurrenceType )
 
   // If it has an id, check if it's not 1 ("Does not repeat")
-  if (recurrenceType.id) {
+  if ( recurrenceType.id ) {
     return recurrenceType.id !== 1
   }
 
   // If it's a string, check if it's not "Does not repeat"
-  if (typeof recurrenceType === 'string') {
+  if ( typeof recurrenceType === 'string' ) {
     return recurrenceType.toLowerCase() !== 'does not repeat' && recurrenceType.toLowerCase() !== 'none'
   }
 
   // If it's an object with name property
-  if (recurrenceType.name) {
+  if ( recurrenceType.name ) {
     return recurrenceType.name.toLowerCase() !== 'does not repeat' && recurrenceType.name.toLowerCase() !== 'none'
   }
 
   return false
-})
+} )
 
 // Recurrence summary computed properties
-const hasRecurrenceSummary = computed(() => {
+const hasRecurrenceSummary = computed( () => {
   return isRecurring.value && props.workOrder?.recurrence_summary
-})
+} )
 
-const lastOccurrence = computed(() => {
+const lastOccurrence = computed( () => {
   return props.workOrder?.recurrence_summary?.last_occurrence_wo || null
-})
+} )
 
-const nextOccurrence = computed(() => {
+const nextOccurrence = computed( () => {
   return props.workOrder?.recurrence_summary?.next_occurrence_wo || null
-})
+} )
 
-const totalInstances = computed(() => {
+const totalInstances = computed( () => {
   return props.workOrder?.recurrence_summary?.total_instances || 0
-})
+} )
 
-const statesSummary = computed(() => {
+const statesSummary = computed( () => {
   return props.workOrder?.recurrence_summary?.states_summary || {}
-})
+} )
 
-const recurrenceHeading = computed(() => {
+const recurrenceHeading = computed( () => {
   const recurrenceType = props.workOrder?.recurrence_type
-  if (!recurrenceType) return 'Recurrence Information'
+  if ( !recurrenceType ) return 'Recurrence Information'
 
   const typeName = recurrenceType.name || ''
   const lowerTypeName = typeName.toLowerCase()
 
-  if (lowerTypeName === 'daily') return 'Daily Recurrence Information'
-  if (lowerTypeName === 'weekly') return 'Weekly Recurrence Information'
-  if (lowerTypeName === 'monthly') return 'Monthly Recurrence Information'
-  if (lowerTypeName === 'yearly') return 'Yearly Recurrence Information'
+  if ( lowerTypeName === 'daily' ) return 'Daily Recurrence Information'
+  if ( lowerTypeName === 'weekly' ) return 'Weekly Recurrence Information'
+  if ( lowerTypeName === 'monthly' ) return 'Monthly Recurrence Information'
+  if ( lowerTypeName === 'yearly' ) return 'Yearly Recurrence Information'
 
   return 'Recurrence Information'
-})
+} )
 
-const workOrderProgress = computed(() => {
+const workOrderProgress = computed( () => {
   const progress = props.workOrder?.work_order_progress
-  if (!progress) return null
+  if ( !progress ) return null
 
   const total = progress.total_task_amount || 0
   const completed = progress.completed_task_amount || 0
   const failed = progress.failed_task_amount || 0
-  const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
+  const percentage = total > 0 ? Math.round( ( completed / total ) * 100 ) : 0
 
   return {
     total,
     completed,
     failed,
     percentage,
-    remaining: total - completed - failed,
+    remaining : total - completed - failed
   }
-})
+} )
 
-const shouldShowApprovalButtons = computed(() => {
-  if (!props.workOrder) return false
+const shouldShowApprovalButtons = computed( () => {
+  if ( !props.workOrder ) return false
 
   const state = props.workOrder.state
 
   // Show approve/reject buttons only when state is Pending Approval (state.id === 14)
   return state?.id === 14
-})
+} )
 
-const hasFileAttachments = computed(() => {
+const hasFileAttachments = computed( () => {
   return props.workOrder?.file_list && props.workOrder.file_list.length > 0
-})
+} )
 
-const validEquipmentList = computed(() => {
-  if (!equipmentDetails.value || !Array.isArray(equipmentDetails.value)) {
+const validEquipmentList = computed( () => {
+  if ( !equipmentDetails.value || !Array.isArray( equipmentDetails.value ) ) {
     return []
   }
-  return equipmentDetails.value.filter(eq => eq && eq.id && eq.name)
-})
+  return equipmentDetails.value.filter( eq => eq && eq.id && eq.name )
+} )
 
-const hasValidEquipment = computed(() => {
+const hasValidEquipment = computed( () => {
   return validEquipmentList.value.length > 0
-})
+} )
 
 // Unique assignees for filter dropdown
-const uniqueAssignees = computed(() => {
+const uniqueAssignees = computed( () => {
   const assigneesSet = new Set()
 
-  taskEntries.value.forEach(task => {
+  taskEntries.value.forEach( task => {
     const personnel = task?.personnel
-    if (!personnel) return
+    if ( !personnel ) return
 
-    if (Array.isArray(personnel)) {
-      personnel.forEach(p => {
-        if (typeof p === 'string' && p) assigneesSet.add(p)
-        if (typeof p === 'object' && p.name) assigneesSet.add(p.name)
-      })
-    } else if (typeof personnel === 'object' && personnel.name) {
-      assigneesSet.add(personnel.name)
-    } else if (typeof personnel === 'string' && personnel) {
-      assigneesSet.add(personnel)
+    if ( Array.isArray( personnel ) ) {
+      personnel.forEach( p => {
+        if ( typeof p === 'string' && p ) assigneesSet.add( p )
+        if ( typeof p === 'object' && p.name ) assigneesSet.add( p.name )
+      } )
+    } else if ( typeof personnel === 'object' && personnel.name ) {
+      assigneesSet.add( personnel.name )
+    } else if ( typeof personnel === 'string' && personnel ) {
+      assigneesSet.add( personnel )
     }
-  })
+  } )
 
-  return Array.from(assigneesSet).sort()
-})
+  return Array.from( assigneesSet ).sort()
+} )
 
 // Filtered task entries
-const filteredTaskEntries = computed(() => {
+const filteredTaskEntries = computed( () => {
   let filtered = taskEntries.value
 
   // Filter by search
-  if (taskFilters.value.search) {
+  if ( taskFilters.value.search ) {
     const searchLower = taskFilters.value.search.toLowerCase()
-    filtered = filtered.filter(task => {
+    filtered = filtered.filter( task => {
       const name = task.name || task.task_name || task.label || task.taskListText || ''
       const id = task.id || ''
-      return name.toLowerCase().includes(searchLower) || String(id).toLowerCase().includes(searchLower)
-    })
+      return name.toLowerCase().includes( searchLower ) || String( id ).toLowerCase().includes( searchLower )
+    } )
   }
 
   // Filter by state
-  if (taskFilters.value.state) {
-    filtered = filtered.filter(task => {
+  if ( taskFilters.value.state ) {
+    filtered = filtered.filter( task => {
       const stateName = task?.state?.name || ''
       return stateName.toLowerCase() === taskFilters.value.state.toLowerCase()
-    })
+    } )
   }
 
   // Filter by assignee
-  if (taskFilters.value.assignee) {
-    filtered = filtered.filter(task => {
+  if ( taskFilters.value.assignee ) {
+    filtered = filtered.filter( task => {
       const personnel = task?.personnel
-      if (!personnel) return false
+      if ( !personnel ) return false
 
-      if (Array.isArray(personnel)) {
-        return personnel.some(p => {
+      if ( Array.isArray( personnel ) ) {
+        return personnel.some( p => {
           const name = typeof p === 'string' ? p : p?.name || ''
           return name === taskFilters.value.assignee
-        })
-      } else if (typeof personnel === 'object' && personnel.name) {
+        } )
+      } else if ( typeof personnel === 'object' && personnel.name ) {
         return personnel.name === taskFilters.value.assignee
-      } else if (typeof personnel === 'string') {
+      } else if ( typeof personnel === 'string' ) {
         return personnel === taskFilters.value.assignee
       }
 
       return false
-    })
+    } )
   }
 
   // Filter by time spent
-  if (taskFilters.value.timeSpent) {
-    filtered = filtered.filter(task => {
+  if ( taskFilters.value.timeSpent ) {
+    filtered = filtered.filter( task => {
       const timeTakenSec = task?.time_taken_sec || 0
-      const minutes = Math.round(timeTakenSec / 60)
+      const minutes = Math.round( timeTakenSec / 60 )
 
-      switch (taskFilters.value.timeSpent) {
+      switch ( taskFilters.value.timeSpent ) {
         case 'custom':
           // Custom range filter
-          if (customTimeRange.value.start !== null && customTimeRange.value.end !== null) {
+          if ( customTimeRange.value.start !== null && customTimeRange.value.end !== null ) {
             return minutes >= customTimeRange.value.start && minutes <= customTimeRange.value.end
-          } else if (customTimeRange.value.start !== null) {
+          } else if ( customTimeRange.value.start !== null ) {
             return minutes >= customTimeRange.value.start
-          } else if (customTimeRange.value.end !== null) {
+          } else if ( customTimeRange.value.end !== null ) {
             return minutes <= customTimeRange.value.end
           }
           return true
@@ -1299,165 +1352,165 @@ const filteredTaskEntries = computed(() => {
         default:
           return true
       }
-    })
+    } )
   }
 
   return filtered
-})
+} )
 
 // Process file list to match equipment details pattern
-const processedFileList = computed(() => {
-  if (!props.workOrder?.file_list || !Array.isArray(props.workOrder.file_list)) {
+const processedFileList = computed( () => {
+  if ( !props.workOrder?.file_list || !Array.isArray( props.workOrder.file_list ) ) {
     return []
   }
 
-  return props.workOrder.file_list.map((url, index) => {
-    const urlParts = url.split('/')
+  return props.workOrder.file_list.map( ( url, index ) => {
+    const urlParts = url.split( '/' )
     const filename = urlParts[urlParts.length - 1] || `file_${index + 1}`
 
     // Clean filename by removing timestamp prefixes
-    const cleanFilename = filename.replace(/\d{17}/, '')
+    const cleanFilename = filename.replace( /\d{17}/, '' )
 
     return {
-      id: index,
-      name: decodeURIComponent(cleanFilename),
+      id : index,
+      name : decodeURIComponent( cleanFilename ),
       url,
-      type: getFileTypeFromName(cleanFilename),
+      type : getFileTypeFromName( cleanFilename )
     }
-  })
-})
+  } )
+} )
 
 // Computed property for displaying assigned users (first 2 + ellipsis if more)
-const displayedAssignedUsers = computed(() => {
+const displayedAssignedUsers = computed( () => {
   const userList = props.workOrder?.user_list
-  if (!userList || !Array.isArray(userList) || userList.length === 0) {
+  if ( !userList || !Array.isArray( userList ) || userList.length === 0 ) {
     return 'Unassigned'
   }
 
   const formatUser = user => `${user.first_name} ${user.last_name}`
 
-  if (userList.length === 1) {
-    return formatUser(userList[0])
-  } else if (userList.length === 2) {
-    return `${formatUser(userList[0])}, ${formatUser(userList[1])}`
+  if ( userList.length === 1 ) {
+    return formatUser( userList[0] )
+  } else if ( userList.length === 2 ) {
+    return `${formatUser( userList[0] )}, ${formatUser( userList[1] )}`
   } else {
-    return `${formatUser(userList[0])}, ${formatUser(userList[1])}...`
+    return `${formatUser( userList[0] )}, ${formatUser( userList[1] )}...`
   }
-})
+} )
 
 // Computed property for displaying assigned users text with ellipsis (for use with total count)
-const displayedAssignedUsersText = computed(() => {
+const displayedAssignedUsersText = computed( () => {
   const userList = props.workOrder?.user_list
-  if (!userList || !Array.isArray(userList) || userList.length === 0) {
+  if ( !userList || !Array.isArray( userList ) || userList.length === 0 ) {
     return 'Unassigned'
   }
 
   const formatUser = user => `${user.first_name} ${user.last_name}`
 
-  if (userList.length === 1) {
-    return formatUser(userList[0])
-  } else if (userList.length === 2) {
-    return `${formatUser(userList[0])}, ${formatUser(userList[1])}`
+  if ( userList.length === 1 ) {
+    return formatUser( userList[0] )
+  } else if ( userList.length === 2 ) {
+    return `${formatUser( userList[0] )}, ${formatUser( userList[1] )}`
   } else {
-    return `${formatUser(userList[0])}, ${formatUser(userList[1])}...`
+    return `${formatUser( userList[0] )}, ${formatUser( userList[1] )}...`
   }
-})
+} )
 
 // Filtered user list based on search query
-const filteredUserList = computed(() => {
+const filteredUserList = computed( () => {
   const userList = props.workOrder?.user_list
-  if (!userList || !Array.isArray(userList)) {
+  if ( !userList || !Array.isArray( userList ) ) {
     return []
   }
 
-  if (!userSearchQuery.value) {
+  if ( !userSearchQuery.value ) {
     return userList
   }
 
   const query = userSearchQuery.value.toLowerCase()
-  return userList.filter(user => {
+  return userList.filter( user => {
     const fullName = `${user.first_name} ${user.last_name}`.toLowerCase()
-    const email = (user.email || '').toLowerCase()
-    return fullName.includes(query) || email.includes(query)
-  })
-})
+    const email = ( user.email || '' ).toLowerCase()
+    return fullName.includes( query ) || email.includes( query )
+  } )
+} )
 
 const normalizeTaskList = taskList => {
-  if (!Array.isArray(taskList)) {
+  if ( !Array.isArray( taskList ) ) {
     taskEntries.value = []
     return
   }
 
   const existingEntriesMap = new Map(
-    Array.isArray(taskEntries.value) ? taskEntries.value.map(entry => [entry.id, entry]) : []
+    Array.isArray( taskEntries.value ) ? taskEntries.value.map( entry => [entry.id, entry] ) : []
   )
 
-  taskEntries.value = taskList.map((item, index) => {
-    if (typeof item === 'string' || typeof item === 'number') {
-      const id = String(item).trim()
-      const label = String(item)
+  taskEntries.value = taskList.map( ( item, index ) => {
+    if ( typeof item === 'string' || typeof item === 'number' ) {
+      const id = String( item ).trim()
+      const label = String( item )
       const lookupKey = id || `task-${index}`
-      const existing = existingEntriesMap.get(lookupKey)
+      const existing = existingEntriesMap.get( lookupKey )
 
-      if (existing) {
+      if ( existing ) {
         return {
           ...existing,
-          id: lookupKey,
+          id : lookupKey,
           label,
-          taskListText: label,
-          hasValidId: Boolean(id),
-          index,
+          taskListText : label,
+          hasValidId : Boolean( id ),
+          index
         }
       }
 
       return {
-        id: lookupKey,
+        id : lookupKey,
         label,
-        taskListText: label,
-        hasValidId: Boolean(id),
-        index,
+        taskListText : label,
+        hasValidId : Boolean( id ),
+        index
       }
     }
 
-    if (item && typeof item === 'object' && !Array.isArray(item)) {
+    if ( item && typeof item === 'object' && !Array.isArray( item ) ) {
       const rawId = item.id || item._id || item.task_id || item.taskId || item.reference_id || ''
-      const id = String(rawId).trim()
+      const id = String( rawId ).trim()
       const labelCandidate = item.task_list_text || item.taskListText || item.task_name || item.name || id || ''
 
       const label = labelCandidate || `Task ${index + 1}`
       const lookupKey = id || `task-${index}`
-      const existing = existingEntriesMap.get(lookupKey)
+      const existing = existingEntriesMap.get( lookupKey )
 
-      if (existing) {
+      if ( existing ) {
         return {
           ...existing,
           ...item, // Preserve all original task data
-          id: lookupKey,
+          id : lookupKey,
           label,
-          taskListText: label,
-          hasValidId: Boolean(id),
-          index,
+          taskListText : label,
+          hasValidId : Boolean( id ),
+          index
         }
       }
 
       return {
         ...item, // Preserve all original task data including category, equipment_node, time_estimate_sec, etc.
-        id: lookupKey,
+        id : lookupKey,
         label,
-        taskListText: label,
-        hasValidId: Boolean(id),
-        index,
+        taskListText : label,
+        hasValidId : Boolean( id ),
+        index
       }
     }
 
     return {
-      id: `task-${index}`,
-      label: `Task ${index + 1}`,
-      taskListText: `Task ${index + 1}`,
-      hasValidId: false,
-      index,
+      id : `task-${index}`,
+      label : `Task ${index + 1}`,
+      taskListText : `Task ${index + 1}`,
+      hasValidId : false,
+      index
     }
-  })
+  } )
 }
 
 const resetTaskState = () => {
@@ -1471,7 +1524,7 @@ const resetTaskState = () => {
 }
 
 const resolveTaskTemplateId = task => {
-  if (!task || typeof task !== 'object') {
+  if ( !task || typeof task !== 'object' ) {
     return ''
   }
 
@@ -1479,37 +1532,37 @@ const resolveTaskTemplateId = task => {
 }
 
 // Equipment loading function
-const loadEquipmentDetails = async () => {
-  if (!props.workOrder?.equipment_node_ids?.length) {
+const loadEquipmentDetails = async() => {
+  if ( !props.workOrder?.equipment_node_ids?.length ) {
     equipmentDetails.value = []
     return
   }
 
   try {
     loadingEquipment.value = true
-    const equipmentPromises = props.workOrder.equipment_node_ids.map(id =>
-      getEquipmentById(id).catch(error => {
-        console.warn(`Failed to load equipment ${id}:`, error)
+    const equipmentPromises = props.workOrder.equipment_node_ids.map( id =>
+      getEquipmentById( id ).catch( error => {
+        console.warn( `Failed to load equipment ${id}:`, error )
         return null
-      })
+      } )
     )
 
-    const results = await Promise.all(equipmentPromises)
+    const results = await Promise.all( equipmentPromises )
     equipmentDetails.value = results
-      .filter(result => result?.data && result.data.id)
-      .map(result => ({
+      .filter( result => result?.data && result.data.id )
+      .map( result => ( {
         ...result.data,
         // Ensure we have fallback values for required fields
-        id: result.data.id,
-        name: result.data.name || `Equipment ${result.data.id}`,
-        manufacturer: result.data.manufacturer || null,
-        location: result.data.location || null,
-        person_in_charge: result.data.person_in_charge || null,
-        image_list: result.data.image_list || [],
-        type: result.data.type || result.data.equipment_type || 'Equipment',
-      }))
-  } catch (error) {
-    console.error('Failed to load equipment details:', error)
+        id : result.data.id,
+        name : result.data.name || `Equipment ${result.data.id}`,
+        manufacturer : result.data.manufacturer || null,
+        location : result.data.location || null,
+        person_in_charge : result.data.person_in_charge || null,
+        image_list : result.data.image_list || [],
+        type : result.data.type || result.data.equipment_type || 'Equipment'
+      } ) )
+  } catch ( error ) {
+    console.error( 'Failed to load equipment details:', error )
     equipmentDetails.value = []
   } finally {
     loadingEquipment.value = false
@@ -1520,27 +1573,27 @@ const loadEquipmentDetails = async () => {
 watch(
   () => props.workOrder,
   newWorkOrder => {
-    if (newWorkOrder) {
+    if ( newWorkOrder ) {
       // Load equipment details when work order changes
       loadEquipmentDetails()
       resetTaskState()
-      normalizeTaskList(newWorkOrder.task_list)
+      normalizeTaskList( newWorkOrder.task_list )
     } else {
       resetTaskState()
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
 
 watch(
   () => props.workOrder?.task_list,
   newTaskList => {
-    if (props.workOrder) {
+    if ( props.workOrder ) {
       selectedTaskTemplateId.value = ''
       selectedTaskForPreview.value = null
       showTaskPreviewDialog.value = false
       selectedTaskSteps.value = []
-      normalizeTaskList(newTaskList)
+      normalizeTaskList( newTaskList )
     } else {
       resetTaskState()
     }
@@ -1549,143 +1602,143 @@ watch(
 
 // Calculate dynamic min-height for lists
 const calculateListsMinHeight = () => {
-  nextTick(() => {
+  nextTick( () => {
     try {
       // Get the right-panel container from parent
-      const rightPanel = document.querySelector('.todo-view-container .todo-view .right-panel')
+      const rightPanel = document.querySelector( '.todo-view-container .todo-view .right-panel' )
       // Get the header element
-      const header = document.querySelector('.work-order-detail .detail-header')
+      const header = document.querySelector( '.work-order-detail .detail-header' )
 
-      if (rightPanel && header) {
+      if ( rightPanel && header ) {
         const rightPanelHeight = rightPanel.offsetHeight
         const headerHeight = header.offsetHeight
         const calculatedMinHeight = rightPanelHeight - headerHeight - 100
 
         // Set minimum of 400px to prevent too small lists
-        listsMinHeight.value = `${Math.max(calculatedMinHeight, 400)}px`
+        listsMinHeight.value = `${Math.max( calculatedMinHeight, 400 )}px`
       }
-    } catch (error) {
-      console.warn('Failed to calculate lists min-height:', error)
+    } catch ( error ) {
+      console.warn( 'Failed to calculate lists min-height:', error )
       // Keep default value on error
     }
-  })
+  } )
 }
 
 // Methods
-const formatDate = (dateString, use25HourFormat = false) => {
-  if (!dateString) return '-'
+const formatDate = ( dateString, use25HourFormat = false ) => {
+  if ( !dateString ) return '-'
 
-  if (use25HourFormat) {
+  if ( use25HourFormat ) {
     // 25-hour format (00:00 - 24:59)
-    const date = new Date(dateString)
+    const date = new Date( dateString )
     const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
-    const day = String(date.getDate()).padStart(2, '0')
+    const month = String( date.getMonth() + 1 ).padStart( 2, '0' )
+    const day = String( date.getDate() ).padStart( 2, '0' )
     let hours = date.getHours()
-    const minutes = String(date.getMinutes()).padStart(2, '0')
+    const minutes = String( date.getMinutes() ).padStart( 2, '0' )
 
     // Convert to 25-hour format where 24:xx represents the next day's midnight hour
-    if (hours === 0 && date.getDate() !== new Date(dateString).getDate()) {
+    if ( hours === 0 && date.getDate() !== new Date( dateString ).getDate() ) {
       hours = 24
     }
 
-    const formattedHours = String(hours).padStart(2, '0')
+    const formattedHours = String( hours ).padStart( 2, '0' )
     return `${year}-${month}-${day} ${formattedHours}:${minutes}`
   }
 
-  return convertToLocalTime(dateString)
+  return convertToLocalTime( dateString )
 }
 
 const handleStartWorkOrder = () => {
-  emit('start-work-order', props.workOrder)
+  emit( 'start-work-order', props.workOrder )
 }
 
 const openUserListDialog = () => {
   userListDialogVisible.value = true
 }
 
-const handleApprove = async () => {
+const handleApprove = async() => {
   try {
-    await ElMessageBox.confirm('Are you sure you want to approve this work order?', 'Confirm Approval', {
-      confirmButtonText: 'Approve',
-      cancelButtonText: 'Cancel',
-      type: 'success',
-    })
+    await ElMessageBox.confirm( 'Are you sure you want to approve this work order?', 'Confirm Approval', {
+      confirmButtonText : 'Approve',
+      cancelButtonText : 'Cancel',
+      type : 'success'
+    } )
 
-    await updateWorkOrder(props.workOrder.id, { state_id: 7 })
-    ElMessage.success('Work order approved successfully')
-    emit('refresh')
-  } catch (error) {
-    if (error !== 'cancel') {
-      console.error('Error approving work order:', error)
-      ElMessage.error('Failed to approve work order')
+    await updateWorkOrder( props.workOrder.id, { state_id : 7 } )
+    ElMessage.success( 'Work order approved successfully' )
+    emit( 'refresh' )
+  } catch ( error ) {
+    if ( error !== 'cancel' ) {
+      console.error( 'Error approving work order:', error )
+      ElMessage.error( 'Failed to approve work order' )
     }
   }
 }
 
-const handleReject = async () => {
+const handleReject = async() => {
   try {
     // Check if due date has passed
-    const dueDate = props.workOrder?.due_date ? new Date(props.workOrder.due_date) : null
+    const dueDate = props.workOrder?.due_date ? new Date( props.workOrder.due_date ) : null
     const now = new Date()
     const isDueDatePassed = dueDate && dueDate < now
 
     // Prepare confirmation message
     let confirmMessage = 'Are you sure you want to reject this work order?'
-    if (isDueDatePassed) {
+    if ( isDueDatePassed ) {
       confirmMessage += '\n\nNote: The due date has passed. This work order will be marked as Incomplete.'
     }
 
-    await ElMessageBox.confirm(confirmMessage, 'Confirm Rejection', {
-      confirmButtonText: 'Reject',
-      cancelButtonText: 'Cancel',
-      type: 'warning',
-      dangerouslyUseHTMLString: false,
-      confirmButtonClass: 'el-button--danger',
-    })
+    await ElMessageBox.confirm( confirmMessage, 'Confirm Rejection', {
+      confirmButtonText : 'Reject',
+      cancelButtonText : 'Cancel',
+      type : 'warning',
+      dangerouslyUseHTMLString : false,
+      confirmButtonClass : 'el-button--danger'
+    } )
 
     // Set state based on due date
     const stateId = isDueDatePassed ? 6 : 5
 
-    await updateWorkOrder(props.workOrder.id, { state_id: stateId })
-    ElMessage.success('Work order rejected successfully')
-    emit('refresh')
-  } catch (error) {
-    if (error !== 'cancel') {
-      console.error('Error rejecting work order:', error)
-      ElMessage.error('Failed to reject work order')
+    await updateWorkOrder( props.workOrder.id, { state_id : stateId } )
+    ElMessage.success( 'Work order rejected successfully' )
+    emit( 'refresh' )
+  } catch ( error ) {
+    if ( error !== 'cancel' ) {
+      console.error( 'Error rejecting work order:', error )
+      ElMessage.error( 'Failed to reject work order' )
     }
   }
 }
 
 const handleHeaderAction = action => {
-  switch (action) {
+  switch ( action ) {
     case 'start':
       handleStartWorkOrder()
       break
     case 'edit':
-      emit('edit', props.workOrder)
+      emit( 'edit', props.workOrder )
       break
     case 'share':
-      emit('share', props.workOrder)
+      emit( 'share', props.workOrder )
       break
     case 'export':
-      emit('export', props.workOrder)
+      emit( 'export', props.workOrder )
       break
     case 'recreate':
-      emit('recreate', props.workOrder)
+      emit( 'recreate', props.workOrder )
       break
     case 'delete':
       handleDeleteWorkOrder()
       break
     default:
-      console.warn(`Unhandled header action: ${action}`)
+      console.warn( `Unhandled header action: ${action}` )
   }
 }
 
 // Delete methods
 const handleDeleteWorkOrder = () => {
-  if (isRecurring.value) {
+  if ( isRecurring.value ) {
     // For recurring work orders, show confirmation dialog with two options
     deleteDialogVisible.value = true
   } else {
@@ -1694,45 +1747,45 @@ const handleDeleteWorkOrder = () => {
       'This action will permanently delete this work order. This cannot be undone.',
       'Delete Work Order',
       {
-        confirmButtonText: 'Delete',
-        cancelButtonText: 'Cancel',
-        type: 'warning',
-        confirmButtonClass: 'el-button--danger',
+        confirmButtonText : 'Delete',
+        cancelButtonText : 'Cancel',
+        type : 'warning',
+        confirmButtonClass : 'el-button--danger'
       }
     )
-      .then(async () => {
+      .then( async() => {
         await performDeleteIndividual()
-      })
-      .catch(() => {
+      } )
+      .catch( () => {
         // User cancelled
-      })
+      } )
   }
 }
 
-const performDeleteIndividual = async () => {
+const performDeleteIndividual = async() => {
   try {
     deleting.value = true
-    await deleteIndividualWorkOrder(props.workOrder.id)
-    ElMessage.success('Work order deleted successfully')
-    emit('delete', { workOrder: props.workOrder, type: 'individual' })
-  } catch (error) {
-    console.error('Failed to delete work order:', error)
-    ElMessage.error('Failed to delete work order')
+    await deleteIndividualWorkOrder( props.workOrder.id )
+    ElMessage.success( 'Work order deleted successfully' )
+    emit( 'delete', { workOrder : props.workOrder, type : 'individual' } )
+  } catch ( error ) {
+    console.error( 'Failed to delete work order:', error )
+    ElMessage.error( 'Failed to delete work order' )
   } finally {
     deleting.value = false
   }
 }
 
-const performDeleteRecurrence = async () => {
+const performDeleteRecurrence = async() => {
   try {
     deleting.value = true
-    await deleteRecurrenceWorkOrders(props.workOrder.recurrence_uuid)
-    ElMessage.success('All recurring work orders deleted successfully')
-    emit('delete', { workOrder: props.workOrder, type: 'recurrence' })
+    await deleteRecurrenceWorkOrders( props.workOrder.recurrence_uuid )
+    ElMessage.success( 'All recurring work orders deleted successfully' )
+    emit( 'delete', { workOrder : props.workOrder, type : 'recurrence' } )
     deleteDialogVisible.value = false
-  } catch (error) {
-    console.error('Failed to delete recurring work orders:', error)
-    ElMessage.error('Failed to delete recurring work orders')
+  } catch ( error ) {
+    console.error( 'Failed to delete recurring work orders:', error )
+    ElMessage.error( 'Failed to delete recurring work orders' )
   } finally {
     deleting.value = false
   }
@@ -1740,16 +1793,16 @@ const performDeleteRecurrence = async () => {
 
 const handleDeleteConfirmation = async type => {
   // User has already confirmed via the custom dialog, proceed directly
-  if (type === 'individual') {
+  if ( type === 'individual' ) {
     await performDeleteIndividual()
     deleteDialogVisible.value = false
-  } else if (type === 'recurrence') {
+  } else if ( type === 'recurrence' ) {
     await performDeleteRecurrence()
   }
 }
 
 // Timeline modal methods
-const openTimelineModal = async () => {
+const openTimelineModal = async() => {
   timelineModalVisible.value = true
 
   // Reset pagination state when opening modal
@@ -1758,7 +1811,7 @@ const openTimelineModal = async () => {
   timelineTotalElements.value = 0
 
   // Only fetch timeline data if this is a recurring work order
-  if (!isRecurring.value || !props.workOrder?.recurrence_uuid) {
+  if ( !isRecurring.value || !props.workOrder?.recurrence_uuid ) {
     timelineEvents.value = []
     return
   }
@@ -1766,7 +1819,7 @@ const openTimelineModal = async () => {
   await fetchTimelineData()
 }
 
-const fetchTimelineData = async () => {
+const fetchTimelineData = async() => {
   try {
     timelineLoading.value = true
     const response = await getWorkOrdersByRecurrence(
@@ -1781,10 +1834,10 @@ const fetchTimelineData = async () => {
     timelineTotalElements.value = response.data.totalElements || 0
 
     // Transform work orders into timeline events
-    timelineEvents.value = transformWorkOrdersToTimeline(workOrders)
-  } catch (error) {
-    console.error('Failed to load recurring work orders for timeline:', error)
-    ElMessage.error('Failed to load timeline data')
+    timelineEvents.value = transformWorkOrdersToTimeline( workOrders )
+  } catch ( error ) {
+    console.error( 'Failed to load recurring work orders for timeline:', error )
+    ElMessage.error( 'Failed to load timeline data' )
     timelineEvents.value = []
     timelineTotalElements.value = 0
   } finally {
@@ -1809,110 +1862,113 @@ const handleTimelinePageSizeChange = async newSize => {
 
 const handleExportFormat = async format => {
   try {
-    if (!timelineEvents.value || timelineEvents.value.length === 0) {
-      ElMessage.warning('No timeline data available to export')
+    if ( !timelineEvents.value || timelineEvents.value.length === 0 ) {
+      ElMessage.warning( 'No timeline data available to export' )
       return
     }
 
     // Generate timestamped filename
-    const filename = generateTimestampedFilename(`work-order-${props.workOrder.id}-timeline`)
+    const filename = generateTimestampedFilename( `work-order-${props.workOrder.id}-timeline` )
 
     // Export with selected format and current work order highlighting
-    const result = exportTimelineData(timelineEvents.value, format, filename, {
-      currentWorkOrderId: props.workOrder.id,
-      sheetName: `Work Order ${props.workOrder.id} Timeline`,
-      includeMetadata: true,
-    })
+    const result = exportTimelineData( timelineEvents.value, format, filename, {
+      currentWorkOrderId : props.workOrder.id,
+      sheetName : `Work Order ${props.workOrder.id} Timeline`,
+      includeMetadata : true
+    } )
 
-    if (result.success) {
-      ElMessage.success(`${result.message} (${result.recordCount} records)`)
+    if ( result.success ) {
+      ElMessage.success( `${result.message} (${result.recordCount} records)` )
       timelineModalVisible.value = false
     } else {
-      ElMessage.error(result.message)
+      ElMessage.error( result.message )
     }
-  } catch (error) {
-    console.error('Timeline export failed:', error)
-    ElMessage.error('Failed to export timeline data')
+  } catch ( error ) {
+    console.error( 'Timeline export failed:', error )
+    ElMessage.error( 'Failed to export timeline data' )
   }
 }
 
 // Transform work orders into timeline events
 const transformWorkOrdersToTimeline = workOrders => {
-  if (!Array.isArray(workOrders)) return []
+  if ( !Array.isArray( workOrders ) ) return []
 
   return workOrders
-    .sort((a, b) => new Date(a.start_date || a.created_at) - new Date(b.start_date || b.created_at))
-    .map((workOrder, index) => {
+    .sort( ( a, b ) => new Date( a.start_date || a.created_at ) - new Date( b.start_date || b.created_at ) )
+    .map( ( workOrder, index ) => {
       const isCompleted = workOrder.state?.name?.toLowerCase() === 'completed'
       const isInProgress = workOrder.state?.name?.toLowerCase() === 'in progress'
-      const isIncomplete = (workOrder.state?.id === 13 || workOrder.state?.name === 'Incomplete') && !isCompleted
-      const taskCount = Array.isArray(workOrder.task_list) ? workOrder.task_list.length : 0
+      const isIncomplete = ( workOrder.state?.id === 13 || workOrder.state?.name === 'Incomplete' ) && !isCompleted
+      const taskCount = Array.isArray( workOrder.task_list ) ? workOrder.task_list.length : 0
 
       return {
-        id: workOrder.id,
-        title: workOrder.name || `Work Order #${workOrder.id}`,
-        description: workOrder.description || 'No description provided',
-        timestamp: formatDate(workOrder.start_date || workOrder.created_at, true), // 25-hour format
-        type: isIncomplete ? 'danger' : isCompleted ? 'success' : isInProgress ? 'primary' : 'info',
-        color: isIncomplete ? '#f56c6c' : isCompleted ? '#67c23a' : isInProgress ? '#409eff' : '#909399',
-        icon: 'DocumentChecked',
-        hollow: !isCompleted,
-        status: workOrder.state?.name || 'Pending',
+        id : workOrder.id,
+        title : workOrder.name || `Work Order #${workOrder.id}`,
+        description : workOrder.description || 'No description provided',
+        timestamp : formatDate( workOrder.start_date || workOrder.created_at, true ), // 25-hour format
+        type : isIncomplete ? 'danger' : isCompleted ? 'success' : isInProgress ? 'primary' : 'info',
+        color : isIncomplete ? '#f56c6c' : isCompleted ? '#67c23a' : isInProgress ? '#409eff' : '#909399',
+        icon : 'DocumentChecked',
+        hollow : !isCompleted,
+        status : workOrder.state?.name || 'Pending',
         isIncomplete,
-        dueDate: workOrder.due_date,
-        category: workOrder.category || workOrder.categories,
-        priority: workOrder.priority,
+        dueDate : workOrder.due_date,
+        category : workOrder.category || workOrder.categories,
+        priority : workOrder.priority,
         taskCount,
-        estimatedTime: workOrder.estimated_minutes ? `${workOrder.estimated_minutes} min` : null,
-        actualTimeConsumed: workOrder.actual_time_consumed ? `${workOrder.actual_time_consumed} min` : null,
-        plannedEnd: workOrder.due_date,
-        actualEnd: workOrder.finished_at,
-        assignees: workOrder.created_by
+        estimatedTime : workOrder.estimated_minutes ? `${workOrder.estimated_minutes} min` : null,
+        actualTimeConsumed : workOrder.actual_time_consumed ? `${workOrder.actual_time_consumed} min` : null,
+        plannedEnd : workOrder.due_date,
+        actualEnd : workOrder.finished_at,
+        assignees : workOrder.created_by
           ? [
-              {
-                id: 1,
-                name: String(workOrder.created_by).trim() || 'Unknown',
-                avatar: '',
-              },
-            ]
-          : [],
+            {
+              id : 1,
+              name :
+                  typeof workOrder.created_by === 'object'
+                    ? `${workOrder.created_by.first_name} ${workOrder.created_by.last_name}`.trim() || 'Unknown'
+                    : String( workOrder.created_by ).trim() || 'Unknown',
+              avatar : ''
+            }
+          ]
+          : []
       }
-    })
+    } )
 }
 
 // Task preview handlers
 const handleTaskPreview = async task => {
-  if (!task || !task.id || task.hasValidId === false) {
-    ElMessage.warning('Task preview is unavailable for this entry.')
+  if ( !task || !task.id || task.hasValidId === false ) {
+    ElMessage.warning( 'Task preview is unavailable for this entry.' )
     return
   }
 
-  const openPreview = (taskData, templateId = '', steps = []) => {
+  const openPreview = ( taskData, templateId = '', steps = [] ) => {
     const normalizedTemplateId = templateId || ''
-    const normalizedSteps = Array.isArray(steps) ? steps : []
+    const normalizedSteps = Array.isArray( steps ) ? steps : []
 
-    if (!normalizedTemplateId && normalizedSteps.length === 0) {
-      ElMessage.warning('Task preview is unavailable for this entry.')
+    if ( !normalizedTemplateId && normalizedSteps.length === 0 ) {
+      ElMessage.warning( 'Task preview is unavailable for this entry.' )
       return false
     }
 
     selectedTaskForPreview.value = taskData
     selectedTaskTemplateId.value = normalizedTemplateId
-    selectedTaskSteps.value = normalizedSteps.map(step => ({ ...step }))
+    selectedTaskSteps.value = normalizedSteps.map( step => ( { ...step } ) )
     showTaskPreviewDialog.value = true
     return true
   }
 
-  if (task.cachedTask) {
-    const cachedTemplateId = task.cachedTemplateId || resolveTaskTemplateId(task.cachedTask) || ''
-    const cachedSteps = Array.isArray(task.cachedTask.steps) ? task.cachedTask.steps : []
+  if ( task.cachedTask ) {
+    const cachedTemplateId = task.cachedTemplateId || resolveTaskTemplateId( task.cachedTask ) || ''
+    const cachedSteps = Array.isArray( task.cachedTask.steps ) ? task.cachedTask.steps : []
 
-    if (openPreview(task.cachedTask, cachedTemplateId, cachedSteps)) {
+    if ( openPreview( task.cachedTask, cachedTemplateId, cachedSteps ) ) {
       return
     }
   }
 
-  if (taskPreviewLoading.value) {
+  if ( taskPreviewLoading.value ) {
     return
   }
 
@@ -1922,38 +1978,38 @@ const handleTaskPreview = async task => {
 
   try {
     taskPreviewLoading.value = true
-    const response = await getTaskEntryById(task.id)
+    const response = await getTaskEntryById( task.id )
     const taskData = response?.data
 
-    if (!taskData) {
-      ElMessage.error('Failed to load task details.')
+    if ( !taskData ) {
+      ElMessage.error( 'Failed to load task details.' )
       return
     }
 
-    if (task.taskListText || task.label) {
+    if ( task.taskListText || task.label ) {
       taskData.taskListText = task.taskListText || task.label
     }
 
-    const templateId = resolveTaskTemplateId(taskData) || ''
-    const steps = Array.isArray(taskData.steps) ? taskData.steps : []
+    const templateId = resolveTaskTemplateId( taskData ) || ''
+    const steps = Array.isArray( taskData.steps ) ? taskData.steps : []
 
-    if (!openPreview(taskData, templateId, steps)) {
+    if ( !openPreview( taskData, templateId, steps ) ) {
       return
     }
 
-    const entryIndex = taskEntries.value.findIndex(entry => entry.id === task.id)
-    if (entryIndex !== -1) {
+    const entryIndex = taskEntries.value.findIndex( entry => entry.id === task.id )
+    if ( entryIndex !== -1 ) {
       const updatedEntry = {
         ...taskEntries.value[entryIndex],
-        cachedTask: taskData,
-        cachedTemplateId: templateId,
-        hasValidId: true,
+        cachedTask : taskData,
+        cachedTemplateId : templateId,
+        hasValidId : true
       }
-      taskEntries.value.splice(entryIndex, 1, updatedEntry)
+      taskEntries.value.splice( entryIndex, 1, updatedEntry )
     }
-  } catch (error) {
-    console.error('Failed to load task preview:', error)
-    ElMessage.error('Failed to load task preview.')
+  } catch ( error ) {
+    console.error( 'Failed to load task preview:', error )
+    ElMessage.error( 'Failed to load task preview.' )
   } finally {
     taskPreviewLoading.value = false
   }
@@ -1976,21 +2032,21 @@ const handleStandardPreview = standardData => {
 
 // Utility function to format category names
 const formatCategoryName = category => {
-  if (!category) return ''
+  if ( !category ) return ''
   // Convert kebab-case or snake_case to Title Case
   return category
-    .split(/[-_]/)
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ')
+    .split( /[-_]/ )
+    .map( word => word.charAt( 0 ).toUpperCase() + word.slice( 1 ).toLowerCase() )
+    .join( ' ' )
 }
 
 const navigateToLinkedOrder = () => {
-  ElMessage.info('Navigation to linked work order will be implemented by Yellow Guy')
+  ElMessage.info( 'Navigation to linked work order will be implemented by Yellow Guy' )
 }
 
 // File helper functions following equipment details pattern
 const getFileIcon = fileType => {
-  switch (fileType?.toLowerCase()) {
+  switch ( fileType?.toLowerCase() ) {
     case 'image':
     case 'jpg':
     case 'jpeg':
@@ -2030,110 +2086,110 @@ const getFileIcon = fileType => {
 }
 
 const getFileTypeFromName = fileName => {
-  if (!fileName) return 'document'
+  if ( !fileName ) return 'document'
 
-  const extension = fileName.split('.').pop()?.toLowerCase()
+  const extension = fileName.split( '.' ).pop()?.toLowerCase()
 
   const imageTypes = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg']
   const videoTypes = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv']
   const audioTypes = ['mp3', 'wav', 'flac', 'aac', 'ogg']
   const archiveTypes = ['zip', 'rar', '7z', 'tar', 'gz']
 
-  if (imageTypes.includes(extension)) return 'image'
-  if (videoTypes.includes(extension)) return 'video'
-  if (audioTypes.includes(extension)) return 'audio'
-  if (archiveTypes.includes(extension)) return 'download'
+  if ( imageTypes.includes( extension ) ) return 'image'
+  if ( videoTypes.includes( extension ) ) return 'video'
+  if ( audioTypes.includes( extension ) ) return 'audio'
+  if ( archiveTypes.includes( extension ) ) return 'download'
 
   return 'document'
 }
 
 const handleRequestClick = request => {
-  if (!request?.id) {
-    ElMessage.warning('Request information is not available')
+  if ( !request?.id ) {
+    ElMessage.warning( 'Request information is not available' )
     return
   }
 
   // Navigate to maintenance requests page with request ID as query parameter
-  router.push({
-    path: '/maintenance-requests',
-    query: { requestId: request.id },
-  })
+  router.push( {
+    path : '/maintenance-requests',
+    query : { requestId : request.id }
+  } )
 }
 
 const getRequestStatusLabel = status => {
   const statusMap = {
-    0: 'Pending',
-    1: 'Rejected',
-    2: 'Approved',
+    0 : 'Pending',
+    1 : 'Rejected',
+    2 : 'Approved'
   }
   return statusMap[status] || 'Unknown'
 }
 
 const getFirstRequestImage = imageList => {
-  if (!imageList) return null
-  if (Array.isArray(imageList) && imageList.length > 0) {
+  if ( !imageList ) return null
+  if ( Array.isArray( imageList ) && imageList.length > 0 ) {
     return imageList[0]
   }
-  if (typeof imageList === 'string') {
-    const images = imageList.split(',').filter(Boolean)
+  if ( typeof imageList === 'string' ) {
+    const images = imageList.split( ',' ).filter( Boolean )
     return images.length > 0 ? images[0] : null
   }
   return null
 }
 
 const handleEquipmentClick = equipment => {
-  if (!equipment?.id) {
-    ElMessage.warning('Equipment information is not available')
+  if ( !equipment?.id ) {
+    ElMessage.warning( 'Equipment information is not available' )
     return
   }
 
   // Navigate to maintenance equipment page with equipment ID as query parameter
-  router.push({
-    path: '/maintenance/equipment',
-    query: { equipmentId: equipment.id },
-  })
+  router.push( {
+    path : '/maintenance/equipment',
+    query : { equipmentId : equipment.id }
+  } )
 }
 
 // Handle occurrence click (placeholder for navigation implementation)
 const handleOccurrenceClick = occurrenceId => {
-  if (!occurrenceId) {
-    ElMessage.warning('Occurrence information is not available')
+  if ( !occurrenceId ) {
+    ElMessage.warning( 'Occurrence information is not available' )
     return
   }
 
-  console.log('Navigate to work order:', occurrenceId)
+  console.log( 'Navigate to work order:', occurrenceId )
   // TODO: Implement navigation to work order detail
   // router.push({ path: '/work-order', query: { id: occurrenceId } })
 }
 
 // Handle search input with debounce (300ms)
 const handleSearchInput = value => {
-  if (searchDebounceTimer) {
-    clearTimeout(searchDebounceTimer)
+  if ( searchDebounceTimer ) {
+    clearTimeout( searchDebounceTimer )
   }
 
-  searchDebounceTimer = setTimeout(() => {
+  searchDebounceTimer = setTimeout( () => {
     taskFilters.value.search = value
-  }, 300)
+  }, 300 )
 }
 
 // Lifecycle hooks
-onMounted(() => {
+onMounted( () => {
   // Calculate initial min-height
   calculateListsMinHeight()
 
   // Add resize listener to recalculate on window resize
-  window.addEventListener('resize', calculateListsMinHeight)
-})
+  window.addEventListener( 'resize', calculateListsMinHeight )
+} )
 
-onUnmounted(() => {
+onUnmounted( () => {
   // Clean up resize listener
-  window.removeEventListener('resize', calculateListsMinHeight)
-})
+  window.removeEventListener( 'resize', calculateListsMinHeight )
+} )
 
-defineOptions({
-  name: 'WorkOrderDetail',
-})
+defineOptions( {
+  name : 'WorkOrderDetail'
+} )
 </script>
 
 <style scoped lang="scss">
@@ -2540,10 +2596,10 @@ defineOptions({
     padding: 0;
   }
 
-  .timeline-loading,
   .timeline-empty {
-    padding: 40px 20px;
+    padding: 24px;
     text-align: center;
+    height: 45vh;
   }
 }
 
@@ -2722,6 +2778,10 @@ defineOptions({
 
         &.completed {
           background-color: var(--el-color-primary);
+
+          &.all-completed {
+            background-color: var(--el-color-success);
+          }
         }
 
         &.failed {
@@ -3253,6 +3313,26 @@ defineOptions({
         &:hover {
           color: var(--el-color-warning);
         }
+      }
+    }
+  }
+
+  .delete-dialog-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--el-color-warning-dark-2);
+    font-size: 18px;
+    font-weight: 500;
+
+    .help-icon {
+      font-size: 16px;
+      color: var(--el-color-info);
+      cursor: pointer;
+      transition: color 0.3s;
+
+      &:hover {
+        color: var(--el-color-primary);
       }
     }
   }

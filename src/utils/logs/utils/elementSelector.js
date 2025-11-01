@@ -7,43 +7,43 @@
  * Configuration for different form types and their typical button selectors
  */
 export const selectorConfigs = {
-  workOrder: {
-    submitButton: [
+  workOrder : {
+    submitButton : [
       'div.form-actions-fixed > div.form-actions-content > button.el-button.create-button',
       'div.form-actions-fixed > div.form-actions-content > button.create-button',
       'button.create-button',
       'div.form-actions-content > button[type="submit"]',
       'div.form-actions-fixed button[type="submit"]',
       '.form-actions button.el-button--primary',
-      'button[type="submit"]',
+      'button[type="submit"]'
     ],
-    form: ['form.create-form', 'form.work-order-form', 'form', '.el-form'],
-    container: ['.work-order-create-enhanced', '.work-order-create', '.create-container', '.main-container'],
+    form : ['form.create-form', 'form.work-order-form', 'form', '.el-form'],
+    container : ['.work-order-create-enhanced', '.work-order-create', '.create-container', '.main-container']
   },
-  template: {
-    submitButton: [
+  template : {
+    submitButton : [
       'button.submit-button',
       'button[type="submit"]',
       '.form-actions button.el-button--primary',
       '.template-actions button.save-button',
-      'button.save-template',
+      'button.save-template'
     ],
-    form: ['form.template-form', 'form.designer-form', 'form', '.el-form'],
-    container: ['.template-designer', '.template-container', '.designer-container'],
+    form : ['form.template-form', 'form.designer-form', 'form', '.el-form'],
+    container : ['.template-designer', '.template-container', '.designer-container']
   },
-  standard: {
-    submitButton: [
+  standard : {
+    submitButton : [
       'button.submit-button',
       'button[type="submit"]',
       '.form-actions button.el-button--primary',
       '.standard-actions button.save-button',
-      'button.save-standard',
+      'button.save-standard'
     ],
-    form: ['form.standard-form', 'form', '.el-form'],
-    container: ['.standard-container', '.standards-view'],
+    form : ['form.standard-form', 'form', '.el-form'],
+    container : ['.standard-container', '.standards-view']
   },
-  generic: {
-    submitButton: [
+  generic : {
+    submitButton : [
       'button[type="submit"]',
       'button.submit-button',
       'button.save-button',
@@ -51,11 +51,11 @@ export const selectorConfigs = {
       '.form-actions button.el-button--primary',
       '.form-actions button.primary',
       'button.el-button--primary',
-      'button.primary',
+      'button.primary'
     ],
-    form: ['form', '.el-form', '.form-container'],
-    container: ['.main-container', '.page-container', '.content-container'],
-  },
+    form : ['form', '.el-form', '.form-container'],
+    container : ['.main-container', '.page-container', '.content-container']
+  }
 }
 
 /**
@@ -64,19 +64,19 @@ export const selectorConfigs = {
  * @param {Element} container - Container element to search within
  * @returns {Element|null} - Found element or null
  */
-export const findElementWithFallback = (selectors, container = document) => {
-  if (!Array.isArray(selectors)) {
+export const findElementWithFallback = ( selectors, container = document ) => {
+  if ( !Array.isArray( selectors ) ) {
     selectors = [selectors]
   }
 
-  for (const selector of selectors) {
+  for ( const selector of selectors ) {
     try {
-      const element = container.querySelector(selector)
-      if (element) {
+      const element = container.querySelector( selector )
+      if ( element ) {
         return element
       }
-    } catch (error) {
-      console.warn(`Invalid selector: ${selector}`, error)
+    } catch ( error ) {
+      console.warn( `Invalid selector: ${selector}`, error )
     }
   }
 
@@ -89,26 +89,26 @@ export const findElementWithFallback = (selectors, container = document) => {
  * @param {Element} container - Container element to search within
  * @returns {Element[]} - Array of found elements
  */
-export const findAllElementsWithFallback = (selectors, container = document) => {
-  if (!Array.isArray(selectors)) {
+export const findAllElementsWithFallback = ( selectors, container = document ) => {
+  if ( !Array.isArray( selectors ) ) {
     selectors = [selectors]
   }
 
   const foundElements = []
 
-  for (const selector of selectors) {
+  for ( const selector of selectors ) {
     try {
-      const elements = container.querySelectorAll(selector)
-      if (elements.length > 0) {
-        foundElements.push(...Array.from(elements))
+      const elements = container.querySelectorAll( selector )
+      if ( elements.length > 0 ) {
+        foundElements.push( ...Array.from( elements ) )
       }
-    } catch (error) {
-      console.warn(`Invalid selector: ${selector}`, error)
+    } catch ( error ) {
+      console.warn( `Invalid selector: ${selector}`, error )
     }
   }
 
   // Remove duplicates
-  return Array.from(new Set(foundElements))
+  return Array.from( new Set( foundElements ) )
 }
 
 /**
@@ -117,9 +117,9 @@ export const findAllElementsWithFallback = (selectors, container = document) => 
  * @param {Element} container - Container element to search within
  * @returns {Element|null} - Found submit button or null
  */
-export const findSubmitButton = (formType = 'generic', container = document) => {
+export const findSubmitButton = ( formType = 'generic', container = document ) => {
   const config = selectorConfigs[formType] || selectorConfigs.generic
-  return findElementWithFallback(config.submitButton, container)
+  return findElementWithFallback( config.submitButton, container )
 }
 
 /**
@@ -128,9 +128,9 @@ export const findSubmitButton = (formType = 'generic', container = document) => 
  * @param {Element} container - Container element to search within
  * @returns {Element|null} - Found form element or null
  */
-export const findForm = (formType = 'generic', container = document) => {
+export const findForm = ( formType = 'generic', container = document ) => {
   const config = selectorConfigs[formType] || selectorConfigs.generic
-  return findElementWithFallback(config.form, container)
+  return findElementWithFallback( config.form, container )
 }
 
 /**
@@ -139,9 +139,9 @@ export const findForm = (formType = 'generic', container = document) => {
  * @param {Element} container - Container element to search within
  * @returns {Element|null} - Found container element or null
  */
-export const findContainer = (formType = 'generic', container = document) => {
+export const findContainer = ( formType = 'generic', container = document ) => {
   const config = selectorConfigs[formType] || selectorConfigs.generic
-  return findElementWithFallback(config.container, container)
+  return findElementWithFallback( config.container, container )
 }
 
 /**
@@ -150,22 +150,22 @@ export const findContainer = (formType = 'generic', container = document) => {
  * @param {Element} container - Container element to search within
  * @returns {Object} - Object containing categorized buttons
  */
-export const findActionButtons = (formType = 'generic', container = document) => {
+export const findActionButtons = ( formType = 'generic', container = document ) => {
   const actionSelectors = {
-    submit: ['button[type="submit"]', 'button.submit-button', 'button.create-button', 'button.save-button'],
-    cancel: [
+    submit : ['button[type="submit"]', 'button.submit-button', 'button.create-button', 'button.save-button'],
+    cancel : [
       'button.cancel-button',
       'button[type="button"]:contains("Cancel")',
       'button[type="button"]:contains("cancel")',
-      '.form-actions button:contains("Cancel")',
+      '.form-actions button:contains("Cancel")'
     ],
-    reset: ['button[type="reset"]', 'button.reset-button', 'button:contains("Reset")', 'button:contains("reset")'],
+    reset : ['button[type="reset"]', 'button.reset-button', 'button:contains("Reset")', 'button:contains("reset")']
   }
 
   return {
-    submit: findAllElementsWithFallback(actionSelectors.submit, container),
-    cancel: findAllElementsWithFallback(actionSelectors.cancel, container),
-    reset: findAllElementsWithFallback(actionSelectors.reset, container),
+    submit : findAllElementsWithFallback( actionSelectors.submit, container ),
+    cancel : findAllElementsWithFallback( actionSelectors.cancel, container ),
+    reset : findAllElementsWithFallback( actionSelectors.reset, container )
   }
 }
 
@@ -174,17 +174,17 @@ export const findActionButtons = (formType = 'generic', container = document) =>
  * @param {Object} route - Vue router route object (optional)
  * @returns {string} - Detected form type
  */
-export const detectFormType = (route = null) => {
+export const detectFormType = ( route = null ) => {
   // Check URL/route first
-  if (route) {
+  if ( route ) {
     const path = route.path.toLowerCase()
     const name = route.name?.toLowerCase() || ''
 
-    if (path.includes('work-order') || name.includes('workorder') || name.includes('work_order')) {
+    if ( path.includes( 'work-order' ) || name.includes( 'workorder' ) || name.includes( 'work_order' ) ) {
       return 'workOrder'
-    } else if (path.includes('template') || name.includes('template')) {
+    } else if ( path.includes( 'template' ) || name.includes( 'template' ) ) {
       return 'template'
-    } else if (path.includes('standard') || name.includes('standard')) {
+    } else if ( path.includes( 'standard' ) || name.includes( 'standard' ) ) {
       return 'standard'
     }
   }
@@ -194,18 +194,18 @@ export const detectFormType = (route = null) => {
     '.work-order-create',
     '.work-order-form',
     'h2:contains("Work Order")',
-    '.create-title:contains("Work Order")',
+    '.create-title:contains("Work Order")'
   ]
 
   const templateIndicators = ['.template-designer', '.template-form', 'h2:contains("Template")', '.designer-container']
 
   const standardIndicators = ['.standard-container', '.standard-form', 'h2:contains("Standard")', '.standards-view']
 
-  if (findElementWithFallback(workOrderIndicators)) {
+  if ( findElementWithFallback( workOrderIndicators ) ) {
     return 'workOrder'
-  } else if (findElementWithFallback(templateIndicators)) {
+  } else if ( findElementWithFallback( templateIndicators ) ) {
     return 'template'
-  } else if (findElementWithFallback(standardIndicators)) {
+  } else if ( findElementWithFallback( standardIndicators ) ) {
     return 'standard'
   }
 
@@ -217,22 +217,22 @@ export const detectFormType = (route = null) => {
  * @param {string} formType - Type of form
  * @param {Object} selectors - Object containing selector arrays
  */
-export const addCustomSelectors = (formType, selectors) => {
-  if (!selectorConfigs[formType]) {
+export const addCustomSelectors = ( formType, selectors ) => {
+  if ( !selectorConfigs[formType] ) {
     selectorConfigs[formType] = {}
   }
 
-  Object.keys(selectors).forEach(key => {
-    if (!selectorConfigs[formType][key]) {
+  Object.keys( selectors ).forEach( key => {
+    if ( !selectorConfigs[formType][key] ) {
       selectorConfigs[formType][key] = []
     }
 
-    if (Array.isArray(selectors[key])) {
-      selectorConfigs[formType][key].unshift(...selectors[key])
+    if ( Array.isArray( selectors[key] ) ) {
+      selectorConfigs[formType][key].unshift( ...selectors[key] )
     } else {
-      selectorConfigs[formType][key].unshift(selectors[key])
+      selectorConfigs[formType][key].unshift( selectors[key] )
     }
-  })
+  } )
 }
 
 /**
@@ -242,29 +242,29 @@ export const addCustomSelectors = (formType, selectors) => {
  * @param {Element} container - Container to search within
  * @returns {Promise<Element|null>} - Promise that resolves to found element or null
  */
-export const waitForElement = (selectors, timeout = 5000, container = document) => {
-  return new Promise(resolve => {
+export const waitForElement = ( selectors, timeout = 5000, container = document ) => {
+  return new Promise( resolve => {
     const startTime = Date.now()
 
     const checkForElement = () => {
-      const element = findElementWithFallback(selectors, container)
+      const element = findElementWithFallback( selectors, container )
 
-      if (element) {
-        resolve(element)
+      if ( element ) {
+        resolve( element )
         return
       }
 
-      if (Date.now() - startTime > timeout) {
-        resolve(null)
+      if ( Date.now() - startTime > timeout ) {
+        resolve( null )
         return
       }
 
       // Use requestAnimationFrame for better performance
-      requestAnimationFrame(checkForElement)
+      requestAnimationFrame( checkForElement )
     }
 
     checkForElement()
-  })
+  } )
 }
 
 /**
@@ -274,27 +274,27 @@ export const waitForElement = (selectors, timeout = 5000, container = document) 
  * @param {Element} container - Container to observe
  * @returns {MutationObserver} - The created observer
  */
-export const observeForElement = (selectors, callback, container = document.body) => {
-  const observer = new MutationObserver(mutations => {
-    mutations.forEach(mutation => {
-      if (mutation.type === 'childList') {
-        const element = findElementWithFallback(selectors, container)
-        if (element) {
-          callback(element)
+export const observeForElement = ( selectors, callback, container = document.body ) => {
+  const observer = new MutationObserver( mutations => {
+    mutations.forEach( mutation => {
+      if ( mutation.type === 'childList' ) {
+        const element = findElementWithFallback( selectors, container )
+        if ( element ) {
+          callback( element )
         }
       }
-    })
-  })
+    } )
+  } )
 
-  observer.observe(container, {
-    childList: true,
-    subtree: true,
-  })
+  observer.observe( container, {
+    childList : true,
+    subtree : true
+  } )
 
   // Check if element already exists
-  const existingElement = findElementWithFallback(selectors, container)
-  if (existingElement) {
-    setTimeout(() => callback(existingElement), 0)
+  const existingElement = findElementWithFallback( selectors, container )
+  if ( existingElement ) {
+    setTimeout( () => callback( existingElement ), 0 )
   }
 
   return observer
@@ -306,27 +306,27 @@ export const observeForElement = (selectors, callback, container = document.body
  * @param {Element} container - Container to search within
  * @returns {Object} - Detailed element information
  */
-export const getElementInfo = (formType = 'generic', container = document) => {
-  const submitButton = findSubmitButton(formType, container)
-  const form = findForm(formType, container)
-  const formContainer = findContainer(formType, container)
-  const actionButtons = findActionButtons(formType, container)
+export const getElementInfo = ( formType = 'generic', container = document ) => {
+  const submitButton = findSubmitButton( formType, container )
+  const form = findForm( formType, container )
+  const formContainer = findContainer( formType, container )
+  const actionButtons = findActionButtons( formType, container )
 
   return {
     formType,
-    elements: {
+    elements : {
       submitButton,
       form,
-      container: formContainer,
-      actionButtons,
+      container : formContainer,
+      actionButtons
     },
-    selectors: selectorConfigs[formType] || selectorConfigs.generic,
-    stats: {
-      hasSubmitButton: !!submitButton,
-      hasForm: !!form,
-      hasContainer: !!formContainer,
-      totalActionButtons: Object.values(actionButtons).flat().length,
-    },
+    selectors : selectorConfigs[formType] || selectorConfigs.generic,
+    stats : {
+      hasSubmitButton : !!submitButton,
+      hasForm : !!form,
+      hasContainer : !!formContainer,
+      totalActionButtons : Object.values( actionButtons ).flat().length
+    }
   }
 }
 
@@ -342,5 +342,5 @@ export default {
   addCustomSelectors,
   waitForElement,
   observeForElement,
-  getElementInfo,
+  getElementInfo
 }

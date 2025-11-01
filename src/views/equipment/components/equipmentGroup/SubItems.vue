@@ -48,39 +48,39 @@ import { Picture } from '@element-plus/icons-vue'
 import EquipmentSubItemCard from './components/EquipmentSubItemCard.vue'
 import { getEquipmentById, getEquipmentSubtree } from '@/api/equipment.js'
 
-const props = defineProps({
-  equipmentId: { type: [Number, String], required: true },
-})
-const emit = defineEmits(['request-select-node'])
+const props = defineProps( {
+  equipmentId : { type : [Number, String], required : true }
+} )
+const emit = defineEmits( ['request-select-node'] )
 
-const imageUrl = ref('')
-const imageAlt = ref('Equipment image')
-const items = ref([])
-const loading = ref(false)
+const imageUrl = ref( '' )
+const imageAlt = ref( 'Equipment image' )
+const items = ref( [] )
+const loading = ref( false )
 
 const BLUE = 'var(--el-color-primary)'
 const unwrap = resp => resp?.data?.data ?? resp?.data ?? resp ?? {}
 
-const hasValidImage = computed(() => !!imageUrl.value && !/default-image|null|undefined|^$/.test(imageUrl.value))
+const hasValidImage = computed( () => !!imageUrl.value && !/default-image|null|undefined|^$/.test( imageUrl.value ) )
 
 async function load() {
-  if (!props.equipmentId) return
+  if ( !props.equipmentId ) return
   loading.value = true
   try {
-    const d = unwrap(await getEquipmentById(props.equipmentId)) || {}
+    const d = unwrap( await getEquipmentById( props.equipmentId ) ) || {}
     const exploded = d.exploded_view_drawing ?? d.explodedViewDrawing ?? d.exploded_view ?? ''
-    imageUrl.value = exploded && !/null|undefined|^$/.test(exploded) ? exploded : ''
+    imageUrl.value = exploded && !/null|undefined|^$/.test( exploded ) ? exploded : ''
     imageAlt.value = d.name ? `Exploded view of ${d.name}` : 'Equipment image'
 
-    const root = unwrap(await getEquipmentSubtree(props.equipmentId)) || {}
-    const children = Array.isArray(root.children) ? root.children : []
-    items.value = children.map((c, i) => ({
-      id: c.id,
-      text: c.name || c.label || `Item ${i + 1}`,
-      textType: 'default',
-      textSize: 'default',
-      circleColor: BLUE,
-    }))
+    const root = unwrap( await getEquipmentSubtree( props.equipmentId ) ) || {}
+    const children = Array.isArray( root.children ) ? root.children : []
+    items.value = children.map( ( c, i ) => ( {
+      id : c.id,
+      text : c.name || c.label || `Item ${i + 1}`,
+      textType : 'default',
+      textSize : 'default',
+      circleColor : BLUE
+    } ) )
   } catch {
     imageUrl.value = ''
     items.value = []
@@ -89,12 +89,12 @@ async function load() {
   }
 }
 
-function onCardClick(id) {
-  emit('request-select-node', Number(id))
+function onCardClick( id ) {
+  emit( 'request-select-node', Number( id ) )
 }
 
-onMounted(load)
-watch(() => props.equipmentId, load, { immediate: false })
+onMounted( load )
+watch( () => props.equipmentId, load, { immediate : false } )
 </script>
 
 <style scoped>

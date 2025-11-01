@@ -100,81 +100,81 @@ import { ElMessage } from 'element-plus'
 import { Close, DocumentCopy, Search, Plus, Minus } from '@element-plus/icons-vue'
 import JsonTreeItem from './JsonTreeItem.vue'
 
-const props = defineProps({
-  modelValue: {
-    type: Boolean,
-    default: false,
+const props = defineProps( {
+  modelValue : {
+    type : Boolean,
+    default : false
   },
-  payloadData: {
-    type: Object,
-    default: null,
+  payloadData : {
+    type : Object,
+    default : null
   },
-  title: {
-    type: String,
-    default: 'Request Payload',
+  title : {
+    type : String,
+    default : 'Request Payload'
   },
-  subtitle: {
-    type: String,
-    default: 'Click refresh to update',
-  },
-})
+  subtitle : {
+    type : String,
+    default : 'Click refresh to update'
+  }
+} )
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits( ['update:modelValue'] )
 
-const visible = computed({
-  get: () => props.modelValue,
-  set: value => emit('update:modelValue', value),
-})
+const visible = computed( {
+  get : () => props.modelValue,
+  set : value => emit( 'update:modelValue', value )
+} )
 
 // Search and expand/collapse functionality
-const searchTerm = ref('')
-const forceExpandAll = ref(false)
-const forceCollapseAll = ref(false)
-const isAllExpanded = ref(false)
+const searchTerm = ref( '' )
+const forceExpandAll = ref( false )
+const forceCollapseAll = ref( false )
+const isAllExpanded = ref( false )
 
 // Drawer width functionality
-const drawerWidth = ref(500)
-const actualDrawerWidth = ref(500)
-const drawerSize = computed(() => `${actualDrawerWidth.value}px`)
+const drawerWidth = ref( 500 )
+const actualDrawerWidth = ref( 500 )
+const drawerSize = computed( () => `${actualDrawerWidth.value}px` )
 
 // Debounce function
-const debounce = (func, wait) => {
+const debounce = ( func, wait ) => {
   let timeout
-  return function executedFunction(...args) {
+  return function executedFunction( ...args ) {
     const later = () => {
-      clearTimeout(timeout)
-      func(...args)
+      clearTimeout( timeout )
+      func( ...args )
     }
-    clearTimeout(timeout)
-    timeout = setTimeout(later, wait)
+    clearTimeout( timeout )
+    timeout = setTimeout( later, wait )
   }
 }
 
 // Debounced width update function
-const debouncedWidthUpdate = debounce(newWidth => {
+const debouncedWidthUpdate = debounce( newWidth => {
   // Validate and constrain the width
   let constrainedWidth = newWidth
-  if (constrainedWidth < 300) constrainedWidth = 300
-  if (constrainedWidth > 1200) constrainedWidth = 1200
+  if ( constrainedWidth < 300 ) constrainedWidth = 300
+  if ( constrainedWidth > 1200 ) constrainedWidth = 1200
 
   actualDrawerWidth.value = constrainedWidth
 
   // Update the input if it was constrained
-  if (constrainedWidth !== newWidth) {
+  if ( constrainedWidth !== newWidth ) {
     drawerWidth.value = constrainedWidth
   }
-}, 300)
+}, 300 )
 
 // Watch for changes in drawerWidth and debounce updates
-watch(drawerWidth, newWidth => {
-  if (newWidth && typeof newWidth === 'number') {
-    debouncedWidthUpdate(newWidth)
+watch( drawerWidth, newWidth => {
+  if ( newWidth && typeof newWidth === 'number' ) {
+    debouncedWidthUpdate( newWidth )
   }
-})
+} )
 
 const updateDrawerWidth = () => {
   // This function is now handled by the watcher
-  debouncedWidthUpdate(drawerWidth.value)
+  debouncedWidthUpdate( drawerWidth.value )
 }
 
 const closeDrawer = () => {
@@ -182,31 +182,31 @@ const closeDrawer = () => {
 }
 
 // Add safety check for component stability
-const isDrawerStable = ref(true)
+const isDrawerStable = ref( true )
 
 // Watch for drawer visibility changes to prevent rapid state changes
-watch(visible, (newVal, oldVal) => {
-  if (newVal !== oldVal) {
+watch( visible, ( newVal, oldVal ) => {
+  if ( newVal !== oldVal ) {
     isDrawerStable.value = false
-    setTimeout(() => {
+    setTimeout( () => {
       isDrawerStable.value = true
-    }, 150) // Small delay to ensure component is stable
+    }, 150 ) // Small delay to ensure component is stable
   }
-})
+} )
 
-const copyToClipboard = async () => {
+const copyToClipboard = async() => {
   try {
-    const jsonString = JSON.stringify(props.payloadData, null, 2)
-    await navigator.clipboard.writeText(jsonString)
-    ElMessage.success('Payload copied to clipboard!')
-  } catch (error) {
-    console.error('Failed to copy to clipboard:', error)
-    ElMessage.error('Failed to copy to clipboard')
+    const jsonString = JSON.stringify( props.payloadData, null, 2 )
+    await navigator.clipboard.writeText( jsonString )
+    ElMessage.success( 'Payload copied to clipboard!' )
+  } catch ( error ) {
+    console.error( 'Failed to copy to clipboard:', error )
+    ElMessage.error( 'Failed to copy to clipboard' )
   }
 }
 
 const toggleExpandCollapse = () => {
-  if (isAllExpanded.value) {
+  if ( isAllExpanded.value ) {
     // Currently expanded, so collapse all
     forceExpandAll.value = false
     forceCollapseAll.value = true
@@ -219,10 +219,10 @@ const toggleExpandCollapse = () => {
   }
 
   // Reset force states after a brief moment to allow tree items to respond
-  setTimeout(() => {
+  setTimeout( () => {
     forceExpandAll.value = false
     forceCollapseAll.value = false
-  }, 100)
+  }, 100 )
 }
 
 const resetForceStates = () => {
@@ -230,9 +230,9 @@ const resetForceStates = () => {
   forceCollapseAll.value = false
 }
 
-defineOptions({
-  name: 'JsonDebugDrawer',
-})
+defineOptions( {
+  name : 'JsonDebugDrawer'
+} )
 </script>
 
 <style scoped lang="scss">

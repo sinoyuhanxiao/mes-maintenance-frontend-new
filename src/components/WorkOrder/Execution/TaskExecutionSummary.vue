@@ -112,153 +112,153 @@
 import { computed } from 'vue'
 import { Edit, View } from '@element-plus/icons-vue'
 
-const props = defineProps({
-  task: {
-    type: Object,
-    required: true,
+const props = defineProps( {
+  task : {
+    type : Object,
+    required : true
   },
-  progress: {
-    type: Object,
-    default: () => ({ status: 'draft', time_spent: { value: 0, unit: 'minutes' } }),
+  progress : {
+    type : Object,
+    default : () => ( { status : 'draft', time_spent : { value : 0, unit : 'minutes' }} )
   },
-  index: {
-    type: Number,
-    default: 0,
+  index : {
+    type : Number,
+    default : 0
   },
-  isHighlighted: {
-    type: Boolean,
-    default: false,
-  },
-})
+  isHighlighted : {
+    type : Boolean,
+    default : false
+  }
+} )
 
 // eslint-disable-next-line no-unused-vars
-const indexLabel = computed(() => props.index + 1)
+const indexLabel = computed( () => props.index + 1 )
 
-const taskLabel = computed(() => {
+const taskLabel = computed( () => {
   const task = props.task
 
-  if (task && typeof task === 'object') {
-    if (typeof task.name === 'string' && task.name.trim()) {
+  if ( task && typeof task === 'object' ) {
+    if ( typeof task.name === 'string' && task.name.trim() ) {
       return task.name
     }
 
-    if (typeof task.task_name === 'string' && task.task_name.trim()) {
+    if ( typeof task.task_name === 'string' && task.task_name.trim() ) {
       return task.task_name
     }
 
-    if (typeof task.label === 'string' && task.label.trim()) {
+    if ( typeof task.label === 'string' && task.label.trim() ) {
       return task.label
     }
 
-    if (typeof task.taskListText === 'string' && task.taskListText.trim()) {
+    if ( typeof task.taskListText === 'string' && task.taskListText.trim() ) {
       return task.taskListText
     }
 
-    if (typeof task.task_list_text === 'string' && task.task_list_text.trim()) {
+    if ( typeof task.task_list_text === 'string' && task.task_list_text.trim() ) {
       return task.task_list_text
     }
 
-    if (typeof task.id === 'string' && task.id.trim()) {
+    if ( typeof task.id === 'string' && task.id.trim() ) {
       return task.id
     }
 
-    if (typeof task.id === 'number') {
-      return String(task.id)
+    if ( typeof task.id === 'number' ) {
+      return String( task.id )
     }
   }
 
-  if (typeof task === 'string' || typeof task === 'number') {
-    return String(task)
+  if ( typeof task === 'string' || typeof task === 'number' ) {
+    return String( task )
   }
 
   return 'Task'
-})
+} )
 
-const taskCode = computed(() => {
+const taskCode = computed( () => {
   return props.task?.id || ''
-})
+} )
 
-const taskState = computed(() => {
+const taskState = computed( () => {
   return props.task?.state?.name || '-'
-})
+} )
 
-const assignedPersonnel = computed(() => {
+const assignedPersonnel = computed( () => {
   const personnel = props.task?.personnel
-  if (!personnel) return '-'
+  if ( !personnel ) return '-'
 
   // Handle array of personnel
-  if (Array.isArray(personnel)) {
+  if ( Array.isArray( personnel ) ) {
     const names = personnel
-      .map(p => {
-        if (typeof p === 'string') return p
-        if (typeof p === 'object' && p.name) return p.name
+      .map( p => {
+        if ( typeof p === 'string' ) return p
+        if ( typeof p === 'object' && p.name ) return p.name
         return ''
-      })
-      .filter(Boolean)
-    return names.length > 0 ? names.join(', ') : '-'
+      } )
+      .filter( Boolean )
+    return names.length > 0 ? names.join( ', ' ) : '-'
   }
 
   // Handle single personnel object
-  if (typeof personnel === 'object' && personnel.name) {
+  if ( typeof personnel === 'object' && personnel.name ) {
     return personnel.name
   }
 
   // Handle string
-  if (typeof personnel === 'string') {
+  if ( typeof personnel === 'string' ) {
     return personnel
   }
 
   return '-'
-})
+} )
 
-const progressText = computed(() => {
+const progressText = computed( () => {
   const completedSteps = props.task?.completed_steps ?? 0
   const totalSteps = props.task?.total_steps ?? 0
   return `${completedSteps} / ${totalSteps} Steps`
-})
+} )
 
-const actualTime = computed(() => {
+const actualTime = computed( () => {
   const timeTakenSec = props.task?.time_taken_sec
-  if (timeTakenSec) {
-    const takenMinutes = Math.round(timeTakenSec / 60)
+  if ( timeTakenSec ) {
+    const takenMinutes = Math.round( timeTakenSec / 60 )
     return `${takenMinutes} min`
   }
   return '-'
-})
+} )
 
-const estimatedTime = computed(() => {
+const estimatedTime = computed( () => {
   const timeEstimateSec = props.task?.time_estimate_sec
-  if (timeEstimateSec) {
-    const estimatedMinutes = Math.round(timeEstimateSec / 60)
+  if ( timeEstimateSec ) {
+    const estimatedMinutes = Math.round( timeEstimateSec / 60 )
     return `${estimatedMinutes} min`
   }
   return '-'
-})
+} )
 
-const isActualTimeExceeded = computed(() => {
+const isActualTimeExceeded = computed( () => {
   const timeTakenSec = props.task?.time_taken_sec
   const timeEstimateSec = props.task?.time_estimate_sec
 
-  if (!timeTakenSec || !timeEstimateSec) return false
+  if ( !timeTakenSec || !timeEstimateSec ) return false
 
   return timeTakenSec > timeEstimateSec
-})
+} )
 
-const stateClass = computed(() => {
+const stateClass = computed( () => {
   const state = taskState.value?.toLowerCase()
 
-  if (state === 'completed') {
+  if ( state === 'completed' ) {
     return 'state-completed'
-  } else if (state === 'in-progress' || state === 'in progress' || state === 'inprogress') {
+  } else if ( state === 'in-progress' || state === 'in progress' || state === 'inprogress' ) {
     return 'state-in-progress'
-  } else if (state === 'failed') {
+  } else if ( state === 'failed' ) {
     return 'state-failed'
-  } else if (state === 'ready') {
+  } else if ( state === 'ready' ) {
     return 'state-ready'
   }
 
   return ''
-})
+} )
 </script>
 
 <style scoped>

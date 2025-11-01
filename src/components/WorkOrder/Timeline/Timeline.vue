@@ -1,5 +1,8 @@
 <template>
-  <div class="timeline-content">
+  <div v-if="loading" class="timeline-loading">
+    <el-skeleton :rows="10" animated />
+  </div>
+  <div v-else class="timeline-content">
     <!-- Stats Bar Header -->
     <div class="timeline-stats-bar">
       <div class="filter-controls">
@@ -19,8 +22,8 @@
 
       <div class="metrics-group">
         <div class="metric-item">
-          <span class="metric-value">{{ filteredTimelineEvents.length }}</span>
-          <span class="metric-label">{{ $t('workOrder.timeline.totalEvents') }}</span>
+          <span class="metric-value">{{ totalElements }}</span>
+          <span class="metric-label">Total WOs</span>
         </div>
         <div class="metric-item">
           <span class="metric-value">{{ averageTimeConsumed }}</span>
@@ -154,138 +157,150 @@ import { convertToLocalTime } from '@/utils/datetime'
 import { getPriorityColor } from '@/utils/general'
 
 // Props
-const props = defineProps({
-  timelineEvents: {
-    type: Array,
-    default: () => [],
+const props = defineProps( {
+  loading : {
+    type : Boolean,
+    default : false
   },
-  currentWorkOrderId: {
-    type: [String, Number],
-    default: null,
+  timelineEvents : {
+    type : Array,
+    default : () => []
   },
-  currentPage: {
-    type: Number,
-    default: 1,
+  currentWorkOrderId : {
+    type : [String, Number],
+    default : null
   },
-  pageSize: {
-    type: Number,
-    default: 10,
+  currentPage : {
+    type : Number,
+    default : 1
   },
-  totalElements: {
-    type: Number,
-    default: 0,
+  pageSize : {
+    type : Number,
+    default : 10
   },
-  sortField: {
-    type: String,
-    default: 'createdAt',
+  totalElements : {
+    type : Number,
+    default : 0
   },
-  sortDirection: {
-    type: String,
-    default: 'DESC',
+  sortField : {
+    type : String,
+    default : 'createdAt'
   },
-})
+  sortDirection : {
+    type : String,
+    default : 'DESC'
+  }
+} )
 
 // Emits
-const emit = defineEmits(['page-change', 'page-size-change', 'sort-change'])
+const emit = defineEmits( ['page-change', 'page-size-change', 'sort-change'] )
 
 // Timeline filter state
-const timelineFilter = ref({
-  dateRange: null,
-})
+const timelineFilter = ref( {
+  dateRange : null
+} )
 
 // Timeline filtering and computed properties
-const filteredTimelineEvents = computed(() => {
-  if (!timelineFilter.value.dateRange) {
+const filteredTimelineEvents = computed( () => {
+  if ( !timelineFilter.value.dateRange ) {
     return props.timelineEvents
   }
 
   const [startDate, endDate] = timelineFilter.value.dateRange
-  return props.timelineEvents.filter(event => {
-    const eventDate = new Date(event.timestamp)
+  return props.timelineEvents.filter( event => {
+    const eventDate = new Date( event.timestamp )
     return eventDate >= startDate && eventDate <= endDate
-  })
-})
+  } )
+} )
 
-const averageTimeConsumed = computed(() => {
-  const completedEvents = filteredTimelineEvents.value.filter(event => event.status === 'Completed' && event.duration)
+const averageTimeConsumed = computed( () => {
+  const completedEvents = filteredTimelineEvents.value.filter( event => event.status === 'Completed' && event.duration )
 
-  if (completedEvents.length === 0) return '0h 0m'
+  if ( completedEvents.length === 0 ) return '0h 0m'
 
-  const totalMinutes = completedEvents.reduce((total, event) => {
+  const totalMinutes = completedEvents.reduce( ( total, event ) => {
     const duration = event.duration
-    const hours = parseInt(duration.match(/(\d+)h/)?.[1] || '0')
-    const minutes = parseInt(duration.match(/(\d+)m/)?.[1] || '0')
+    const hours = parseInt( duration.match( /(\d+)h/ )?.[1] || '0' )
+    const minutes = parseInt( duration.match( /(\d+)m/ )?.[1] || '0' )
     return total + hours * 60 + minutes
-  }, 0)
+  }, 0 )
 
-  const avgMinutes = Math.round(totalMinutes / completedEvents.length)
-  const hours = Math.floor(avgMinutes / 60)
+  const avgMinutes = Math.round( totalMinutes / completedEvents.length )
+  const hours = Math.floor( avgMinutes / 60 )
   const mins = avgMinutes % 60
 
   return `${hours}h ${mins}m`
-})
+} )
 
 const getStatusTagType = status => {
   const statusMap = {
-    Completed: 'success',
-    'In Progress': 'primary',
-    Pending: 'info',
+    Completed : 'success',
+    'In Progress' : 'primary',
+    Pending : 'info'
   }
   return statusMap[status] || 'info'
 }
 
 const isEventOverdue = event => {
-  if (!event.plannedEnd || !event.actualEnd) return false
-  return new Date(event.actualEnd) > new Date(event.plannedEnd)
+  if ( !event.plannedEnd || !event.actualEnd ) return false
+  return new Date( event.actualEnd ) > new Date( event.plannedEnd )
 }
 
 const formatDateTime = dateString => {
-  return dateString ? convertToLocalTime(dateString) : '-'
+  return dateString ? convertToLocalTime( dateString ) : '-'
 }
 
 const getCategoryName = category => {
-  if (!category) return '-'
-  if (typeof category === 'string') return category
-  if (category.name) return category.name
+  if ( !category ) return '-'
+  if ( typeof category === 'string' ) return category
+  if ( category.name ) return category.name
   return category.id ? `Category ${category.id}` : '-'
 }
 
 const getPriorityName = priority => {
-  if (!priority) return '-'
-  if (typeof priority === 'string') return priority
-  if (priority.name) return priority.name
+  if ( !priority ) return '-'
+  if ( typeof priority === 'string' ) return priority
+  if ( priority.name ) return priority.name
   return priority.id ? `Priority ${priority.id}` : '-'
 }
 
 const getPriorityClass = priority => {
   const name = priority?.name?.toLowerCase()
   return {
-    'priority-urgent': name === 'urgent',
-    'priority-high': name === 'high',
-    'priority-medium': name === 'medium',
-    'priority-low': name === 'low',
+    'priority-urgent' : name === 'urgent',
+    'priority-high' : name === 'high',
+    'priority-medium' : name === 'medium',
+    'priority-low' : name === 'low'
   }
 }
 
 const isCurrentWorkOrder = event => {
-  return props.currentWorkOrderId && event.id && String(event.id) === String(props.currentWorkOrderId)
+  return props.currentWorkOrderId && event.id && String( event.id ) === String( props.currentWorkOrderId )
 }
 
 // Pagination handlers
 const handlePageChange = newPage => {
-  emit('page-change', newPage)
+  emit( 'page-change', newPage )
 }
 
 const handlePageSizeChange = newSize => {
-  emit('page-size-change', newSize)
+  emit( 'page-size-change', newSize )
 }
 
-defineOptions({
-  name: 'Timeline',
-})
+defineOptions( {
+  name : 'Timeline'
+} )
 </script>
 
 <style scoped lang="scss">
+.timeline-loading {
+  padding: 20px 24px;
+  min-height: calc(45vh + 160px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .timeline-content {
   .timeline-stats-bar {
     display: flex;
@@ -343,7 +358,6 @@ defineOptions({
           font-size: 12px;
           color: var(--el-text-color-secondary);
           margin-top: 4px;
-          text-transform: uppercase;
           letter-spacing: 0.5px;
         }
       }
@@ -354,7 +368,6 @@ defineOptions({
     .work-order-timeline {
       padding: 24px;
       height: 45vh;
-      max-height: 50vh;
       overflow-y: auto;
 
       :deep(.el-timeline-item__timestamp) {

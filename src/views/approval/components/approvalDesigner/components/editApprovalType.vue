@@ -87,91 +87,91 @@ import { ArrowLeft } from '@element-plus/icons-vue'
 import approvalStepCard from './approvalStepCardAdd.vue'
 import { ElMessage } from 'element-plus'
 
-const props = defineProps({
-  approvalHierarchyId: {
-    type: [String, Number],
-    required: true,
-  },
-})
+const props = defineProps( {
+  approvalHierarchyId : {
+    type : [String, Number],
+    required : true
+  }
+} )
 
-const emit = defineEmits(['back', 'submit', 'cancel'])
+const emit = defineEmits( ['back', 'submit', 'cancel'] )
 
 // Form reference
-const formRef = ref(null)
+const formRef = ref( null )
 
 // Steps key for forcing re-render
-const stepsKey = ref(0)
+const stepsKey = ref( 0 )
 
 // Loading state
-const loading = ref(false)
+const loading = ref( false )
 
 // Form data
-const formData = reactive({
-  id: null,
-  departmentId: null,
-  departmentName: '',
-  approvalType: '',
-  title: '',
-  description: '',
-  approvalSteps: [],
-})
+const formData = reactive( {
+  id : null,
+  departmentId : null,
+  departmentName : '',
+  approvalType : '',
+  title : '',
+  description : '',
+  approvalSteps : []
+} )
 
 // Form validation rules
 const formRules = {
-  departmentId: [{ required: true, message: 'Please select a department', trigger: 'change' }],
-  approvalType: [
-    { required: true, message: 'Please enter approval type', trigger: 'blur' },
-    { min: 2, max: 50, message: 'Approval type should be between 2 and 50 characters', trigger: 'blur' },
+  departmentId : [{ required : true, message : 'Please select a department', trigger : 'change' }],
+  approvalType : [
+    { required : true, message : 'Please enter approval type', trigger : 'blur' },
+    { min : 2, max : 50, message : 'Approval type should be between 2 and 50 characters', trigger : 'blur' }
   ],
-  title: [
-    { required: true, message: 'Please enter a title', trigger: 'blur' },
-    { min: 3, max: 100, message: 'Title should be between 3 and 100 characters', trigger: 'blur' },
+  title : [
+    { required : true, message : 'Please enter a title', trigger : 'blur' },
+    { min : 3, max : 100, message : 'Title should be between 3 and 100 characters', trigger : 'blur' }
   ],
-  description: [{ max: 500, message: 'Description should not exceed 500 characters', trigger: 'blur' }],
+  description : [{ max : 500, message : 'Description should not exceed 500 characters', trigger : 'blur' }]
 }
 
 // Computed property for active step
-const activeStepIndex = computed(() => {
+const activeStepIndex = computed( () => {
   return formData.approvalSteps.length
-})
+} )
 
 // Step counter for unique IDs
 let stepIdCounter = 0
 
 // Load existing approval hierarchy data
-const loadApprovalHierarchy = async () => {
+const loadApprovalHierarchy = async() => {
   loading.value = true
   try {
     // Mock data for now
     const data = {
-      id: props.approvalHierarchyId,
-      departmentId: 1,
-      departmentName: 'Engineering Department',
-      approvalType: 'Work Order',
-      title: 'Work Order Approval Flow',
-      description: 'This is a sample approval flow for work orders.',
-      approvalSteps: [
+      id : props.approvalHierarchyId,
+      departmentId : 1,
+      departmentName : 'Engineering Department',
+      approvalType : 'Work Order',
+      title : 'Work Order Approval Flow',
+      description : 'This is a sample approval flow for work orders.',
+      approvalSteps : [
         {
-          id: 1,
-          stepName: 'Step 1',
-          approverType: 'role',
-          approverId: 1,
-          approverName: 'Team Lead',
-          requiresApproval: true,
-          approvalAmount: '1000',
-          description: 'Team lead approval',
+          id : 1,
+          stepName : 'Step 1',
+          approverType : 'role',
+          approverId : 1,
+          approverName : 'Team Lead',
+          requiresApproval : true,
+          approvalAmount : '1000',
+          description : 'Team lead approval'
         },
         {
-          id: 2,
-          stepName: 'Step 2',
-          approverType: 'individual',
-          approverId: 102,
-          approverName: 'Jane Smith',
-          requiresApproval: true,
-          approvalAmount: '5000',
-          description: 'Manager approval',
-        },
-      ],
+          id : 2,
+          stepName : 'Step 2',
+          approverType : 'individual',
+          approverId : 102,
+          approverName : 'Jane Smith',
+          requiresApproval : true,
+          approvalAmount : '5000',
+          description : 'Manager approval'
+        }
+      ]
     }
 
     // Populate form data
@@ -184,10 +184,10 @@ const loadApprovalHierarchy = async () => {
     formData.approvalSteps = data.approvalSteps
 
     // Set counter to highest ID
-    stepIdCounter = Math.max(...data.approvalSteps.map(s => s.id), 0)
-  } catch (error) {
-    console.error('Failed to load approval hierarchy:', error)
-    ElMessage.error('Failed to load approval hierarchy data')
+    stepIdCounter = Math.max( ...data.approvalSteps.map( s => s.id ), 0 )
+  } catch ( error ) {
+    console.error( 'Failed to load approval hierarchy:', error )
+    ElMessage.error( 'Failed to load approval hierarchy data' )
   } finally {
     loading.value = false
   }
@@ -195,33 +195,33 @@ const loadApprovalHierarchy = async () => {
 
 // Add a new approval step
 const addApprovalStep = () => {
-  formData.approvalSteps.push({
-    id: ++stepIdCounter,
-    stepName: `Step ${formData.approvalSteps.length + 1}`,
-    approverType: '',
-    approverId: null,
-    approverName: '',
-    requiresApproval: false,
-    approvalAmount: '',
-    description: '',
-  })
+  formData.approvalSteps.push( {
+    id : ++stepIdCounter,
+    stepName : `Step ${formData.approvalSteps.length + 1}`,
+    approverType : '',
+    approverId : null,
+    approverName : '',
+    requiresApproval : false,
+    approvalAmount : '',
+    description : ''
+  } )
   stepsKey.value++
 }
 // Update a step
-const updateStep = (index, updatedData) => {
+const updateStep = ( index, updatedData ) => {
   formData.approvalSteps[index] = { ...formData.approvalSteps[index], ...updatedData }
   stepsKey.value++
 }
 
 // Remove a step
 const removeStep = index => {
-  formData.approvalSteps.splice(index, 1)
+  formData.approvalSteps.splice( index, 1 )
   stepsKey.value++
 }
 
 // Move step up
 const moveStepUp = index => {
-  if (index > 0) {
+  if ( index > 0 ) {
     const temp = formData.approvalSteps[index]
     formData.approvalSteps[index] = formData.approvalSteps[index - 1]
     formData.approvalSteps[index - 1] = temp
@@ -231,7 +231,7 @@ const moveStepUp = index => {
 
 // Move step down
 const moveStepDown = index => {
-  if (index < formData.approvalSteps.length - 1) {
+  if ( index < formData.approvalSteps.length - 1 ) {
     const temp = formData.approvalSteps[index]
     formData.approvalSteps[index] = formData.approvalSteps[index + 1]
     formData.approvalSteps[index + 1] = temp
@@ -240,12 +240,12 @@ const moveStepDown = index => {
 }
 
 // Handle form submission
-const handleSubmit = async () => {
+const handleSubmit = async() => {
   try {
     await formRef.value.validate()
 
-    if (formData.approvalSteps.length === 0) {
-      ElMessage.warning('Please add at least one approval step')
+    if ( formData.approvalSteps.length === 0 ) {
+      ElMessage.warning( 'Please add at least one approval step' )
       return
     }
 
@@ -253,28 +253,28 @@ const handleSubmit = async () => {
     // await updateApprovalHierarchy(formData.id, formData)
 
     // Emit the form data to parent component
-    emit('submit', formData)
+    emit( 'submit', formData )
 
-    ElMessage.success('Approval hierarchy updated successfully')
-  } catch (error) {
-    ElMessage.error('Please fill in all required fields')
+    ElMessage.success( 'Approval hierarchy updated successfully' )
+  } catch ( error ) {
+    ElMessage.error( 'Please fill in all required fields' )
   }
 }
 
 // Handle cancel
 const handleCancel = () => {
-  emit('cancel')
+  emit( 'cancel' )
 }
 
 // Handle back button
 const handleBack = () => {
-  emit('back')
+  emit( 'back' )
 }
 
 // Load data on mount
-onMounted(() => {
+onMounted( () => {
   loadApprovalHierarchy()
-})
+} )
 </script>
 
 <style scoped>

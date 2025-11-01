@@ -33,83 +33,83 @@
 import { ref, computed, watch } from 'vue'
 import { ArrowRight } from '@element-plus/icons-vue'
 
-const props = defineProps({
-  nodeKey: {
-    type: [String, Number],
-    required: true,
+const props = defineProps( {
+  nodeKey : {
+    type : [String, Number],
+    required : true
   },
-  value: {
-    required: true,
+  value : {
+    required : true
   },
-  level: {
-    type: Number,
-    default: 0,
+  level : {
+    type : Number,
+    default : 0
   },
-  searchTerm: {
-    type: String,
-    default: '',
+  searchTerm : {
+    type : String,
+    default : ''
   },
-  forceExpand: {
-    type: Boolean,
-    default: false,
+  forceExpand : {
+    type : Boolean,
+    default : false
   },
-  forceCollapse: {
-    type: Boolean,
-    default: false,
-  },
-})
+  forceCollapse : {
+    type : Boolean,
+    default : false
+  }
+} )
 
-const emit = defineEmits(['reset-force-states'])
+const emit = defineEmits( ['reset-force-states'] )
 
-const expanded = ref(false)
+const expanded = ref( false )
 
-const isObject = computed(() => props.value !== null && typeof props.value === 'object' && !Array.isArray(props.value))
+const isObject = computed( () => props.value !== null && typeof props.value === 'object' && !Array.isArray( props.value ) )
 
-const isArray = computed(() => Array.isArray(props.value))
+const isArray = computed( () => Array.isArray( props.value ) )
 
-const isLeaf = computed(() => !isObject.value && !isArray.value)
+const isLeaf = computed( () => !isObject.value && !isArray.value )
 
-const nodeType = computed(() => {
-  if (props.value === null) return 'null'
-  if (isArray.value) return `array[${props.value.length}]`
-  if (isObject.value) return `object{${Object.keys(props.value).length}}`
+const nodeType = computed( () => {
+  if ( props.value === null ) return 'null'
+  if ( isArray.value ) return `array[${props.value.length}]`
+  if ( isObject.value ) return `object{${Object.keys( props.value ).length}}`
   return typeof props.value
-})
+} )
 
-const displayValue = computed(() => {
-  if (props.value === null) return 'null'
-  if (typeof props.value === 'string') return `"${props.value}"`
-  if (typeof props.value === 'boolean') return props.value.toString()
+const displayValue = computed( () => {
+  if ( props.value === null ) return 'null'
+  if ( typeof props.value === 'string' ) return `"${props.value}"`
+  if ( typeof props.value === 'boolean' ) return props.value.toString()
   return props.value
-})
+} )
 
 // Search functionality
-const matchesSearch = computed(() => {
-  if (!props.searchTerm) return true
+const matchesSearch = computed( () => {
+  if ( !props.searchTerm ) return true
 
   const searchLower = props.searchTerm.toLowerCase()
-  const keyMatches = String(props.nodeKey).toLowerCase().includes(searchLower)
+  const keyMatches = String( props.nodeKey ).toLowerCase().includes( searchLower )
 
   // For leaf nodes, also check the value
-  if (isLeaf.value) {
-    const valueStr = String(props.value).toLowerCase()
-    return keyMatches || valueStr.includes(searchLower)
+  if ( isLeaf.value ) {
+    const valueStr = String( props.value ).toLowerCase()
+    return keyMatches || valueStr.includes( searchLower )
   }
 
   return keyMatches
-})
+} )
 
 // Check if any child matches search
-const hasMatchingChildren = computed(() => {
-  if (!props.searchTerm || isLeaf.value) return false
+const hasMatchingChildren = computed( () => {
+  if ( !props.searchTerm || isLeaf.value ) return false
 
-  const searchDeep = (obj, search) => {
-    if (typeof obj === 'object' && obj !== null) {
-      for (const [key, value] of Object.entries(obj)) {
+  const searchDeep = ( obj, search ) => {
+    if ( typeof obj === 'object' && obj !== null ) {
+      for ( const [key, value] of Object.entries( obj ) ) {
         if (
-          String(key).toLowerCase().includes(search) ||
-          String(value).toLowerCase().includes(search) ||
-          (typeof value === 'object' && searchDeep(value, search))
+          String( key ).toLowerCase().includes( search ) ||
+          String( value ).toLowerCase().includes( search ) ||
+          ( typeof value === 'object' && searchDeep( value, search ) )
         ) {
           return true
         }
@@ -118,22 +118,22 @@ const hasMatchingChildren = computed(() => {
     return false
   }
 
-  return searchDeep(props.value, props.searchTerm.toLowerCase())
-})
+  return searchDeep( props.value, props.searchTerm.toLowerCase() )
+} )
 
 // Item should be visible if it matches search or has matching children
-const isVisible = computed(() => !props.searchTerm || matchesSearch.value || hasMatchingChildren.value)
+const isVisible = computed( () => !props.searchTerm || matchesSearch.value || hasMatchingChildren.value )
 
 // Auto-expand if searching and has matching children
-const shouldAutoExpand = computed(() => props.searchTerm && hasMatchingChildren.value)
+const shouldAutoExpand = computed( () => props.searchTerm && hasMatchingChildren.value )
 
 // Watch for force expand/collapse
 watch(
   () => props.forceExpand,
   newVal => {
-    if (newVal && !isLeaf.value) {
+    if ( newVal && !isLeaf.value ) {
       expanded.value = true
-      emit('reset-force-states')
+      emit( 'reset-force-states' )
     }
   }
 )
@@ -141,29 +141,29 @@ watch(
 watch(
   () => props.forceCollapse,
   newVal => {
-    if (newVal && !isLeaf.value) {
+    if ( newVal && !isLeaf.value ) {
       expanded.value = false
-      emit('reset-force-states')
+      emit( 'reset-force-states' )
     }
   }
 )
 
 // Auto-expand for search
-watch(shouldAutoExpand, newVal => {
-  if (newVal && !isLeaf.value) {
+watch( shouldAutoExpand, newVal => {
+  if ( newVal && !isLeaf.value ) {
     expanded.value = true
   }
-})
+} )
 
 const toggleExpanded = () => {
-  if (!isLeaf.value) {
+  if ( !isLeaf.value ) {
     expanded.value = !expanded.value
   }
 }
 
-defineOptions({
-  name: 'JsonTreeItem',
-})
+defineOptions( {
+  name : 'JsonTreeItem'
+} )
 </script>
 
 <style scoped lang="scss">

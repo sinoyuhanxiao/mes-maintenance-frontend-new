@@ -24,22 +24,22 @@
 </template>
 
 <script setup>
-const props = defineProps({
-  number: { type: [String, Number], default: 1 },
-  text: { type: String, default: 'Sub-Item Text' },
-  subtitle: { type: String, default: '' },
-  circleColor: { type: String, default: '#409EFF' },
-  nodeId: { type: [String, Number], default: null },
-  size: { type: String, default: 'md' },
-  selected: { type: Boolean, default: false },
-  disabled: { type: Boolean, default: false },
-})
+const props = defineProps( {
+  number : { type : [String, Number], default : 1 },
+  text : { type : String, default : 'Sub-Item Text' },
+  subtitle : { type : String, default : '' },
+  circleColor : { type : String, default : '#409EFF' },
+  nodeId : { type : [String, Number], default : null },
+  size : { type : String, default : 'md' },
+  selected : { type : Boolean, default : false },
+  disabled : { type : Boolean, default : false }
+} )
 
-const emit = defineEmits(['card-click'])
+const emit = defineEmits( ['card-click'] )
 
 function onActivate() {
-  if (props.disabled) return
-  emit('card-click', props.nodeId ?? props.number)
+  if ( props.disabled ) return
+  emit( 'card-click', props.nodeId ?? props.number )
 }
 </script>
 

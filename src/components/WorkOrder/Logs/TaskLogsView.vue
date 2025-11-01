@@ -79,31 +79,31 @@ import { convertToLocalTime } from '@/utils/datetime'
 import { ElMessage } from 'element-plus'
 import StepsPreviewPopulated from '@/components/TaskLibrary/StepsPreviewPopulated.vue'
 
-const props = defineProps({
-  taskEntryId: {
-    type: String,
-    required: true,
+const props = defineProps( {
+  taskEntryId : {
+    type : String,
+    required : true
   },
-  task: {
-    type: Object,
-    default: null,
-  },
-})
+  task : {
+    type : Object,
+    default : null
+  }
+} )
 
 // State
-const loading = ref(false)
-const error = ref(null)
-const logs = ref([])
-const selectedLog = ref(null)
+const loading = ref( false )
+const error = ref( null )
+const logs = ref( [] )
+const selectedLog = ref( null )
 
 // Computed property for failure reason
-const failureReason = computed(() => {
+const failureReason = computed( () => {
   return props.task?.failure_reason || ''
-})
+} )
 
 // Fetch logs from API
-const fetchLogs = async () => {
-  if (!props.taskEntryId) {
+const fetchLogs = async() => {
+  if ( !props.taskEntryId ) {
     error.value = 'Task entry ID is required'
     return
   }
@@ -112,22 +112,22 @@ const fetchLogs = async () => {
   error.value = null
 
   try {
-    const response = await getTaskLogsByTaskId(props.taskEntryId)
-    console.log('Task logs response:', response)
+    const response = await getTaskLogsByTaskId( props.taskEntryId )
+    console.log( 'Task logs response:', response )
 
     // Backend returns { status, message, data: [...] }
     logs.value = response?.data || []
 
-    console.log('Logs value:', logs.value)
+    console.log( 'Logs value:', logs.value )
 
     // Sort logs by time (newest first), fallback to array index if time is null
-    logs.value.sort((a, b) => {
+    logs.value.sort( ( a, b ) => {
       const timeA = a.time || 0
       const timeB = b.time || 0
       return timeB - timeA
-    })
-  } catch (err) {
-    console.error('Failed to fetch task logs:', err)
+    } )
+  } catch ( err ) {
+    console.error( 'Failed to fetch task logs:', err )
     error.value = 'Failed to load task logs. Please try again.'
     logs.value = []
   } finally {
@@ -137,44 +137,44 @@ const fetchLogs = async () => {
 
 // Format timestamp to readable format (legacy, for log.time if needed)
 const formatTimestamp = timestamp => {
-  if (!timestamp) return '-'
+  if ( !timestamp ) return '-'
 
   // Convert Unix timestamp (seconds) to ISO string for convertToLocalTime
-  const date = new Date(timestamp * 1000)
-  return convertToLocalTime(date.toISOString())
+  const date = new Date( timestamp * 1000 )
+  return convertToLocalTime( date.toISOString() )
 }
 
 // Format change type to user-friendly label
 const formatChangeType = changeType => {
   const changeTypeMap = {
-    create: 'Task Created',
-    update: 'Task Updated',
-    complete: 'Task Completed',
+    create : 'Task Created',
+    update : 'Task Updated',
+    complete : 'Task Completed'
   }
   return changeTypeMap[changeType] || changeType || '-'
 }
 
 // Format task time based on change type
 const formatTaskTime = log => {
-  if (!log) return '-'
+  if ( !log ) return '-'
 
   // For 'create' change type, use task.created_at
   // For 'update' or 'complete' change type, use task.updated_at
   let timestamp = null
-  if (log.change === 'create') {
+  if ( log.change === 'create' ) {
     timestamp = log.task?.created_at
-  } else if (log.change === 'update' || log.change === 'complete') {
+  } else if ( log.change === 'update' || log.change === 'complete' ) {
     timestamp = log.task?.updated_at
   }
 
   // Convert to browser local time if timestamp exists
-  if (timestamp) {
-    return convertToLocalTime(timestamp)
+  if ( timestamp ) {
+    return convertToLocalTime( timestamp )
   }
 
   // Fallback to log.time if task timestamps are not available
-  if (log.time) {
-    return formatTimestamp(log.time)
+  if ( log.time ) {
+    return formatTimestamp( log.time )
   }
 
   return '-'
@@ -182,10 +182,10 @@ const formatTaskTime = log => {
 
 // Handle log item click
 const handleLogClick = log => {
-  if (log && log.task) {
+  if ( log && log.task ) {
     selectedLog.value = log
   } else {
-    ElMessage.warning('No step data available for this log entry.')
+    ElMessage.warning( 'No step data available for this log entry.' )
   }
 }
 
@@ -199,16 +199,16 @@ const clearSelection = () => {
 watch(
   () => props.taskEntryId,
   newId => {
-    if (newId) {
+    if ( newId ) {
       fetchLogs()
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
 
-defineOptions({
-  name: 'TaskLogsView',
-})
+defineOptions( {
+  name : 'TaskLogsView'
+} )
 </script>
 
 <style scoped lang="scss">

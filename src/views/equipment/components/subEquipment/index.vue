@@ -93,33 +93,33 @@ import EditSubEquipment from './components/EditSubEquipment.vue'
 import DeactivateNode from '../common/DeactivateNode.vue'
 import AddTier5Form from './components/AddTier5Form.vue'
 
-const props = defineProps({
-  node: { type: Object, required: true },
-  breadcrumb: { type: Array, default: () => [] },
-})
+const props = defineProps( {
+  node : { type : Object, required : true },
+  breadcrumb : { type : Array, default : () => [] }
+} )
 
-const emit = defineEmits(['refresh-tree', 'refresh-data', 'after-delete', 'request-select-node'])
+const emit = defineEmits( ['refresh-tree', 'refresh-data', 'after-delete', 'request-select-node'] )
 
-const parentId = computed(() => {
-  const validBreadcrumbItems = props.breadcrumb.filter((item, index) => {
+const parentId = computed( () => {
+  const validBreadcrumbItems = props.breadcrumb.filter( ( item, index ) => {
     return index > 0 && item && typeof item === 'object' && 'id' in item
-  })
-  if (validBreadcrumbItems.length >= 2) {
+  } )
+  if ( validBreadcrumbItems.length >= 2 ) {
     return validBreadcrumbItems[validBreadcrumbItems.length - 2].id
   }
   return null
-})
+} )
 
-const activeTab = ref('details')
-const showEditDialog = ref(false)
-const showDeactivateDialog = ref(false)
-const showAddTier5Dialog = ref(false)
-const refreshKey = ref(0)
-const editDialogKey = ref(0)
+const activeTab = ref( 'details' )
+const showEditDialog = ref( false )
+const showDeactivateDialog = ref( false )
+const showAddTier5Dialog = ref( false )
+const refreshKey = ref( 0 )
+const editDialogKey = ref( 0 )
 
 /* ---- Breadcrumb click (same style/behavior as T3) ---- */
-function handleBreadcrumbClick(item, index) {
-  if (item?.id != null) emit('request-select-node', Number(item.id))
+function handleBreadcrumbClick( item, index ) {
+  if ( item?.id != null ) emit( 'request-select-node', Number( item.id ) )
 }
 
 const openAddTier5Dialog = () => {
@@ -150,35 +150,35 @@ const handleCloseDialog = done => {
 
 const handleTier5Created = () => {
   closeAddTier5Dialog()
-  emit('refresh-tree')
-  setTimeout(() => {
+  emit( 'refresh-tree' )
+  setTimeout( () => {
     refreshViewData()
-  }, 120)
+  }, 120 )
 }
 
 const handleEditSuccess = () => {
   closeEditDialog()
-  emit('refresh-tree')
-  setTimeout(() => {
+  emit( 'refresh-tree' )
+  setTimeout( () => {
     refreshViewData()
-  }, 100)
+  }, 100 )
 }
 
 const handleDeleteSuccess = () => {
   closeDeactivateDialog()
-  emit('refresh-tree')
-  emit('after-delete', { parentId: parentId.value, deletedId: props.node.id })
+  emit( 'refresh-tree' )
+  emit( 'after-delete', { parentId : parentId.value, deletedId : props.node.id } )
 }
 const handleRefreshTree = () => {
-  emit('refresh-tree')
+  emit( 'refresh-tree' )
 }
 
 const refreshViewData = () => {
   refreshKey.value += 1
-  emit('refresh-data', props.node.id)
+  emit( 'refresh-data', props.node.id )
 }
 
-defineExpose({ openDeactivateDialog })
+defineExpose( { openDeactivateDialog } )
 </script>
 
 <style scoped>

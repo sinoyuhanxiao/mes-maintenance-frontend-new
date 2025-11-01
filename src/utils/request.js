@@ -37,9 +37,9 @@ import { WHITE_CODE_LIST, LOGIN_ERROR_CODE, WHITE_LIST } from '@/config/constant
 import { refresh } from '@/api/user'
 import { willExpireSoon } from '@/utils/jwt'
 
-const TOKEN_SKEW_SECONDS = Number(import.meta.env.VITE_TOKEN_SKEW) || 120
+const TOKEN_SKEW_SECONDS = Number( import.meta.env.VITE_TOKEN_SKEW ) || 120
 // Global whitelist path
-const WHITELIST_URLS = WHITE_LIST.map(path => `/auth${path}`)
+const WHITELIST_URLS = WHITE_LIST.map( path => `/auth${path}` )
 // Use the environment utility for consistent API base URL logic
 const REFRESH_URLS = ['/auth/refresh', '/auth/callback', '/auth/logout']
 const BASE_URL = ENV_UTILS.getApiBaseUrl()
@@ -49,59 +49,59 @@ let refreshPromise = null
 const refreshWaitQueue = []
 
 function getAccessToken() {
-  return localStorage.getItem('access_token')
+  return localStorage.getItem( 'access_token' )
 }
 function getRefreshToken() {
-  return localStorage.getItem('refresh_token')
+  return localStorage.getItem( 'refresh_token' )
 }
 
-function setAuthHeader(config, token) {
-  if (!config.headers) config.headers = {}
-  if (token) config.headers.Authorization = `Bearer ${token}`
+function setAuthHeader( config, token ) {
+  if ( !config.headers ) config.headers = {}
+  if ( token ) config.headers.Authorization = `Bearer ${token}`
   return config
 }
 
-function isAuthWhitelisted(input) {
+function isAuthWhitelisted( input ) {
   const url = typeof input === 'string' ? input : input?.url || ''
-  return REFRESH_URLS.some(p => url.includes(p)) || WHITELIST_URLS.some(p => url.includes(p))
+  return REFRESH_URLS.some( p => url.includes( p ) ) || WHITELIST_URLS.some( p => url.includes( p ) )
 }
 
-async function ensureFreshTokenIfNeeded(config) {
+async function ensureFreshTokenIfNeeded( config ) {
   // Only perform pre-refresh checks for non-whitelist interfaces
-  if (isAuthWhitelisted(config)) return
+  if ( isAuthWhitelisted( config ) ) return
   const at = getAccessToken()
-  if (!at) return
-  if (willExpireSoon(at, TOKEN_SKEW_SECONDS)) {
+  if ( !at ) return
+  if ( willExpireSoon( at, TOKEN_SKEW_SECONDS ) ) {
     await doRefreshOnce()
   }
 }
 
 async function doRefreshOnce() {
-  if (isRefreshing) {
+  if ( isRefreshing ) {
     // It has been refreshed and is reusing the same promise
     return refreshPromise
   }
   const rt = getRefreshToken()
-  if (!rt) {
-    throw new Error('No refresh token available')
+  if ( !rt ) {
+    throw new Error( 'No refresh token available' )
   }
   isRefreshing = true
   refreshPromise = refresh()
-    .then(res => {
+    .then( res => {
       const atNew = getAccessToken()
       // Wake up the requests in the queue after success
-      refreshWaitQueue.splice(0).forEach(cb => cb(atNew))
+      refreshWaitQueue.splice( 0 ).forEach( cb => cb( atNew ) )
       return res
-    })
-    .catch(err => {
+    } )
+    .catch( err => {
       // Refresh failed: Clear status & Let the outer layer handle logout / redirect to log in
-      refreshWaitQueue.splice(0).forEach(cb => cb(null))
+      refreshWaitQueue.splice( 0 ).forEach( cb => cb( null ) )
       throw err
-    })
-    .finally(() => {
+    } )
+    .finally( () => {
       isRefreshing = false
       refreshPromise = null
-    })
+    } )
   return refreshPromise
 }
 
@@ -116,19 +116,19 @@ class HttpRequest {
 
   getConfig() {
     return {
-      baseURL: this.baseUrl,
-      timeout: this.timeout,
-      withCredentials: this.withCredentials,
-      headers: {
-        'Content-Type': 'application/json;charset=UTF-8',
-      },
+      baseURL : this.baseUrl,
+      timeout : this.timeout,
+      withCredentials : this.withCredentials,
+      headers : {
+        'Content-Type' : 'application/json;charset=UTF-8'
+      }
     }
   }
 
-  getParams(payload) {
+  getParams( payload ) {
     const { data, params } = payload
-    const method = (payload.method || 'get').toLowerCase()
-    if (['post', 'put', 'patch', 'delete'].includes(method)) {
+    const method = ( payload.method || 'get' ).toLowerCase()
+    if ( ['post', 'put', 'patch', 'delete'].includes( method ) ) {
       payload.data = data
     } else {
       // For GET requests, use params if already provided, otherwise use data
@@ -138,9 +138,9 @@ class HttpRequest {
     return payload
   }
 
-  checkStatus(status) {
+  checkStatus( status ) {
     let errMessage
-    switch (status) {
+    switch ( status ) {
       case 400:
         errMessage = 'Bad Request'
         break
@@ -186,56 +186,56 @@ class HttpRequest {
     return errMessage
   }
 
-  setInterceptors(instance) {
+  setInterceptors( instance ) {
     // Request Interceptor
     instance.interceptors.request.use(
       async config => {
-        if (!navigator.onLine) {
-          ElMessage({
-            message: 'Please check if your network is available',
-            type: 'error',
-            duration: 3 * 1000,
-          })
-          return Promise.reject(new Error('Please check if your network is available'))
+        if ( !navigator.onLine ) {
+          ElMessage( {
+            message : 'Please check if your network is available',
+            type : 'error',
+            duration : 3 * 1000
+          } )
+          return Promise.reject( new Error( 'Please check if your network is available' ) )
         }
 
         // Pre-fetching (to avoid requests falling into 401 status)
-        await ensureFreshTokenIfNeeded(config)
-        if (!isAuthWhitelisted(config)) {
-          setAuthHeader(config, getAccessToken())
+        await ensureFreshTokenIfNeeded( config )
+        if ( !isAuthWhitelisted( config ) ) {
+          setAuthHeader( config, getAccessToken() )
         }
         return config
       },
       error => {
-        return Promise.reject(new Error(error))
+        return Promise.reject( new Error( error ) )
       }
     )
     // Response Interceptor
     instance.interceptors.response.use(
       res => {
         const result = res.data
-        const type = Object.prototype.toString.call(result)
-        if (type === '[object Blob]' || type === '[object ArrayBuffer]') {
+        const type = Object.prototype.toString.call( result )
+        if ( type === '[object Blob]' || type === '[object ArrayBuffer]' ) {
           return result
         }
         const { status } = result
-        const isErrorToken = LOGIN_ERROR_CODE.find(item => item.status === status)
-        const isWhiteCode = WHITE_CODE_LIST.find(item => item.status === status)
+        const isErrorToken = LOGIN_ERROR_CODE.find( item => item.status === status )
+        const isWhiteCode = WHITE_CODE_LIST.find( item => item.status === status )
 
-        if (isErrorToken) {
-          return this.tryRefreshAndRetry(instance, res.config, result)
+        if ( isErrorToken ) {
+          return this.tryRefreshAndRetry( instance, res.config, result )
         }
-        if (!isWhiteCode) {
+        if ( !isWhiteCode ) {
           // Prioritize backend error message, fallback to generic error
           const backendMessage = result.message || result.error || result.msg
           const errorMessage = backendMessage || 'Unknown error occurred'
 
-          ElMessage({
-            message: errorMessage,
-            type: 'error',
-            duration: 3 * 1000,
-          })
-          return Promise.reject(new Error(errorMessage))
+          ElMessage( {
+            message : errorMessage,
+            type : 'error',
+            duration : 3 * 1000
+          } )
+          return Promise.reject( new Error( errorMessage ) )
         }
         return result
       },
@@ -243,34 +243,34 @@ class HttpRequest {
         const cfg = error?.config || {}
         const httpStatus = error?.response?.status
 
-        if (httpStatus === 401 && !isAuthWhitelisted(cfg)) {
+        if ( httpStatus === 401 && !isAuthWhitelisted( cfg ) ) {
           try {
             // "null" indicates an HTTP-level 401 error.
-            return await this.tryRefreshAndRetry(instance, cfg, null)
-          } catch (e) {
+            return await this.tryRefreshAndRetry( instance, cfg, null )
+          } catch ( e ) {
             // Refresh failed → Exit and jump to Cognito
             const userStore = useUserStore()
             await userStore.LOGIN_OUT()
             gotoCognitoLogin()
-            return Promise.reject(e)
+            return Promise.reject( e )
           }
         }
         // Other errors: Keep original prompt
         let errorMessage = error.message
-        if (error && error.response) {
+        if ( error && error.response ) {
           // Prioritize backend error message from response data
           const backendMessage = error.response.data?.message || error.response.data?.error || error.response.data?.msg
           // Use backend message if available, otherwise fall back to HTTP status message
-          errorMessage = backendMessage || this.checkStatus(error.response.status)
+          errorMessage = backendMessage || this.checkStatus( error.response.status )
         }
-        const isTimeout = (errorMessage || '').toLowerCase().includes('timeout')
+        const isTimeout = ( errorMessage || '' ).toLowerCase().includes( 'timeout' )
         const finalMessage = isTimeout ? 'Network Request Timeout' : errorMessage || 'Fail to connect to the server'
-        ElMessage({
-          message: finalMessage,
-          type: 'error',
-          duration: 2 * 1000,
-        })
-        return Promise.reject(new Error(finalMessage))
+        ElMessage( {
+          message : finalMessage,
+          type : 'error',
+          duration : 2 * 1000
+        } )
+        return Promise.reject( new Error( finalMessage ) )
       }
     )
   }
@@ -278,56 +278,56 @@ class HttpRequest {
   /**
    * Refresh and replay the original request (including the concurrent queue)
    */
-  async tryRefreshAndRetry(instance, originalConfig, resultPayloadOrNull) {
+  async tryRefreshAndRetry( instance, originalConfig, resultPayloadOrNull ) {
     // Avoid refreshing/calling back the refresh/call back mechanism to refresh itself
-    if (isAuthWhitelisted(originalConfig)) {
+    if ( isAuthWhitelisted( originalConfig ) ) {
       const userStore = useUserStore()
       await userStore.LOGIN_OUT()
       gotoCognitoLogin()
-      return Promise.reject(new Error('Auth endpoint failed'))
+      return Promise.reject( new Error( 'Auth endpoint failed' ) )
     }
     // Avoiding an infinite loop
-    if (originalConfig._retried) {
+    if ( originalConfig._retried ) {
       const userStore = useUserStore()
       await userStore.LOGIN_OUT()
       gotoCognitoLogin()
-      return Promise.reject(new Error('Retry already attempted'))
+      return Promise.reject( new Error( 'Retry already attempted' ) )
     }
     originalConfig._retried = true
 
     // If the page is being refreshed: Suspend the current request and replay it after the refresh is complete.
-    if (isRefreshing) {
-      return new Promise((resolve, reject) => {
-        refreshWaitQueue.push(newToken => {
-          if (!newToken) {
-            reject(new Error('Refresh failed'))
+    if ( isRefreshing ) {
+      return new Promise( ( resolve, reject ) => {
+        refreshWaitQueue.push( newToken => {
+          if ( !newToken ) {
+            reject( new Error( 'Refresh failed' ) )
           } else {
-            setAuthHeader(originalConfig, newToken)
-            resolve(instance(originalConfig))
+            setAuthHeader( originalConfig, newToken )
+            resolve( instance( originalConfig ) )
           }
-        })
-      })
+        } )
+      } )
     }
     // Start refreshing
     try {
       await doRefreshOnce()
       const atNew = getAccessToken()
-      setAuthHeader(originalConfig, atNew)
-      return instance(originalConfig)
-    } catch (error) {
+      setAuthHeader( originalConfig, atNew )
+      return instance( originalConfig )
+    } catch ( error ) {
       const userStore = useUserStore()
       await userStore.LOGIN_OUT()
       gotoCognitoLogin()
-      return Promise.reject(error)
+      return Promise.reject( error )
     }
   }
 
-  request(options) {
+  request( options ) {
     const instance = axios.create()
     const baseOpt = this.getConfig()
-    const params = Object.assign({}, baseOpt, this.getParams(options))
-    this.setInterceptors(instance)
-    return instance(params)
+    const params = Object.assign( {}, baseOpt, this.getParams( options ) )
+    this.setInterceptors( instance )
+    return instance( params )
   }
 }
 

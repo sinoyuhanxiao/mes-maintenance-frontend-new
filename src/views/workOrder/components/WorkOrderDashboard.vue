@@ -60,33 +60,33 @@ import PieChart from '../../../components/Charts/PieChart.vue'
 import MaintenanceCardTable from '../../../components/Tables/MaintenanceCardTable.vue'
 import { searchWorkOrders } from '../../../api/work-order'
 
-const height = ref('300px')
-const height2 = ref('540px')
+const height = ref( '300px' )
+const height2 = ref( '540px' )
 
-const items = ref([])
-const incompleteItems = ref([])
-const grouped = ref([])
-const groupedStates = ref([])
-const totalItems = ref(0)
-const incompleteTotalItems = ref(0)
+const items = ref( [] )
+const incompleteItems = ref( [] )
+const grouped = ref( [] )
+const groupedStates = ref( [] )
+const totalItems = ref( 0 )
+const incompleteTotalItems = ref( 0 )
 
-const selectedData = ref(null)
+const selectedData = ref( null )
 
 // Query parameters
-const listQuery = reactive({
-  page: 1,
-  limit: 10,
-  sort: '-id',
-})
+const listQuery = reactive( {
+  page : 1,
+  limit : 10,
+  sort : '-id'
+} )
 
-const incompleteListQuery = reactive({
-  page: 1,
-  limit: 5,
-  sort: '-id',
-})
+const incompleteListQuery = reactive( {
+  page : 1,
+  limit : 5,
+  sort : '-id'
+} )
 
 async function getAllWorkOrdersData() {
-  const response = await searchWorkOrders(listQuery.page, listQuery.limit, 'createdAt', 'DESC')
+  const response = await searchWorkOrders( listQuery.page, listQuery.limit, 'createdAt', 'DESC' )
   const incompleteResponse = await searchWorkOrders(
     incompleteListQuery.page,
     incompleteListQuery.limit,
@@ -104,26 +104,26 @@ async function getAllWorkOrdersData() {
   const priorityMap = {}
   const stateMap = {}
 
-  for (const wo of items.value) {
-    if (wo.status === 1) {
+  for ( const wo of items.value ) {
+    if ( wo.status === 1 ) {
       // Priority
       const pid = wo.priority.id
-      if (!priorityMap[pid]) {
-        priorityMap[pid] = { value: 0, name: wo.priority.name }
+      if ( !priorityMap[pid] ) {
+        priorityMap[pid] = { value : 0, name : wo.priority.name }
       }
       priorityMap[pid].value += 1
 
       // State
       const sid = wo.state.id
-      if (!stateMap[sid]) {
-        stateMap[sid] = { value: 0, name: wo.state.name }
+      if ( !stateMap[sid] ) {
+        stateMap[sid] = { value : 0, name : wo.state.name }
       }
       stateMap[sid].value += 1
     }
   }
 
-  grouped.value = Object.values(priorityMap)
-  groupedStates.value = Object.values(stateMap)
+  grouped.value = Object.values( priorityMap )
+  groupedStates.value = Object.values( stateMap )
 }
 
 getAllWorkOrdersData()

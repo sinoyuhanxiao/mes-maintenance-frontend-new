@@ -141,41 +141,41 @@ import { getLocationTree, getLocationById, createLocation, getLocationTypes } fr
 import { createVendor, searchVendorsGeneral } from '@/api/vendor.js'
 import { uploadMultipleToMinio } from '@/api/minio.js'
 
-const props = defineProps({ activeTab: String, showCreateDialog: Boolean, search: String })
+const props = defineProps( { activeTab : String, showCreateDialog : Boolean, search : String } )
 
 /** robust MinIO response normalizer */
 const extractUploadedUrls = resp => {
   const list = resp?.uploadedFiles ?? resp?.data?.uploadedFiles ?? resp?.data?.data?.uploadedFiles ?? resp?.files ?? []
-  return (Array.isArray(list) ? list : []).map(f => f?.url || f?.fileUrl || f?.location || f?.path).filter(Boolean)
+  return ( Array.isArray( list ) ? list : [] ).map( f => f?.url || f?.fileUrl || f?.location || f?.path ).filter( Boolean )
 }
 
-const emit = defineEmits(['update:activeTab', 'update:showCreateDialog'])
+const emit = defineEmits( ['update:activeTab', 'update:showCreateDialog'] )
 
-const vendorFormRef = ref(null)
-const locationFormRef = ref(null)
-const locationTreeRef = ref(null)
-const cardsRef = ref(null)
+const vendorFormRef = ref( null )
+const locationFormRef = ref( null )
+const locationTreeRef = ref( null )
+const cardsRef = ref( null )
 
-const vendors = ref([])
-const selected = ref(null)
-const locationTreeData = ref([])
-const selectedLocation = ref(null)
+const vendors = ref( [] )
+const selected = ref( null )
+const locationTreeData = ref( [] )
+const selectedLocation = ref( null )
 
-const currentPage = ref(1)
-const searchInput = ref('')
-const activeTab = ref(props.activeTab)
-const pageSize = ref(10)
-const totalVendors = ref(0)
-const isChildCreate = ref(false)
-const vendorCreateKey = ref(0)
+const currentPage = ref( 1 )
+const searchInput = ref( '' )
+const activeTab = ref( props.activeTab )
+const pageSize = ref( 10 )
+const totalVendors = ref( 0 )
+const isChildCreate = ref( false )
+const vendorCreateKey = ref( 0 )
 
 const scrollListTop = () =>
-  nextTick(() => {
+  nextTick( () => {
     const el = cardsRef.value
-    if (!el) return
-    if (el.scrollTo) el.scrollTo({ top: 0, behavior: 'smooth' })
+    if ( !el ) return
+    if ( el.scrollTo ) el.scrollTo( { top : 0, behavior : 'smooth' } )
     else el.scrollTop = 0
-  })
+  } )
 
 watch(
   () => props.activeTab,
@@ -186,451 +186,451 @@ watch(
 
 // Debounced search for vendors
 let searchTimer = null
-watch(searchInput, () => {
+watch( searchInput, () => {
   currentPage.value = 1
-  if (searchTimer) clearTimeout(searchTimer)
-  searchTimer = setTimeout(() => {
-    if (props.activeTab === 'vendors') fetchVendors().then(scrollListTop)
-  }, 300)
-})
+  if ( searchTimer ) clearTimeout( searchTimer )
+  searchTimer = setTimeout( () => {
+    if ( props.activeTab === 'vendors' ) fetchVendors().then( scrollListTop )
+  }, 300 )
+} )
 
-const newVendor = ref({
-  name: '',
-  code: '',
-  address: '',
-  phone_number: '',
-  email: '',
-  website: '',
-  description: '',
-  image_list: [],
-  file_list: [],
-})
+const newVendor = ref( {
+  name : '',
+  code : '',
+  address : '',
+  phone_number : '',
+  email : '',
+  website : '',
+  description : '',
+  image_list : [],
+  file_list : []
+} )
 
-const newLocation = ref({
-  name: '',
-  code: '',
-  location_type: null,
-  person_in_charge_id: null, // ✅ new field
-  address: '',
-  description: '',
-  image_list: [],
-  file_list: [],
-  parent_id: null,
-})
+const newLocation = ref( {
+  name : '',
+  code : '',
+  location_type : null,
+  person_in_charge_id : null, // ✅ new field
+  address : '',
+  description : '',
+  image_list : [],
+  file_list : [],
+  parent_id : null
+} )
 
-const locationTypes = ref([])
+const locationTypes = ref( [] )
 
-onMounted(async () => {
+onMounted( async() => {
   await fetchLocationTypes()
-  if (props.activeTab === 'vendors') await fetchVendors()
-  else if (props.activeTab === 'locations') await fetchLocationTree()
-})
+  if ( props.activeTab === 'vendors' ) await fetchVendors()
+  else if ( props.activeTab === 'locations' ) await fetchLocationTree()
+} )
 
-const fetchVendors = async () => {
+const fetchVendors = async() => {
   try {
     const res = await searchVendorsGeneral(
-      { keyword: searchInput.value || '' },
-      { page: currentPage.value, size: pageSize.value, sortField: 'createdAt', direction: 'DESC' }
+      { keyword : searchInput.value || '' },
+      { page : currentPage.value, size : pageSize.value, sortField : 'createdAt', direction : 'DESC' }
     )
     const payload = res?.data ?? res
     const page = payload?.data ?? payload
-    const list = Array.isArray(page?.content) ? page.content : Array.isArray(page) ? page : []
-    const normalized = list.map(v => ({ ...v, id: Number(v.id) }))
+    const list = Array.isArray( page?.content ) ? page.content : Array.isArray( page ) ? page : []
+    const normalized = list.map( v => ( { ...v, id : Number( v.id ) } ) )
 
     vendors.value = normalized
-    totalVendors.value = Number(page?.totalElements ?? normalized.length)
+    totalVendors.value = Number( page?.totalElements ?? normalized.length )
 
-    const curId = Number(selected.value?.id)
-    const stillThere = normalized.find(v => Number(v.id) === curId)
+    const curId = Number( selected.value?.id )
+    const stillThere = normalized.find( v => Number( v.id ) === curId )
     selected.value = stillThere || normalized[0] || null
-  } catch (err) {
-    console.error('Error fetching vendors:', err)
+  } catch ( err ) {
+    console.error( 'Error fetching vendors:', err )
     vendors.value = []
     totalVendors.value = 0
   }
 }
 
-const fetchLocationTypes = async () => {
+const fetchLocationTypes = async() => {
   try {
     const res = await getLocationTypes()
     const payload = res?.data ?? res
-    const list = Array.isArray(payload?.data) ? payload.data : Array.isArray(payload) ? payload : []
-    locationTypes.value = list.map(t => ({
+    const list = Array.isArray( payload?.data ) ? payload.data : Array.isArray( payload ) ? payload : []
+    locationTypes.value = list.map( t => ( {
       ...t,
-      id: Number(t.id),
-      sequence_order: t.sequence_order != null ? Number(t.sequence_order) : 0,
-    }))
-  } catch (e) {
-    console.error('fetchLocationTypes failed:', e?.response?.data || e)
+      id : Number( t.id ),
+      sequence_order : t.sequence_order != null ? Number( t.sequence_order ) : 0
+    } ) )
+  } catch ( e ) {
+    console.error( 'fetchLocationTypes failed:', e?.response?.data || e )
     locationTypes.value = []
   }
 }
 
-const fetchLocationTree = async () => {
+const fetchLocationTree = async() => {
   try {
     const res = await getLocationTree()
     const payload = res && res.data !== undefined ? res.data : res
     let raw = []
-    if (payload?.data) raw = payload.data
-    else if (Array.isArray(payload)) raw = payload
-    else if (payload) raw = [payload]
+    if ( payload?.data ) raw = payload.data
+    else if ( Array.isArray( payload ) ) raw = payload
+    else if ( payload ) raw = [payload]
 
-    const types = Array.isArray(locationTypes.value) ? locationTypes.value : []
+    const types = Array.isArray( locationTypes.value ) ? locationTypes.value : []
     const enrich = nodes =>
       nodes
-        .map(node => {
-          const id = Number(node.id)
-          const locTypeId = node.locationTypeId != null ? Number(node.locationTypeId) : null
+        .map( node => {
+          const id = Number( node.id )
+          const locTypeId = node.locationTypeId != null ? Number( node.locationTypeId ) : null
           return {
             ...node,
             id,
-            locationTypeId: locTypeId,
-            location_type: types.find(t => Number(t.id) === locTypeId) || null,
-            children: Array.isArray(node.children) && node.children.length ? enrich(node.children) : [],
+            locationTypeId : locTypeId,
+            location_type : types.find( t => Number( t.id ) === locTypeId ) || null,
+            children : Array.isArray( node.children ) && node.children.length ? enrich( node.children ) : []
           }
-        })
-        .sort((a, b) => a.id - b.id)
+        } )
+        .sort( ( a, b ) => a.id - b.id )
 
-    locationTreeData.value = enrich(raw)
+    locationTreeData.value = enrich( raw )
 
-    if (!selectedLocation.value && locationTreeData.value.length > 0) {
+    if ( !selectedLocation.value && locationTreeData.value.length > 0 ) {
       const first = locationTreeData.value[0]
-      await handleLocationClick(first)
+      await handleLocationClick( first )
       await nextTick()
-      locationTreeRef.value?.treeRef?.setCurrentKey(first.id)
+      locationTreeRef.value?.treeRef?.setCurrentKey( first.id )
     }
-  } catch (e) {
-    console.error('fetchLocationTree failed:', e)
+  } catch ( e ) {
+    console.error( 'fetchLocationTree failed:', e )
   }
 }
 
 const handleLocationClick = async node => {
-  const id = Number(node?.id ?? node?.locationId)
-  if (!Number.isFinite(id)) {
-    console.warn('handleLocationClick: invalid id', node)
+  const id = Number( node?.id ?? node?.locationId )
+  if ( !Number.isFinite( id ) ) {
+    console.warn( 'handleLocationClick: invalid id', node )
     return
   }
 
   try {
-    const res = await getLocationById(id)
+    const res = await getLocationById( id )
     const payload = res && res.data !== undefined ? res.data : res
     const data = payload?.data ?? payload ?? {}
 
     const typeId = data.location_type?.id ?? data.location_type_id ?? data.LocationTypeId ?? data.locationTypeId ?? null
-    const matchType = (arr, tid) => (Array.isArray(arr) ? arr.find(t => Number(t.id) === Number(tid)) || null : null)
+    const matchType = ( arr, tid ) => ( Array.isArray( arr ) ? arr.find( t => Number( t.id ) === Number( tid ) ) || null : null )
 
     data.id = id
-    data.location_type = typeId != null ? matchType(locationTypes.value, typeId) : null
+    data.location_type = typeId != null ? matchType( locationTypes.value, typeId ) : null
 
     selectedLocation.value = data
-  } catch (err) {
-    console.error('getLocationById failed:', err)
+  } catch ( err ) {
+    console.error( 'getLocationById failed:', err )
     const typeId = node.location_type?.id ?? node.location_type_id ?? node.locationTypeId
     selectedLocation.value = {
       ...node,
       id,
-      location_type:
+      location_type :
         typeId != null
-          ? Array.isArray(locationTypes.value)
-            ? locationTypes.value.find(t => Number(t.id) === Number(typeId)) || null
+          ? Array.isArray( locationTypes.value )
+            ? locationTypes.value.find( t => Number( t.id ) === Number( typeId ) ) || null
             : null
-          : null,
+          : null
     }
   }
 }
 
 const handleDelete = deletedId => {
-  const index = vendors.value.findIndex(v => v.id === deletedId)
-  if (index === -1) return
-  vendors.value.splice(index, 1)
-  selected.value = vendors.value.length > 0 ? vendors.value[Math.max(0, index - 1)] : null
-  fetchVendors().then(scrollListTop)
+  const index = vendors.value.findIndex( v => v.id === deletedId )
+  if ( index === -1 ) return
+  vendors.value.splice( index, 1 )
+  selected.value = vendors.value.length > 0 ? vendors.value[Math.max( 0, index - 1 )] : null
+  fetchVendors().then( scrollListTop )
 }
 
 const handleLocationDelete = async deletedId => {
   let newSelected = null
-  const findAndRemove = (nodes, parent = null) => {
-    for (let i = 0; i < nodes.length; i++) {
+  const findAndRemove = ( nodes, parent = null ) => {
+    for ( let i = 0; i < nodes.length; i++ ) {
       const node = nodes[i]
-      if (node.id === deletedId) {
+      if ( node.id === deletedId ) {
         const siblings = parent ? parent.children : locationTreeData.value
         newSelected = siblings[i - 1] || siblings[i + 1] || parent || null
-        nodes.splice(i, 1)
+        nodes.splice( i, 1 )
         return true
       }
-      if (node.children?.length) {
-        const removed = findAndRemove(node.children, node)
-        if (removed) return true
+      if ( node.children?.length ) {
+        const removed = findAndRemove( node.children, node )
+        if ( removed ) return true
       }
     }
     return false
   }
 
-  findAndRemove(locationTreeData.value)
+  findAndRemove( locationTreeData.value )
 
-  if (selectedLocation.value?.id === deletedId) {
+  if ( selectedLocation.value?.id === deletedId ) {
     selectedLocation.value = null
-    if (newSelected) {
-      await handleLocationClick({ id: newSelected.id })
-      nextTick(() => locationTreeRef.value?.treeRef?.setCurrentKey(newSelected.id))
+    if ( newSelected ) {
+      await handleLocationClick( { id : newSelected.id } )
+      nextTick( () => locationTreeRef.value?.treeRef?.setCurrentKey( newSelected.id ) )
     }
   }
 }
 
-const handleLocationUpdated = async ({ id }) => {
-  const numericId = Number(id)
-  if (!Number.isFinite(numericId)) return
+const handleLocationUpdated = async( { id } ) => {
+  const numericId = Number( id )
+  if ( !Number.isFinite( numericId ) ) return
 
   try {
-    const res = await getLocationById(numericId)
+    const res = await getLocationById( numericId )
     const payload = res?.data ?? res
-    const updated = (payload?.data ?? payload ?? {}) || {}
+    const updated = ( payload?.data ?? payload ?? {} ) || {}
 
     const typeId = updated.location_type?.id ?? updated.location_type_id ?? updated.locationTypeId ?? null
     updated.id = numericId
     updated.location_type =
-      (Array.isArray(locationTypes.value) ? locationTypes.value.find(t => Number(t.id) === Number(typeId)) : null) ||
+      ( Array.isArray( locationTypes.value ) ? locationTypes.value.find( t => Number( t.id ) === Number( typeId ) ) : null ) ||
       null
 
-    if (Number(selectedLocation.value?.id) === numericId) {
-      Object.assign(selectedLocation.value, updated)
+    if ( Number( selectedLocation.value?.id ) === numericId ) {
+      Object.assign( selectedLocation.value, updated )
     } else {
       selectedLocation.value = updated
     }
 
     const updateNode = nodes => {
-      for (const n of nodes) {
-        if (Number(n.id) === numericId) {
-          Object.assign(n, updated)
+      for ( const n of nodes ) {
+        if ( Number( n.id ) === numericId ) {
+          Object.assign( n, updated )
           return true
         }
-        if (n.children?.length && updateNode(n.children)) return true
+        if ( n.children?.length && updateNode( n.children ) ) return true
       }
       return false
     }
-    const inPlace = Array.isArray(locationTreeData.value) ? updateNode(locationTreeData.value) : false
-    if (!inPlace) await fetchLocationTree()
+    const inPlace = Array.isArray( locationTreeData.value ) ? updateNode( locationTreeData.value ) : false
+    if ( !inPlace ) await fetchLocationTree()
 
     await nextTick()
-    locationTreeRef.value?.treeRef?.setCurrentKey(numericId)
-  } catch (err) {
-    console.error('handleLocationUpdated error:', err)
+    locationTreeRef.value?.treeRef?.setCurrentKey( numericId )
+  } catch ( err ) {
+    console.error( 'handleLocationUpdated error:', err )
   }
 }
 
 const openAddChildDialog = parent => {
   isChildCreate.value = true
   newLocation.value = {
-    name: '',
-    code: '',
-    location_type: null,
-    person_in_charge_id: null, // ✅ new
-    address: '',
-    description: '',
-    image_list: [],
-    file_list: [],
-    parent_id: parent.id,
+    name : '',
+    code : '',
+    location_type : null,
+    person_in_charge_id : null, // ✅ new
+    address : '',
+    description : '',
+    image_list : [],
+    file_list : [],
+    parent_id : parent.id
   }
-  emit('update:showCreateDialog', true)
+  emit( 'update:showCreateDialog', true )
 }
 
 const selectVendor = vendor => {
   selected.value = vendor
 }
 
-const submitNewVendor = async () => {
-  if (!(await vendorFormRef.value?.validate?.())) return
+const submitNewVendor = async() => {
+  if ( !( await vendorFormRef.value?.validate?.() ) ) return
 
   const f = vendorFormRef.value.getFormData?.() ?? {}
   let uploadedImageUrls = []
   let uploadedFileUrls = []
   try {
-    if (Array.isArray(f.image_files) && f.image_files.length) {
-      const res = await uploadMultipleToMinio(f.image_files)
-      uploadedImageUrls = extractUploadedUrls(res)
+    if ( Array.isArray( f.image_files ) && f.image_files.length ) {
+      const res = await uploadMultipleToMinio( f.image_files )
+      uploadedImageUrls = extractUploadedUrls( res )
     }
-    if (Array.isArray(f.file_files) && f.file_files.length) {
-      const res = await uploadMultipleToMinio(f.file_files)
-      uploadedFileUrls = extractUploadedUrls(res)
+    if ( Array.isArray( f.file_files ) && f.file_files.length ) {
+      const res = await uploadMultipleToMinio( f.file_files )
+      uploadedFileUrls = extractUploadedUrls( res )
     }
-  } catch (e) {
-    ElMessage.error('File upload failed')
-    console.error('uploadMultipleToMinio failed:', e?.response?.data || e)
+  } catch ( e ) {
+    ElMessage.error( 'File upload failed' )
+    console.error( 'uploadMultipleToMinio failed:', e?.response?.data || e )
     return
   }
 
-  const onlyUrls = arr => (Array.isArray(arr) ? arr.filter(x => typeof x === 'string') : [])
-  const image_list = [...onlyUrls(f.image_list), ...uploadedImageUrls]
-  const file_list = [...onlyUrls(f.file_list), ...uploadedFileUrls]
+  const onlyUrls = arr => ( Array.isArray( arr ) ? arr.filter( x => typeof x === 'string' ) : [] )
+  const image_list = [...onlyUrls( f.image_list ), ...uploadedImageUrls]
+  const file_list = [...onlyUrls( f.file_list ), ...uploadedFileUrls]
 
   const payload = {
-    name: (f.name ?? '').trim(),
-    code: (f.code ?? '').trim(),
-    address: (f.address ?? '').trim(),
-    phone_number: (f.phone_number ?? '').trim(),
-    email: (f.email ?? '').trim(),
-    website: (f.website ?? '').trim(),
-    description: (f.description ?? '').trim(),
+    name : ( f.name ?? '' ).trim(),
+    code : ( f.code ?? '' ).trim(),
+    address : ( f.address ?? '' ).trim(),
+    phone_number : ( f.phone_number ?? '' ).trim(),
+    email : ( f.email ?? '' ).trim(),
+    website : ( f.website ?? '' ).trim(),
+    description : ( f.description ?? '' ).trim(),
     image_list,
-    file_list,
+    file_list
   }
 
   try {
-    await createVendor(payload)
-    ElMessage.success('Vendor created')
-    emit('update:showCreateDialog', false)
+    await createVendor( payload )
+    ElMessage.success( 'Vendor created' )
+    emit( 'update:showCreateDialog', false )
 
     currentPage.value = 1
     await fetchVendors()
     await nextTick()
     selected.value = vendors.value[0] || null
     scrollListTop()
-  } catch (e) {
+  } catch ( e ) {
     const s = e?.response?.status
-    const m = (e?.response?.data?.message || e?.response?.data?.error || '').toLowerCase()
-    ElMessage.error(s === 409 || /code.*exist/.test(m) ? 'Create failed: vendor code already exists.' : 'Create failed')
-    console.error('Create vendor failed:', e?.response?.data || e)
+    const m = ( e?.response?.data?.message || e?.response?.data?.error || '' ).toLowerCase()
+    ElMessage.error( s === 409 || /code.*exist/.test( m ) ? 'Create failed: vendor code already exists.' : 'Create failed' )
+    console.error( 'Create vendor failed:', e?.response?.data || e )
   }
 }
 
 const handleVendorUpdated = updated => {
-  const i = vendors.value.findIndex(v => v.id === updated.id)
-  if (i !== -1) {
-    Object.assign(vendors.value[i], updated)
+  const i = vendors.value.findIndex( v => v.id === updated.id )
+  if ( i !== -1 ) {
+    Object.assign( vendors.value[i], updated )
     selected.value = vendors.value[i]
     return
   }
-  fetchVendors().then(() => {
-    const j = vendors.value.findIndex(v => v.id === updated.id)
-    if (j !== -1) selected.value = vendors.value[j]
-  })
+  fetchVendors().then( () => {
+    const j = vendors.value.findIndex( v => v.id === updated.id )
+    if ( j !== -1 ) selected.value = vendors.value[j]
+  } )
 }
 
-const submitNewLocation = async () => {
-  if (!(await locationFormRef.value?.validate())) return
+const submitNewLocation = async() => {
+  if ( !( await locationFormRef.value?.validate() ) ) return
 
   const f = locationFormRef.value.getFormData()
-  const typeId = f.location_type_id == null ? null : Number(f.location_type_id)
-  const picId = f.person_in_charge_id === '' || f.person_in_charge_id == null ? null : Number(f.person_in_charge_id)
+  const typeId = f.location_type_id == null ? null : Number( f.location_type_id )
+  const picId = f.person_in_charge_id === '' || f.person_in_charge_id == null ? null : Number( f.person_in_charge_id )
 
   // Upload new images only
   let uploadedImageUrls = []
   try {
-    if (Array.isArray(f.image_files) && f.image_files.length) {
-      const res = await uploadMultipleToMinio(f.image_files)
-      uploadedImageUrls = extractUploadedUrls(res)
+    if ( Array.isArray( f.image_files ) && f.image_files.length ) {
+      const res = await uploadMultipleToMinio( f.image_files )
+      uploadedImageUrls = extractUploadedUrls( res )
     }
-  } catch (e) {
-    ElMessage.error('Image upload failed')
-    console.error('uploadMultipleToMinio failed:', e?.response?.data || e)
+  } catch ( e ) {
+    ElMessage.error( 'Image upload failed' )
+    console.error( 'uploadMultipleToMinio failed:', e?.response?.data || e )
     return
   }
 
-  const onlyUrls = arr => (Array.isArray(arr) ? arr.filter(x => typeof x === 'string') : [])
-  const image_list = Array.from(new Set([...onlyUrls(f.image_list), ...uploadedImageUrls]))
+  const onlyUrls = arr => ( Array.isArray( arr ) ? arr.filter( x => typeof x === 'string' ) : [] )
+  const image_list = Array.from( new Set( [...onlyUrls( f.image_list ), ...uploadedImageUrls] ) )
 
   const payload = {
-    name: f.name?.trim() || '',
-    code: f.code?.trim() || '',
-    description: f.description?.trim() || '',
-    parent_id: newLocation.value?.parent_id ?? f.parent_id ?? null,
-    address: f.address?.trim() || '',
+    name : f.name?.trim() || '',
+    code : f.code?.trim() || '',
+    description : f.description?.trim() || '',
+    parent_id : newLocation.value?.parent_id ?? f.parent_id ?? null,
+    address : f.address?.trim() || '',
     image_list,
-    ...(typeId != null && Number.isFinite(typeId) ? { location_type_id: typeId } : {}),
-    ...(Number.isFinite(picId) ? { person_in_charge_id: picId } : {}),
+    ...( typeId != null && Number.isFinite( typeId ) ? { location_type_id : typeId } : {} ),
+    ...( Number.isFinite( picId ) ? { person_in_charge_id : picId } : {} )
   }
 
   try {
-    const res = await createLocation(payload)
+    const res = await createLocation( payload )
     const payloadRes = res?.data ?? res
     const created = payloadRes?.data ?? payloadRes
-    const newId = Number(created?.id)
+    const newId = Number( created?.id )
 
-    emit('update:showCreateDialog', false)
-    ElMessage.success('Location created')
+    emit( 'update:showCreateDialog', false )
+    ElMessage.success( 'Location created' )
 
     await fetchLocationTree()
     await nextTick()
 
-    if (Number.isFinite(newId)) {
-      await handleLocationClick({ id: newId })
+    if ( Number.isFinite( newId ) ) {
+      await handleLocationClick( { id : newId } )
       await nextTick()
-      locationTreeRef.value?.treeRef?.setCurrentKey(newId)
+      locationTreeRef.value?.treeRef?.setCurrentKey( newId )
     }
-  } catch (e) {
+  } catch ( e ) {
     const s = e?.response?.status
-    const m = (e?.response?.data?.message || '').toLowerCase()
-    if (s === 409 || /code.*exist/.test(m)) {
-      ElMessage.error('Create failed: location code already exists. Please use a different code.')
-      locationFormRef.value?.validateField?.('code', () => {})
-      locationFormRef.value?.scrollToField?.('code')
+    const m = ( e?.response?.data?.message || '' ).toLowerCase()
+    if ( s === 409 || /code.*exist/.test( m ) ) {
+      ElMessage.error( 'Create failed: location code already exists. Please use a different code.' )
+      locationFormRef.value?.validateField?.( 'code', () => {} )
+      locationFormRef.value?.scrollToField?.( 'code' )
     } else {
-      ElMessage.error('Create failed')
+      ElMessage.error( 'Create failed' )
     }
-    console.error('Create location failed:', e?.response?.data || e)
+    console.error( 'Create location failed:', e?.response?.data || e )
   }
 }
 
 const handlePageChange = page => {
   currentPage.value = page
-  fetchVendors().then(scrollListTop)
+  fetchVendors().then( scrollListTop )
 }
 const handleSizeChange = size => {
   pageSize.value = size
   currentPage.value = 1
-  fetchVendors().then(scrollListTop)
+  fetchVendors().then( scrollListTop )
 }
 
 watch(
   () => props.activeTab,
   async newTab => {
-    if (newTab === 'vendors') {
+    if ( newTab === 'vendors' ) {
       selectedLocation.value = null
-      if (vendors.value.length === 0) await fetchVendors()
+      if ( vendors.value.length === 0 ) await fetchVendors()
       selected.value = vendors.value[0] || null
-    } else if (newTab === 'locations') {
+    } else if ( newTab === 'locations' ) {
       selected.value = null
-      if (locationTreeData.value.length === 0) await fetchLocationTree()
+      if ( locationTreeData.value.length === 0 ) await fetchLocationTree()
       const first = locationTreeData.value[0]
-      if (first) {
-        await handleLocationClick(first)
-        nextTick(() => locationTreeRef.value?.treeRef?.setCurrentKey(first.id))
+      if ( first ) {
+        await handleLocationClick( first )
+        nextTick( () => locationTreeRef.value?.treeRef?.setCurrentKey( first.id ) )
       }
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
 
 watch(
   () => props.showCreateDialog,
   open => {
-    if (!open) return
-    if (props.activeTab === 'vendors') {
-      Object.assign(newVendor.value, {
-        name: '',
-        code: '',
-        address: '',
-        phone_number: '',
-        email: '',
-        website: '',
-        description: '',
-        image_list: [],
-        file_list: [],
-        removed_existing_images: [],
-      })
+    if ( !open ) return
+    if ( props.activeTab === 'vendors' ) {
+      Object.assign( newVendor.value, {
+        name : '',
+        code : '',
+        address : '',
+        phone_number : '',
+        email : '',
+        website : '',
+        description : '',
+        image_list : [],
+        file_list : [],
+        removed_existing_images : []
+      } )
       vendorCreateKey.value += 1
     } else {
-      Object.assign(newLocation.value, {
-        name: '',
-        code: '',
-        location_type: null,
-        person_in_charge_id: null, // ✅ reset
-        address: '',
-        description: '',
-        image_list: [],
-        file_list: [],
-        parent_id: isChildCreate.value ? newLocation.value.parent_id : null,
-      })
+      Object.assign( newLocation.value, {
+        name : '',
+        code : '',
+        location_type : null,
+        person_in_charge_id : null, // ✅ reset
+        address : '',
+        description : '',
+        image_list : [],
+        file_list : [],
+        parent_id : isChildCreate.value ? newLocation.value.parent_id : null
+      } )
     }
   }
 )

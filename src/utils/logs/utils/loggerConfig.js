@@ -5,114 +5,114 @@
 
 export const loggerConfig = {
   // Global settings
-  global: {
-    autoLog: true,
-    showSuccessMessage: true,
-    delayMs: 50,
-    enableValidation: true,
-    enableComparison: false,
+  global : {
+    autoLog : true,
+    showSuccessMessage : true,
+    delayMs : 50,
+    enableValidation : true,
+    enableComparison : false
   },
 
   // Form-specific configurations
-  forms: {
-    workOrder: {
-      title: 'Work Order Payload',
-      subtitle: "Click 'Logs' to refresh payload data",
-      validation: {
-        enabled: true,
-        schema: 'workOrder',
-        showWarnings: true,
+  forms : {
+    workOrder : {
+      title : 'Work Order Payload',
+      subtitle : "Click 'Logs' to refresh payload data",
+      validation : {
+        enabled : true,
+        schema : 'workOrder',
+        showWarnings : true
       },
-      logging: {
-        autoTrigger: true,
-        logOnSubmit: true,
-        logOnChange: false,
+      logging : {
+        autoTrigger : true,
+        logOnSubmit : true,
+        logOnChange : false
       },
-      drawer: {
-        defaultWidth: 600,
-        position: 'right',
-        modal: false,
-      },
+      drawer : {
+        defaultWidth : 600,
+        position : 'right',
+        modal : false
+      }
     },
 
-    template: {
-      title: 'Template Payload',
-      subtitle: "Click 'Logs' to refresh template data",
-      validation: {
-        enabled: true,
-        schema: 'template',
-        showWarnings: true,
+    template : {
+      title : 'Template Payload',
+      subtitle : "Click 'Logs' to refresh template data",
+      validation : {
+        enabled : true,
+        schema : 'template',
+        showWarnings : true
       },
-      logging: {
-        autoTrigger: true,
-        logOnSubmit: true,
-        logOnChange: false,
+      logging : {
+        autoTrigger : true,
+        logOnSubmit : true,
+        logOnChange : false
       },
-      drawer: {
-        defaultWidth: 500,
-        position: 'right',
-        modal: false,
-      },
+      drawer : {
+        defaultWidth : 500,
+        position : 'right',
+        modal : false
+      }
     },
 
-    standard: {
-      title: 'Standard Payload',
-      subtitle: "Click 'Logs' to refresh standard data",
-      validation: {
-        enabled: true,
-        schema: 'standard',
-        showWarnings: true,
+    standard : {
+      title : 'Standard Payload',
+      subtitle : "Click 'Logs' to refresh standard data",
+      validation : {
+        enabled : true,
+        schema : 'standard',
+        showWarnings : true
       },
-      logging: {
-        autoTrigger: true,
-        logOnSubmit: true,
-        logOnChange: false,
+      logging : {
+        autoTrigger : true,
+        logOnSubmit : true,
+        logOnChange : false
       },
-      drawer: {
-        defaultWidth: 500,
-        position: 'right',
-        modal: false,
-      },
+      drawer : {
+        defaultWidth : 500,
+        position : 'right',
+        modal : false
+      }
     },
 
-    generic: {
-      title: 'Form Payload',
-      subtitle: "Click 'Logs' to refresh form data",
-      validation: {
-        enabled: false,
-        schema: null,
-        showWarnings: false,
+    generic : {
+      title : 'Form Payload',
+      subtitle : "Click 'Logs' to refresh form data",
+      validation : {
+        enabled : false,
+        schema : null,
+        showWarnings : false
       },
-      logging: {
-        autoTrigger: true,
-        logOnSubmit: true,
-        logOnChange: false,
+      logging : {
+        autoTrigger : true,
+        logOnSubmit : true,
+        logOnChange : false
       },
-      drawer: {
-        defaultWidth: 500,
-        position: 'right',
-        modal: false,
-      },
-    },
+      drawer : {
+        defaultWidth : 500,
+        position : 'right',
+        modal : false
+      }
+    }
   },
 
   // Development vs production settings
-  environment: {
-    development: {
-      enableLogging: true,
-      enableDrawer: true,
-      enableValidation: true,
-      enableComparison: true,
-      logLevel: 'debug',
+  environment : {
+    development : {
+      enableLogging : true,
+      enableDrawer : true,
+      enableValidation : true,
+      enableComparison : true,
+      logLevel : 'debug'
     },
-    production: {
-      enableLogging: false,
-      enableDrawer: false,
-      enableValidation: false,
-      enableComparison: false,
-      logLevel: 'error',
-    },
-  },
+    production : {
+      enableLogging : false,
+      enableDrawer : false,
+      enableValidation : false,
+      enableComparison : false,
+      logLevel : 'error'
+    }
+  }
 }
 
 /**
@@ -120,7 +120,7 @@ export const loggerConfig = {
  * @param {string} formType - Type of form
  * @returns {Object} - Configuration object
  */
-export const getFormConfig = (formType = 'generic') => {
+export const getFormConfig = ( formType = 'generic' ) => {
   const baseConfig = loggerConfig.global
   const formConfig = loggerConfig.forms[formType] || loggerConfig.forms.generic
   const envConfig = loggerConfig.environment[process.env.NODE_ENV] || loggerConfig.environment.development
@@ -128,7 +128,7 @@ export const getFormConfig = (formType = 'generic') => {
   return {
     ...baseConfig,
     ...formConfig,
-    ...envConfig,
+    ...envConfig
   }
 }
 
@@ -155,11 +155,11 @@ export const isDrawerEnabled = () => {
  * @param {string} formType - Type of form
  * @param {Object} config - Configuration updates
  */
-export const updateFormConfig = (formType, config) => {
-  if (loggerConfig.forms[formType]) {
+export const updateFormConfig = ( formType, config ) => {
+  if ( loggerConfig.forms[formType] ) {
     loggerConfig.forms[formType] = {
       ...loggerConfig.forms[formType],
-      ...config,
+      ...config
     }
   }
 }
@@ -169,10 +169,10 @@ export const updateFormConfig = (formType, config) => {
  * @param {string} formType - Type of form
  * @param {Object} config - Form configuration
  */
-export const addFormConfig = (formType, config) => {
+export const addFormConfig = ( formType, config ) => {
   loggerConfig.forms[formType] = {
     ...loggerConfig.forms.generic,
-    ...config,
+    ...config
   }
 }
 
@@ -182,5 +182,5 @@ export default {
   isLoggingEnabled,
   isDrawerEnabled,
   updateFormConfig,
-  addFormConfig,
+  addFormConfig
 }

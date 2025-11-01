@@ -36,70 +36,70 @@ import { Document, Picture, VideoCamera, Microphone, Download, View } from '@ele
  * - nativePreview: if true, component opens preview in new tab by default (emits 'preview' too)
  * - nativeDownload: if true, component performs download by default (emits 'download' too)
  */
-const props = defineProps({
-  files: { type: Array, default: () => [] },
-  emptyText: { type: String, default: 'No files available' },
-  nativePreview: { type: Boolean, default: true },
-  nativeDownload: { type: Boolean, default: true },
-})
+const props = defineProps( {
+  files : { type : Array, default : () => [] },
+  emptyText : { type : String, default : 'No files available' },
+  nativePreview : { type : Boolean, default : true },
+  nativeDownload : { type : Boolean, default : true }
+} )
 
-const emit = defineEmits(['preview', 'download', 'download-error'])
+const emit = defineEmits( ['preview', 'download', 'download-error'] )
 
 /* ---------------- Normalization ---------------- */
-const normFiles = computed(() =>
-  (props.files || []).map((raw, i) => {
+const normFiles = computed( () =>
+  ( props.files || [] ).map( ( raw, i ) => {
     // strings -> {url, name, type}
-    if (typeof raw === 'string') {
-      const name = filenameFromUrl(raw).replace(/\d{17}/, '')
+    if ( typeof raw === 'string' ) {
+      const name = filenameFromUrl( raw ).replace( /\d{17}/, '' )
       return {
-        id: i,
-        url: raw,
+        id : i,
+        url : raw,
         name,
-        type: typeFromName(name),
+        type : typeFromName( name )
       }
     }
     // objects
     const url = raw?.url
-    const name = raw?.name || filenameFromUrl(url).replace(/\d{17}/, '') || `file_${i + 1}`
-    const type = (raw?.type && raw.type.toLowerCase()) || typeFromName(name)
-    return { id: raw?.id ?? i, url, name, type }
-  })
+    const name = raw?.name || filenameFromUrl( url ).replace( /\d{17}/, '' ) || `file_${i + 1}`
+    const type = ( raw?.type && raw.type.toLowerCase() ) || typeFromName( name )
+    return { id : raw?.id ?? i, url, name, type }
+  } )
 )
 
-function filenameFromUrl(u) {
-  if (!u) return 'file'
+function filenameFromUrl( u ) {
+  if ( !u ) return 'file'
   try {
-    const url = new URL(u, window.location.href)
-    const qp = url.searchParams.get('filename') || url.searchParams.get('name')
-    const last = url.pathname.split('/').filter(Boolean).pop() || 'file'
-    return decodeURIComponent(qp || last)
+    const url = new URL( u, window.location.href )
+    const qp = url.searchParams.get( 'filename' ) || url.searchParams.get( 'name' )
+    const last = url.pathname.split( '/' ).filter( Boolean ).pop() || 'file'
+    return decodeURIComponent( qp || last )
   } catch {
     // fallback for non-absolute URLs
-    const last = String(u).split('?')[0].split('/').filter(Boolean).pop() || 'file'
+    const last = String( u ).split( '?' )[0].split( '/' ).filter( Boolean ).pop() || 'file'
     try {
-      return decodeURIComponent(last)
+      return decodeURIComponent( last )
     } catch {
       return last
     }
   }
 }
 
-function typeFromName(name) {
-  const ext = (name?.split('.').pop() || '').toLowerCase()
+function typeFromName( name ) {
+  const ext = ( name?.split( '.' ).pop() || '' ).toLowerCase()
   const image = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg']
   const video = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv']
   const audio = ['mp3', 'wav', 'flac', 'aac', 'ogg']
   const archive = ['zip', 'rar', '7z', 'tar', 'gz']
-  if (image.includes(ext)) return 'image'
-  if (video.includes(ext)) return 'video'
-  if (audio.includes(ext)) return 'audio'
-  if (archive.includes(ext)) return 'download'
-  if (['pdf', 'doc', 'docx', 'txt', 'rtf'].includes(ext)) return 'document'
+  if ( image.includes( ext ) ) return 'image'
+  if ( video.includes( ext ) ) return 'video'
+  if ( audio.includes( ext ) ) return 'audio'
+  if ( archive.includes( ext ) ) return 'download'
+  if ( ['pdf', 'doc', 'docx', 'txt', 'rtf'].includes( ext ) ) return 'document'
   return 'document'
 }
 
-function iconForType(type) {
-  switch ((type || '').toLowerCase()) {
+function iconForType( type ) {
+  switch ( ( type || '' ).toLowerCase() ) {
     case 'image':
       return Picture
     case 'video':
@@ -114,33 +114,33 @@ function iconForType(type) {
 }
 
 /* ---------------- Actions ---------------- */
-function onPreview(file) {
-  emit('preview', file)
-  if (props.nativePreview && file?.url) {
-    window.open(file.url, '_blank')
+function onPreview( file ) {
+  emit( 'preview', file )
+  if ( props.nativePreview && file?.url ) {
+    window.open( file.url, '_blank' )
   }
 }
 
-async function onDownload(file) {
-  emit('download', file)
-  if (!props.nativeDownload || !file?.url) return
+async function onDownload( file ) {
+  emit( 'download', file )
+  if ( !props.nativeDownload || !file?.url ) return
 
   try {
-    const res = await fetch(file.url, { mode: 'cors', credentials: 'omit' })
-    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    const res = await fetch( file.url, { mode : 'cors', credentials : 'omit' } )
+    if ( !res.ok ) throw new Error( `HTTP ${res.status}` )
     const blob = await res.blob()
-    const blobUrl = URL.createObjectURL(blob)
-    const a = document.createElement('a')
+    const blobUrl = URL.createObjectURL( blob )
+    const a = document.createElement( 'a' )
     a.href = blobUrl
     a.download = file.name || 'file'
-    document.body.appendChild(a)
+    document.body.appendChild( a )
     a.click()
     a.remove()
-    URL.revokeObjectURL(blobUrl)
-  } catch (e) {
-    console.error('Download failed', e)
-    ElMessage.error('Download failed')
-    emit('download-error', e)
+    URL.revokeObjectURL( blobUrl )
+  } catch ( e ) {
+    console.error( 'Download failed', e )
+    ElMessage.error( 'Download failed' )
+    emit( 'download-error', e )
   }
 }
 </script>

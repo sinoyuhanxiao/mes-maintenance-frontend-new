@@ -98,47 +98,47 @@ import { ref, watch, computed, onMounted, onBeforeUnmount } from 'vue'
 import { Minus } from '@element-plus/icons-vue'
 import { getEquipmentNodes } from '@/api/equipment'
 
-const props = defineProps({ data: Object })
+const props = defineProps( { data : Object } )
 
-const localData = ref(props.data)
-const nodes = ref(null)
+const localData = ref( props.data )
+const nodes = ref( null )
 
 /** Responsive columns: 3 for >=1440px, else 2 */
-const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1440)
+const windowWidth = ref( typeof window !== 'undefined' ? window.innerWidth : 1440 )
 const onResize = () => {
   windowWidth.value = window.innerWidth
 }
-onMounted(() => window.addEventListener('resize', onResize))
-onBeforeUnmount(() => window.removeEventListener('resize', onResize))
-const descCols = computed(() => (windowWidth.value >= 1440 ? 3 : 2))
+onMounted( () => window.addEventListener( 'resize', onResize ) )
+onBeforeUnmount( () => window.removeEventListener( 'resize', onResize ) )
+const descCols = computed( () => ( windowWidth.value >= 1440 ? 3 : 2 ) )
 
 /** Raw image URLs from data (string or array) */
-const imageUrls = computed(() => {
+const imageUrls = computed( () => {
   const raw = localData.value?.image_list
-  if (!raw) return []
-  return Array.isArray(raw) ? raw : [raw]
-})
+  if ( !raw ) return []
+  return Array.isArray( raw ) ? raw : [raw]
+} )
 
 /** Filtered URLs that returned HTTP 200 via HEAD */
-const validImageUrls = ref([])
+const validImageUrls = ref( [] )
 let imgSeq = 0
-const checkImageUrls = async () => {
+const checkImageUrls = async() => {
   const seq = ++imgSeq
   try {
     const checks = await Promise.all(
-      imageUrls.value.map(async u => {
+      imageUrls.value.map( async u => {
         try {
-          const res = await fetch(u, { method: 'HEAD' })
+          const res = await fetch( u, { method : 'HEAD' } )
           return res.ok ? u : null
         } catch {
           return null
         }
-      })
+      } )
     )
-    if (seq !== imgSeq) return
-    validImageUrls.value = checks.filter(Boolean)
+    if ( seq !== imgSeq ) return
+    validImageUrls.value = checks.filter( Boolean )
   } catch {
-    if (seq !== imgSeq) return
+    if ( seq !== imgSeq ) return
     validImageUrls.value = []
   }
 }
@@ -146,14 +146,14 @@ const checkImageUrls = async () => {
 watch(
   imageUrls,
   list => {
-    if (list.length) {
+    if ( list.length ) {
       checkImageUrls()
     } else {
       imgSeq++
       validImageUrls.value = []
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
 
 /** Color logic for stock number:
@@ -161,42 +161,42 @@ watch(
  * - warning (orange) when 0 < current < min
  * - default otherwise
  */
-const stockColorType = computed(() => {
-  const cur = Number(localData.value?.current_stock)
-  const min = Number(localData.value?.minimum_stock_level)
-  if (Number.isFinite(cur)) {
-    if (cur <= 0) return 'danger'
-    if (Number.isFinite(min) && cur < min) return 'warning'
+const stockColorType = computed( () => {
+  const cur = Number( localData.value?.current_stock )
+  const min = Number( localData.value?.minimum_stock_level )
+  if ( Number.isFinite( cur ) ) {
+    if ( cur <= 0 ) return 'danger'
+    if ( Number.isFinite( min ) && cur < min ) return 'warning'
   }
   return ''
-})
+} )
 
 /** Bold when low or out of stock */
-const emphasizeStock = computed(() => {
-  const cur = Number(localData.value?.current_stock)
-  const min = Number(localData.value?.minimum_stock_level)
-  if (!Number.isFinite(cur)) return false
-  if (cur <= 0) return true
-  if (Number.isFinite(min) && cur < min) return true
+const emphasizeStock = computed( () => {
+  const cur = Number( localData.value?.current_stock )
+  const min = Number( localData.value?.minimum_stock_level )
+  if ( !Number.isFinite( cur ) ) return false
+  if ( cur <= 0 ) return true
+  if ( Number.isFinite( min ) && cur < min ) return true
   return false
-})
+} )
 
 // Bold all three when low or out; normal otherwise
-const fwStyle = computed(() => ({ fontWeight: emphasizeStock.value ? 700 : 400 }))
+const fwStyle = computed( () => ( { fontWeight : emphasizeStock.value ? 700 : 400 } ) )
 
-const currentDisplay = computed(() => localData.value?.current_stock ?? '--')
-const minDisplay = computed(() => localData.value?.minimum_stock_level ?? '--')
-const maxDisplay = computed(() => localData.value?.maximum_stock_level ?? '--')
+const currentDisplay = computed( () => localData.value?.current_stock ?? '--' )
+const minDisplay = computed( () => localData.value?.minimum_stock_level ?? '--' )
+const maxDisplay = computed( () => localData.value?.maximum_stock_level ?? '--' )
 
 /** Image preview */
-const preview = ref({ open: false, url: '' })
+const preview = ref( { open : false, url : '' } )
 const openPreview = u => {
   preview.value.url = u
   preview.value.open = true
 }
 
 async function getNodeData() {
-  const response = await getEquipmentNodes(1, 100, 'name', 'ASC', { spare_part_ids: [props.data.id] })
+  const response = await getEquipmentNodes( 1, 100, 'name', 'ASC', { spare_part_ids : [props.data.id] } )
   nodes.value = response.data.content
 }
 
@@ -206,7 +206,7 @@ watch(
     localData.value = { ...newData }
     getNodeData()
   },
-  { immediate: true, deep: true }
+  { immediate : true, deep : true }
 )
 </script>
 

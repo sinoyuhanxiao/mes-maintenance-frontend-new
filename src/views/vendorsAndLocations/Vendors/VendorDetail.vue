@@ -629,10 +629,8 @@ const saveEdit = async() => {
 
   const extractUploadedUrls = resp => {
     const list =
-        resp?.uploadedFiles ?? resp?.data?.uploadedFiles ?? resp?.data?.data?.uploadedFiles ?? resp?.files ?? []
-    return ( Array.isArray( list ) ? list : [] )
-      .map( f => f?.url || f?.fileUrl || f?.location || f?.path )
-      .filter( Boolean )
+      resp?.uploadedFiles ?? resp?.data?.uploadedFiles ?? resp?.data?.data?.uploadedFiles ?? resp?.files ?? []
+    return ( Array.isArray( list ) ? list : [] ).map( f => f?.url || f?.fileUrl || f?.location || f?.path ).filter( Boolean )
   }
 
   try {
@@ -687,10 +685,14 @@ const saveEdit = async() => {
 
     // best-effort deletes
     if ( removedImages.length ) {
-      try { await deleteObjectList( { bucketName : 'sv-file-bucket', objectUrls : removedImages } ) } catch {}
+      try {
+        await deleteObjectList( { bucketName : 'sv-file-bucket', objectUrls : removedImages } )
+      } catch {}
     }
     if ( removedFiles.length ) {
-      try { await deleteObjectList( { bucketName : 'sv-file-bucket', objectUrls : removedFiles } ) } catch {}
+      try {
+        await deleteObjectList( { bucketName : 'sv-file-bucket', objectUrls : removedFiles } )
+      } catch {}
     }
 
     const res = await getVendorById( id )

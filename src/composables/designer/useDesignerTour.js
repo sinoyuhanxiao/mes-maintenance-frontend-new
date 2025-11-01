@@ -3,7 +3,7 @@ import { ref } from 'vue'
 const TOUR_COMPLETED_KEY = 'designer-tour-completed'
 
 export function useDesignerTour() {
-  const isOpen = ref(false)
+  const isOpen = ref( false )
 
   function start() {
     isOpen.value = true
@@ -14,16 +14,16 @@ export function useDesignerTour() {
   }
 
   function onFinish() {
-    localStorage.setItem(TOUR_COMPLETED_KEY, 'true')
+    localStorage.setItem( TOUR_COMPLETED_KEY, 'true' )
     close()
   }
 
   function hasCompletedTour() {
-    return localStorage.getItem(TOUR_COMPLETED_KEY) === 'true'
+    return localStorage.getItem( TOUR_COMPLETED_KEY ) === 'true'
   }
 
   function resetTourCompletion() {
-    localStorage.removeItem(TOUR_COMPLETED_KEY)
+    localStorage.removeItem( TOUR_COMPLETED_KEY )
   }
 
   return {
@@ -32,6 +32,6 @@ export function useDesignerTour() {
     close,
     onFinish,
     hasCompletedTour,
-    resetTourCompletion,
+    resetTourCompletion
   }
 }

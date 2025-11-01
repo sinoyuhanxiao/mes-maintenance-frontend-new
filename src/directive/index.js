@@ -13,12 +13,12 @@ const directives = {
   waterMarker,
   draggable,
   permission,
-  wave,
+  wave
 }
 
 const registerDirective = app => {
-  Object.keys(directives).forEach(key => {
-    app.directive(key, directives[key])
-  })
+  Object.keys( directives ).forEach( key => {
+    app.directive( key, directives[key] )
+  } )
 }
 export default registerDirective

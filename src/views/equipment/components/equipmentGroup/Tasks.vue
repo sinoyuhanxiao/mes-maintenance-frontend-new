@@ -26,35 +26,35 @@ import { ref, onMounted, watch } from 'vue'
 import TaskCardTable from '../equipmentGroup/components/TaskCardTable.vue'
 import { searchTaskTemplates } from '@/api/task-library'
 
-const props = defineProps({
-  equipmentId: { type: [Number, String], required: false },
-})
+const props = defineProps( {
+  equipmentId : { type : [Number, String], required : false }
+} )
 
-const loading = ref(false)
-const taskData = ref([])
-const totalItems = ref(0)
-const page = ref(1)
-const pageSize = ref(6)
-const searchText = ref('')
+const loading = ref( false )
+const taskData = ref( [] )
+const totalItems = ref( 0 )
+const page = ref( 1 )
+const pageSize = ref( 6 )
+const searchText = ref( '' )
 
 async function fetchTasks() {
   loading.value = true
   try {
-    const eq = props.equipmentId != null && props.equipmentId !== '' ? Number(props.equipmentId) : null
+    const eq = props.equipmentId != null && props.equipmentId !== '' ? Number( props.equipmentId ) : null
     const filter = {
-      latest_per_recurrence: false,
-      ...(eq ? { equipment_node_ids: [eq] } : {}),
+      latest_per_recurrence : false,
+      ...( eq ? { equipment_node_ids : [eq] } : {} )
     }
-    if (searchText.value) filter.keyword = searchText.value
+    if ( searchText.value ) filter.keyword = searchText.value
 
-    const res = await searchTaskTemplates(page.value, pageSize.value, 'createdAt', 'DESC', filter)
+    const res = await searchTaskTemplates( page.value, pageSize.value, 'createdAt', 'DESC', filter )
     const root = res?.data
     const content =
       root?.data?.content ?? root?.content ?? root?.records ?? root?.rows ?? root?.list ?? root?.items ?? []
     taskData.value = content
-    totalItems.value = Number(root?.data?.totalElements ?? root?.totalElements ?? content.length)
-  } catch (e) {
-    console.error('fetchTasks error:', e)
+    totalItems.value = Number( root?.data?.totalElements ?? root?.totalElements ?? content.length )
+  } catch ( e ) {
+    console.error( 'fetchTasks error:', e )
     taskData.value = []
     totalItems.value = 0
   } finally {
@@ -62,22 +62,22 @@ async function fetchTasks() {
   }
 }
 
-function handleTaskCurrentChange(p) {
+function handleTaskCurrentChange( p ) {
   page.value = p
   fetchTasks()
 }
 
-function handlePick(row) {
-  console.log('Picked task template:', row)
+function handlePick( row ) {
+  console.log( 'Picked task template:', row )
 }
 
-function handleSearch(q) {
+function handleSearch( q ) {
   searchText.value = q || ''
   page.value = 1
   fetchTasks()
 }
 
-onMounted(fetchTasks)
+onMounted( fetchTasks )
 watch(
   () => props.equipmentId,
   () => {

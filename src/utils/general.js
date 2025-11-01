@@ -1,7 +1,7 @@
 // general.js
 
-export function getPriorityColor(priority) {
-  switch (priority) {
+export function getPriorityColor( priority ) {
+  switch ( priority ) {
     case 'Urgent':
       return '#F56C6C'
     case 'High':
@@ -14,8 +14,8 @@ export function getPriorityColor(priority) {
 }
 
 // 固定颜色：维护类型 work_type
-export function getWorkTypeTagType(name) {
-  switch (name) {
+export function getWorkTypeTagType( name ) {
+  switch ( name ) {
     case 'Reactive':
       return 'danger'
     case 'Preventative':
@@ -30,8 +30,8 @@ export function getWorkTypeTagType(name) {
 }
 
 // 固定颜色：工单类别 category
-export function getCategoryTagType(name) {
-  switch (name) {
+export function getCategoryTagType( name ) {
+  switch ( name ) {
     case 'Inspection':
       return 'primary'
     case 'Mechanical':
@@ -52,6 +52,6 @@ export function getCategoryTagType(name) {
 }
 
 // 重复类型 tag
-export function getRecurrenceTagType(id) {
+export function getRecurrenceTagType( id ) {
   return id === 1 ? 'info' : 'primary'
 }

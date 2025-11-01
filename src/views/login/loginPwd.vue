@@ -93,34 +93,34 @@ const userStore = useUserStore()
 
 const ruleForm = ref()
 const trigger = ['blur', 'change']
-const formState = reactive({
-  country: '86',
-  captcha: '',
-  account: 'admin',
-  password: 'admin',
-})
+const formState = reactive( {
+  country : '86',
+  captcha : '',
+  account : 'admin',
+  password : 'admin'
+} )
 const rules = {
-  account: [{ required: true, message: '请输入手机或邮箱账号', trigger }],
-  password: [{ required: true, message: '请输入密码', trigger }],
-  captcha: [{ required: true, message: '请输入校验码', trigger }],
+  account : [{ required : true, message : '请输入手机或邮箱账号', trigger }],
+  password : [{ required : true, message : '请输入密码', trigger }],
+  captcha : [{ required : true, message : '请输入校验码', trigger }]
 }
-const bindToken = ref('')
-const showCaptcha = ref(false)
-const captchaImg = ref('')
-const loading = ref(false)
+const bindToken = ref( '' )
+const showCaptcha = ref( false )
+const captchaImg = ref( '' )
+const loading = ref( false )
 
-const disabledLogin = computed(() => {
+const disabledLogin = computed( () => {
   const { captcha, account, password } = formState
-  if (showCaptcha.value) {
+  if ( showCaptcha.value ) {
     return !captcha || !account || !password
   } else {
     return !account || !password
   }
-})
+} )
 
-onBeforeMount(() => {
+onBeforeMount( () => {
   getQueryParams()
-})
+} )
 
 function getQueryParams() {
   const query = route.query
@@ -147,9 +147,9 @@ async function freeLogin() {
   loading.value = true
   try {
     const token = 'token'
-    userStore.SET_TOKEN(token)
-    router.push('/')
-  } catch (e) {
+    userStore.SET_TOKEN( token )
+    router.push( '/' )
+  } catch ( e ) {
   } finally {
     loading.value = false
   }
@@ -157,43 +157,43 @@ async function freeLogin() {
 
 function loginHandle() {
   loading.value = true
-  ruleForm.value.validate(async valid => {
-    if (valid) {
+  ruleForm.value.validate( async valid => {
+    if ( valid ) {
       try {
         // Hardcoded login credentials
         const validCredentials = [
-          { username: 'admin', password: 'admin' },
-          { username: 'user', password: 'user' },
+          { username : 'admin', password : 'admin' },
+          { username : 'user', password : 'user' }
         ]
 
         const isValidLogin = validCredentials.some(
           cred => cred.username === formState.account && cred.password === formState.password
         )
 
-        if (isValidLogin) {
+        if ( isValidLogin ) {
           // Simulate successful login
           const token = 'hardcoded-token-' + Date.now()
-          userStore.SET_TOKEN(token)
-          router.push('/')
+          userStore.SET_TOKEN( token )
+          router.push( '/' )
         } else {
           // Show error message for invalid credentials
-          ElMessage.error('用户名或密码错误！请使用 admin/admin 登录')
+          ElMessage.error( '用户名或密码错误！请使用 admin/admin 登录' )
         }
-      } catch (e) {
-        ElMessage.error('登录失败，请重试')
+      } catch ( e ) {
+        ElMessage.error( '登录失败，请重试' )
       } finally {
         loading.value = false
-        if (showCaptcha.value) {
+        if ( showCaptcha.value ) {
           await updateImage()
         }
       }
     }
-  })
+  } )
 }
 
-defineOptions({
-  name: 'LoginPwd',
-})
+defineOptions( {
+  name : 'LoginPwd'
+} )
 </script>
 
 <style lang="scss" scoped>

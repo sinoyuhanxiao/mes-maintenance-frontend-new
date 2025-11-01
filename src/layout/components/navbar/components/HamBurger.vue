@@ -5,21 +5,21 @@
 </template>
 
 <script setup>
-const props = defineProps({
-  isActive: {
-    type: Boolean,
-    default: false,
-  },
-})
-const emit = defineEmits(['toggleClick'])
+const props = defineProps( {
+  isActive : {
+    type : Boolean,
+    default : false
+  }
+} )
+const emit = defineEmits( ['toggleClick'] )
 
 const toggleClick = () => {
-  emit('toggleClick')
+  emit( 'toggleClick' )
 }
 
-defineOptions({
-  name: 'HamBurger',
-})
+defineOptions( {
+  name : 'HamBurger'
+} )
 </script>
 
 <style scoped lang="scss">

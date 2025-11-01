@@ -115,54 +115,54 @@ import { searchStandards, createStandard } from '@/api/task-library'
 import { debounce } from 'lodash-es'
 
 // Define emits
-const emit = defineEmits(['close', 'addStandards'])
+const emit = defineEmits( ['close', 'addStandards'] )
 
 // Reactive state
-const standardTemplates = ref([])
-const loading = ref(false)
-const searchQuery = ref('')
-const totalItems = ref(0)
-const currentPage = ref(1)
-const pageSize = ref(20)
+const standardTemplates = ref( [] )
+const loading = ref( false )
+const searchQuery = ref( '' )
+const totalItems = ref( 0 )
+const currentPage = ref( 1 )
+const pageSize = ref( 20 )
 
 // Track selected standards
-const selectedStandards = ref(new Set())
+const selectedStandards = ref( new Set() )
 
 // Track focused card for preview functionality
-const focusedCardId = ref(null)
+const focusedCardId = ref( null )
 
 // Preview dialog state
-const showPreviewDialog = ref(false)
-const previewStandardId = ref(null)
+const showPreviewDialog = ref( false )
+const previewStandardId = ref( null )
 
 // Create standard dialog state
-const showCreateStandardDialog = ref(false)
-const createStandardForm = ref({
-  name: '',
-  description: '',
-  category: '',
-  items: [],
-})
-const createStandardLoading = ref(false)
+const showCreateStandardDialog = ref( false )
+const createStandardForm = ref( {
+  name : '',
+  description : '',
+  category : '',
+  items : []
+} )
+const createStandardLoading = ref( false )
 
 // Computed properties
-const selectedStandardsList = computed(() => {
-  return standardTemplates.value.filter(standard => selectedStandards.value.has(standard.id || standard._id))
-})
+const selectedStandardsList = computed( () => {
+  return standardTemplates.value.filter( standard => selectedStandards.value.has( standard.id || standard._id ) )
+} )
 
-const paginationInfo = computed(() => {
-  const start = totalItems.value === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1
-  const end = Math.min(currentPage.value * pageSize.value, totalItems.value)
+const paginationInfo = computed( () => {
+  const start = totalItems.value === 0 ? 0 : ( currentPage.value - 1 ) * pageSize.value + 1
+  const end = Math.min( currentPage.value * pageSize.value, totalItems.value )
   return {
     start,
     end,
-    total: totalItems.value,
+    total : totalItems.value
   }
-})
+} )
 
 // API functions
-const fetchStandards = async (resetPage = false) => {
-  if (resetPage) {
+const fetchStandards = async( resetPage = false ) => {
+  if ( resetPage ) {
     currentPage.value = 1
   }
 
@@ -171,22 +171,22 @@ const fetchStandards = async (resetPage = false) => {
     const filter = {}
 
     // Add search query if provided
-    if (searchQuery.value?.trim()) {
+    if ( searchQuery.value?.trim() ) {
       filter.keyword = searchQuery.value.trim()
     }
 
     const pagination = {
-      page: currentPage.value,
-      size: pageSize.value,
-      sortField: 'createdAt',
-      direction: 'DESC',
+      page : currentPage.value,
+      size : pageSize.value,
+      sortField : 'createdAt',
+      direction : 'DESC'
     }
 
-    const response = await searchStandards(filter, pagination)
+    const response = await searchStandards( filter, pagination )
 
     // Handle response data structure
     const content = response.data?.content || response.data || []
-    standardTemplates.value = Array.isArray(content) ? content : []
+    standardTemplates.value = Array.isArray( content ) ? content : []
 
     // Handle total count from different possible response structures
     totalItems.value =
@@ -195,9 +195,9 @@ const fetchStandards = async (resetPage = false) => {
       response.totalElements ||
       response.total ||
       standardTemplates.value.length
-  } catch (error) {
-    console.error('Error fetching standards:', error)
-    ElMessage.error('Failed to load standards')
+  } catch ( error ) {
+    console.error( 'Error fetching standards:', error )
+    ElMessage.error( 'Failed to load standards' )
     standardTemplates.value = []
     totalItems.value = 0
   } finally {
@@ -219,26 +219,26 @@ const handlePageSizeChange = newSize => {
 const handleStandardAction = selectionData => {
   const { id, action } = selectionData
 
-  if (action === 'check') {
-    selectedStandards.value.add(id)
-  } else if (action === 'uncheck') {
-    selectedStandards.value.delete(id)
-  } else if (action === 'focus') {
+  if ( action === 'check' ) {
+    selectedStandards.value.add( id )
+  } else if ( action === 'uncheck' ) {
+    selectedStandards.value.delete( id )
+  } else if ( action === 'focus' ) {
     focusedCardId.value = id
   }
 }
 
 const handleAddStandards = () => {
-  if (selectedStandards.value.size > 0) {
-    emit('addStandards', selectedStandardsList.value)
+  if ( selectedStandards.value.size > 0 ) {
+    emit( 'addStandards', selectedStandardsList.value )
     selectedStandards.value.clear()
-    emit('close')
+    emit( 'close' )
   }
 }
 
 const handlePreview = () => {
-  if (!focusedCardId.value) {
-    ElMessage.warning('Please select a standard to preview')
+  if ( !focusedCardId.value ) {
+    ElMessage.warning( 'Please select a standard to preview' )
     return
   }
 
@@ -256,16 +256,16 @@ const handleClosePreview = () => {
 }
 
 const getPreviewStandardTitle = () => {
-  if (!previewStandardId.value) return 'Standard'
+  if ( !previewStandardId.value ) return 'Standard'
 
-  const standard = standardTemplates.value.find(s => (s.id || s._id || s.standard_id) === previewStandardId.value)
+  const standard = standardTemplates.value.find( s => ( s.id || s._id || s.standard_id ) === previewStandardId.value )
   return standard?.name || 'Standard'
 }
 
 // Debounced search handler for better performance
-const debouncedSearch = debounce(() => {
-  fetchStandards(true)
-}, 300)
+const debouncedSearch = debounce( () => {
+  fetchStandards( true )
+}, 300 )
 
 // Event handlers
 const handleSearch = () => {
@@ -277,10 +277,10 @@ const handleSearch = () => {
 // Create standard event handlers
 const handleCreateNewStandard = () => {
   createStandardForm.value = {
-    name: '',
-    description: '',
-    category: '',
-    items: [],
+    name : '',
+    description : '',
+    category : '',
+    items : []
   }
   showCreateStandardDialog.value = true
 }
@@ -288,16 +288,16 @@ const handleCreateNewStandard = () => {
 const handleCreateStandardCancel = () => {
   showCreateStandardDialog.value = false
   createStandardForm.value = {
-    name: '',
-    description: '',
-    category: '',
-    items: [],
+    name : '',
+    description : '',
+    category : '',
+    items : []
   }
 }
 
 const handleCreateStandardSubmit = async formData => {
   showCreateStandardDialog.value = false
-  await promptStandardSaveMode(formData)
+  await promptStandardSaveMode( formData )
 }
 
 const promptStandardSaveMode = async formData => {
@@ -306,17 +306,17 @@ const promptStandardSaveMode = async formData => {
       'Do you want to save this as a standard template or only for this work order?',
       'Save Standard',
       {
-        confirmButtonText: 'Save as Template',
-        cancelButtonText: 'Save Only for Work Order',
-        distinguishCancelAndClose: true,
-        type: 'info',
+        confirmButtonText : 'Save as Template',
+        cancelButtonText : 'Save Only for Work Order',
+        distinguishCancelAndClose : true,
+        type : 'info'
       }
     )
 
-    await handleSaveAsTemplate(formData)
-  } catch (action) {
-    if (action === 'cancel') {
-      handleSaveForWorkOrderOnly(formData)
+    await handleSaveAsTemplate( formData )
+  } catch ( action ) {
+    if ( action === 'cancel' ) {
+      handleSaveForWorkOrderOnly( formData )
     }
   }
 }
@@ -327,25 +327,25 @@ const handleSaveAsTemplate = async formData => {
 
     const payload = {
       ...formData,
-      module: 200,
+      module : 200
     }
 
-    const response = await createStandard(payload)
+    const response = await createStandard( payload )
 
-    ElMessage.success('Standard created successfully')
+    ElMessage.success( 'Standard created successfully' )
 
     // Refresh the standards list
-    await fetchStandards(true)
+    await fetchStandards( true )
 
     // Auto-select the new standard
     const newStandardId = response.data?.id || response.data?._id
-    if (newStandardId) {
-      selectedStandards.value.add(newStandardId)
+    if ( newStandardId ) {
+      selectedStandards.value.add( newStandardId )
       focusedCardId.value = newStandardId
     }
-  } catch (error) {
-    console.error('Failed to create standard:', error)
-    ElMessage.error('Failed to create standard')
+  } catch ( error ) {
+    console.error( 'Failed to create standard:', error )
+    ElMessage.error( 'Failed to create standard' )
   } finally {
     createStandardLoading.value = false
   }
@@ -354,41 +354,41 @@ const handleSaveAsTemplate = async formData => {
 const handleSaveForWorkOrderOnly = formData => {
   // Create a standalone standard for this work order only
   const standaloneStandard = {
-    id: `work-order-standard-${Date.now()}`,
-    name: formData.name,
-    description: formData.description,
-    category: formData.category,
-    items: formData.items,
-    estimated_minutes: 15,
-    isStandalone: true,
+    id : `work-order-standard-${Date.now()}`,
+    name : formData.name,
+    description : formData.description,
+    category : formData.category,
+    items : formData.items,
+    estimated_minutes : 15,
+    isStandalone : true
   }
 
   // Emit directly to work order without saving to library
-  emit('addStandards', [standaloneStandard])
+  emit( 'addStandards', [standaloneStandard] )
 
-  ElMessage.success('Standard added to work order')
+  ElMessage.success( 'Standard added to work order' )
 
   // Close the main dialog
-  emit('close')
+  emit( 'close' )
 }
 
 // Watch for search query changes
-watch(searchQuery, () => {
-  if (!searchQuery.value?.trim()) {
+watch( searchQuery, () => {
+  if ( !searchQuery.value?.trim() ) {
     selectedStandards.value.clear()
     focusedCardId.value = null
-    fetchStandards(true)
+    fetchStandards( true )
   }
-})
+} )
 
 // Lifecycle
-onMounted(() => {
+onMounted( () => {
   fetchStandards()
-})
+} )
 
-defineOptions({
-  name: 'AddStandard',
-})
+defineOptions( {
+  name : 'AddStandard'
+} )
 </script>
 
 <style scoped lang="scss">

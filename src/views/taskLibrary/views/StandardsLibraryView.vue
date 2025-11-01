@@ -322,7 +322,7 @@ import {
   MoreFilled,
   Warning,
   Check,
-  Close,
+  Close
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useStandards } from '@/composables/designer/useStandards'
@@ -342,80 +342,80 @@ const {
   pagination,
   setPage,
   setPageSize,
-  getStandardId,
+  getStandardId
 } = useStandards()
 
 // Local state
-const searchQuery = ref('')
-const categoryFilter = ref('')
-const currentPage = computed({
-  get: () => pagination.value.currentPage,
-  set: val => setPage(val),
-})
-const pageSize = computed({
-  get: () => pagination.value.pageSize,
-  set: val => setPageSize(val),
-})
-const selectedstandardId = ref(null)
-const deleteDialogVisible = ref(false)
-const standardToDelete = ref(null)
-const deleteLoading = ref(false)
-const deleteConfirmationText = ref('')
-const deleteConfirmationValid = ref(false)
-const showFilters = ref(false)
-const activeTab = ref('general')
+const searchQuery = ref( '' )
+const categoryFilter = ref( '' )
+const currentPage = computed( {
+  get : () => pagination.value.currentPage,
+  set : val => setPage( val )
+} )
+const pageSize = computed( {
+  get : () => pagination.value.pageSize,
+  set : val => setPageSize( val )
+} )
+const selectedstandardId = ref( null )
+const deleteDialogVisible = ref( false )
+const standardToDelete = ref( null )
+const deleteLoading = ref( false )
+const deleteConfirmationText = ref( '' )
+const deleteConfirmationValid = ref( false )
+const showFilters = ref( false )
+const activeTab = ref( 'general' )
 
 // Form dialog state
-const formDialogVisible = ref(false)
-const formLoading = ref(false)
-const isEditMode = ref(false)
-const formData = ref({
-  name: '',
-  description: '',
-  category: '',
-  items: [],
-})
+const formDialogVisible = ref( false )
+const formLoading = ref( false )
+const isEditMode = ref( false )
+const formData = ref( {
+  name : '',
+  description : '',
+  category : '',
+  items : []
+} )
 
 // Rule editing state (for detail view)
-const editingRuleIndex = ref(null)
-const editingRuleText = ref('')
+const editingRuleIndex = ref( null )
+const editingRuleText = ref( '' )
 
 // Dynamic height calculation state
-const navbarHeight = ref(50)
-const tagsViewHeight = ref(34)
-const containerHeight = computed(() => {
+const navbarHeight = ref( 50 )
+const tagsViewHeight = ref( 34 )
+const containerHeight = computed( () => {
   const totalFixedHeight = navbarHeight.value + tagsViewHeight.value
   const safeHeight = totalFixedHeight > 0 ? totalFixedHeight : 84
   return `calc(100vh - ${safeHeight}px)`
-})
+} )
 
 // Computed properties
-const availableCategories = computed(() => {
+const availableCategories = computed( () => {
   return ['food-safety', 'general']
-})
+} )
 
 // Removed displayedstandards - now using server-side pagination and sorting
 
-const selectedstandard = computed(() => {
-  return standards.value.find(s => getStandardId(s) === selectedstandardId.value)
-})
+const selectedstandard = computed( () => {
+  return standards.value.find( s => getStandardId( s ) === selectedstandardId.value )
+} )
 
-const paginationInfo = computed(() => {
+const paginationInfo = computed( () => {
   const total = pagination.value.total
-  const start = total === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1
-  const end = Math.min(currentPage.value * pageSize.value, total)
+  const start = total === 0 ? 0 : ( currentPage.value - 1 ) * pageSize.value + 1
+  const end = Math.min( currentPage.value * pageSize.value, total )
   return { start, end, total }
-})
+} )
 
 // Event handlers with debouncing
 const handleSearchImmediate = () => {
-  setFilter('search', searchQuery.value)
+  setFilter( 'search', searchQuery.value )
 }
 
-const handleSearch = debounce(handleSearchImmediate, 300)
+const handleSearch = debounce( handleSearchImmediate, 300 )
 
 const handleCategoryFilter = () => {
-  setFilter('category', categoryFilter.value)
+  setFilter( 'category', categoryFilter.value )
 }
 
 const clearAllFilters = () => {
@@ -428,7 +428,7 @@ const clearNonSearchFilters = () => {
   categoryFilter.value = ''
   const currentSearch = searchQuery.value
   clearFilters() // from composable
-  setFilter('search', currentSearch)
+  setFilter( 'search', currentSearch )
 }
 
 const handleFilterToggle = () => {
@@ -447,38 +447,38 @@ const handlePageSizeChange = size => {
 }
 
 const handlestandardSelect = standard => {
-  selectedstandardId.value = getStandardId(standard)
+  selectedstandardId.value = getStandardId( standard )
 }
 
-const handlestandardEdit = (standard = selectedstandard.value) => {
-  if (standard) {
+const handlestandardEdit = ( standard = selectedstandard.value ) => {
+  if ( standard ) {
     isEditMode.value = true
     formData.value = {
-      name: standard.name || '',
-      description: standard.description || '',
-      category: standard.category || '',
-      items: [...(standard.items || [])],
+      name : standard.name || '',
+      description : standard.description || '',
+      category : standard.category || '',
+      items : [...( standard.items || [] )]
     }
     formDialogVisible.value = true
   }
 }
 
-const handlestandardDuplicate = async (standard = selectedstandard.value) => {
-  if (standard) {
+const handlestandardDuplicate = async( standard = selectedstandard.value ) => {
+  if ( standard ) {
     try {
       const duplicateData = {
-        name: `${standard.name} (Copy)`,
-        description: standard.description,
-        category: standard.category,
-        items: [...(standard.items || [])],
-        module: 200,
+        name : `${standard.name} (Copy)`,
+        description : standard.description,
+        category : standard.category,
+        items : [...( standard.items || [] )],
+        module : 200
       }
 
-      await createStandard(duplicateData)
-      ElMessage.success('Safety measure duplicated successfully')
+      await createStandard( duplicateData )
+      ElMessage.success( 'Safety measure duplicated successfully' )
       await loadstandards()
-    } catch (error) {
-      ElMessage.error('Failed to duplicate standard')
+    } catch ( error ) {
+      ElMessage.error( 'Failed to duplicate standard' )
     }
   }
 }
@@ -501,14 +501,14 @@ const handleDeleteCancel = () => {
   deleteConfirmationValid.value = false
 }
 
-const handleDeleteConfirm = async () => {
-  if (!standardToDelete.value) return
+const handleDeleteConfirm = async() => {
+  if ( !standardToDelete.value ) return
 
   deleteLoading.value = true
   try {
-    await deleteStandard(getStandardId(standardToDelete.value))
+    await deleteStandard( getStandardId( standardToDelete.value ) )
 
-    if (selectedstandardId.value === getStandardId(standardToDelete.value)) {
+    if ( selectedstandardId.value === getStandardId( standardToDelete.value ) ) {
       selectedstandardId.value = null
     }
 
@@ -516,8 +516,8 @@ const handleDeleteConfirm = async () => {
     standardToDelete.value = null
     deleteConfirmationText.value = ''
     deleteConfirmationValid.value = false
-  } catch (error) {
-    ElMessage.error('Failed to delete standard')
+  } catch ( error ) {
+    ElMessage.error( 'Failed to delete standard' )
   } finally {
     deleteLoading.value = false
   }
@@ -525,7 +525,7 @@ const handleDeleteConfirm = async () => {
 
 const handleHeaderAction = command => {
   // eslint-disable-next-line default-case
-  switch (command) {
+  switch ( command ) {
     case 'edit':
       handlestandardEdit()
       break
@@ -533,7 +533,7 @@ const handleHeaderAction = command => {
       handlestandardDuplicate()
       break
     case 'delete':
-      handlestandardDelete(selectedstandard.value)
+      handlestandardDelete( selectedstandard.value )
       break
   }
 }
@@ -541,10 +541,10 @@ const handleHeaderAction = command => {
 const createNewstandard = () => {
   isEditMode.value = false
   formData.value = {
-    name: '',
-    description: '',
-    category: '',
-    items: [],
+    name : '',
+    description : '',
+    category : '',
+    items : []
   }
   formDialogVisible.value = true
 }
@@ -552,38 +552,38 @@ const createNewstandard = () => {
 const handleFormCancel = () => {
   formDialogVisible.value = false
   formData.value = {
-    name: '',
-    description: '',
-    category: '',
-    items: [],
+    name : '',
+    description : '',
+    category : '',
+    items : []
   }
 }
 
 const handleFormSubmit = async submittedFormData => {
   formLoading.value = true
   try {
-    const payload = { ...submittedFormData, module: 200 }
-    if (isEditMode.value) {
+    const payload = { ...submittedFormData, module : 200 }
+    if ( isEditMode.value ) {
       // Validate ID before update
       const currentId = selectedstandardId.value
-      if (!currentId) {
-        ElMessage.error('Standard ID is missing. Please refresh and try again.')
+      if ( !currentId ) {
+        ElMessage.error( 'Standard ID is missing. Please refresh and try again.' )
         return
       }
-      await updateStandard(currentId, payload)
-      ElMessage.success('Standard updated successfully')
+      await updateStandard( currentId, payload )
+      ElMessage.success( 'Standard updated successfully' )
 
       // Preserve selection after reload
       await loadstandards()
       selectedstandardId.value = currentId
     } else {
-      await createStandard(payload)
-      ElMessage.success('Standard created successfully')
+      await createStandard( payload )
+      ElMessage.success( 'Standard created successfully' )
       await loadstandards()
     }
     formDialogVisible.value = false
-  } catch (error) {
-    ElMessage.error(isEditMode.value ? 'Failed to update standard' : 'Failed to create standard')
+  } catch ( error ) {
+    ElMessage.error( isEditMode.value ? 'Failed to update standard' : 'Failed to create standard' )
   } finally {
     formLoading.value = false
   }
@@ -591,31 +591,31 @@ const handleFormSubmit = async submittedFormData => {
 
 // Rule management
 const addNewRule = () => {
-  if (!selectedstandard.value) return
+  if ( !selectedstandard.value ) return
 
   // Don't add empty rule if there's already an empty rule being edited
-  if (editingRuleIndex.value !== null) {
+  if ( editingRuleIndex.value !== null ) {
     return
   }
 
   editingRuleIndex.value = selectedstandard.value.items.length
   editingRuleText.value = ''
-  selectedstandard.value.items.push('')
+  selectedstandard.value.items.push( '' )
 }
 
-const editRule = (index, rule) => {
+const editRule = ( index, rule ) => {
   editingRuleIndex.value = index
   editingRuleText.value = rule
 }
 
 const cancelEdit = () => {
-  if (editingRuleIndex.value === null) return
+  if ( editingRuleIndex.value === null ) return
 
   const isEmptyRule = selectedstandard.value.items[editingRuleIndex.value] === ''
 
-  if (isEmptyRule) {
+  if ( isEmptyRule ) {
     // Remove empty rule completely
-    selectedstandard.value.items.splice(editingRuleIndex.value, 1)
+    selectedstandard.value.items.splice( editingRuleIndex.value, 1 )
   }
 
   editingRuleIndex.value = null
@@ -623,29 +623,29 @@ const cancelEdit = () => {
 }
 
 const saveRule = async index => {
-  if (!selectedstandard.value) return
+  if ( !selectedstandard.value ) return
 
-  if (editingRuleText.value.trim() === '') {
+  if ( editingRuleText.value.trim() === '' ) {
     // Remove empty rule completely
     try {
       const items = [...selectedstandard.value.items]
-      items.splice(index, 1)
-      const payload = { ...selectedstandard.value, items, module: 200 }
+      items.splice( index, 1 )
+      const payload = { ...selectedstandard.value, items, module : 200 }
 
       // Validate ID before update
       const currentId = selectedstandardId.value
-      if (!currentId) {
-        ElMessage.error('Standard ID is missing. Please refresh and try again.')
+      if ( !currentId ) {
+        ElMessage.error( 'Standard ID is missing. Please refresh and try again.' )
         return
       }
 
-      await updateStandard(currentId, payload)
+      await updateStandard( currentId, payload )
 
       // Preserve selection after reload
       await loadstandards()
       selectedstandardId.value = currentId
-    } catch (error) {
-      ElMessage.error('Failed to remove empty rule')
+    } catch ( error ) {
+      ElMessage.error( 'Failed to remove empty rule' )
     }
 
     editingRuleIndex.value = null
@@ -656,16 +656,16 @@ const saveRule = async index => {
   try {
     const items = [...selectedstandard.value.items]
     items[index] = editingRuleText.value.trim()
-    const payload = { ...selectedstandard.value, items, module: 200 }
+    const payload = { ...selectedstandard.value, items, module : 200 }
 
     // Validate that we have a valid ID before attempting update
     const currentId = selectedstandardId.value
-    if (!currentId) {
-      ElMessage.error('Standard ID is missing. Please refresh and try again.')
+    if ( !currentId ) {
+      ElMessage.error( 'Standard ID is missing. Please refresh and try again.' )
       return
     }
 
-    await updateStandard(currentId, payload)
+    await updateStandard( currentId, payload )
 
     // Preserve selection after reload
     await loadstandards()
@@ -673,61 +673,61 @@ const saveRule = async index => {
 
     editingRuleIndex.value = null
     editingRuleText.value = ''
-  } catch (error) {
-    ElMessage.error('Failed to save standard rule')
+  } catch ( error ) {
+    ElMessage.error( 'Failed to save standard rule' )
   }
 }
 
 const deleteRule = async index => {
-  if (!selectedstandard.value) return
+  if ( !selectedstandard.value ) return
 
   try {
-    await ElMessageBox.confirm('Are you sure you want to delete this rule?', 'Confirm Deletion', {
-      confirmButtonText: 'Delete',
-      cancelButtonText: 'Cancel',
-      type: 'warning',
-    })
+    await ElMessageBox.confirm( 'Are you sure you want to delete this rule?', 'Confirm Deletion', {
+      confirmButtonText : 'Delete',
+      cancelButtonText : 'Cancel',
+      type : 'warning'
+    } )
 
     const items = [...selectedstandard.value.items]
-    items.splice(index, 1)
-    const payload = { ...selectedstandard.value, items, module: 200 }
+    items.splice( index, 1 )
+    const payload = { ...selectedstandard.value, items, module : 200 }
 
     // Validate ID before update
     const currentId = selectedstandardId.value
-    if (!currentId) {
-      ElMessage.error('Standard ID is missing. Please refresh and try again.')
+    if ( !currentId ) {
+      ElMessage.error( 'Standard ID is missing. Please refresh and try again.' )
       return
     }
 
-    await updateStandard(currentId, payload)
+    await updateStandard( currentId, payload )
 
     // Preserve selection after reload
     await loadstandards()
     selectedstandardId.value = currentId
 
-    ElMessage.success('Rule deleted successfully')
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('Failed to delete standard rule')
+    ElMessage.success( 'Rule deleted successfully' )
+  } catch ( error ) {
+    if ( error !== 'cancel' ) {
+      ElMessage.error( 'Failed to delete standard rule' )
     }
   }
 }
 
 // Dynamic height calculation functions
 const calculateDynamicHeights = () => {
-  nextTick(() => {
-    const navbarEl = document.querySelector('.navbar')
-    if (navbarEl && navbarEl.offsetHeight > 0) {
+  nextTick( () => {
+    const navbarEl = document.querySelector( '.navbar' )
+    if ( navbarEl && navbarEl.offsetHeight > 0 ) {
       navbarHeight.value = navbarEl.offsetHeight
     }
 
-    const tagsViewEl = document.querySelector('#tags-view-container')
-    if (settingsStore.tagsView && tagsViewEl && tagsViewEl.offsetHeight > 0) {
+    const tagsViewEl = document.querySelector( '#tags-view-container' )
+    if ( settingsStore.tagsView && tagsViewEl && tagsViewEl.offsetHeight > 0 ) {
       tagsViewHeight.value = tagsViewEl.offsetHeight
     } else {
       tagsViewHeight.value = 0
     }
-  })
+  } )
 }
 
 const handleResize = () => {
@@ -739,23 +739,23 @@ watch(
   () => {
     calculateDynamicHeights()
   },
-  { immediate: false }
+  { immediate : false }
 )
 
 // Initialize
-onMounted(() => {
+onMounted( () => {
   calculateDynamicHeights()
-  window.addEventListener('resize', handleResize)
+  window.addEventListener( 'resize', handleResize )
   loadstandards()
-})
+} )
 
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', handleResize)
-})
+onBeforeUnmount( () => {
+  window.removeEventListener( 'resize', handleResize )
+} )
 
-defineOptions({
-  name: 'standardLibrary',
-})
+defineOptions( {
+  name : 'standardLibrary'
+} )
 </script>
 
 <style scoped>

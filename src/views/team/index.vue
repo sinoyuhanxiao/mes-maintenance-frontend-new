@@ -338,7 +338,7 @@ import {
   Refresh as RefreshIcon,
   Remove,
   Search,
-  View,
+  View
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { searchTeams, deactivateTeam, getAllTeamTree, getTeamTreeByIds } from '@/api/team.js'
@@ -358,81 +358,81 @@ import { formatAsLocalDateTimeString } from '@/utils/datetime'
 
 // import { useRouter } from 'vue-router'
 
-defineOptions({
-  name: 'WorkGroupManagement',
-})
+defineOptions( {
+  name : 'WorkGroupManagement'
+} )
 
 const { t } = useI18n()
-const loading = ref(false)
-const isFormProcessing = ref(false)
-const isDialogVisible = ref(false)
-const teamsTableData = ref([])
-const sortSettings = ref({ prop: 'id', order: 'descending' })
+const loading = ref( false )
+const isFormProcessing = ref( false )
+const isDialogVisible = ref( false )
+const teamsTableData = ref( [] )
+const sortSettings = ref( { prop : 'id', order : 'descending' } )
 // const currentPage = ref( 1 )
 // const pageSize = ref( 20 )
-const tableHeight = ref(window.innerHeight - 200)
-const userOptions = ref([])
-const teamOptions = ref([])
-const teamTree = ref([])
-const teamMap = ref({})
-const shiftOptions = ref([])
-const locationMap = ref({})
-const equipmentMap = ref({})
+const tableHeight = ref( window.innerHeight - 200 )
+const userOptions = ref( [] )
+const teamOptions = ref( [] )
+const teamTree = ref( [] )
+const teamMap = ref( {} )
+const shiftOptions = ref( [] )
+const locationMap = ref( {} )
+const equipmentMap = ref( {} )
 // const departmentOptions = ref( [] )
-const currentEditingTeam = ref(null)
+const currentEditingTeam = ref( null )
 const initialFilters = {
-  keyword: '',
+  keyword : '',
   // department_ids : [],
-  location_ids: [],
-  equipment_node_ids: [],
-  member_ids: [],
-  status_ids: [1],
+  location_ids : [],
+  equipment_node_ids : [],
+  member_ids : [],
+  status_ids : [1]
 }
 
-const localFilters = reactive({ ...initialFilters })
-const matchedTeamIds = ref(new Set())
+const localFilters = reactive( { ...initialFilters } )
+const matchedTeamIds = ref( new Set() )
 
-const userMap = computed(() => {
-  return Object.fromEntries(userOptions.value.map(user => [user.id, user]))
-})
+const userMap = computed( () => {
+  return Object.fromEntries( userOptions.value.map( user => [user.id, user] ) )
+} )
 
 // Build a lookup map once — O(n) preprocessing instead of O(n × m) rendering
-const shiftMap = computed(() => {
+const shiftMap = computed( () => {
   const map = {}
-  if (shiftOptions.value && Array.isArray(shiftOptions)) {
-    shiftOptions.value.forEach(s => {
-      const start = s.start_time?.trim() ? s.start_time.slice(0, 5) : '-'
-      const end = s.end_time?.trim() ? s.end_time.slice(0, 5) : '-'
+  if ( shiftOptions.value && Array.isArray( shiftOptions ) ) {
+    shiftOptions.value.forEach( s => {
+      const start = s.start_time?.trim() ? s.start_time.slice( 0, 5 ) : '-'
+      const end = s.end_time?.trim() ? s.end_time.slice( 0, 5 ) : '-'
       map[s.id] = {
-        name: s.name,
-        displayTime: `${start} to ${end}`,
+        name : s.name,
+        displayTime : `${start} to ${end}`
       }
-    })
+    } )
   }
   return map
-})
+} )
 
 // Dialog control
-const showTeamDetail = ref(false)
-const selectedTeam = ref(null)
+const showTeamDetail = ref( false )
+const selectedTeam = ref( null )
 const teamFormRef = ref()
-const initialTab = ref('members')
+const initialTab = ref( 'members' )
 
 function openCreateForm() {
   currentEditingTeam.value = null
   isDialogVisible.value = true
 }
 
-function handleNewChildTeam(team) {
+function handleNewChildTeam( team ) {
   currentEditingTeam.value = {
-    parent_id: team.id,
+    parent_id : team.id
   }
 
   isDialogVisible.value = true
 }
 
-function handleView(team, tab = 'members') {
-  if (!team) {
+function handleView( team, tab = 'members' ) {
+  if ( !team ) {
     return
   }
 
@@ -441,66 +441,66 @@ function handleView(team, tab = 'members') {
   showTeamDetail.value = true
 }
 
-function handleEdit(team) {
+function handleEdit( team ) {
   currentEditingTeam.value = team
   isDialogVisible.value = true
 }
 
-function filterTeams(teams, matchedSet) {
+function filterTeams( teams, matchedSet ) {
   // Normalize member filter to a Set of strings
-  const memberFilterSet = new Set((localFilters.member_ids || []).map(String))
-  const locationFilterSet = new Set((localFilters.location_ids || []).map(String))
-  const equipmentFilterSet = new Set((localFilters.equipment_node_ids || []).map(String))
-  const keywordRaw = (localFilters.keyword || '').toString().trim().toLowerCase()
+  const memberFilterSet = new Set( ( localFilters.member_ids || [] ).map( String ) )
+  const locationFilterSet = new Set( ( localFilters.location_ids || [] ).map( String ) )
+  const equipmentFilterSet = new Set( ( localFilters.equipment_node_ids || [] ).map( String ) )
+  const keywordRaw = ( localFilters.keyword || '' ).toString().trim().toLowerCase()
 
   const activeFilters = {
-    keyword: keywordRaw.length > 0,
-    member: memberFilterSet.size > 0,
-    location: locationFilterSet.size > 0,
-    equipment: equipmentFilterSet.size > 0,
+    keyword : keywordRaw.length > 0,
+    member : memberFilterSet.size > 0,
+    location : locationFilterSet.size > 0,
+    equipment : equipmentFilterSet.size > 0
   }
 
-  for (const team of teams) {
-    const idStr = String(team.id)
-    const nameLower = (team.name || '').toLowerCase()
-    const codeLower = (team.code || '').toLowerCase()
+  for ( const team of teams ) {
+    const idStr = String( team.id )
+    const nameLower = ( team.name || '' ).toLowerCase()
+    const codeLower = ( team.code || '' ).toLowerCase()
 
     // Keyword: match id, name, or code
     const matchKeyword =
       !activeFilters.keyword ||
-      idStr.includes(keywordRaw) ||
-      nameLower.includes(keywordRaw) ||
-      codeLower.includes(keywordRaw)
+      idStr.includes( keywordRaw ) ||
+      nameLower.includes( keywordRaw ) ||
+      codeLower.includes( keywordRaw )
 
-    const teamMembers = Array.isArray(team.team_members_id) ? team.team_members_id.map(String) : []
-    const teamMembersSet = new Set(teamMembers)
+    const teamMembers = Array.isArray( team.team_members_id ) ? team.team_members_id.map( String ) : []
+    const teamMembersSet = new Set( teamMembers )
 
     const matchMember =
       !activeFilters.member ||
-      [...memberFilterSet].some(m => teamMembersSet.has(m)) ||
-      (team.leader_id != null && memberFilterSet.has(String(team.leader_id)))
+      [...memberFilterSet].some( m => teamMembersSet.has( m ) ) ||
+      ( team.leader_id != null && memberFilterSet.has( String( team.leader_id ) ) )
 
     // Location match
     const matchLocation =
       !activeFilters.location ||
-      (Array.isArray(team.team_locations_id) && team.team_locations_id.some(loc => locationFilterSet.has(String(loc))))
+      ( Array.isArray( team.team_locations_id ) && team.team_locations_id.some( loc => locationFilterSet.has( String( loc ) ) ) )
 
     // Equipment match
     const matchEquipment =
       !activeFilters.equipment ||
-      (Array.isArray(team.team_equipment_nodes_id) &&
-        team.team_equipment_nodes_id.some(eq => equipmentFilterSet.has(String(eq))))
+      ( Array.isArray( team.team_equipment_nodes_id ) &&
+        team.team_equipment_nodes_id.some( eq => equipmentFilterSet.has( String( eq ) ) ) )
 
     // must satisfy all active filters
     const isMatched = matchKeyword && matchMember && matchLocation && matchEquipment
 
-    if (isMatched) {
-      matchedSet.add(team.id)
+    if ( isMatched ) {
+      matchedSet.add( team.id )
     }
 
     // otherwise check children recursively; if any child matches, include this parent
-    if (Array.isArray(team.children) && team.children.length > 0) {
-      filterTeams(team.children, matchedSet)
+    if ( Array.isArray( team.children ) && team.children.length > 0 ) {
+      filterTeams( team.children, matchedSet )
     }
   }
 }
@@ -511,9 +511,9 @@ async function handleTeamSubmitted() {
   await refreshTeamsData()
 
   // Update selected team if exist
-  if (showTeamDetail.value && selectedTeam.value?.id) {
+  if ( showTeamDetail.value && selectedTeam.value?.id ) {
     const updated = teamMap.value[selectedTeam.value?.id]
-    if (updated) {
+    if ( updated ) {
       // clone to force new reactive reference
       selectedTeam.value = { ...updated }
     }
@@ -522,7 +522,7 @@ async function handleTeamSubmitted() {
 
 function handleFormClosed() {
   isDialogVisible.value = false
-  teamFormRef.value?.handleResetForm(true)
+  teamFormRef.value?.handleResetForm( true )
 }
 
 async function filterFullTreeAndLoadPartialTreeAndSetTeamTable() {
@@ -530,24 +530,24 @@ async function filterFullTreeAndLoadPartialTreeAndSetTeamTable() {
   const matchedIds = new Set()
 
   // Perform recursive search on team tree
-  filterTeams(teamTree.value, matchedIds)
+  filterTeams( teamTree.value, matchedIds )
 
-  matchedTeamIds.value = new Set(matchedIds)
+  matchedTeamIds.value = new Set( matchedIds )
 
-  const resultIds = Array.from(matchedIds)
+  const resultIds = Array.from( matchedIds )
 
   try {
-    if (resultIds?.length > 0) {
-      const res = await getTeamTreeByIds({ team_ids: resultIds })
+    if ( resultIds?.length > 0 ) {
+      const res = await getTeamTreeByIds( { team_ids : resultIds } )
       const tree = res.data || []
-      const partialMappedTeamTree = fillTeamTreeWithTeamMapAndLevel(tree)
+      const partialMappedTeamTree = fillTeamTreeWithTeamMapAndLevel( tree )
       teamsTableData.value = partialMappedTeamTree
     } else {
       teamsTableData.value = []
     }
-  } catch (e) {
-    console.error('Error filtering team by local filter:', e)
-    ElMessage.error(t('team.message.teamFetchFailed'))
+  } catch ( e ) {
+    console.error( 'Error filtering team by local filter:', e )
+    ElMessage.error( t( 'team.message.teamFetchFailed' ) )
   }
 }
 
@@ -572,15 +572,15 @@ function isFilterEmpty() {
 }
 
 // Recursively map team object and set up level (for indentation) to matching team tree node
-function fillTeamTreeWithTeamMapAndLevel(treeNodes, level = 1) {
-  return treeNodes.map(node => {
+function fillTeamTreeWithTeamMapAndLevel( treeNodes, level = 1 ) {
+  return treeNodes.map( node => {
     const fullTeam = teamMap.value[node.id] || {}
     return {
       ...fullTeam,
       level,
-      children: node.children?.length ? fillTeamTreeWithTeamMapAndLevel(node.children, level + 1) : [],
+      children : node.children?.length ? fillTeamTreeWithTeamMapAndLevel( node.children, level + 1 ) : []
     }
-  })
+  } )
 }
 
 // Fetch all team list to build team list and team map, changed table data using tree and team map
@@ -589,59 +589,59 @@ async function loadFullTeamTree() {
   try {
     const treeRes = await getAllTeamTree()
     teamTree.value = treeRes.data || []
-  } catch (err) {
-    console.error('Failed to load full team tree:', err)
-    ElMessage.error(t('team.message.fetchFailed'))
+  } catch ( err ) {
+    console.error( 'Failed to load full team tree:', err )
+    ElMessage.error( t( 'team.message.fetchFailed' ) )
   } finally {
     loading.value = false
   }
 }
 
 async function loadTeamOptionsAndTeamMap() {
-  function snakeToCamel(str) {
-    return str.replace(/_([a-z])/g, (_, char) => char.toUpperCase())
+  function snakeToCamel( str ) {
+    return str.replace( /_([a-z])/g, ( _, char ) => char.toUpperCase() )
   }
 
   loading.value = true
   try {
-    const sortKey = snakeToCamel(sortSettings.value.prop)
+    const sortKey = snakeToCamel( sortSettings.value.prop )
 
     // Fetch team tree and all teams list
-    const listRes = await searchTeams({}, 1, 1000, sortKey, sortSettings.value.order === 'ascending' ? 'ASC' : 'DESC')
+    const listRes = await searchTeams( {}, 1, 1000, sortKey, sortSettings.value.order === 'ascending' ? 'ASC' : 'DESC' )
 
     // store teams list
     teamOptions.value = listRes.data?.content || []
 
     // store all teams as map
     teamMap.value = Object.fromEntries(
-      teamOptions.value.map(team => {
-        const activeLeaders = team.team_member_list?.filter(m => m.is_leader && m.status === 1) || []
+      teamOptions.value.map( team => {
+        const activeLeaders = team.team_member_list?.filter( m => m.is_leader && m.status === 1 ) || []
         const leaderId = activeLeaders.length > 0 ? activeLeaders[0].id : null
 
         return [
           team.id,
           {
-            id: team.id || null,
-            name: team.name || null,
-            code: team.code || null,
-            type: team.type || null,
-            parent_id: team.parent_team_id || null,
-            children: team.children_team_ids,
-            description: team.description,
-            leader_id: leaderId,
-            created_at: team.created_at,
-            updated_at: team.updated_at,
-            shift_list: team.shift_list || [],
-            team_members_id: (team.team_member_list || []).filter(m => !m.is_leader && m.status === 1).map(m => m.id),
-            team_locations_id: (team.team_location_list || []).filter(l => l.status === 1).map(l => l.id),
-            team_equipment_nodes_id: (team.team_equipment_node_list || []).filter(e => e.status === 1).map(e => e.id),
-          },
+            id : team.id || null,
+            name : team.name || null,
+            code : team.code || null,
+            type : team.type || null,
+            parent_id : team.parent_team_id || null,
+            children : team.children_team_ids,
+            description : team.description,
+            leader_id : leaderId,
+            created_at : team.created_at,
+            updated_at : team.updated_at,
+            shift_list : team.shift_list || [],
+            team_members_id : ( team.team_member_list || [] ).filter( m => !m.is_leader && m.status === 1 ).map( m => m.id ),
+            team_locations_id : ( team.team_location_list || [] ).filter( l => l.status === 1 ).map( l => l.id ),
+            team_equipment_nodes_id : ( team.team_equipment_node_list || [] ).filter( e => e.status === 1 ).map( e => e.id )
+          }
         ]
-      })
+      } )
     )
-  } catch (err) {
-    console.error('Failed to load team options and map:', err)
-    ElMessage.error(t('team.message.fetchFailed'))
+  } catch ( err ) {
+    console.error( 'Failed to load team options and map:', err )
+    ElMessage.error( t( 'team.message.fetchFailed' ) )
   } finally {
     loading.value = false
   }
@@ -650,10 +650,10 @@ async function loadTeamOptionsAndTeamMap() {
 async function refreshTeamsData() {
   await loadTeamOptionsAndTeamMap()
   await loadFullTeamTree()
-  teamTree.value = fillTeamTreeWithTeamMapAndLevel(teamTree.value)
+  teamTree.value = fillTeamTreeWithTeamMapAndLevel( teamTree.value )
   matchedTeamIds.value.clear()
 
-  if (isFilterEmpty()) {
+  if ( isFilterEmpty() ) {
     teamsTableData.value = teamTree.value
   } else {
     // Apply filtering on full tree
@@ -662,7 +662,7 @@ async function refreshTeamsData() {
 }
 
 async function clearLocalFilters() {
-  Object.assign(localFilters, initialFilters)
+  Object.assign( localFilters, initialFilters )
   matchedTeamIds.value.clear()
 
   await refreshTeamsData()
@@ -671,46 +671,46 @@ async function clearLocalFilters() {
 async function loadUsers() {
   // Fetch fixed number of users assuming all user count are less than 1000.
   try {
-    const response = await searchUsers({ status_ids: [1] }, 1, 1000)
+    const response = await searchUsers( { status_ids : [1] }, 1, 1000 )
     userOptions.value = response?.data?.content || []
-  } catch (err) {
-    console.error('Failed to load users:', err)
-    ElMessage.error(t('user.message.errorLoadingUsersData'))
+  } catch ( err ) {
+    console.error( 'Failed to load users:', err )
+    ElMessage.error( t( 'user.message.errorLoadingUsersData' ) )
   }
 }
 
 async function loadShifts() {
   try {
-    const response = await searchShifts({ status_ids: [1] }, 1, 1000, 'id', 'ASC')
+    const response = await searchShifts( { status_ids : [1] }, 1, 1000, 'id', 'ASC' )
     shiftOptions.value = response?.data?.content || []
-  } catch (err) {
-    console.error('Failed to load shifts:', err)
-    ElMessage.error('Error loading shift data')
+  } catch ( err ) {
+    console.error( 'Failed to load shifts:', err )
+    ElMessage.error( 'Error loading shift data' )
   }
 }
 
 async function loadLocations() {
   // Fetch fixed number of locations assuming all location count are less than 1000.
   try {
-    const response = await searchLocations({ status_ids: [1] }, 1, 1000)
+    const response = await searchLocations( { status_ids : [1] }, 1, 1000 )
     const locations = response?.data?.content || []
 
-    locationMap.value = Object.fromEntries(locations.map(location => [String(location.id), location]))
-  } catch (err) {
-    console.error('Failed to load users:', err)
-    ElMessage.error(t('user.message.errorLoadingUsersData'))
+    locationMap.value = Object.fromEntries( locations.map( location => [String( location.id ), location] ) )
+  } catch ( err ) {
+    console.error( 'Failed to load users:', err )
+    ElMessage.error( t( 'user.message.errorLoadingUsersData' ) )
   }
 }
 
 async function loadEquipments() {
   try {
-    const response = await searchEquipmentNodes({ status_ids: [1] }, 1, 1000)
+    const response = await searchEquipmentNodes( { status_ids : [1] }, 1, 1000 )
     const equipments = response?.data?.content || []
 
-    equipmentMap.value = Object.fromEntries(equipments.map(e => [String(e.id), { ...e }]))
-  } catch (err) {
-    console.error('Failed to load equipments:', err)
-    ElMessage.error(t('common.message.errorLoadingEquipmentData'))
+    equipmentMap.value = Object.fromEntries( equipments.map( e => [String( e.id ), { ...e }] ) )
+  } catch ( err ) {
+    console.error( 'Failed to load equipments:', err )
+    ElMessage.error( t( 'common.message.errorLoadingEquipmentData' ) )
   }
 }
 
@@ -723,44 +723,44 @@ async function refreshAllData() {
     await loadEquipments()
     await loadUsers()
     await refreshTeamsData()
-  } catch (e) {
+  } catch ( e ) {
   } finally {
     loading.value = false
   }
 }
 
-async function handleDelete(id) {
+async function handleDelete( id ) {
   try {
-    await ElMessageBox.confirm(t('common.confirmMessage'), t('common.warning'), {
-      confirmButtonText: t('common.confirm'),
-      cancelButtonText: t('common.cancel'),
-      type: 'warning',
-      distinguishCancelAndClose: true,
-    })
+    await ElMessageBox.confirm( t( 'common.confirmMessage' ), t( 'common.warning' ), {
+      confirmButtonText : t( 'common.confirm' ),
+      cancelButtonText : t( 'common.cancel' ),
+      type : 'warning',
+      distinguishCancelAndClose : true
+    } )
 
-    await deactivateTeam(id)
+    await deactivateTeam( id )
     await refreshTeamsData()
-    ElMessage.success(t('teamDeletedSuccess'))
-  } catch (err) {
-    if (err === 'cancel' || err === 'close') {
+    ElMessage.success( t( 'teamDeletedSuccess' ) )
+  } catch ( err ) {
+    if ( err === 'cancel' || err === 'close' ) {
       return
     }
 
-    console.error(err)
-    ElMessage.error(t('teamDeletedFailed'))
+    console.error( err )
+    ElMessage.error( t( 'teamDeletedFailed' ) )
   }
 }
 
-function indentCellStyle({ column, row }) {
-  if (column.property === 'actions' || column.label === t('common.actions')) {
+function indentCellStyle( { column, row } ) {
+  if ( column.property === 'actions' || column.label === t( 'common.actions' ) ) {
     return {}
   }
-  const depth = (row.level || 1) - 1
-  return { paddingLeft: `${depth * 16}px` }
+  const depth = ( row.level || 1 ) - 1
+  return { paddingLeft : `${depth * 16}px` }
 }
 
-function getRowClassName({ row }) {
-  return matchedTeamIds.value.has(row.id) ? 'matched-row' : ''
+function getRowClassName( { row } ) {
+  return matchedTeamIds.value.has( row.id ) ? 'matched-row' : ''
 }
 
 // User select label formatter
@@ -776,12 +776,12 @@ watch(
   () => {
     refreshTeamsData()
   },
-  { deep: true }
+  { deep : true }
 )
 
-onMounted(async () => {
+onMounted( async() => {
   await refreshAllData()
-})
+} )
 </script>
 
 <style scoped>

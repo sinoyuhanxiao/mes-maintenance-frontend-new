@@ -35,21 +35,21 @@ import { computed } from 'vue'
 import { Picture as IconPicture } from '@element-plus/icons-vue'
 
 // Props
-const props = defineProps({
-  imagePath: {
-    type: Array,
-    default: () => [],
-  },
-})
+const props = defineProps( {
+  imagePath : {
+    type : Array,
+    default : () => []
+  }
+} )
 
 // Computed
-const hasImage = computed(() => {
+const hasImage = computed( () => {
   return props.imagePath && props.imagePath.length > 0
-})
+} )
 
-defineOptions({
-  name: 'WorkOrderImage',
-})
+defineOptions( {
+  name : 'WorkOrderImage'
+} )
 </script>
 
 <style scoped lang="scss">

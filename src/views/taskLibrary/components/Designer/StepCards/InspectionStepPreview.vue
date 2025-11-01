@@ -57,38 +57,38 @@ import { ref, watch } from 'vue'
 import { InfoFilled, Check, Close } from '@element-plus/icons-vue'
 
 // eslint-disable-next-line no-unused-vars
-const emit = defineEmits(['value-change', 'update:modelValue'])
+const emit = defineEmits( ['value-change', 'update:modelValue'] )
 
-const props = defineProps({
-  step: {
-    type: Object,
-    required: true,
+const props = defineProps( {
+  step : {
+    type : Object,
+    required : true
   },
-  previewMode: {
-    type: Boolean,
-    default: true,
+  previewMode : {
+    type : Boolean,
+    default : true
   },
-  interactive: {
-    type: Boolean,
-    default: false,
+  interactive : {
+    type : Boolean,
+    default : false
   },
-  modelValue: {
-    type: [Boolean, String, null],
-    default: null,
-  },
-})
+  modelValue : {
+    type : [Boolean, String, null],
+    default : null
+  }
+} )
 
 // Reactive state for user input
 // Default to 'pass' in preview modes when no explicit result is provided
-const currentResult = ref(null)
-const remarks = ref('')
+const currentResult = ref( null )
+const remarks = ref( '' )
 
 const mapModelToResult = value => {
-  if (value === true) return 'pass'
-  if (value === false) return 'fail'
-  if (typeof value === 'string') {
+  if ( value === true ) return 'pass'
+  if ( value === false ) return 'fail'
+  if ( typeof value === 'string' ) {
     const normalized = value.trim().toLowerCase()
-    if (normalized === 'pass' || normalized === 'fail') {
+    if ( normalized === 'pass' || normalized === 'fail' ) {
       return normalized
     }
   }
@@ -96,47 +96,47 @@ const mapModelToResult = value => {
 }
 
 const mapResultToBoolean = result => {
-  if (result === 'pass') return true
-  if (result === 'fail') return false
+  if ( result === 'pass' ) return true
+  if ( result === 'fail' ) return false
   return null
 }
 
 // Watch for prop changes to sync initial values
 watch(
   () => [props.modelValue, props.step?.config?.result, props.step?.config?.remarks],
-  ([modelValue, configResult, configRemarks]) => {
-    const mapped = mapModelToResult(modelValue ?? configResult)
-    currentResult.value = mapped ?? (props.previewMode ? 'pass' : null)
+  ( [modelValue, configResult, configRemarks] ) => {
+    const mapped = mapModelToResult( modelValue ?? configResult )
+    currentResult.value = mapped ?? ( props.previewMode ? 'pass' : null )
 
     // Initialize remarks from config if available
-    if (configRemarks !== undefined && configRemarks !== null) {
-      remarks.value = String(configRemarks)
-      console.log('[InspectionStepPreview] Updated remarks from config:', remarks.value)
+    if ( configRemarks !== undefined && configRemarks !== null ) {
+      remarks.value = String( configRemarks )
+      console.log( '[InspectionStepPreview] Updated remarks from config:', remarks.value )
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
 
 const getOptionLabel = option => {
   const labels = {
-    pass: 'Pass',
-    fail: 'Fail',
+    pass : 'Pass',
+    fail : 'Fail'
   }
   return labels[option] || option
 }
 
 const getOptionType = option => {
-  if (currentResult.value === option) {
+  if ( currentResult.value === option ) {
     return option === 'pass' ? 'success' : 'danger'
   }
   return '' // Use default button styling (no type) for unselected buttons
 }
 
 const setInspectionResult = result => {
-  if (props.interactive) {
+  if ( props.interactive ) {
     currentResult.value = result
     // Clear remarks when switching to "pass"
-    if (result === 'pass') {
+    if ( result === 'pass' ) {
       remarks.value = ''
     }
     // Emit the updated value
@@ -145,32 +145,32 @@ const setInspectionResult = result => {
 }
 
 const emitValue = () => {
-  if (!props.interactive) return
+  if ( !props.interactive ) return
 
-  const booleanValue = mapResultToBoolean(currentResult.value)
+  const booleanValue = mapResultToBoolean( currentResult.value )
 
   // For inspection steps, emit an object with both value and remarks
   const inspectionData = {
-    value: booleanValue,
-    remarks: currentResult.value === 'fail' ? remarks.value : '',
+    value : booleanValue,
+    remarks : currentResult.value === 'fail' ? remarks.value : ''
   }
 
-  emit('value-change', inspectionData)
-  emit('update:modelValue', booleanValue)
+  emit( 'value-change', inspectionData )
+  emit( 'update:modelValue', booleanValue )
 }
 
-watch(currentResult, () => {
-  if (props.interactive) {
+watch( currentResult, () => {
+  if ( props.interactive ) {
     emitValue()
   }
-})
+} )
 
 // Watch remarks changes and emit them
-watch(remarks, () => {
-  if (props.interactive && currentResult.value === 'fail') {
+watch( remarks, () => {
+  if ( props.interactive && currentResult.value === 'fail' ) {
     emitValue()
   }
-})
+} )
 </script>
 
 <style scoped>

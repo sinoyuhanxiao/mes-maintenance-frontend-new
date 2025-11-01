@@ -17,22 +17,22 @@
 </template>
 
 <script setup>
-defineProps({
-  step: {
-    type: Object,
-    required: true,
+defineProps( {
+  step : {
+    type : Object,
+    required : true
   },
-  modelValue: {
-    type: [Number, String],
-    default: 0,
+  modelValue : {
+    type : [Number, String],
+    default : 0
   },
-  disabled: {
-    type: Boolean,
-    default: false,
-  },
-})
+  disabled : {
+    type : Boolean,
+    default : false
+  }
+} )
 
-defineEmits(['update:modelValue'])
+defineEmits( ['update:modelValue'] )
 </script>
 
 <style scoped>

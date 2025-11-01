@@ -107,84 +107,84 @@ import AddEquipment from './components/equipment/components/AddEquipment.vue' //
 import AddSubEquipment from './components/subEquipment/components/AddSubEquipment.vue' // Add T4
 
 const route = useRoute()
-const tree = ref(null)
-const t2Ref = ref(null)
-const t3Ref = ref(null)
-const t4Ref = ref(null)
-const pendingDeleteCtx = ref(null) // { type: 't2'|'t3'|'t4', parentId, originalIndex }
+const tree = ref( null )
+const t2Ref = ref( null )
+const t3Ref = ref( null )
+const t4Ref = ref( null )
+const pendingDeleteCtx = ref( null ) // { type: 't2'|'t3'|'t4', parentId, originalIndex }
 
-const selectedNode = ref(null)
-const breadcrumbPath = ref([])
+const selectedNode = ref( null )
+const breadcrumbPath = ref( [] )
 
-const isTier2 = computed(() => selectedNode.value?.level === 2)
-const isTier3 = computed(() => selectedNode.value?.level === 3)
-const isTier4 = computed(() => selectedNode.value?.level === 4)
+const isTier2 = computed( () => selectedNode.value?.level === 2 )
+const isTier3 = computed( () => selectedNode.value?.level === 3 )
+const isTier4 = computed( () => selectedNode.value?.level === 4 )
 
 /** Keep right pane in sync with left tree selection */
-function onNodeClick(node, breadcrumb) {
+function onNodeClick( node, breadcrumb ) {
   selectedNode.value = node
   breadcrumbPath.value = breadcrumb ?? []
 }
 
 /** 🔑 Select a node in the left tree when a sub-item card requests it */
-async function selectNodeFromAnywhere(id) {
-  const targetId = Number(id)
-  if (!targetId || !tree.value) return
+async function selectNodeFromAnywhere( id ) {
+  const targetId = Number( id )
+  if ( !targetId || !tree.value ) return
 
   // If your EquipmentTree exposes a convenience API:
-  if (typeof tree.value.focusNode === 'function') {
-    await tree.value.focusNode(targetId) // should expand/select + emit node-click
+  if ( typeof tree.value.focusNode === 'function' ) {
+    await tree.value.focusNode( targetId ) // should expand/select + emit node-click
     return
   }
 
   // Fallback: manual get/set + call existing onNodeClick
-  const node = tree.value.getNode?.(targetId)
-  if (node) {
-    tree.value.setCurrentKey?.(targetId)
+  const node = tree.value.getNode?.( targetId )
+  if ( node ) {
+    tree.value.setCurrentKey?.( targetId )
     // Reuse your existing synchronization logic:
-    onNodeClick(node.data ?? node, node.breadcrumb ?? breadcrumbPath.value)
+    onNodeClick( node.data ?? node, node.breadcrumb ?? breadcrumbPath.value )
   }
 }
 
 /** Delete requested from left tree: route to the correct right-pane dialog */
-async function onRequestDelete({ level, node, breadcrumb }) {
+async function onRequestDelete( { level, node, breadcrumb } ) {
   selectedNode.value = node
   breadcrumbPath.value = breadcrumb ?? []
   await nextTick()
 
-  if (level === 2) {
-    const t1Id = breadcrumb?.at(-2)?.id
-    const siblings = tree.value?.getChildrenOf?.(t1Id) ?? []
-    const idx = siblings.findIndex(s => s.id === node.id)
-    pendingDeleteCtx.value = { type: 't2', parentId: t1Id, originalIndex: idx }
+  if ( level === 2 ) {
+    const t1Id = breadcrumb?.at( -2 )?.id
+    const siblings = tree.value?.getChildrenOf?.( t1Id ) ?? []
+    const idx = siblings.findIndex( s => s.id === node.id )
+    pendingDeleteCtx.value = { type : 't2', parentId : t1Id, originalIndex : idx }
     t2Ref.value?.openDeactivateDialog?.()
   }
-  if (level === 3) {
-    const t2Id = breadcrumb?.at(-2)?.id
-    const siblings = tree.value?.getChildrenOf?.(t2Id) ?? []
-    const idx = siblings.findIndex(s => s.id === node.id)
-    pendingDeleteCtx.value = { type: 't3', parentId: t2Id, originalIndex: idx }
+  if ( level === 3 ) {
+    const t2Id = breadcrumb?.at( -2 )?.id
+    const siblings = tree.value?.getChildrenOf?.( t2Id ) ?? []
+    const idx = siblings.findIndex( s => s.id === node.id )
+    pendingDeleteCtx.value = { type : 't3', parentId : t2Id, originalIndex : idx }
     t3Ref.value?.openDeactivateDialog?.()
   }
-  if (level === 4) {
-    const t3Id = breadcrumb?.at(-2)?.id
-    const siblings = tree.value?.getChildrenOf?.(t3Id) ?? []
-    const idx = siblings.findIndex(s => s.id === node.id)
-    pendingDeleteCtx.value = { type: 't4', parentId: t3Id, originalIndex: idx }
+  if ( level === 4 ) {
+    const t3Id = breadcrumb?.at( -2 )?.id
+    const siblings = tree.value?.getChildrenOf?.( t3Id ) ?? []
+    const idx = siblings.findIndex( s => s.id === node.id )
+    pendingDeleteCtx.value = { type : 't4', parentId : t3Id, originalIndex : idx }
     t4Ref.value?.openDeactivateDialog?.()
   }
 }
 
-async function onT2AfterDelete({ parentId /* T1 id */, deletedId }) {
-  tree.value?.removeNodeAndSelectNext({ deletedId, fallbackParentId: parentId })
+async function onT2AfterDelete( { parentId /* T1 id */, deletedId } ) {
+  tree.value?.removeNodeAndSelectNext( { deletedId, fallbackParentId : parentId } )
   pendingDeleteCtx.value = null
 }
-async function onT3AfterDelete({ parentId /* T2 id */, deletedId }) {
-  tree.value?.removeNodeAndSelectNext({ deletedId, fallbackParentId: parentId })
+async function onT3AfterDelete( { parentId /* T2 id */, deletedId } ) {
+  tree.value?.removeNodeAndSelectNext( { deletedId, fallbackParentId : parentId } )
   pendingDeleteCtx.value = null
 }
-async function onT4AfterDelete({ parentId /* T3 id */, deletedId }) {
-  tree.value?.removeNodeAndSelectNext({ deletedId, fallbackParentId: parentId })
+async function onT4AfterDelete( { parentId /* T3 id */, deletedId } ) {
+  tree.value?.removeNodeAndSelectNext( { deletedId, fallbackParentId : parentId } )
   pendingDeleteCtx.value = null
 }
 
@@ -194,28 +194,28 @@ async function handleRefreshTree() {
 }
 
 /* ================= Add flow (from left tree) ================= */
-const showAddT2 = ref(false)
-const showAddT3 = ref(false)
-const showAddT4 = ref(false)
-const addParentId = ref(null)
+const showAddT2 = ref( false )
+const showAddT3 = ref( false )
+const showAddT4 = ref( false )
+const addParentId = ref( null )
 
 /* Prefill & lock Production Line (T1) in Add dialogs */
-const prefilledProductionLineId = ref(null)
-const prefilledProductionLineName = ref('')
+const prefilledProductionLineId = ref( null )
+const prefilledProductionLineName = ref( '' )
 
-function getT1FromBreadcrumb(bc = []) {
-  return bc.find(n => n?.level === 1) || null
+function getT1FromBreadcrumb( bc = [] ) {
+  return bc.find( n => n?.level === 1 ) || null
 }
-function cleanLabel(label = '') {
-  return label.replace(/^T1:\s*/i, '')
+function cleanLabel( label = '' ) {
+  return label.replace( /^T1:\s*/i, '' )
 }
 
-function onRequestAdd({ nextLevel, parentId, breadcrumb }) {
+function onRequestAdd( { nextLevel, parentId, breadcrumb } ) {
   addParentId.value = parentId
 
-  const t1 = getT1FromBreadcrumb(breadcrumb)
+  const t1 = getT1FromBreadcrumb( breadcrumb )
   prefilledProductionLineId.value = t1?.id ?? null
-  prefilledProductionLineName.value = t1 ? cleanLabel(t1.label) : ''
+  prefilledProductionLineName.value = t1 ? cleanLabel( t1.label ) : ''
 
   showAddT2.value = nextLevel === 2
   showAddT3.value = nextLevel === 3
@@ -223,7 +223,7 @@ function onRequestAdd({ nextLevel, parentId, breadcrumb }) {
 }
 
 /** Called when any Add dialog succeeds. */
-async function handleAddSuccess(payload) {
+async function handleAddSuccess( payload ) {
   showAddT2.value = false
   showAddT3.value = false
   showAddT4.value = false
@@ -231,40 +231,40 @@ async function handleAddSuccess(payload) {
   await handleRefreshTree()
   await nextTick()
 
-  const newId = payload?.id != null ? Number(payload.id) : null
-  if (newId) {
-    if (tree.value?.clearFilter) {
+  const newId = payload?.id != null ? Number( payload.id ) : null
+  if ( newId ) {
+    if ( tree.value?.clearFilter ) {
       try {
         tree.value.clearFilter()
       } catch {}
     }
-    await tree.value?.focusNode?.(newId)
+    await tree.value?.focusNode?.( newId )
   }
 }
 
 // Function to attempt equipment selection with retries
-const selectEquipmentById = async (equipmentId, maxRetries = 10, delay = 300) => {
-  if (!equipmentId || !tree.value) return false
+const selectEquipmentById = async( equipmentId, maxRetries = 10, delay = 300 ) => {
+  if ( !equipmentId || !tree.value ) return false
 
-  const id = Number(equipmentId)
+  const id = Number( equipmentId )
   let attempts = 0
 
-  const attemptSelection = async () => {
+  const attemptSelection = async() => {
     attempts++
-    const success = tree.value?.focusNode?.(id)
+    const success = tree.value?.focusNode?.( id )
 
-    if (success) {
-      console.log(`Successfully selected equipment ${id} on attempt ${attempts}`)
+    if ( success ) {
+      console.log( `Successfully selected equipment ${id} on attempt ${attempts}` )
       return true
     }
 
-    if (attempts < maxRetries) {
-      console.log(`Equipment ${id} not found, retrying in ${delay}ms... (attempt ${attempts}/${maxRetries})`)
-      await new Promise(resolve => setTimeout(resolve, delay))
+    if ( attempts < maxRetries ) {
+      console.log( `Equipment ${id} not found, retrying in ${delay}ms... (attempt ${attempts}/${maxRetries})` )
+      await new Promise( resolve => setTimeout( resolve, delay ) )
       return attemptSelection()
     }
 
-    console.warn(`Failed to select equipment ${id} after ${maxRetries} attempts`)
+    console.warn( `Failed to select equipment ${id} after ${maxRetries} attempts` )
     return false
   }
 
@@ -275,23 +275,23 @@ const selectEquipmentById = async (equipmentId, maxRetries = 10, delay = 300) =>
 watch(
   () => route.query.equipmentId,
   async equipmentId => {
-    if (equipmentId && tree.value) {
+    if ( equipmentId && tree.value ) {
       await nextTick()
-      selectEquipmentById(equipmentId)
+      selectEquipmentById( equipmentId )
     }
   }
 )
 
 // Handle initial equipment selection on mount
-onMounted(async () => {
+onMounted( async() => {
   const equipmentId = route.query.equipmentId
-  if (equipmentId) {
+  if ( equipmentId ) {
     // Wait a bit for the tree to load, then attempt selection
-    setTimeout(() => {
-      selectEquipmentById(equipmentId)
-    }, 1000)
+    setTimeout( () => {
+      selectEquipmentById( equipmentId )
+    }, 1000 )
   }
-})
+} )
 </script>
 
 <style scoped>

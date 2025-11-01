@@ -159,23 +159,23 @@ import { ChatDotSquare, ArrowLeft, Close, Delete } from '@element-plus/icons-vue
 import aiChatbotImgUrl from '@/assets/imgs/ai-chatbot-fps.png?url'
 
 /** Parent controls open/close via v-model:open */
-const props = defineProps({
-  open: { type: Boolean, default: false },
-})
-const emit = defineEmits(['update:open'])
+const props = defineProps( {
+  open : { type : Boolean, default : false }
+} )
+const emit = defineEmits( ['update:open'] )
 
 /** Proxy prop <-> internal state */
-const isOpen = computed({
-  get: () => props.open,
-  set: v => emit('update:open', v),
-})
+const isOpen = computed( {
+  get : () => props.open,
+  set : v => emit( 'update:open', v )
+} )
 
 /** Hover gradient for CTA */
-const isHovering = ref(false)
-const gradientPos = ref({ x: 50, y: 50 })
+const isHovering = ref( false )
+const gradientPos = ref( { x : 50, y : 50 } )
 
-function onEnter(e) {
-  if (isResponding.value) {
+function onEnter( e ) {
+  if ( isResponding.value ) {
     e.preventDefault() // block everything if busy
     return
   }
@@ -184,46 +184,46 @@ function onEnter(e) {
   sendMessage()
 }
 
-function onShiftEnter(e) {
-  if (isResponding.value) {
+function onShiftEnter( e ) {
+  if ( isResponding.value ) {
     e.preventDefault() // block newline if busy
   }
   // else: Shift+Enter inserts newline automatically (don’t call preventDefault)
 }
 
-function onMove(e) {
+function onMove( e ) {
   const rect = e.currentTarget.getBoundingClientRect()
   gradientPos.value = {
-    x: ((e.clientX - rect.left) / rect.width) * 100,
-    y: ((e.clientY - rect.top) / rect.height) * 100,
+    x : ( ( e.clientX - rect.left ) / rect.width ) * 100,
+    y : ( ( e.clientY - rect.top ) / rect.height ) * 100
   }
   e.currentTarget.style.background = `radial-gradient(circle at ${gradientPos.value.x}% ${gradientPos.value.y}%, #d9ecff, #ffffff 60%)`
 }
-function resetHover(e) {
+function resetHover( e ) {
   isHovering.value = false
   e.currentTarget.style.background = '#fff'
 }
 
 /** View state */
-const showHomepage = ref(true)
+const showHomepage = ref( true )
 function goHome() {
   showHomepage.value = true
 }
 
 /** Chat state */
 const aiAvatar = aiChatbotImgUrl
-const messages = ref([])
+const messages = ref( [] )
 
-const userInput = ref('')
-const inputFocused = ref(false)
-const textareaRef = ref(null)
-const bodyRef = ref(null)
-const isResponding = ref(false)
+const userInput = ref( '' )
+const inputFocused = ref( false )
+const textareaRef = ref( null )
+const bodyRef = ref( null )
+const isResponding = ref( false )
 // Abort controller + pointer to the current "typing" placeholder
-const aborter = ref(null)
-const lastTypingMsg = ref(null)
+const aborter = ref( null )
+const lastTypingMsg = ref( null )
 
-function startChat(question) {
+function startChat( question ) {
   showHomepage.value = false
   userInput.value = question
   sendMessage()
@@ -231,19 +231,19 @@ function startChat(question) {
 
 // UPDATE sendMessage()
 async function sendMessage() {
-  if (isResponding.value) return
+  if ( isResponding.value ) return
   const text = userInput.value.trim()
-  if (!text) return
+  if ( !text ) return
 
   showHomepage.value = false
-  messages.value.push({ role: 'user', content: text })
+  messages.value.push( { role : 'user', content : text } )
   userInput.value = ''
   await nextTick()
   autoResize()
   scrollToBottom()
 
-  const typingMsg = { role: 'ai', loading: true }
-  messages.value.push(typingMsg)
+  const typingMsg = { role : 'ai', loading : true }
+  messages.value.push( typingMsg )
   lastTypingMsg.value = typingMsg // ⬅️ remember the typing bubble
   isResponding.value = true
 
@@ -251,17 +251,17 @@ async function sendMessage() {
   aborter.value = new AbortController()
 
   try {
-    const data = await askAIChatbot(text)
-    const reply = (data?.response || '').toString().trim() || 'Sorry, I could not find an answer.'
-    replaceTyping(typingMsg, reply)
-  } catch (e) {
+    const data = await askAIChatbot( text )
+    const reply = ( data?.response || '' ).toString().trim() || 'Sorry, I could not find an answer.'
+    replaceTyping( typingMsg, reply )
+  } catch ( e ) {
     // If aborted, just stop silently; otherwise show error
-    if (e?.name !== 'AbortError') {
-      replaceTyping(typingMsg, `⚠️ ${e?.message || 'Unknown error'}`)
+    if ( e?.name !== 'AbortError' ) {
+      replaceTyping( typingMsg, `⚠️ ${e?.message || 'Unknown error'}` )
     } else {
       // remove the typing bubble if still there
-      const i = messages.value.indexOf(typingMsg)
-      if (i !== -1) messages.value.splice(i, 1)
+      const i = messages.value.indexOf( typingMsg )
+      if ( i !== -1 ) messages.value.splice( i, 1 )
     }
   } finally {
     isResponding.value = false
@@ -272,46 +272,46 @@ async function sendMessage() {
   }
 }
 
-function replaceTyping(typingMsg, content) {
-  const idx = messages.value.indexOf(typingMsg)
-  if (idx !== -1) messages.value.splice(idx, 1, { role: 'ai', content })
-  else messages.value.push({ role: 'ai', content })
+function replaceTyping( typingMsg, content ) {
+  const idx = messages.value.indexOf( typingMsg )
+  if ( idx !== -1 ) messages.value.splice( idx, 1, { role : 'ai', content } )
+  else messages.value.push( { role : 'ai', content } )
 }
 
 function autoResize() {
   const ta = textareaRef.value
-  if (!ta) return
+  if ( !ta ) return
   ta.style.height = 'auto'
   const max = 160
-  ta.style.height = Math.min(ta.scrollHeight, max) + 'px'
+  ta.style.height = Math.min( ta.scrollHeight, max ) + 'px'
   ta.style.overflowY = ta.scrollHeight > max ? 'auto' : 'hidden'
 }
 
 /** Autoscroll */
-const autoscroll = ref(true)
+const autoscroll = ref( true )
 const SCROLL_EPS = 24
-function isNearBottom(el) {
+function isNearBottom( el ) {
   return el.scrollHeight - el.scrollTop - el.clientHeight <= SCROLL_EPS
 }
 function onBodyScroll() {
   const el = bodyRef.value
-  if (!el) return
-  autoscroll.value = isNearBottom(el)
+  if ( !el ) return
+  autoscroll.value = isNearBottom( el )
 }
-function scrollToBottom(force = false) {
+function scrollToBottom( force = false ) {
   const el = bodyRef.value
-  if (!el) return
-  if (!force && !autoscroll.value && !isNearBottom(el)) return
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
+  if ( !el ) return
+  if ( !force && !autoscroll.value && !isNearBottom( el ) ) return
+  requestAnimationFrame( () => {
+    requestAnimationFrame( () => {
       el.scrollTop = el.scrollHeight
-    })
-  })
+    } )
+  } )
 }
 
 function clearChat() {
   messages.value = []
-  startChat('Start new chat')
+  startChat( 'Start new chat' )
 }
 
 // function onHeaderMenu( cmd ) {
@@ -319,35 +319,35 @@ function clearChat() {
 // }
 
 /** Focus textarea on open */
-watch(isOpen, open => {
-  if (open) {
-    nextTick(() => {
+watch( isOpen, open => {
+  if ( open ) {
+    nextTick( () => {
       autoResize()
       textareaRef.value?.focus()
-    })
+    } )
   }
-})
+} )
 
 /** Initial sizing */
-onMounted(() => {
-  nextTick(() => {
+onMounted( () => {
+  nextTick( () => {
     autoResize()
     scrollToBottom()
-  })
+  } )
 
   // graceful hover reset for CTA if needed (duplicate-safe)
-  const el = document.querySelector('.start-convo')
-  if (!el) return
-  el.addEventListener('mousemove', e => {
+  const el = document.querySelector( '.start-convo' )
+  if ( !el ) return
+  el.addEventListener( 'mousemove', e => {
     const rect = el.getBoundingClientRect()
-    const x = ((e.clientX - rect.left) / rect.width) * 100
-    const y = ((e.clientY - rect.top) / rect.height) * 100
+    const x = ( ( e.clientX - rect.left ) / rect.width ) * 100
+    const y = ( ( e.clientY - rect.top ) / rect.height ) * 100
     el.style.background = `radial-gradient(circle at ${x}% ${y}%, #d9ecff, #ffffff 80%)`
-  })
-  el.addEventListener('mouseleave', () => {
+  } )
+  el.addEventListener( 'mouseleave', () => {
     el.style.background = '#fff'
-  })
-})
+  } )
+} )
 </script>
 
 <style scoped>

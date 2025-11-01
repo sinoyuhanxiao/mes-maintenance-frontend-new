@@ -93,17 +93,17 @@
 
 <script setup>
 import { Picture, Edit, Delete } from '@element-plus/icons-vue'
-defineProps({ item: { type: Object, required: true } })
+defineProps( { item : { type : Object, required : true }} )
 
-function formatDays(n) {
-  if (n == null || Number.isNaN(Number(n))) return '—'
-  const v = Number(n)
+function formatDays( n ) {
+  if ( n == null || Number.isNaN( Number( n ) ) ) return '—'
+  const v = Number( n )
   return v === 1 ? '1' : `${v}`
 }
-function formatDate(iso) {
-  if (!iso) return '—'
-  const d = new Date(iso)
-  return Number.isNaN(d.getTime()) ? '—' : d.toISOString().slice(0, 10)
+function formatDate( iso ) {
+  if ( !iso ) return '—'
+  const d = new Date( iso )
+  return Number.isNaN( d.getTime() ) ? '—' : d.toISOString().slice( 0, 10 )
 }
 </script>
 

@@ -8,43 +8,43 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import screenfull from 'screenfull'
-const isFullscreen = ref(false)
+const isFullscreen = ref( false )
 
-onMounted(() => {
+onMounted( () => {
   init()
-})
+} )
 
-onUnmounted(() => {
+onUnmounted( () => {
   destory()
-})
+} )
 
 const click = () => {
-  if (!screenfull.isEnabled) {
-    ElMessage({
-      message: '你的浏览器不支持全屏',
-      type: 'warning',
-    })
+  if ( !screenfull.isEnabled ) {
+    ElMessage( {
+      message : '你的浏览器不支持全屏',
+      type : 'warning'
+    } )
     return false
   }
   screenfull.toggle()
 }
 const init = () => {
-  if (screenfull.isEnabled) {
-    screenfull.on('change', change)
+  if ( screenfull.isEnabled ) {
+    screenfull.on( 'change', change )
   }
 }
 const destory = () => {
-  if (screenfull.isEnabled) {
-    screenfull.off('change', change)
+  if ( screenfull.isEnabled ) {
+    screenfull.off( 'change', change )
   }
 }
 const change = () => {
   isFullscreen.value = screenfull.isFullscreen
 }
 
-defineOptions({
-  name: 'Screenfull',
-})
+defineOptions( {
+  name : 'Screenfull'
+} )
 </script>
 
 <style scoped lang="scss">

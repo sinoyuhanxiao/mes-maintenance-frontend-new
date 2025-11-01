@@ -3,30 +3,30 @@ import { useI18n } from 'vue-i18n'
 import { ref, watch } from 'vue'
 import { getDepartmentById } from '@/api/department'
 
-const props = defineProps({
+const props = defineProps( {
   // Passed in object will display using the object
-  department: {
-    type: Object,
-    default: null,
+  department : {
+    type : Object,
+    default : null
   },
-  departmentId: {
+  departmentId : {
     // Passed in id will fetch internally
-    type: Number,
-    default: null,
-  },
-})
+    type : Number,
+    default : null
+  }
+} )
 
 const { t } = useI18n()
-const resolvedDepartment = ref(props.department)
+const resolvedDepartment = ref( props.department )
 
 // Fetch department info if departmentId is passed
-async function fetchDepartment(id) {
-  if (!id) return
+async function fetchDepartment( id ) {
+  if ( !id ) return
   try {
-    const res = await getDepartmentById(id)
+    const res = await getDepartmentById( id )
     resolvedDepartment.value = res.data || null
-  } catch (err) {
-    console.error('Failed to fetch department by id:', err)
+  } catch ( err ) {
+    console.error( 'Failed to fetch department by id:', err )
     resolvedDepartment.value = null
   }
 }
@@ -34,20 +34,20 @@ async function fetchDepartment(id) {
 watch(
   () => props.departmentId,
   newId => {
-    if (newId) {
-      fetchDepartment(newId)
+    if ( newId ) {
+      fetchDepartment( newId )
     } else {
       resolvedDepartment.value = props.department
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
 
 // If only department object is passed, keep it
 watch(
   () => props.department,
   newDept => {
-    if (!props.departmentId) {
+    if ( !props.departmentId ) {
       resolvedDepartment.value = newDept
     }
   }

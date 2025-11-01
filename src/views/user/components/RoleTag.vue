@@ -83,12 +83,12 @@
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
-defineProps({
-  role: {
-    type: Object,
-    default: null,
-  },
-})
+defineProps( {
+  role : {
+    type : Object,
+    default : null
+  }
+} )
 
 // // keep a consistent action order in the UI
 // const ACTION_ORDER = ['View', 'Create', 'Edit', 'Delete', 'Execute', 'Cancel', 'Approve']

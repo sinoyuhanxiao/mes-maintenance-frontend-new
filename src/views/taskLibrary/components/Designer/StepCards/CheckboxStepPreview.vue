@@ -13,79 +13,79 @@
 import { ref, watch } from 'vue'
 
 // eslint-disable-next-line no-unused-vars
-const emit = defineEmits(['value-change', 'update:modelValue'])
+const emit = defineEmits( ['value-change', 'update:modelValue'] )
 
-const props = defineProps({
-  step: {
-    type: Object,
-    required: true,
+const props = defineProps( {
+  step : {
+    type : Object,
+    required : true
   },
-  previewMode: {
-    type: Boolean,
-    default: true,
+  previewMode : {
+    type : Boolean,
+    default : true
   },
-  interactive: {
-    type: Boolean,
-    default: false,
+  interactive : {
+    type : Boolean,
+    default : false
   },
-  modelValue: {
-    type: [Boolean, String, Number],
-    default: undefined,
-  },
-})
+  modelValue : {
+    type : [Boolean, String, Number],
+    default : undefined
+  }
+} )
 
 // Reactive state for user input
-const currentValue = ref(props.step.config?.default || false)
-const hasEmittedInitialValue = ref(false)
+const currentValue = ref( props.step.config?.default || false )
+const hasEmittedInitialValue = ref( false )
 
 // Watch for prop changes to sync initial values
 watch(
   () => props.modelValue,
   newValue => {
-    if (newValue === undefined || newValue === null) {
+    if ( newValue === undefined || newValue === null ) {
       const fallback = props.step.config?.default
-      currentValue.value = fallback !== undefined ? Boolean(fallback) : false
+      currentValue.value = fallback !== undefined ? Boolean( fallback ) : false
     } else {
-      currentValue.value = Boolean(newValue)
+      currentValue.value = Boolean( newValue )
       hasEmittedInitialValue.value = true
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
 
 // Watch for step.config changes (for populated previews where config is set after mount)
 watch(
   () => [props.step.config?.default, props.interactive],
-  ([defaultVal, interactive]) => {
+  ( [defaultVal, interactive] ) => {
     // In non-interactive mode (logs view), always use config values
     const shouldUseConfig = !interactive || props.modelValue === undefined || props.modelValue === null
 
-    if (shouldUseConfig) {
-      if (defaultVal !== undefined && defaultVal !== null) {
-        currentValue.value = Boolean(defaultVal)
+    if ( shouldUseConfig ) {
+      if ( defaultVal !== undefined && defaultVal !== null ) {
+        currentValue.value = Boolean( defaultVal )
       }
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
 
-watch(currentValue, (newValue, oldValue) => {
-  if (!props.interactive) return
+watch( currentValue, ( newValue, oldValue ) => {
+  if ( !props.interactive ) return
 
   // Prevent emitting the initial false value on mount
   // Only emit after user interaction or when parent sets a real value
-  if (!hasEmittedInitialValue.value && newValue === false && oldValue === false) {
-    console.log('[CheckboxStepPreview] Skipping initial false emission')
+  if ( !hasEmittedInitialValue.value && newValue === false && oldValue === false ) {
+    console.log( '[CheckboxStepPreview] Skipping initial false emission' )
     hasEmittedInitialValue.value = true
     return
   }
 
   hasEmittedInitialValue.value = true
-  const booleanValue = Boolean(newValue)
-  console.log('[CheckboxStepPreview] Emitting value:', booleanValue, 'oldValue:', oldValue)
-  emit('value-change', booleanValue)
-  emit('update:modelValue', booleanValue)
-})
+  const booleanValue = Boolean( newValue )
+  console.log( '[CheckboxStepPreview] Emitting value:', booleanValue, 'oldValue:', oldValue )
+  emit( 'value-change', booleanValue )
+  emit( 'update:modelValue', booleanValue )
+} )
 </script>
 
 <style scoped>

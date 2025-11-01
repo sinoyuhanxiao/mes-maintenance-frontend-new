@@ -81,52 +81,52 @@ import approvalStepCard from './approvalStepCardAdd.vue'
 import { ElMessage } from 'element-plus'
 import { createApprovalTemplate } from '@/api/approval'
 
-const props = defineProps({
-  selectedApprovalTypeId: {
-    type: [String, Number],
-    default: null,
+const props = defineProps( {
+  selectedApprovalTypeId : {
+    type : [String, Number],
+    default : null
   },
-  approvalTypeInfo: {
-    type: Object,
-    default: () => ({}),
-  },
-})
+  approvalTypeInfo : {
+    type : Object,
+    default : () => ( {} )
+  }
+} )
 
-const emit = defineEmits(['submit', 'cancel'])
+const emit = defineEmits( ['submit', 'cancel'] )
 
 // Form reference
-const formRef = ref(null)
+const formRef = ref( null )
 
 // Steps key for forcing re-render
-const stepsKey = ref(0)
+const stepsKey = ref( 0 )
 
 // Form data
-const formData = reactive({
-  approvalTypeId: props.selectedApprovalTypeId || null,
-  title: '',
-  description: '',
-  approvalSteps: [],
-})
+const formData = reactive( {
+  approvalTypeId : props.selectedApprovalTypeId || null,
+  title : '',
+  description : '',
+  approvalSteps : []
+} )
 
 // Form validation rules
 const formRules = {
-  title: [
-    { required: true, message: 'Please enter a template name', trigger: 'blur' },
-    { min: 3, max: 100, message: 'Template name should be between 3 and 100 characters', trigger: 'blur' },
+  title : [
+    { required : true, message : 'Please enter a template name', trigger : 'blur' },
+    { min : 3, max : 100, message : 'Template name should be between 3 and 100 characters', trigger : 'blur' }
   ],
-  description: [{ max: 500, message: 'Description should not exceed 500 characters', trigger: 'blur' }],
+  description : [{ max : 500, message : 'Description should not exceed 500 characters', trigger : 'blur' }]
 }
 
 // Computed property for active step
-const activeStepIndex = computed(() => {
+const activeStepIndex = computed( () => {
   return formData.approvalSteps.length
-})
+} )
 
 // Get step description including approver name and threshold value
 const getStepDescription = step => {
   const approverName = step.approverName || 'No approver assigned'
 
-  if (step.requiresApproval && step.approvalAmount) {
+  if ( step.requiresApproval && step.approvalAmount ) {
     return `${approverName} (≥ $${step.approvalAmount})`
   }
 
@@ -137,34 +137,34 @@ const getStepDescription = step => {
 let stepIdCounter = 0
 
 const addApprovalStep = () => {
-  formData.approvalSteps.push({
-    id: ++stepIdCounter,
-    stepName: `Step ${formData.approvalSteps.length + 1}`,
-    approverType: '',
-    approverId: null,
-    approverName: '',
-    requiresApproval: false,
-    approvalAmount: '',
-    description: '',
-  })
+  formData.approvalSteps.push( {
+    id : ++stepIdCounter,
+    stepName : `Step ${formData.approvalSteps.length + 1}`,
+    approverType : '',
+    approverId : null,
+    approverName : '',
+    requiresApproval : false,
+    approvalAmount : '',
+    description : ''
+  } )
   stepsKey.value++
 }
 
 // Update a step
-const updateStep = (index, updatedData) => {
+const updateStep = ( index, updatedData ) => {
   formData.approvalSteps[index] = { ...formData.approvalSteps[index], ...updatedData }
   stepsKey.value++
 }
 
 // Remove a step
 const removeStep = index => {
-  formData.approvalSteps.splice(index, 1)
+  formData.approvalSteps.splice( index, 1 )
   stepsKey.value++
 }
 
 // Move step up
 const moveStepUp = index => {
-  if (index > 0) {
+  if ( index > 0 ) {
     const temp = formData.approvalSteps[index]
     formData.approvalSteps[index] = formData.approvalSteps[index - 1]
     formData.approvalSteps[index - 1] = temp
@@ -174,7 +174,7 @@ const moveStepUp = index => {
 
 // Move step down
 const moveStepDown = index => {
-  if (index < formData.approvalSteps.length - 1) {
+  if ( index < formData.approvalSteps.length - 1 ) {
     const temp = formData.approvalSteps[index]
     formData.approvalSteps[index] = formData.approvalSteps[index + 1]
     formData.approvalSteps[index + 1] = temp
@@ -183,50 +183,50 @@ const moveStepDown = index => {
 }
 
 // Handle form submission
-const handleSubmit = async () => {
+const handleSubmit = async() => {
   try {
     await formRef.value.validate()
 
-    if (formData.approvalSteps.length === 0) {
-      ElMessage.warning('Please add at least one approval step')
+    if ( formData.approvalSteps.length === 0 ) {
+      ElMessage.warning( 'Please add at least one approval step' )
       return
     }
 
     // Transform form data to API format
     const requestBody = {
-      name: formData.title,
-      description: formData.description || '',
-      approval_type_id: formData.approvalTypeId,
-      approval_steps: formData.approvalSteps.map((step, index) => ({
-        sequence: index + 1,
-        type: step.approverType, // 'role' or 'individual'
-        role_id: step.approverType === 'role' ? step.approverId : null,
-        user_id: step.approverType === 'individual' ? step.approverId : null,
-        threshold: step.requiresApproval && step.approvalAmount ? Number(step.approvalAmount) : null,
-        approved: false,
-        signature: '',
-      })),
+      name : formData.title,
+      description : formData.description || '',
+      approval_type_id : formData.approvalTypeId,
+      approval_steps : formData.approvalSteps.map( ( step, index ) => ( {
+        sequence : index + 1,
+        type : step.approverType, // 'role' or 'individual'
+        role_id : step.approverType === 'role' ? step.approverId : null,
+        user_id : step.approverType === 'individual' ? step.approverId : null,
+        threshold : step.requiresApproval && step.approvalAmount ? Number( step.approvalAmount ) : null,
+        approved : false,
+        signature : ''
+      } ) )
     }
 
-    console.log('Submitting approval template:', requestBody)
+    console.log( 'Submitting approval template:', requestBody )
 
     // Call the API
-    const response = await createApprovalTemplate(requestBody)
-    console.log('API Response:', response)
+    const response = await createApprovalTemplate( requestBody )
+    console.log( 'API Response:', response )
 
-    ElMessage.success('Approval template created successfully')
+    ElMessage.success( 'Approval template created successfully' )
 
     // Emit success to parent component
-    emit('submit', response.data)
-  } catch (error) {
-    console.error('Failed to create approval template:', error)
-    ElMessage.error(error.message || 'Failed to create approval template')
+    emit( 'submit', response.data )
+  } catch ( error ) {
+    console.error( 'Failed to create approval template:', error )
+    ElMessage.error( error.message || 'Failed to create approval template' )
   }
 }
 
 // Handle cancel
 const handleCancel = () => {
-  emit('cancel')
+  emit( 'cancel' )
 }
 </script>
 

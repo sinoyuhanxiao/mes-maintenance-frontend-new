@@ -50,31 +50,31 @@ import { isExternal } from '@/utils/validate'
 import AppLink from './Link.vue'
 
 // eslint-disable-next-line no-undef
-const props = defineProps({
-  item: {
-    type: Object,
-    required: true,
+const props = defineProps( {
+  item : {
+    type : Object,
+    required : true
   },
-  isNest: {
-    type: Boolean,
-    default: false,
+  isNest : {
+    type : Boolean,
+    default : false
   },
-  basePath: {
-    type: String,
-    default: '',
-  },
-})
+  basePath : {
+    type : String,
+    default : ''
+  }
+} )
 const { t } = useI18n()
-const onlyOneChild = ref(null)
-const subMenu = ref(null)
+const onlyOneChild = ref( null )
+const subMenu = ref( null )
 
 // If the title is a string, render it as `t(title)`, otherwise, fallback to the title itself / breadcrumb / route name.
-function renderTitle(routeItem) {
+function renderTitle( routeItem ) {
   const raw = routeItem?.meta?.title
-  if (typeof raw === 'string') {
+  if ( typeof raw === 'string' ) {
     try {
-      return t(raw)
-    } catch (e) {
+      return t( raw )
+    } catch ( e ) {
       // i18n 没有这个 key 时，优雅降级为原值
       return raw
     }
@@ -82,36 +82,36 @@ function renderTitle(routeItem) {
   return raw ?? routeItem?.meta?.breadcrumb ?? routeItem?.name ?? ''
 }
 
-function hasOneShowingChild(children = [], parent) {
-  const showingChildren = (children || []).filter(item => {
-    if (item.meta?.hidden) {
+function hasOneShowingChild( children = [], parent ) {
+  const showingChildren = ( children || [] ).filter( item => {
+    if ( item.meta?.hidden ) {
       return false
     } else {
       onlyOneChild.value = item
       return true
     }
-  })
-  if (showingChildren.length === 1) {
+  } )
+  if ( showingChildren.length === 1 ) {
     return true
   }
-  if (showingChildren.length === 0) {
-    onlyOneChild.value = { ...parent, path: '', noShowingChildren: true }
+  if ( showingChildren.length === 0 ) {
+    onlyOneChild.value = { ...parent, path : '', noShowingChildren : true }
     return true
   }
   return false
 }
 
 const resolvePath = routePath => {
-  if (isExternal(routePath)) {
+  if ( isExternal( routePath ) ) {
     return routePath
   }
-  if (isExternal(props.basePath)) {
+  if ( isExternal( props.basePath ) ) {
     return props.basePath
   }
-  return path.resolve(props.basePath, routePath)
+  return path.resolve( props.basePath, routePath )
 }
 
-defineOptions({
-  name: 'SidebarItem',
-})
+defineOptions( {
+  name : 'SidebarItem'
+} )
 </script>

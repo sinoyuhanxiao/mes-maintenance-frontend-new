@@ -83,92 +83,92 @@ import { getEquipmentById, getEquipmentSubtree } from '@/api/equipment'
 import { getSparePartById } from '@/api/resources'
 
 /* ---------- loading & fetch state ---------- */
-const loading = ref(false)
-const sparePartsData = ref([]) // raw T5 rows
+const loading = ref( false )
+const sparePartsData = ref( [] ) // raw T5 rows
 
 /* ---------- table state ---------- */
-const searchQuery = ref('')
-const currentPage = ref(1)
-const pageSize = ref(10)
+const searchQuery = ref( '' )
+const currentPage = ref( 1 )
+const pageSize = ref( 10 )
 
 /* ---------- cache spare-parts ---------- */
 const spCache = new Map()
-async function getSparePartCached(id) {
-  if (!id) return null
-  if (spCache.has(id)) return spCache.get(id)
-  const resp = await getSparePartById(Number(id))
+async function getSparePartCached( id ) {
+  if ( !id ) return null
+  if ( spCache.has( id ) ) return spCache.get( id )
+  const resp = await getSparePartById( Number( id ) )
   const sp = resp?.data?.data ?? resp?.data ?? resp ?? {}
-  spCache.set(id, sp)
+  spCache.set( id, sp )
   return sp
 }
 
 /* ---------- map Tier-5 rows -> table schema ---------- */
-function coalesce(...xs) {
-  for (const x of xs) if (x !== undefined && x !== null && x !== '') return x
+function coalesce( ...xs ) {
+  for ( const x of xs ) if ( x !== undefined && x !== null && x !== '' ) return x
 }
-function inferType(row) {
-  if (row?.maintenanceType) return row.maintenanceType
-  if (row?.suggestedServiceDays != null) return 'Preventive'
-  if (row?.estimatedServiceDays != null) return 'Predictive'
+function inferType( row ) {
+  if ( row?.maintenanceType ) return row.maintenanceType
+  if ( row?.suggestedServiceDays != null ) return 'Preventive'
+  if ( row?.estimatedServiceDays != null ) return 'Predictive'
   return 'Inspection'
 }
-const tableData = computed(() =>
-  (sparePartsData.value || []).map(r => ({
-    locationCode: r.locationCode ?? r.location_code ?? '',
-    deviceTag: String(r.deviceTagPositionCode ?? r.sequence_order ?? r.sequenceOrder ?? '') || '',
-    sparePart: r.title || r.name || r.partNumber || r.code || '',
-    vendorSuggestedDays: r.suggestedServiceDays ?? '',
-    estimatedServiceDays: r.estimatedServiceDays ?? '',
-    previousRuntime: r.previousRuntime || '',
-    maintenanceType: inferType(r),
-    maintenanceDate: coalesce(r.lastInstallmentTime, r.last_maintenance_date, r.installation_date, null),
-  }))
+const tableData = computed( () =>
+  ( sparePartsData.value || [] ).map( r => ( {
+    locationCode : r.locationCode ?? r.location_code ?? '',
+    deviceTag : String( r.deviceTagPositionCode ?? r.sequence_order ?? r.sequenceOrder ?? '' ) || '',
+    sparePart : r.title || r.name || r.partNumber || r.code || '',
+    vendorSuggestedDays : r.suggestedServiceDays ?? '',
+    estimatedServiceDays : r.estimatedServiceDays ?? '',
+    previousRuntime : r.previousRuntime || '',
+    maintenanceType : inferType( r ),
+    maintenanceDate : coalesce( r.lastInstallmentTime, r.last_maintenance_date, r.installation_date, null )
+  } ) )
 )
 
 /* ---------- render guards ---------- */
-const hasAnyData = computed(() => (sparePartsData.value?.length || 0) > 0)
+const hasAnyData = computed( () => ( sparePartsData.value?.length || 0 ) > 0 )
 
 /* ---------- search / pagination ---------- */
-const filteredData = computed(() => {
-  const q = (searchQuery.value || '').toLowerCase().trim()
-  if (!q) return tableData.value
+const filteredData = computed( () => {
+  const q = ( searchQuery.value || '' ).toLowerCase().trim()
+  if ( !q ) return tableData.value
   return tableData.value.filter(
     row =>
-      (row.locationCode || '').toLowerCase().includes(q) ||
-      (row.deviceTag || '').toLowerCase().includes(q) ||
-      (row.sparePart || '').toLowerCase().includes(q)
+      ( row.locationCode || '' ).toLowerCase().includes( q ) ||
+      ( row.deviceTag || '' ).toLowerCase().includes( q ) ||
+      ( row.sparePart || '' ).toLowerCase().includes( q )
   )
-})
-const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * pageSize.value
-  return filteredData.value.slice(start, start + pageSize.value)
-})
-function handlePageChange(page) {
+} )
+const paginatedData = computed( () => {
+  const start = ( currentPage.value - 1 ) * pageSize.value
+  return filteredData.value.slice( start, start + pageSize.value )
+} )
+function handlePageChange( page ) {
   currentPage.value = page
 }
 
 /* ---------- utils ---------- */
-function formatDate(dateString) {
-  if (!dateString) return '—'
-  const date = new Date(dateString)
-  if (Number.isNaN(date.valueOf())) return '—'
-  return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+function formatDate( dateString ) {
+  if ( !dateString ) return '—'
+  const date = new Date( dateString )
+  if ( Number.isNaN( date.valueOf() ) ) return '—'
+  return date.toLocaleDateString( 'en-US', { year : 'numeric', month : 'short', day : 'numeric' } )
 }
-function formatRuntime(v) {
-  if (v === null || v === undefined) return '—'
-  const s = String(v).trim()
+function formatRuntime( v ) {
+  if ( v === null || v === undefined ) return '—'
+  const s = String( v ).trim()
   return s || '—'
 }
-function getMaintenanceTypeColor(type) {
+function getMaintenanceTypeColor( type ) {
   const colorMap = {
-    Preventive: 'success',
-    Predictive: 'primary',
-    Corrective: 'warning',
-    Emergency: 'danger',
-    Routine: 'info',
-    Overhaul: 'warning',
-    Upgrade: 'primary',
-    Inspection: 'info',
+    Preventive : 'success',
+    Predictive : 'primary',
+    Corrective : 'warning',
+    Emergency : 'danger',
+    Routine : 'info',
+    Overhaul : 'warning',
+    Upgrade : 'primary',
+    Inspection : 'info'
   }
   return colorMap[type] || 'info'
 }
@@ -177,21 +177,21 @@ function getMaintenanceTypeColor(type) {
 const attrs = useAttrs()
 function resolveTier4Id() {
   const a = attrs.tier4Id ?? attrs['tier4-id']
-  if (a == null || a === '' || Number.isNaN(Number(a))) return null
-  return Number(a)
+  if ( a == null || a === '' || Number.isNaN( Number( a ) ) ) return null
+  return Number( a )
 }
 
 /* ---------- data pipeline (unchanged) ---------- */
-async function fetchTier5Detail(t5id, fallbackIndex = 0) {
-  const res = await getEquipmentById(Number(t5id))
+async function fetchTier5Detail( t5id, fallbackIndex = 0 ) {
+  const res = await getEquipmentById( Number( t5id ) )
   const d = res?.data?.data ?? res?.data ?? res ?? {}
 
   const spId = d.spare_part_id ?? d.spare_part_definition_id ?? d.sparePartId ?? d.sparePartDefinitionId ?? null
   let sp = null
-  if (spId) {
+  if ( spId ) {
     try {
-      sp = await getSparePartCached(spId)
-    } catch (_) {}
+      sp = await getSparePartCached( spId )
+    } catch ( _ ) {}
   }
 
   const spName = sp?.name ?? ''
@@ -203,83 +203,83 @@ async function fetchTier5Detail(t5id, fallbackIndex = 0) {
   const last = d.last_maintenance_date ?? d.installation_date ?? null
 
   return {
-    id: d.id ?? Number(t5id),
-    title: spName || '',
-    partNumber: spCode || '',
-    sparePartId: spId ?? null,
-    deviceTagPositionCode: seq != null ? String(seq) : '',
-    deviceQuantity: String(qty),
-    suggestedServiceDays: d.suggested_maintenance_interval_days ?? null,
-    estimatedServiceDays: d.estimated_maintenance_interval_days ?? null,
-    autoTriggerCycle: autoTrig,
-    lastInstallmentTime: last,
-    location_code: d.location_code ?? d.locationCode ?? '',
+    id : d.id ?? Number( t5id ),
+    title : spName || '',
+    partNumber : spCode || '',
+    sparePartId : spId ?? null,
+    deviceTagPositionCode : seq != null ? String( seq ) : '',
+    deviceQuantity : String( qty ),
+    suggestedServiceDays : d.suggested_maintenance_interval_days ?? null,
+    estimatedServiceDays : d.estimated_maintenance_interval_days ?? null,
+    autoTriggerCycle : autoTrig,
+    lastInstallmentTime : last,
+    location_code : d.location_code ?? d.locationCode ?? ''
   }
 }
-async function fetchTier5DetailsInChunks(ids, chunkSize = 8) {
+async function fetchTier5DetailsInChunks( ids, chunkSize = 8 ) {
   const out = []
-  for (let i = 0; i < ids.length; i += chunkSize) {
-    const slice = ids.slice(i, i + chunkSize)
-    const rows = await Promise.allSettled(slice.map((id, idxInSlice) => fetchTier5Detail(id, i + idxInSlice)))
-    for (const s of rows) {
-      if (s.status === 'fulfilled' && s.value && typeof s.value === 'object') out.push(s.value)
+  for ( let i = 0; i < ids.length; i += chunkSize ) {
+    const slice = ids.slice( i, i + chunkSize )
+    const rows = await Promise.allSettled( slice.map( ( id, idxInSlice ) => fetchTier5Detail( id, i + idxInSlice ) ) )
+    for ( const s of rows ) {
+      if ( s.status === 'fulfilled' && s.value && typeof s.value === 'object' ) out.push( s.value )
       else {
         const id = typeof s?.reason?.id === 'number' ? s.reason.id : null
-        if (id != null) out.push({ id, title: `Part ${id}`, partNumber: `P-${id}` })
+        if ( id != null ) out.push( { id, title : `Part ${id}`, partNumber : `P-${id}` } )
       }
     }
   }
   return out
 }
-async function loadSubtree(id) {
-  if (id == null) return
+async function loadSubtree( id ) {
+  if ( id == null ) return
   try {
-    const resp = await getEquipmentSubtree(id)
+    const resp = await getEquipmentSubtree( id )
     const json = resp?.data ?? resp
-    const children = Array.isArray(json?.data?.children)
+    const children = Array.isArray( json?.data?.children )
       ? json.data.children
-      : Array.isArray(json?.children)
-      ? json.children
-      : []
+      : Array.isArray( json?.children )
+        ? json.children
+        : []
 
-    const sorted = [...children].sort((a, b) => {
+    const sorted = [...children].sort( ( a, b ) => {
       const sa = a.sequenceOrder ?? a.sequence_order ?? Number.MAX_SAFE_INTEGER
       const sb = b.sequenceOrder ?? b.sequence_order ?? Number.MAX_SAFE_INTEGER
-      if (sa !== sb) return sa - sb
-      return (a.id || 0) - (b.id || 0)
-    })
+      if ( sa !== sb ) return sa - sb
+      return ( a.id || 0 ) - ( b.id || 0 )
+    } )
 
-    const ids = sorted.map(c => c.id).filter(Boolean)
+    const ids = sorted.map( c => c.id ).filter( Boolean )
     let rows = []
-    if (ids.length) rows = await fetchTier5DetailsInChunks(ids, 8)
-    sparePartsData.value = rows.map(r =>
-      r && typeof r === 'object' ? r : { id: r, title: `Part ${r}`, partNumber: `P-${r}` }
+    if ( ids.length ) rows = await fetchTier5DetailsInChunks( ids, 8 )
+    sparePartsData.value = rows.map( r =>
+      r && typeof r === 'object' ? r : { id : r, title : `Part ${r}`, partNumber : `P-${r}` }
     )
-  } catch (err) {
-    console.error('loadSubtree failed:', err)
+  } catch ( err ) {
+    console.error( 'loadSubtree failed:', err )
     sparePartsData.value = []
   }
 }
 
 /* ---------- lifecycle ---------- */
-const isWide = ref(false)
+const isWide = ref( false )
 function updateIsWide() {
   isWide.value = typeof window !== 'undefined' && window.innerWidth >= 1440
 }
-onMounted(async () => {
+onMounted( async() => {
   updateIsWide()
-  window.addEventListener('resize', updateIsWide)
+  window.addEventListener( 'resize', updateIsWide )
   await refreshAll()
-})
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', updateIsWide)
-})
+} )
+onBeforeUnmount( () => {
+  window.removeEventListener( 'resize', updateIsWide )
+} )
 
 async function refreshAll() {
   const id = resolveTier4Id()
   loading.value = true
   try {
-    await loadSubtree(id)
+    await loadSubtree( id )
   } finally {
     loading.value = false
   }

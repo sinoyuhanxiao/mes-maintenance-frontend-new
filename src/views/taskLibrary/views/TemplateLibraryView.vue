@@ -233,7 +233,8 @@
                       </span>
                     </el-descriptions-item>
                     <el-descriptions-item width="33%" label="Total Steps">
-                      <span class="info-value highlight clickable-steps" @click="navigateToStepsTab"
+                      <span class="info-value highlight clickable-steps"
+@click="navigateToStepsTab"
                         >{{ selectedTemplate.steps?.length || 0 }} steps</span
                       >
                     </el-descriptions-item>
@@ -470,7 +471,7 @@ import {
   MoreFilled,
   Calendar,
   Upload,
-  Tools,
+  Tools
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useTaskLibrary } from '@/composables/designer/useTaskLibrary'
@@ -506,207 +507,207 @@ const {
   setFilter,
   clearFilters,
   setPage,
-  setPageSize,
+  setPageSize
 } = useTaskLibrary()
 
 // Local state
-const searchQuery = ref('')
-const searchByIdMode = ref(false)
+const searchQuery = ref( '' )
+const searchByIdMode = ref( false )
 
-const categoryFilter = ref('')
-const currentPage = ref(1)
-const pageSize = ref(20)
-const selectedTemplateId = ref(null)
-const highlightedTemplateId = ref(null)
-const deleteDialogVisible = ref(false)
-const templateToDelete = ref(null)
-const deleteLoading = ref(false)
-const deleteConfirmationText = ref('')
-const deleteConfirmationValid = ref(false)
-const showFilters = ref(false)
-const assetFilter = ref([])
-const equipmentTreeData = ref([])
-const activeTab = ref('general')
-const stepSearchQuery = ref('')
-const allCategories = ref([])
-const stepToolsVisible = reactive({})
+const categoryFilter = ref( '' )
+const currentPage = ref( 1 )
+const pageSize = ref( 20 )
+const selectedTemplateId = ref( null )
+const highlightedTemplateId = ref( null )
+const deleteDialogVisible = ref( false )
+const templateToDelete = ref( null )
+const deleteLoading = ref( false )
+const deleteConfirmationText = ref( '' )
+const deleteConfirmationValid = ref( false )
+const showFilters = ref( false )
+const assetFilter = ref( [] )
+const equipmentTreeData = ref( [] )
+const activeTab = ref( 'general' )
+const stepSearchQuery = ref( '' )
+const allCategories = ref( [] )
+const stepToolsVisible = reactive( {} )
 
 // Dynamic height calculation state
-const navbarHeight = ref(50) // Fallback to default navbar height
-const tagsViewHeight = ref(34) // Fallback to default tags-view height
-const containerHeight = computed(() => {
+const navbarHeight = ref( 50 ) // Fallback to default navbar height
+const tagsViewHeight = ref( 34 ) // Fallback to default tags-view height
+const containerHeight = computed( () => {
   const totalFixedHeight = navbarHeight.value + tagsViewHeight.value
   // Ensure minimum height values for fallback
   const safeHeight = totalFixedHeight > 0 ? totalFixedHeight : 84
   return `calc(100vh - ${safeHeight}px)`
-})
+} )
 
-const fetchEquipmentTreeData = async () => {
+const fetchEquipmentTreeData = async() => {
   try {
     const response = await getEquipmentTree()
-    const transformNode = node => ({
-      value: node.id, // el-tree-select uses 'value' by default
-      label: node.name,
-      children: node.children && node.children.length > 0 ? node.children.map(transformNode) : undefined,
-    })
+    const transformNode = node => ( {
+      value : node.id, // el-tree-select uses 'value' by default
+      label : node.name,
+      children : node.children && node.children.length > 0 ? node.children.map( transformNode ) : undefined
+    } )
     let dataArray
-    if (response.data?.data) {
+    if ( response.data?.data ) {
       dataArray = response.data.data
-    } else if (Array.isArray(response.data)) {
+    } else if ( Array.isArray( response.data ) ) {
       dataArray = response.data
-    } else if (response.data) {
+    } else if ( response.data ) {
       dataArray = [response.data]
     } else {
       dataArray = []
     }
-    equipmentTreeData.value = dataArray.map(node => transformNode(node))
-  } catch (error) {
-    console.error('Equipment tree load failed:', error)
-    ElMessage.error('Failed to load asset filter data.')
+    equipmentTreeData.value = dataArray.map( node => transformNode( node ) )
+  } catch ( error ) {
+    console.error( 'Equipment tree load failed:', error )
+    ElMessage.error( 'Failed to load asset filter data.' )
   }
 }
 
-const fetchCategories = async () => {
+const fetchCategories = async() => {
   try {
     const response = await getAllCategories()
     // Store full category objects with id and name
     allCategories.value = response.data
-  } catch (error) {
-    console.error('Categories load failed:', error)
-    ElMessage.error('Failed to load category filter data.')
+  } catch ( error ) {
+    console.error( 'Categories load failed:', error )
+    ElMessage.error( 'Failed to load category filter data.' )
   }
 }
 
 const handleAssetFilter = () => {
-  setFilter('equipment_node_ids', assetFilter.value)
+  setFilter( 'equipment_node_ids', assetFilter.value )
   currentPage.value = 1
 }
 
 // Computed properties
-const availableCategories = computed(() => {
+const availableCategories = computed( () => {
   // Sort category objects by name
   // eslint-disable-next-line vue/no-side-effects-in-computed-properties
-  return allCategories.value.sort((a, b) => a.name.localeCompare(b.name))
-})
+  return allCategories.value.sort( ( a, b ) => a.name.localeCompare( b.name ) )
+} )
 
-const displayedTemplates = computed(() => {
+const displayedTemplates = computed( () => {
   // With server-side pagination, all templates returned are already the correct page
   // Ensure we always return an array
-  return Array.isArray(filteredTemplates.value) ? filteredTemplates.value : []
-})
+  return Array.isArray( filteredTemplates.value ) ? filteredTemplates.value : []
+} )
 
-const selectedTemplate = computed(() => {
+const selectedTemplate = computed( () => {
   // Use currentTemplate from store for detailed data, fallback to list item
   if (
     currentTemplate.value &&
-    (currentTemplate.value.template_id === selectedTemplateId.value ||
-      currentTemplate.value.id === selectedTemplateId.value)
+    ( currentTemplate.value.template_id === selectedTemplateId.value ||
+      currentTemplate.value.id === selectedTemplateId.value )
   ) {
     return currentTemplate.value
   }
   // Ensure templates.value is an array before calling find
-  if (Array.isArray(templates.value)) {
-    return templates.value.find(t => t.template_id === selectedTemplateId.value || t.id === selectedTemplateId.value)
+  if ( Array.isArray( templates.value ) ) {
+    return templates.value.find( t => t.template_id === selectedTemplateId.value || t.id === selectedTemplateId.value )
   }
   return null
-})
+} )
 
 // Map backend step value types to preview component types
 const mapValueTypeToPreviewType = valueType => {
   const mapping = {
-    numeric: 'number',
-    boolean: 'checkbox',
-    inspection: 'inspection',
-    text: 'text',
-    file: 'attachments',
-    service: 'service',
+    numeric : 'number',
+    boolean : 'checkbox',
+    inspection : 'inspection',
+    text : 'text',
+    file : 'attachments',
+    service : 'service'
   }
   return mapping[valueType] || valueType || 'text'
 }
 
 // Transform backend steps to preview-ready steps
-const previewSteps = computed(() => {
+const previewSteps = computed( () => {
   const tmpl = selectedTemplate.value
-  const steps = Array.isArray(tmpl?.steps) ? tmpl.steps : []
-  return steps.map((s, idx) => {
+  const steps = Array.isArray( tmpl?.steps ) ? tmpl.steps : []
+  return steps.map( ( s, idx ) => {
     const v = s.value || {}
-    const type = mapValueTypeToPreviewType(v.type)
+    const type = mapValueTypeToPreviewType( v.type )
     const base = {
-      step_id: s.id || s.step_id || `step-${idx}`,
-      order: idx + 1,
+      step_id : s.id || s.step_id || `step-${idx}`,
+      order : idx + 1,
       type,
-      label: s.name || s.label || `Step ${idx + 1}`,
-      description: s.description || '',
-      required: Boolean(s.required),
-      required_image: Boolean(v.require_image),
-      relevant_tools: (s.tools || []).map(t => ({ tool_id: t.id, name: t.name })),
-      config: {},
+      label : s.name || s.label || `Step ${idx + 1}`,
+      description : s.description || '',
+      required : Boolean( s.required ),
+      required_image : Boolean( v.require_image ),
+      relevant_tools : ( s.tools || [] ).map( t => ( { tool_id : t.id, name : t.name } ) ),
+      config : {}
     }
 
-    if (type === 'number') {
+    if ( type === 'number' ) {
       base.config = {
-        default_value: typeof v.value === 'number' ? v.value : undefined,
-        limits: transformLimitsFromBackend(v.numeric_limit_bounds),
-        required_image: base.required_image,
+        default_value : typeof v.value === 'number' ? v.value : undefined,
+        limits : transformLimitsFromBackend( v.numeric_limit_bounds ),
+        required_image : base.required_image
       }
-    } else if (type === 'checkbox') {
-      base.config = { default: Boolean(v.value), required_image: base.required_image }
-    } else if (type === 'text') {
-      base.config = { default_value: v.value ?? '', required_image: base.required_image }
-    } else if (type === 'inspection') {
-      base.config = { default: 'pass', required_image: base.required_image }
-    } else if (type === 'attachments') {
-      base.config = { upload_style: { list_type: 'picture-card' }, required_image: base.required_image }
+    } else if ( type === 'checkbox' ) {
+      base.config = { default : Boolean( v.value ), required_image : base.required_image }
+    } else if ( type === 'text' ) {
+      base.config = { default_value : v.value ?? '', required_image : base.required_image }
+    } else if ( type === 'inspection' ) {
+      base.config = { default : 'pass', required_image : base.required_image }
+    } else if ( type === 'attachments' ) {
+      base.config = { upload_style : { list_type : 'picture-card' }, required_image : base.required_image }
     }
     return base
-  })
-})
+  } )
+} )
 
-const filteredPreviewSteps = computed(() => {
-  if (!stepSearchQuery.value) {
+const filteredPreviewSteps = computed( () => {
+  if ( !stepSearchQuery.value ) {
     return previewSteps.value
   }
   const query = stepSearchQuery.value.toLowerCase()
-  return previewSteps.value.filter(step => step.label.toLowerCase().includes(query))
-})
+  return previewSteps.value.filter( step => step.label.toLowerCase().includes( query ) )
+} )
 
 // Desktop preview helpers
 const getStepComponent = stepType => {
   const components = {
-    inspection: InspectionStepPreview,
-    checkbox: CheckboxStepPreview,
-    number: NumberStepPreview,
-    text: TextStepPreview,
-    files: AttachmentStepPreview,
-    attachments: AttachmentStepPreview,
-    service: ServiceStepPreview,
+    inspection : InspectionStepPreview,
+    checkbox : CheckboxStepPreview,
+    number : NumberStepPreview,
+    text : TextStepPreview,
+    files : AttachmentStepPreview,
+    attachments : AttachmentStepPreview,
+    service : ServiceStepPreview
   }
   return components[stepType] || 'div'
 }
 
-const getStepWithNumber = (step, index) => ({
+const getStepWithNumber = ( step, index ) => ( {
   ...step,
-  label: `${index + 1}. ${step.label || 'Step'}`,
-})
+  label : `${index + 1}. ${step.label || 'Step'}`
+} )
 
 const toggleStepTools = stepId => {
   stepToolsVisible[stepId] = !stepToolsVisible[stepId]
 }
 
 const getStepToolsVisible = stepId => {
-  return Boolean(stepToolsVisible[stepId])
+  return Boolean( stepToolsVisible[stepId] )
 }
 
-const paginationInfo = computed(() => {
+const paginationInfo = computed( () => {
   const total = pagination.value.total || 0
   const currentPageNum = pagination.value.page || 1
   const currentPageSize = pagination.value.size || 20
-  const start = total === 0 ? 0 : (currentPageNum - 1) * currentPageSize + 1
-  const end = Math.min(currentPageNum * currentPageSize, total)
+  const start = total === 0 ? 0 : ( currentPageNum - 1 ) * currentPageSize + 1
+  const end = Math.min( currentPageNum * currentPageSize, total )
   return { start, end, total }
-})
+} )
 
-const searchDebounce = ref(null)
+const searchDebounce = ref( null )
 
 const handleStepSearch = () => {
   // The computed property `filteredPreviewSteps` will automatically update.
@@ -715,15 +716,15 @@ const handleStepSearch = () => {
 
 // Event handlers
 const handleSearch = () => {
-  clearTimeout(searchDebounce.value)
-  searchDebounce.value = setTimeout(() => {
-    if (searchByIdMode.value) {
-      setFilter('reference_id', searchQuery.value)
+  clearTimeout( searchDebounce.value )
+  searchDebounce.value = setTimeout( () => {
+    if ( searchByIdMode.value ) {
+      setFilter( 'reference_id', searchQuery.value )
     } else {
-      setFilter('keyword', searchQuery.value)
+      setFilter( 'keyword', searchQuery.value )
     }
     currentPage.value = 1
-  }, 500) // 500ms debounce delay
+  }, 500 ) // 500ms debounce delay
 }
 
 const toggleSearchMode = () => {
@@ -731,24 +732,24 @@ const toggleSearchMode = () => {
   searchQuery.value = '' // Clear the visual input
 
   // Clear the alternative search filter in the store
-  if (searchByIdMode.value) {
+  if ( searchByIdMode.value ) {
     // Switched TO ID mode, so clear keyword
-    setFilter('keyword', '')
+    setFilter( 'keyword', '' )
   } else {
     // Switched TO Name mode, so clear reference_id
-    setFilter('reference_id', '')
+    setFilter( 'reference_id', '' )
   }
   // handleSearch() is no longer needed as setFilter triggers a fetch
 }
 
 const toggleFilterVisibility = () => {
   showFilters.value = !showFilters.value
-  if (!showFilters.value) {
+  if ( !showFilters.value ) {
     clearAllFilters()
   }
 }
 const handleCategoryFilter = () => {
-  setFilter('category', categoryFilter.value)
+  setFilter( 'category', categoryFilter.value )
   currentPage.value = 1
 }
 
@@ -764,7 +765,7 @@ const clearAllFilters = () => {
 const handlePageChange = page => {
   currentPage.value = page
   // Update store pagination and fetch new data
-  setPage(page)
+  setPage( page )
   loadTemplates()
 }
 
@@ -772,88 +773,88 @@ const handlePageSizeChange = size => {
   pageSize.value = size
   currentPage.value = 1
   // Update store pagination and fetch new data
-  setPageSize(size)
+  setPageSize( size )
 }
 
 const handleTemplateSelect = async template => {
   selectedTemplateId.value = template.template_id || template.id
   // Load full template details for right panel using new API
   try {
-    await loadTemplate(template.template_id || template.id)
-  } catch (error) {
-    console.error('Template details load failed:', error)
+    await loadTemplate( template.template_id || template.id )
+  } catch ( error ) {
+    console.error( 'Template details load failed:', error )
   }
 }
 
-const handleTemplateEdit = (template = selectedTemplate.value) => {
-  if (template) {
+const handleTemplateEdit = ( template = selectedTemplate.value ) => {
+  if ( template ) {
     // Template ID can be either template_id or id depending on API response format
     const templateId = template.template_id || template.id
-    if (!templateId) {
-      console.error('Missing template ID:', template)
-      ElMessage.error('Unable to edit task - missing template ID')
+    if ( !templateId ) {
+      console.error( 'Missing template ID:', template )
+      ElMessage.error( 'Unable to edit task - missing template ID' )
       return
     }
 
     // Prevent opening duplicate edit tabs for the same ID
     const tagsViewStore = useTagsViewStore()
     const targetPath = `/maintenance-library/designer/${templateId}`
-    const existing = (tagsViewStore.visitedViews || []).find(v => v.path === targetPath)
-    if (existing) {
-      router.push(existing.fullPath || existing.path)
+    const existing = ( tagsViewStore.visitedViews || [] ).find( v => v.path === targetPath )
+    if ( existing ) {
+      router.push( existing.fullPath || existing.path )
       return
     }
 
-    router.push({
-      name: 'TaskDesignerEdit',
-      params: { id: templateId },
-    })
+    router.push( {
+      name : 'TaskDesignerEdit',
+      params : { id : templateId }
+    } )
   } else {
-    ElMessage.error('No template selected for editing')
+    ElMessage.error( 'No template selected for editing' )
   }
 }
 
 // Helper function to transform template data for duplication
-const prepareDuplicateData = (sourceTemplate, newName) => {
-  if (!sourceTemplate) {
-    throw new Error('Source template is required')
+const prepareDuplicateData = ( sourceTemplate, newName ) => {
+  if ( !sourceTemplate ) {
+    throw new Error( 'Source template is required' )
   }
 
   // Transform the template to match the designer format expected by createTemplate
   const duplicateData = {
-    name: newName || `${sourceTemplate.name} (Copy)`,
-    description: sourceTemplate.description || '',
-    category: sourceTemplate.category?.id || sourceTemplate.category,
-    estimated_minutes: sourceTemplate.time_estimate_sec
-      ? Math.round(sourceTemplate.time_estimate_sec / 60)
+    name : newName || `${sourceTemplate.name} (Copy)`,
+    description : sourceTemplate.description || '',
+    category : sourceTemplate.category?.id || sourceTemplate.category,
+    estimated_minutes : sourceTemplate.time_estimate_sec
+      ? Math.round( sourceTemplate.time_estimate_sec / 60 )
       : sourceTemplate.estimated_minutes || 30,
-    applicable_assets: sourceTemplate.equipment_node_id
-      ? Array.isArray(sourceTemplate.equipment_node_id)
+    applicable_assets : sourceTemplate.equipment_node_id
+      ? Array.isArray( sourceTemplate.equipment_node_id )
         ? sourceTemplate.equipment_node_id
         : [sourceTemplate.equipment_node_id]
       : [],
-    steps: [],
+    steps : []
   }
 
   // Transform steps from API format to designer format if they exist
-  if (sourceTemplate.steps && Array.isArray(sourceTemplate.steps)) {
-    duplicateData.steps = sourceTemplate.steps.map((step, index) => {
+  if ( sourceTemplate.steps && Array.isArray( sourceTemplate.steps ) ) {
+    duplicateData.steps = sourceTemplate.steps.map( ( step, index ) => {
       const stepValue = step.value || {}
-      const stepType = mapApiStepTypeToDesigner(stepValue.type)
+      const stepType = mapApiStepTypeToDesigner( stepValue.type )
 
       return {
-        step_id: `step-${Date.now()}-${index}`, // Generate new step IDs
-        order: index + 1,
-        type: stepType,
-        label: step.name || `Step ${index + 1}`,
-        description: step.description || '',
-        required: Boolean(step.required),
-        required_image: Boolean(stepValue.require_image),
-        relevant_tools: transformApiToolsToDesigner(step.tools || []),
-        relevant_resources: step.relevant_resources || [],
-        config: transformApiStepConfigToDesigner(stepType, stepValue),
+        step_id : `step-${Date.now()}-${index}`, // Generate new step IDs
+        order : index + 1,
+        type : stepType,
+        label : step.name || `Step ${index + 1}`,
+        description : step.description || '',
+        required : Boolean( step.required ),
+        required_image : Boolean( stepValue.require_image ),
+        relevant_tools : transformApiToolsToDesigner( step.tools || [] ),
+        relevant_resources : step.relevant_resources || [],
+        config : transformApiStepConfigToDesigner( stepType, stepValue )
       }
-    })
+    } )
   }
 
   return duplicateData
@@ -862,76 +863,76 @@ const prepareDuplicateData = (sourceTemplate, newName) => {
 // Helper function to map API step types to designer step types
 const mapApiStepTypeToDesigner = apiType => {
   const typeMap = {
-    numeric: 'number',
-    boolean: 'checkbox',
-    checkbox: 'checkbox',
-    text: 'text',
-    file: 'attachments',
-    inspection: 'inspection',
-    service: 'service',
+    numeric : 'number',
+    boolean : 'checkbox',
+    checkbox : 'checkbox',
+    text : 'text',
+    file : 'attachments',
+    inspection : 'inspection',
+    service : 'service'
   }
   return typeMap[apiType] || 'text'
 }
 
 // Helper function to transform API tools to designer format
 const transformApiToolsToDesigner = apiTools => {
-  if (!Array.isArray(apiTools)) return []
-  return apiTools.map(tool => ({
-    tool_id: tool.id,
-    name: tool.name || 'Unnamed Tool',
-  }))
+  if ( !Array.isArray( apiTools ) ) return []
+  return apiTools.map( tool => ( {
+    tool_id : tool.id,
+    name : tool.name || 'Unnamed Tool'
+  } ) )
 }
 
 // Helper function to transform API step config to designer format
-const transformApiStepConfigToDesigner = (stepType, apiValue) => {
+const transformApiStepConfigToDesigner = ( stepType, apiValue ) => {
   const baseConfig = {
-    required_image: Boolean(apiValue.require_image),
+    required_image : Boolean( apiValue.require_image )
   }
 
-  switch (stepType) {
+  switch ( stepType ) {
     case 'number':
       return {
         ...baseConfig,
-        kind: 'number',
-        unit: apiValue.unit || '',
-        decimal_places: apiValue.decimal_places || 0,
-        default_value: typeof apiValue.value === 'number' ? apiValue.value : 0,
-        limits: apiValue.numeric_limit_bounds || null,
+        kind : 'number',
+        unit : apiValue.unit || '',
+        decimal_places : apiValue.decimal_places || 0,
+        default_value : typeof apiValue.value === 'number' ? apiValue.value : 0,
+        limits : apiValue.numeric_limit_bounds || null
       }
 
     case 'checkbox':
       return {
         ...baseConfig,
-        kind: 'checkbox',
-        default: Boolean(apiValue.value),
+        kind : 'checkbox',
+        default : Boolean( apiValue.value )
       }
 
     case 'text':
       return {
         ...baseConfig,
-        kind: 'text',
-        multiline: true,
-        max_length: 1000,
-        default_value: String(apiValue.value || ''),
+        kind : 'text',
+        multiline : true,
+        max_length : 1000,
+        default_value : String( apiValue.value || '' )
       }
 
     case 'inspection':
       return {
         ...baseConfig,
-        kind: 'inspection',
-        choices: ['pass', 'fail'],
-        default: apiValue.value ? 'pass' : 'fail',
-        require_comment_on_fail: false,
-        require_photo_on_fail: false,
+        kind : 'inspection',
+        choices : ['pass', 'fail'],
+        default : apiValue.value ? 'pass' : 'fail',
+        require_comment_on_fail : false,
+        require_photo_on_fail : false
       }
 
     case 'attachments':
       return {
         ...baseConfig,
-        kind: 'attachments',
-        allow_types: ['image', 'pdf'],
-        max_files: 5,
-        max_file_size_mb: 10,
+        kind : 'attachments',
+        allow_types : ['image', 'pdf'],
+        max_files : 5,
+        max_file_size_mb : 10
       }
 
     default:
@@ -939,9 +940,9 @@ const transformApiStepConfigToDesigner = (stepType, apiValue) => {
   }
 }
 
-const handleTemplateDuplicate = async (template = selectedTemplate.value) => {
-  if (!template) {
-    ElMessage.error('No template selected for duplication')
+const handleTemplateDuplicate = async( template = selectedTemplate.value ) => {
+  if ( !template ) {
+    ElMessage.error( 'No template selected for duplication' )
     return
   }
 
@@ -951,57 +952,57 @@ const handleTemplateDuplicate = async (template = selectedTemplate.value) => {
       'Are you sure you want to duplicate this task template?',
       'Duplicate Task Template',
       {
-        confirmButtonText: 'Duplicate',
-        cancelButtonText: 'Cancel',
-        inputPlaceholder: `${template.name} (Copy)`,
-        inputValue: `${template.name} (Copy)`,
-        inputValidator: value => {
-          if (!value || value.trim().length === 0) {
+        confirmButtonText : 'Duplicate',
+        cancelButtonText : 'Cancel',
+        inputPlaceholder : `${template.name} (Copy)`,
+        inputValue : `${template.name} (Copy)`,
+        inputValidator : value => {
+          if ( !value || value.trim().length === 0 ) {
             return 'Template name is required'
           }
-          if (value.trim().length > 255) {
+          if ( value.trim().length > 255 ) {
             return 'Template name must be 255 characters or less'
           }
           return true
         },
-        inputErrorMessage: 'Invalid template name',
+        inputErrorMessage : 'Invalid template name'
       }
     )
 
     const newName = result.value.trim()
 
     // Prepare the duplicate data using the helper function
-    const duplicateData = prepareDuplicateData(template, newName)
+    const duplicateData = prepareDuplicateData( template, newName )
 
     // Create the new template using the existing createTemplate function
-    const newTemplate = await createTemplate(duplicateData)
+    const newTemplate = await createTemplate( duplicateData )
 
     // Refresh the template list
     await loadTemplates()
 
     // Success feedback
-    ElMessage.success(`Task "${newName}" duplicated successfully`)
+    ElMessage.success( `Task "${newName}" duplicated successfully` )
 
     // Optionally, select the newly created template
-    if (newTemplate && newTemplate.id) {
+    if ( newTemplate && newTemplate.id ) {
       // Find and select the new template in the list after refresh
-      nextTick(() => {
-        const createdTemplate = templates.value.find(t => t.template_id === newTemplate.id || t.id === newTemplate.id)
-        if (createdTemplate) {
+      nextTick( () => {
+        const createdTemplate = templates.value.find( t => t.template_id === newTemplate.id || t.id === newTemplate.id )
+        if ( createdTemplate ) {
           selectedTemplate.value = createdTemplate
         }
-      })
+      } )
     }
-  } catch (error) {
+  } catch ( error ) {
     // Handle user cancellation
-    if (error === 'cancel') {
+    if ( error === 'cancel' ) {
       return // User cancelled, no error message needed
     }
 
     // Handle other errors
-    console.error('Template duplication failed:', error)
+    console.error( 'Template duplication failed:', error )
     const errorMessage = error?.response?.data?.message || error?.message || 'Failed to duplicate task template'
-    ElMessage.error(errorMessage)
+    ElMessage.error( errorMessage )
   }
 }
 
@@ -1023,23 +1024,23 @@ const handleDeleteCancel = () => {
   deleteConfirmationValid.value = false
 }
 
-const handleDeleteConfirm = async () => {
-  if (!templateToDelete.value) return
+const handleDeleteConfirm = async() => {
+  if ( !templateToDelete.value ) return
 
   // Get the template ID from either id or template_id field
   const templateId = templateToDelete.value.id || templateToDelete.value.template_id
 
-  if (!templateId) {
-    ElMessage.error('Template ID is missing, cannot delete template')
+  if ( !templateId ) {
+    ElMessage.error( 'Template ID is missing, cannot delete template' )
     return
   }
 
   deleteLoading.value = true
   try {
-    await deleteTemplate(templateId)
+    await deleteTemplate( templateId )
 
     // Clear selection if deleted template was selected
-    if (selectedTemplateId.value === templateId) {
+    if ( selectedTemplateId.value === templateId ) {
       selectedTemplateId.value = null
     }
 
@@ -1047,8 +1048,8 @@ const handleDeleteConfirm = async () => {
     templateToDelete.value = null
     deleteConfirmationText.value = ''
     deleteConfirmationValid.value = false
-  } catch (error) {
-    ElMessage.error('Failed to delete task')
+  } catch ( error ) {
+    ElMessage.error( 'Failed to delete task' )
   } finally {
     deleteLoading.value = false
   }
@@ -1056,7 +1057,7 @@ const handleDeleteConfirm = async () => {
 
 const handleHeaderAction = command => {
   // eslint-disable-next-line default-case
-  switch (command) {
+  switch ( command ) {
     case 'edit':
       handleTemplateEdit()
       break
@@ -1070,7 +1071,7 @@ const handleHeaderAction = command => {
       break
 
     case 'delete':
-      handleTemplateDelete(selectedTemplate.value)
+      handleTemplateDelete( selectedTemplate.value )
       break
   }
 }
@@ -1078,36 +1079,36 @@ const handleHeaderAction = command => {
 const createNewTemplate = () => {
   // Ensure only one Designer (create) tab exists at a time
   const tagsViewStore = useTagsViewStore()
-  const existing = (tagsViewStore.visitedViews || []).find(v => v.path === '/maintenance-library/designer')
-  if (existing) {
-    router.push(existing.fullPath || existing.path)
+  const existing = ( tagsViewStore.visitedViews || [] ).find( v => v.path === '/maintenance-library/designer' )
+  if ( existing ) {
+    router.push( existing.fullPath || existing.path )
     return
   }
-  router.push({ name: 'TaskDesigner' })
+  router.push( { name : 'TaskDesigner' } )
 }
 
-const createNewWorkOrder = async () => {
-  if (!selectedTemplate.value) {
-    ElMessage.error('No template selected. Please select a template first.')
+const createNewWorkOrder = async() => {
+  if ( !selectedTemplate.value ) {
+    ElMessage.error( 'No template selected. Please select a template first.' )
     return
   }
 
   try {
     // Check if there's already an unfinished work order
-    if (workOrderDraftStore.hasDraft) {
+    if ( workOrderDraftStore.hasDraft ) {
       // Show confirmation dialog
       const result = await ElMessageBox.confirm(
         'You have an unfinished work order. Add this task there?',
         'Unfinished Work Order',
         {
-          confirmButtonText: 'Yes',
-          cancelButtonText: 'Cancel',
-          type: 'warning',
-          customClass: 'work-order-confirmation-dialog',
+          confirmButtonText : 'Yes',
+          cancelButtonText : 'Cancel',
+          type : 'warning',
+          customClass : 'work-order-confirmation-dialog'
         }
       )
 
-      if (result === 'cancel') {
+      if ( result === 'cancel' ) {
         // User chose to discard the existing draft
         workOrderDraftStore.clearDraft()
       }
@@ -1118,29 +1119,29 @@ const createNewWorkOrder = async () => {
     workOrderDraftStore.setCreateMode()
 
     // Convert the selected template to a task format
-    const taskFromTemplate = buildDisplayTaskFromTemplate(selectedTemplate.value)
+    const taskFromTemplate = buildDisplayTaskFromTemplate( selectedTemplate.value )
 
     // Add the task to the work order draft
-    workOrderDraftStore.appendTask(taskFromTemplate)
+    workOrderDraftStore.appendTask( taskFromTemplate )
 
     // Set flag to automatically open the create panel
-    workOrderDraftStore.setShouldOpenCreatePanel(true)
+    workOrderDraftStore.setShouldOpenCreatePanel( true )
 
     // Navigate to work order view in todo mode
-    router.push({
-      path: '/work-order',
-      query: { view: 'todo' },
-    })
+    router.push( {
+      path : '/work-order',
+      query : { view : 'todo' }
+    } )
 
-    ElMessage.success(`Template "${selectedTemplate.value.name}" added to work order creation`)
-  } catch (error) {
+    ElMessage.success( `Template "${selectedTemplate.value.name}" added to work order creation` )
+  } catch ( error ) {
     // Handle user cancellation (when clicking X or pressing Esc)
-    if (error === 'cancel' || error === 'close') {
+    if ( error === 'cancel' || error === 'close' ) {
       return // User cancelled, no error message needed
     }
 
-    console.error('Failed to create work order from template:', error)
-    ElMessage.error('Failed to add template to work order. Please try again.')
+    console.error( 'Failed to create work order from template:', error )
+    ElMessage.error( 'Failed to add template to work order. Please try again.' )
   }
 }
 
@@ -1151,70 +1152,70 @@ const navigateToStepsTab = () => {
 // Helper functions
 
 const getCategoryLabel = category => {
-  if (!category) return 'Uncategorized'
+  if ( !category ) return 'Uncategorized'
   // Handle both string and object formats
   return typeof category === 'object' ? category.name : category
 }
 
 const getStepTypeLabel = type => {
   const labels = {
-    inspection: 'Inspection',
-    checkbox: 'Checkbox',
-    number: 'Number Input',
-    text: 'Text Input',
-    attachments: 'File Upload',
+    inspection : 'Inspection',
+    checkbox : 'Checkbox',
+    number : 'Number Input',
+    text : 'Text Input',
+    attachments : 'File Upload'
   }
   return labels[type] || type
 }
 
 const formatDate = dateString => {
-  if (!dateString) return 'N/A'
-  return new Date(dateString).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  if ( !dateString ) return 'N/A'
+  return new Date( dateString ).toLocaleDateString( 'en-US', {
+    year : 'numeric',
+    month : 'short',
+    day : 'numeric',
+    hour : '2-digit',
+    minute : '2-digit'
+  } )
 }
 
 const getRequiredStepsCount = () => {
-  if (!selectedTemplate.value?.steps) return 0
-  return selectedTemplate.value.steps.filter(step => step.required).length
+  if ( !selectedTemplate.value?.steps ) return 0
+  return selectedTemplate.value.steps.filter( step => step.required ).length
 }
 
 const getOptionalStepsCount = () => {
-  if (!selectedTemplate.value?.steps) return 0
-  return selectedTemplate.value.steps.filter(step => !step.required).length
+  if ( !selectedTemplate.value?.steps ) return 0
+  return selectedTemplate.value.steps.filter( step => !step.required ).length
 }
 
 // eslint-disable-next-line no-unused-vars
 const getStepTypesBreakdown = () => {
-  if (!selectedTemplate.value?.steps) return {}
+  if ( !selectedTemplate.value?.steps ) return {}
   const breakdown = {}
-  selectedTemplate.value.steps.forEach(step => {
-    breakdown[step.type] = (breakdown[step.type] || 0) + 1
-  })
+  selectedTemplate.value.steps.forEach( step => {
+    breakdown[step.type] = ( breakdown[step.type] || 0 ) + 1
+  } )
   return breakdown
 }
 
 // Dynamic height calculation functions
 const calculateDynamicHeights = () => {
-  nextTick(() => {
+  nextTick( () => {
     // Get navbar element
-    const navbarEl = document.querySelector('.navbar')
-    if (navbarEl && navbarEl.offsetHeight > 0) {
+    const navbarEl = document.querySelector( '.navbar' )
+    if ( navbarEl && navbarEl.offsetHeight > 0 ) {
       navbarHeight.value = navbarEl.offsetHeight
     }
 
     // Get tags-view-container element - only count height if TagsView is enabled
-    const tagsViewEl = document.querySelector('#tags-view-container')
-    if (settingsStore.tagsView && tagsViewEl && tagsViewEl.offsetHeight > 0) {
+    const tagsViewEl = document.querySelector( '#tags-view-container' )
+    if ( settingsStore.tagsView && tagsViewEl && tagsViewEl.offsetHeight > 0 ) {
       tagsViewHeight.value = tagsViewEl.offsetHeight
     } else {
       tagsViewHeight.value = 0 // Set to 0 when TagsView is disabled
     }
-  })
+  } )
 }
 
 // Handle window resize to recalculate heights
@@ -1229,16 +1230,16 @@ watch(
     // Recalculate heights when TagsView is toggled
     calculateDynamicHeights()
   },
-  { immediate: false }
+  { immediate : false }
 )
 
 // Initialize
-onMounted(() => {
+onMounted( () => {
   // Calculate dynamic heights
   calculateDynamicHeights()
 
   // Add resize listener
-  window.addEventListener('resize', handleResize)
+  window.addEventListener( 'resize', handleResize )
 
   // Initial load of templates
   loadTemplates()
@@ -1246,13 +1247,13 @@ onMounted(() => {
   // Load filter data
   fetchEquipmentTreeData()
   fetchCategories()
-})
+} )
 
 // Handle template focusing when navigating from template creation
-const handleTemplateFocus = async (templateId, refresh = false) => {
+const handleTemplateFocus = async( templateId, refresh = false ) => {
   try {
     // If refresh is requested, reload templates first
-    if (refresh) {
+    if ( refresh ) {
       await loadTemplates()
     }
 
@@ -1263,24 +1264,24 @@ const handleTemplateFocus = async (templateId, refresh = false) => {
     clearAllFilters()
 
     // Find the template in all templates (not just filtered ones)
-    let template = templates.value.find(t => t.id === templateId || t.template_id === templateId)
+    let template = templates.value.find( t => t.id === templateId || t.template_id === templateId )
 
     // If not found, try a second load (sometimes new items take a moment)
-    if (!template) {
-      await new Promise(resolve => setTimeout(resolve, 500)) // Wait 500ms
+    if ( !template ) {
+      await new Promise( resolve => setTimeout( resolve, 500 ) ) // Wait 500ms
       await loadTemplates() // Reload templates
-      template = templates.value.find(t => t.id === templateId || t.template_id === templateId)
+      template = templates.value.find( t => t.id === templateId || t.template_id === templateId )
     }
 
-    if (template) {
+    if ( template ) {
       // Find which page the template is on
-      const templateIndex = templates.value.findIndex(t => t.id === templateId || t.template_id === templateId)
-      const templatePage = Math.ceil((templateIndex + 1) / pageSize.value)
+      const templateIndex = templates.value.findIndex( t => t.id === templateId || t.template_id === templateId )
+      const templatePage = Math.ceil( ( templateIndex + 1 ) / pageSize.value )
 
       // Navigate to the correct page if needed
-      if (templatePage !== currentPage.value) {
+      if ( templatePage !== currentPage.value ) {
         currentPage.value = templatePage
-        setPage(templatePage)
+        setPage( templatePage )
         await loadTemplates()
         await nextTick()
       }
@@ -1289,54 +1290,54 @@ const handleTemplateFocus = async (templateId, refresh = false) => {
       highlightedTemplateId.value = template.template_id || template.id
 
       // Use the existing template selection function to properly focus the template
-      await handleTemplateSelect(template)
+      await handleTemplateSelect( template )
 
-      ElMessage.success(`Task "${template.name}" created successfully`)
+      ElMessage.success( `Task "${template.name}" created successfully` )
 
       // Remove highlight after 3 seconds
-      setTimeout(() => {
+      setTimeout( () => {
         highlightedTemplateId.value = null
-      }, 3000)
+      }, 3000 )
 
       // Scroll the template card into view
       await nextTick()
-      const templateCard = document.querySelector(`.template-card.highlighted`)
-      if (templateCard) {
-        templateCard.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      const templateCard = document.querySelector( `.template-card.highlighted` )
+      if ( templateCard ) {
+        templateCard.scrollIntoView( { behavior : 'smooth', block : 'center' } )
       }
     } else {
       // Template might not be visible due to other issues - still show success
-      ElMessage.success('Task created successfully')
+      ElMessage.success( 'Task created successfully' )
     }
-  } catch (error) {
-    console.error('Template focus failed:', error)
+  } catch ( error ) {
+    console.error( 'Template focus failed:', error )
     // Don't show another success message on error - the template was still created
   }
 
   // Clean up the query parameter
-  router.replace({ query: { ...route.query, focusTemplate: undefined, refresh: undefined } })
+  router.replace( { query : { ...route.query, focusTemplate : undefined, refresh : undefined }} )
 }
 
 // Watch for route changes to handle template focusing
 watch(
   () => route.query,
   newQuery => {
-    if (newQuery.focusTemplate) {
+    if ( newQuery.focusTemplate ) {
       const refresh = newQuery.refresh === 'true'
-      handleTemplateFocus(newQuery.focusTemplate, refresh)
+      handleTemplateFocus( newQuery.focusTemplate, refresh )
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
 
-onBeforeUnmount(() => {
+onBeforeUnmount( () => {
   // Remove resize listener
-  window.removeEventListener('resize', handleResize)
-})
+  window.removeEventListener( 'resize', handleResize )
+} )
 
-defineOptions({
-  name: 'TaskLibrary',
-})
+defineOptions( {
+  name : 'TaskLibrary'
+} )
 </script>
 
 <style scoped>

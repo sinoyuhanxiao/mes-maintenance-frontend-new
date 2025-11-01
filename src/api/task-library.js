@@ -11,18 +11,18 @@ import { getAvailableTools, uploadResource } from '@/views/taskLibrary/utils/moc
  * @param {Object} filter - Filter criteria
  * @returns {Promise} API response with paginated templates
  */
-export const searchTaskTemplates = (page = 1, size = 10, sortField = 'createdAt', direction = 'DESC', filter = {}) => {
-  return http.request({
-    method: 'post',
-    url: '/task/templates/search',
-    params: {
+export const searchTaskTemplates = ( page = 1, size = 10, sortField = 'createdAt', direction = 'DESC', filter = {} ) => {
+  return http.request( {
+    method : 'post',
+    url : '/task/templates/search',
+    params : {
       page,
       size,
       sortField,
-      direction,
+      direction
     },
-    data: filter,
-  })
+    data : filter
+  } )
 }
 
 /**
@@ -31,10 +31,10 @@ export const searchTaskTemplates = (page = 1, size = 10, sortField = 'createdAt'
  * @returns {Promise} API response with template data
  */
 export const getTaskTemplateById = id => {
-  return http.request({
-    method: 'get',
-    url: `/task/template/${id}`,
-  })
+  return http.request( {
+    method : 'get',
+    url : `/task/template/${id}`
+  } )
 }
 
 /**
@@ -44,17 +44,17 @@ export const getTaskTemplateById = id => {
  * @param {Object} originalTemplate - Original template for comparison
  * @returns {Promise} API response with updated template
  */
-export const updateTaskTemplate = (id, frontendData, originalTemplate = null) => {
+export const updateTaskTemplate = ( id, frontendData, originalTemplate = null ) => {
   // Validate template ID
-  if (!id || id === 'undefined' || id === 'null') {
-    throw new Error(`Invalid template ID provided: ${id}`)
+  if ( !id || id === 'undefined' || id === 'null' ) {
+    throw new Error( `Invalid template ID provided: ${id}` )
   }
-  const backendPayload = transformTemplateForUpdate(frontendData, originalTemplate)
-  return http.request({
-    method: 'patch',
-    url: `/task/template/${id}`,
-    data: backendPayload,
-  })
+  const backendPayload = transformTemplateForUpdate( frontendData, originalTemplate )
+  return http.request( {
+    method : 'patch',
+    url : `/task/template/${id}`,
+    data : backendPayload
+  } )
 }
 
 /**
@@ -63,12 +63,12 @@ export const updateTaskTemplate = (id, frontendData, originalTemplate = null) =>
  * @returns {Promise} API response with created template
  */
 export const createTaskTemplate = frontendData => {
-  const backendPayload = transformTemplateForBackend(frontendData)
-  return http.request({
-    method: 'post',
-    url: '/task/template',
-    data: backendPayload,
-  })
+  const backendPayload = transformTemplateForBackend( frontendData )
+  return http.request( {
+    method : 'post',
+    url : '/task/template',
+    data : backendPayload
+  } )
 }
 
 /**
@@ -77,10 +77,10 @@ export const createTaskTemplate = frontendData => {
  * @returns {Promise} API response confirming deletion
  */
 export const deleteTaskTemplate = id => {
-  return http.request({
-    method: 'delete',
-    url: `/task/template/${id}`,
-  })
+  return http.request( {
+    method : 'delete',
+    url : `/task/template/${id}`
+  } )
 }
 
 // TODO: Re-export mock functions for backward compatibility (will do this in future)
@@ -97,21 +97,21 @@ export { getAvailableTools, uploadResource }
  * @param {string} [pagination.direction] - Sort direction (ASC/DESC)
  * @returns {Promise} API response with paginated standards
  */
-export const searchStandards = async (filter = {}, pagination = {}) => {
-  return http.request({
-    method: 'post',
-    url: '/library/standards/search',
-    params: {
-      page: pagination.page,
-      size: pagination.size,
-      sortField: pagination.sortField,
-      direction: pagination.direction,
+export const searchStandards = async( filter = {}, pagination = {} ) => {
+  return http.request( {
+    method : 'post',
+    url : '/library/standards/search',
+    params : {
+      page : pagination.page,
+      size : pagination.size,
+      sortField : pagination.sortField,
+      direction : pagination.direction
     },
-    data: {
-      keyword: filter.keyword?.trim(),
-      category: filter.category?.trim(),
-    },
-  })
+    data : {
+      keyword : filter.keyword?.trim(),
+      category : filter.category?.trim()
+    }
+  } )
 }
 
 /**
@@ -121,13 +121,13 @@ export const searchStandards = async (filter = {}, pagination = {}) => {
  */
 export const getStandard = async id => {
   try {
-    const response = await http.request({
-      method: 'get',
-      url: `/library/standard/${id}`,
-    })
-    return { data: response.data }
-  } catch (error) {
-    console.error('Failed to fetch standard:', error)
+    const response = await http.request( {
+      method : 'get',
+      url : `/library/standard/${id}`
+    } )
+    return { data : response.data }
+  } catch ( error ) {
+    console.error( 'Failed to fetch standard:', error )
     throw error
   }
 }
@@ -139,14 +139,14 @@ export const getStandard = async id => {
  */
 export const createStandard = async data => {
   try {
-    const response = await http.request({
-      method: 'post',
-      url: '/library/standard',
-      data,
-    })
-    return { data: response.data }
-  } catch (error) {
-    console.error('Failed to create standard:', error)
+    const response = await http.request( {
+      method : 'post',
+      url : '/library/standard',
+      data
+    } )
+    return { data : response.data }
+  } catch ( error ) {
+    console.error( 'Failed to create standard:', error )
     throw error
   }
 }
@@ -157,16 +157,16 @@ export const createStandard = async data => {
  * @param {Object} data - The updated standard data.
  * @returns {Promise<Object>} API response with updated standard data.
  */
-export const updateStandard = async (id, data) => {
+export const updateStandard = async( id, data ) => {
   try {
-    const response = await http.request({
-      method: 'put',
-      url: '/library/standard',
-      data: { standard_id: id, ...data },
-    })
-    return { data: response.data }
-  } catch (error) {
-    console.error('Failed to update standard:', error)
+    const response = await http.request( {
+      method : 'put',
+      url : '/library/standard',
+      data : { standard_id : id, ...data }
+    } )
+    return { data : response.data }
+  } catch ( error ) {
+    console.error( 'Failed to update standard:', error )
     throw error
   }
 }
@@ -178,13 +178,13 @@ export const updateStandard = async (id, data) => {
  */
 export const deleteStandard = async id => {
   try {
-    await http.request({
-      method: 'delete',
-      url: `/library/standard/${id}`,
-    })
-    return { success: true }
-  } catch (error) {
-    console.error('Failed to delete standard:', error)
+    await http.request( {
+      method : 'delete',
+      url : `/library/standard/${id}`
+    } )
+    return { success : true }
+  } catch ( error ) {
+    console.error( 'Failed to delete standard:', error )
     throw error
   }
 }

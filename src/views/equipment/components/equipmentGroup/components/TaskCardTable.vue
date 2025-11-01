@@ -44,26 +44,26 @@
 import { ref } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 
-defineProps({
-  items: { type: Array, default: () => [] },
-  pageSize: { type: Number, default: 6 },
-  totalItems: { type: Number, default: 0 },
-  currentPage: { type: Number, default: 1 },
-  loading: { type: Boolean, default: false },
-})
+defineProps( {
+  items : { type : Array, default : () => [] },
+  pageSize : { type : Number, default : 6 },
+  totalItems : { type : Number, default : 0 },
+  currentPage : { type : Number, default : 1 },
+  loading : { type : Boolean, default : false }
+} )
 
-const emit = defineEmits(['page-change', 'requestData', 'search'])
+const emit = defineEmits( ['page-change', 'requestData', 'search'] )
 
-const q = ref('')
+const q = ref( '' )
 
-function onPageChange(p) {
-  emit('page-change', p)
+function onPageChange( p ) {
+  emit( 'page-change', p )
 }
-function handlePick(t) {
-  emit('requestData', t)
+function handlePick( t ) {
+  emit( 'requestData', t )
 }
 function emitSearch() {
-  emit('search', q.value.trim())
+  emit( 'search', q.value.trim() )
 }
 </script>
 

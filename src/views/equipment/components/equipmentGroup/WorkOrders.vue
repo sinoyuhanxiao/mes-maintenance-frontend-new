@@ -66,9 +66,9 @@ import { GridLayout, GridItem } from 'vue3-grid-layout'
 import WidgetPie from '../../../../components/Widgets/PieChart.vue'
 import { searchWorkOrders } from '@/api/work-order'
 
-const props = defineProps({
-  equipmentId: [Number, String],
-})
+const props = defineProps( {
+  equipmentId : [Number, String]
+} )
 
 const STATE_ORDER = [
   'Completed',
@@ -79,52 +79,52 @@ const STATE_ORDER = [
   'Pending',
   'Forecast',
   'Ready',
-  'Released',
+  'Released'
 ]
 
 const STATE_COLORS = {
-  Forecast: '#8D6E63',
-  Pending: '#9E9E9E',
-  Ready: '#2196F3',
-  'In progress': '#FF9800',
-  Completed: '#4CAF50',
-  Failed: '#F44336',
-  Incomplete: '#D81B60', // distinct pink
-  'Pending Approval': '#607D8B',
-  Released: '#00796B', // teal
+  Forecast : '#8D6E63',
+  Pending : '#9E9E9E',
+  Ready : '#2196F3',
+  'In progress' : '#FF9800',
+  Completed : '#4CAF50',
+  Failed : '#F44336',
+  Incomplete : '#D81B60', // distinct pink
+  'Pending Approval' : '#607D8B',
+  Released : '#00796B' // teal
 }
 
-const initialPieData = STATE_ORDER.map(name => ({ name, value: 0, color: STATE_COLORS[name] }))
+const initialPieData = STATE_ORDER.map( name => ( { name, value : 0, color : STATE_COLORS[name] } ) )
 
-const allRows = ref([])
-const selectedState = ref('')
-const hasAnyData = ref(true)
-const searchQuery = ref('')
+const allRows = ref( [] )
+const selectedState = ref( '' )
+const hasAnyData = ref( true )
+const searchQuery = ref( '' )
 
-const layout = ref([
+const layout = ref( [
   {
-    x: 0,
-    y: 0,
-    w: 6,
-    h: 20,
-    i: '1',
-    component: markRaw(WidgetPie),
-    props: { title: '', data: initialPieData, onSelect: name => onPieSelect(name) },
-  },
-])
+    x : 0,
+    y : 0,
+    w : 6,
+    h : 20,
+    i : '1',
+    component : markRaw( WidgetPie ),
+    props : { title : '', data : initialPieData, onSelect : name => onPieSelect( name ) }
+  }
+] )
 
-function normalizeState(raw) {
-  if (!raw) return ''
-  const s = String(raw).trim().toLowerCase()
-  if (s === 'in_progress' || s === 'in progress') return 'In progress'
-  if (s === 'pending_approval' || s === 'pending approval') return 'Pending Approval'
-  if (s === 'released') return 'Released'
-  return s.charAt(0).toUpperCase() + s.slice(1)
+function normalizeState( raw ) {
+  if ( !raw ) return ''
+  const s = String( raw ).trim().toLowerCase()
+  if ( s === 'in_progress' || s === 'in progress' ) return 'In progress'
+  if ( s === 'pending_approval' || s === 'pending approval' ) return 'Pending Approval'
+  if ( s === 'released' ) return 'Released'
+  return s.charAt( 0 ).toUpperCase() + s.slice( 1 )
 }
 
-function getStateName(row) {
+function getStateName( row ) {
   const raw = row?.state?.name ?? row?.state_name ?? row?.state ?? row?.status_name ?? row?.status
-  return normalizeState(raw)
+  return normalizeState( raw )
 }
 
 const getName = row => row?.name ?? row?.title ?? ''
@@ -135,45 +135,45 @@ const getStart = row =>
 const getEnd = row =>
   row?.end_date ?? row?.endTime ?? row?.end_time ?? row?.planned_end ?? row?.scheduledEnd ?? row?.dueAt
 
-function formatDate(val) {
-  if (!val) return ''
-  const d = new Date(val)
-  return isNaN(d.getTime()) ? '' : d.toLocaleString()
+function formatDate( val ) {
+  if ( !val ) return ''
+  const d = new Date( val )
+  return isNaN( d.getTime() ) ? '' : d.toLocaleString()
 }
 
-function onPieSelect(payload) {
+function onPieSelect( payload ) {
   const name = typeof payload === 'string' ? payload : payload?.name
-  if (!name) return
-  const normalized = normalizeState(name)
-  if (!STATE_ORDER.includes(normalized)) return
+  if ( !name ) return
+  const normalized = normalizeState( name )
+  if ( !STATE_ORDER.includes( normalized ) ) return
   selectedState.value = normalized
 }
 
-const filteredRows = computed(() =>
+const filteredRows = computed( () =>
   !selectedState.value
     ? []
     : allRows.value
-        .filter(r => getStateName(r) === selectedState.value)
-        .map(r => ({
-          name: getName(r),
-          code: getCode(r),
-          description: getDesc(r),
-          _start: getStart(r),
-          _end: getEnd(r),
-          _raw: r,
-        }))
+      .filter( r => getStateName( r ) === selectedState.value )
+      .map( r => ( {
+        name : getName( r ),
+        code : getCode( r ),
+        description : getDesc( r ),
+        _start : getStart( r ),
+        _end : getEnd( r ),
+        _raw : r
+      } ) )
 )
 
-const searchedRows = computed(() => {
+const searchedRows = computed( () => {
   const q = searchQuery.value.trim().toLowerCase()
-  if (!q) return filteredRows.value
+  if ( !q ) return filteredRows.value
   return filteredRows.value.filter(
     r =>
-      r.name.toLowerCase().includes(q) ||
-      String(r.code).toLowerCase().includes(q) ||
-      (r.description ?? '').toLowerCase().includes(q)
+      r.name.toLowerCase().includes( q ) ||
+      String( r.code ).toLowerCase().includes( q ) ||
+      ( r.description ?? '' ).toLowerCase().includes( q )
   )
-})
+} )
 
 function onSearchEnter() {
   // Optional: trigger any analytics or manual refresh here
@@ -183,59 +183,59 @@ async function loadPieData() {
   try {
     const page = 1
     const size = 100
-    const eq = props.equipmentId ? Number(props.equipmentId) : null
+    const eq = props.equipmentId ? Number( props.equipmentId ) : null
     const payload = {
-      latest_per_recurrence: false,
-      ...(eq ? { equipment_node_ids: [eq] } : {}),
+      latest_per_recurrence : false,
+      ...( eq ? { equipment_node_ids : [eq] } : {} )
     }
 
-    const res = await searchWorkOrders(page, size, 'createdAt', 'DESC', payload)
+    const res = await searchWorkOrders( page, size, 'createdAt', 'DESC', payload )
     const root = res?.data
     const rawRows =
       root?.data?.content ?? root?.content ?? root?.records ?? root?.list ?? root?.items ?? root?.rows ?? []
 
     let rows = rawRows
-    if (eq) {
-      rows = rawRows.filter(r => {
-        const topHit = Array.isArray(r?.equipment_node_ids) && r.equipment_node_ids.map(Number).includes(eq)
-        const taskHit = Array.isArray(r?.task_list) && r.task_list.some(t => Number(t?.equipment_node?.id) === eq)
+    if ( eq ) {
+      rows = rawRows.filter( r => {
+        const topHit = Array.isArray( r?.equipment_node_ids ) && r.equipment_node_ids.map( Number ).includes( eq )
+        const taskHit = Array.isArray( r?.task_list ) && r.task_list.some( t => Number( t?.equipment_node?.id ) === eq )
         return topHit || taskHit
-      })
+      } )
     }
 
     allRows.value = rows
-    const counts = Object.fromEntries(STATE_ORDER.map(k => [k, 0]))
-    for (const row of rows) {
-      const s = getStateName(row)
-      if (STATE_ORDER.includes(s)) counts[s]++
+    const counts = Object.fromEntries( STATE_ORDER.map( k => [k, 0] ) )
+    for ( const row of rows ) {
+      const s = getStateName( row )
+      if ( STATE_ORDER.includes( s ) ) counts[s]++
       else counts.Incomplete++
     }
 
-    const total = Object.values(counts).reduce((a, b) => a + b, 0)
+    const total = Object.values( counts ).reduce( ( a, b ) => a + b, 0 )
     hasAnyData.value = total > 0
-    if (!hasAnyData.value) selectedState.value = ''
+    if ( !hasAnyData.value ) selectedState.value = ''
 
-    const pieData = STATE_ORDER.map(name => ({
+    const pieData = STATE_ORDER.map( name => ( {
       name,
-      value: counts[name] ?? 0,
-      color: STATE_COLORS[name],
-    }))
+      value : counts[name] ?? 0,
+      color : STATE_COLORS[name]
+    } ) )
 
     layout.value = [
       {
         ...layout.value[0],
-        props: { ...layout.value[0].props, data: pieData },
-      },
+        props : { ...layout.value[0].props, data : pieData }
+      }
     ]
-  } catch (err) {
-    console.error(err)
-    ElMessage.error('Failed to load work orders')
+  } catch ( err ) {
+    console.error( err )
+    ElMessage.error( 'Failed to load work orders' )
     hasAnyData.value = false
     selectedState.value = ''
   }
 }
 
-onMounted(loadPieData)
+onMounted( loadPieData )
 watch(
   () => props.equipmentId,
   () => {
@@ -245,7 +245,7 @@ watch(
   }
 )
 
-defineExpose({ reload: loadPieData, formatDate })
+defineExpose( { reload : loadPieData, formatDate } )
 </script>
 
 <style scoped>

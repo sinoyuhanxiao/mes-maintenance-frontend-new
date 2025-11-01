@@ -92,63 +92,63 @@ import AssignButton from '../../../components/Tables/Widgets/AssignButton.vue'
 import { ref, onMounted, onBeforeUnmount, reactive, computed } from 'vue'
 
 // eslint-disable-next-line vue/no-setup-props-destructure
-const { wo, type, personnelList, supervisorList, from } = defineProps({
-  wo: Object,
-  type: Number,
-  personnelList: Object,
-  supervisorList: Object,
-  from: String,
-})
-console.log(wo)
-const personnel = reactive(personnelList)
+const { wo, type, personnelList, supervisorList, from } = defineProps( {
+  wo : Object,
+  type : Number,
+  personnelList : Object,
+  supervisorList : Object,
+  from : String
+} )
+console.log( wo )
+const personnel = reactive( personnelList )
 
-const listType = ref(String(type))
+const listType = ref( String( type ) )
 
-const supervisor = computed(() => {
+const supervisor = computed( () => {
   return supervisorList
-})
+} )
 
-const emit = defineEmits(['close'])
+const emit = defineEmits( ['close'] )
 
-const option = ref('2')
+const option = ref( '2' )
 
-const tableHeight = ref(537)
+const tableHeight = ref( 537 )
 
-const tableRowClassName = ({ row }) => {
-  if (row.assigned === 1) {
+const tableRowClassName = ( { row } ) => {
+  if ( row.assigned === 1 ) {
     return 'success-row'
   }
   return ''
 }
 
 function handleClose() {
-  emit('close', false)
+  emit( 'close', false )
 }
 
-onMounted(() => {
+onMounted( () => {
   updateTableHeight()
-  window.addEventListener('resize', updateTableHeight)
-})
+  window.addEventListener( 'resize', updateTableHeight )
+} )
 
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', updateTableHeight)
-})
+onBeforeUnmount( () => {
+  window.removeEventListener( 'resize', updateTableHeight )
+} )
 
 function updateTableHeight() {
   const windowHeight = window.innerHeight
 
-  if (windowHeight < 800) {
+  if ( windowHeight < 800 ) {
     tableHeight.value = 322
   }
 }
 
-function handleAssignChange(val, currentRow) {
-  if (type !== 1) {
-    if (val === 1) {
+function handleAssignChange( val, currentRow ) {
+  if ( type !== 1 ) {
+    if ( val === 1 ) {
       // Set all to 0 except the current row
-      supervisor.value.forEach(item => {
+      supervisor.value.forEach( item => {
         item.assigned = item === currentRow ? 1 : 0
-      })
+      } )
     } else {
       // If you toggle off the current row, allow it to be unassigned
       currentRow.assigned = 0

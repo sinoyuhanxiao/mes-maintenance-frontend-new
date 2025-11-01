@@ -94,27 +94,27 @@ import { searchWorkOrders } from '../../api/work-order'
 import TableView from './components/TableView.vue'
 import CardTable from '../../components/Tables/CardTable.vue'
 
-const height = ref('298px')
+const height = ref( '298px' )
 
-const items = ref([])
-const totalItems = ref(0)
-const currentView = ref(1)
+const items = ref( [] )
+const totalItems = ref( 0 )
+const currentView = ref( 1 )
 
-const search = ref({
-  latest_per_recurrence: false,
-})
+const search = ref( {
+  latest_per_recurrence : false
+} )
 
 // Query parameters
-const listQuery = reactive({
-  page: 1,
-  limit: 10,
-  sort: '-id',
-})
+const listQuery = reactive( {
+  page : 1,
+  limit : 10,
+  sort : '-id'
+} )
 
-const selectedData = ref(null)
+const selectedData = ref( null )
 
 async function getAllWorkOrdersData() {
-  const response = await searchWorkOrders(listQuery.page, listQuery.limit, 'createdAt', 'DESC', search.value)
+  const response = await searchWorkOrders( listQuery.page, listQuery.limit, 'createdAt', 'DESC', search.value )
 
   items.value = response.data.content
   totalItems.value = response.data.totalElements
@@ -123,7 +123,7 @@ async function getAllWorkOrdersData() {
 
 getAllWorkOrdersData()
 
-const keyword = ref(null)
+const keyword = ref( null )
 
 watch(
   () => keyword.value,
@@ -137,30 +137,30 @@ watch(
   newData => {
     getAllWorkOrdersData()
   },
-  { immediate: true, deep: true }
+  { immediate : true, deep : true }
 )
 
-const maxHeight = ref('730px')
+const maxHeight = ref( '730px' )
 function updateHeight() {
   maxHeight.value = window.innerWidth <= 1600 ? '521px' : '737px'
 }
 
-onMounted(() => {
+onMounted( () => {
   updateHeight()
-  window.addEventListener('resize', updateHeight)
-})
+  window.addEventListener( 'resize', updateHeight )
+} )
 
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', updateHeight)
-})
+onBeforeUnmount( () => {
+  window.removeEventListener( 'resize', updateHeight )
+} )
 
-function getSelection(data) {
+function getSelection( data ) {
   selectedData.value = data
-  console.log(selectedData.value)
+  console.log( selectedData.value )
 }
 
 function handleCreateWorkOrder() {
-  router.push({ name: 'NewWorkOrder' })
+  router.push( { name : 'NewWorkOrder' } )
 }
 
 const handleCurrentChange = val => {
@@ -173,13 +173,13 @@ const handleCommand = command => {
   currentView.value = command === 'a' ? 2 : 1
 }
 
-const currentLabel = computed(() => {
+const currentLabel = computed( () => {
   return currentView.value === 2 ? 'Table View' : 'Dashboard View'
-})
+} )
 
-const currentIcon = computed(() => {
+const currentIcon = computed( () => {
   return currentView.value === 2 ? 'List' : 'Menu'
-})
+} )
 
 // onMounted( () => {
 //   updateTableHeight()
@@ -198,37 +198,37 @@ const currentIcon = computed(() => {
 //   }
 // }
 
-const personnel = reactive([
-  { id: 1, firstName: 'John', lastName: 'Andrews', assigned: 0, role: 'Technician' },
-  { id: 2, firstName: 'Maria', lastName: 'Lopez', assigned: 1, role: 'Supervisor' },
-  { id: 3, firstName: 'James', lastName: 'Nguyen', assigned: 0, role: 'Electrician' },
-  { id: 4, firstName: 'Sara', lastName: 'Lee', assigned: 0, role: 'Technician' },
-  { id: 5, firstName: 'David', lastName: 'Patel', assigned: 0, role: 'Planner' },
-  { id: 6, firstName: 'Emily', lastName: 'Martinez', assigned: 0, role: 'Mechanic' },
-  { id: 7, firstName: 'Brian', lastName: 'Smith', assigned: 0, role: 'Technician' },
-  { id: 8, firstName: 'Olivia', lastName: 'Hernandez', assigned: 0, role: 'Electrician' },
-  { id: 9, firstName: 'Daniel', lastName: 'Kim', assigned: 0, role: 'Supervisor' },
-  { id: 10, firstName: 'Ava', lastName: 'Brown', assigned: 0, role: 'Planner' },
-  { id: 11, firstName: 'William', lastName: 'Clark', assigned: 0, role: 'Technician' },
-  { id: 12, firstName: 'Zoey', lastName: 'Duan', assigned: 1, role: 'Mechanic' },
-  { id: 13, firstName: 'Logan', lastName: 'Adams', assigned: 0, role: 'Technician' },
-  { id: 14, firstName: 'Chloe', lastName: 'Scott', assigned: 0, role: 'Electrician' },
-  { id: 15, firstName: 'Henry', lastName: 'Green', assigned: 0, role: 'Supervisor' },
-  { id: 16, firstName: 'Isabella', lastName: 'Baker', assigned: 0, role: 'Technician' },
-  { id: 17, firstName: 'Erik', lastName: 'Yu', assigned: 1, role: 'Planner' },
-  { id: 18, firstName: 'Lily', lastName: 'Turner', assigned: 0, role: 'Mechanic' },
-  { id: 19, firstName: 'Justin', lastName: 'Tung', assigned: 1, role: 'Technician' },
-  { id: 20, firstName: 'Mia', lastName: 'Parker', assigned: 0, role: 'Supervisor' },
-])
+const personnel = reactive( [
+  { id : 1, firstName : 'John', lastName : 'Andrews', assigned : 0, role : 'Technician' },
+  { id : 2, firstName : 'Maria', lastName : 'Lopez', assigned : 1, role : 'Supervisor' },
+  { id : 3, firstName : 'James', lastName : 'Nguyen', assigned : 0, role : 'Electrician' },
+  { id : 4, firstName : 'Sara', lastName : 'Lee', assigned : 0, role : 'Technician' },
+  { id : 5, firstName : 'David', lastName : 'Patel', assigned : 0, role : 'Planner' },
+  { id : 6, firstName : 'Emily', lastName : 'Martinez', assigned : 0, role : 'Mechanic' },
+  { id : 7, firstName : 'Brian', lastName : 'Smith', assigned : 0, role : 'Technician' },
+  { id : 8, firstName : 'Olivia', lastName : 'Hernandez', assigned : 0, role : 'Electrician' },
+  { id : 9, firstName : 'Daniel', lastName : 'Kim', assigned : 0, role : 'Supervisor' },
+  { id : 10, firstName : 'Ava', lastName : 'Brown', assigned : 0, role : 'Planner' },
+  { id : 11, firstName : 'William', lastName : 'Clark', assigned : 0, role : 'Technician' },
+  { id : 12, firstName : 'Zoey', lastName : 'Duan', assigned : 1, role : 'Mechanic' },
+  { id : 13, firstName : 'Logan', lastName : 'Adams', assigned : 0, role : 'Technician' },
+  { id : 14, firstName : 'Chloe', lastName : 'Scott', assigned : 0, role : 'Electrician' },
+  { id : 15, firstName : 'Henry', lastName : 'Green', assigned : 0, role : 'Supervisor' },
+  { id : 16, firstName : 'Isabella', lastName : 'Baker', assigned : 0, role : 'Technician' },
+  { id : 17, firstName : 'Erik', lastName : 'Yu', assigned : 1, role : 'Planner' },
+  { id : 18, firstName : 'Lily', lastName : 'Turner', assigned : 0, role : 'Mechanic' },
+  { id : 19, firstName : 'Justin', lastName : 'Tung', assigned : 1, role : 'Technician' },
+  { id : 20, firstName : 'Mia', lastName : 'Parker', assigned : 0, role : 'Supervisor' }
+] )
 
-const supervisor = reactive([
-  { id: 1, firstName: 'Richard', lastName: 'Drew', assigned: 0, role: 'Supervisor' },
-  { id: 2, firstName: 'Maria', lastName: 'Lopez', assigned: 0, role: 'Supervisor' },
-  { id: 3, firstName: 'Yao', lastName: 'Li', assigned: 1, role: 'Supervisor' },
-  { id: 9, firstName: 'Daniel', lastName: 'Kim', assigned: 0, role: 'Supervisor' },
-  { id: 15, firstName: 'Henry', lastName: 'Green', assigned: 0, role: 'Supervisor' },
-  { id: 20, firstName: 'Mia', lastName: 'Parker', assigned: 0, role: 'Supervisor' },
-])
+const supervisor = reactive( [
+  { id : 1, firstName : 'Richard', lastName : 'Drew', assigned : 0, role : 'Supervisor' },
+  { id : 2, firstName : 'Maria', lastName : 'Lopez', assigned : 0, role : 'Supervisor' },
+  { id : 3, firstName : 'Yao', lastName : 'Li', assigned : 1, role : 'Supervisor' },
+  { id : 9, firstName : 'Daniel', lastName : 'Kim', assigned : 0, role : 'Supervisor' },
+  { id : 15, firstName : 'Henry', lastName : 'Green', assigned : 0, role : 'Supervisor' },
+  { id : 20, firstName : 'Mia', lastName : 'Parker', assigned : 0, role : 'Supervisor' }
+] )
 </script>
 
 <style scoped>

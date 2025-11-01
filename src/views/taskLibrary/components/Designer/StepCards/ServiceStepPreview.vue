@@ -76,44 +76,44 @@
 import { ref, watch } from 'vue'
 import { Check, Close } from '@element-plus/icons-vue'
 
-const props = defineProps({
-  step: {
-    type: Object,
-    required: true,
+const props = defineProps( {
+  step : {
+    type : Object,
+    required : true
   },
-  previewMode: {
-    type: Boolean,
-    default: true,
+  previewMode : {
+    type : Boolean,
+    default : true
   },
-  interactive: {
-    type: Boolean,
-    default: false,
-  },
-})
+  interactive : {
+    type : Boolean,
+    default : false
+  }
+} )
 
 // Reactive state for user input
-const currentQuantity = ref(props.step.config?.quantity || 1)
-const currentStatus = ref(props.step.config?.status || 'fail')
+const currentQuantity = ref( props.step.config?.quantity || 1 )
+const currentStatus = ref( props.step.config?.status || 'fail' )
 
 // Watch for prop changes to sync initial values
 watch(
   () => props.step.config?.quantity,
   newValue => {
-    if (!props.interactive) {
+    if ( !props.interactive ) {
       currentQuantity.value = newValue || 1
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
 
 watch(
   () => props.step.config?.status,
   newValue => {
-    if (!props.interactive) {
+    if ( !props.interactive ) {
       currentStatus.value = newValue || 'fail'
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
 
 const getServiceTypeTagType = serviceType => {
@@ -121,14 +121,14 @@ const getServiceTypeTagType = serviceType => {
 }
 
 const getStatusButtonType = status => {
-  if (status === currentStatus.value) {
+  if ( status === currentStatus.value ) {
     return status === 'pass' ? 'success' : 'danger'
   }
   return 'info'
 }
 
 const setStatus = status => {
-  if (props.interactive) {
+  if ( props.interactive ) {
     currentStatus.value = status
   }
 }

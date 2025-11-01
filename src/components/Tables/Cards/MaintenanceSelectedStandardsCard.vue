@@ -62,58 +62,58 @@ import { computed } from 'vue'
 import { ElMessageBox } from 'element-plus'
 import { MoreFilled, View } from '@element-plus/icons-vue'
 
-const props = defineProps({
-  template: {
-    type: Object,
-    required: true,
-  },
-})
+const props = defineProps( {
+  template : {
+    type : Object,
+    required : true
+  }
+} )
 
-const emit = defineEmits(['selection'])
+const emit = defineEmits( ['selection'] )
 
-const isStandalone = computed(() => props.template?.isStandalone === true)
+const isStandalone = computed( () => props.template?.isStandalone === true )
 
-const stepsCount = computed(() => props.template?.steps?.length || props.template?.items?.length || 0)
+const stepsCount = computed( () => props.template?.steps?.length || props.template?.items?.length || 0 )
 
-const categoryLabel = computed(() => {
+const categoryLabel = computed( () => {
   const category = props.template?.category
-  if (!category) return ''
+  if ( !category ) return ''
   // Handle both string and object formats
   return typeof category === 'object' ? category.name : category
-})
+} )
 
 const handleEdit = () => {
-  emit('selection', {
-    id: props.template.id,
-    action: 'edit',
-    data: props.template,
-  })
+  emit( 'selection', {
+    id : props.template.id,
+    action : 'edit',
+    data : props.template
+  } )
 }
 
 const handlePreview = () => {
-  emit('selection', {
-    id: props.template.id,
-    action: 'preview',
-    data: props.template,
-  })
+  emit( 'selection', {
+    id : props.template.id,
+    action : 'preview',
+    data : props.template
+  } )
 }
 
 const handleDelete = () => {
-  ElMessageBox.confirm(`Are you sure you want to delete the standard "${props.template.name}"?`, 'Confirm Delete', {
-    confirmButtonText: 'Delete',
-    cancelButtonText: 'Cancel',
-    type: 'warning',
-  })
-    .then(() => {
-      emit('selection', {
-        id: props.template.id,
-        action: 'delete',
-        data: props.template,
-      })
-    })
-    .catch(() => {
+  ElMessageBox.confirm( `Are you sure you want to delete the standard "${props.template.name}"?`, 'Confirm Delete', {
+    confirmButtonText : 'Delete',
+    cancelButtonText : 'Cancel',
+    type : 'warning'
+  } )
+    .then( () => {
+      emit( 'selection', {
+        id : props.template.id,
+        action : 'delete',
+        data : props.template
+      } )
+    } )
+    .catch( () => {
       // User cancelled - no action needed
-    })
+    } )
 }
 </script>
 

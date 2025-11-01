@@ -72,59 +72,59 @@
 import { ref, computed, watch } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 
-const props = defineProps({
-  mode: { type: String, required: true },
-  imageListUrl: { type: Array, default: () => [] },
-  fileListUrl: { type: Array, default: () => [] },
-  imageListMultipartAdded: { type: Array, default: () => [] },
-  fileListMultipartAdded: { type: Array, default: () => [] },
-  imageListUrlDeleted: { type: Array, default: () => [] },
-  fileListUrlDeleted: { type: Array, default: () => [] },
-})
+const props = defineProps( {
+  mode : { type : String, required : true },
+  imageListUrl : { type : Array, default : () => [] },
+  fileListUrl : { type : Array, default : () => [] },
+  imageListMultipartAdded : { type : Array, default : () => [] },
+  fileListMultipartAdded : { type : Array, default : () => [] },
+  imageListUrlDeleted : { type : Array, default : () => [] },
+  fileListUrlDeleted : { type : Array, default : () => [] }
+} )
 
-const emit = defineEmits([
+const emit = defineEmits( [
   'update:imageListMultipartAdded',
   'update:fileListMultipartAdded',
   'update:imageListUrlDeleted',
-  'update:fileListUrlDeleted',
-])
+  'update:fileListUrlDeleted'
+] )
 
-const imageFileList = ref([])
-const fileFileList = ref([])
-const dialogVisible = ref(false)
-const dialogImageUrl = ref('')
+const imageFileList = ref( [] )
+const fileFileList = ref( [] )
+const dialogVisible = ref( false )
+const dialogImageUrl = ref( '' )
 
 const handlePictureCardPreview = file => {
   dialogImageUrl.value = file.url
   dialogVisible.value = true
 }
 
-const handleImageChange = (file, newFileList) => {
+const handleImageChange = ( file, newFileList ) => {
   imageFileList.value = newFileList
-  const addedFiles = newFileList.map(f => f.raw).filter(f => f instanceof File)
-  emit('update:imageListMultipartAdded', addedFiles)
+  const addedFiles = newFileList.map( f => f.raw ).filter( f => f instanceof File )
+  emit( 'update:imageListMultipartAdded', addedFiles )
 }
 
-const handleFileChange = (file, newFileList) => {
+const handleFileChange = ( file, newFileList ) => {
   fileFileList.value = newFileList
-  const addedFiles = newFileList.map(f => f.raw).filter(f => f instanceof File)
-  emit('update:fileListMultipartAdded', addedFiles)
+  const addedFiles = newFileList.map( f => f.raw ).filter( f => f instanceof File )
+  emit( 'update:fileListMultipartAdded', addedFiles )
 }
 
 const handleImageRemove = file => {
-  emit('update:imageListUrlDeleted', [...props.imageListUrlDeleted, file.url])
+  emit( 'update:imageListUrlDeleted', [...props.imageListUrlDeleted, file.url] )
 }
 
 const handleFileRemove = file => {
-  emit('update:fileListUrlDeleted', [...props.fileListUrlDeleted, file.url])
+  emit( 'update:fileListUrlDeleted', [...props.fileListUrlDeleted, file.url] )
 }
 
 const getFileName = fileUrl => {
-  return fileUrl.split('/').pop()
+  return fileUrl.split( '/' ).pop()
 }
 
-const imageListUrlComputed = computed(() => props.imageListUrl)
-const fileListUrlComputed = computed(() => props.fileListUrl)
+const imageListUrlComputed = computed( () => props.imageListUrl )
+const fileListUrlComputed = computed( () => props.fileListUrl )
 
 // Add this watch block at the end of <script setup>:
 watch(
@@ -135,48 +135,48 @@ watch(
     () => props.imageListMultipartAdded,
     () => props.fileListMultipartAdded,
     () => props.imageListUrlDeleted,
-    () => props.fileListUrlDeleted,
+    () => props.fileListUrlDeleted
   ],
-  ([
+  ( [
     mode,
     imageListUrl,
     fileListUrl,
     imageListMultipartAdded,
     fileListMultipartAdded,
     imageListUrlDeleted,
-    fileListUrlDeleted,
-  ]) => {
+    fileListUrlDeleted
+  ] ) => {
     // Images and files state changed
   },
-  { deep: true, immediate: true }
+  { deep : true, immediate : true }
 )
 
 // Sync existing image URLs to imageFileList when in edit mode
 watch(
   [() => props.imageListUrl, () => props.mode],
-  ([newUrls, mode]) => {
-    if (mode === 'edit') {
-      imageFileList.value = newUrls.map(url => ({
-        name: getFileName(url),
-        url,
-      }))
+  ( [newUrls, mode] ) => {
+    if ( mode === 'edit' ) {
+      imageFileList.value = newUrls.map( url => ( {
+        name : getFileName( url ),
+        url
+      } ) )
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
 
 // Sync existing file URLs to fileFileList when in edit mode
 watch(
   [() => props.fileListUrl, () => props.mode],
-  ([newUrls, mode]) => {
-    if (mode === 'edit') {
-      fileFileList.value = newUrls.map(url => ({
-        name: getFileName(url),
-        url,
-      }))
+  ( [newUrls, mode] ) => {
+    if ( mode === 'edit' ) {
+      fileFileList.value = newUrls.map( url => ( {
+        name : getFileName( url ),
+        url
+      } ) )
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
 </script>
 

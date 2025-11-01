@@ -90,44 +90,44 @@ import AddEquipment from './components/AddEquipment.vue'
 import EditEquipment from './components/EditEquipment.vue'
 import DeactivateNode from '../common/DeactivateNode.vue'
 
-const props = defineProps({
-  node: {
-    type: Object,
-    required: true,
+const props = defineProps( {
+  node : {
+    type : Object,
+    required : true
   },
-  breadcrumb: {
-    type: Array,
-    default: () => [],
-  },
-})
+  breadcrumb : {
+    type : Array,
+    default : () => []
+  }
+} )
 
-const emit = defineEmits(['refresh-tree', 'refresh-data', 'after-delete', 'request-select-node'])
+const emit = defineEmits( ['refresh-tree', 'refresh-data', 'after-delete', 'request-select-node'] )
 
-const parentId = computed(() => {
-  const validBreadcrumbItems = props.breadcrumb.filter((item, index) => {
+const parentId = computed( () => {
+  const validBreadcrumbItems = props.breadcrumb.filter( ( item, index ) => {
     return index > 0 && item && typeof item === 'object' && 'id' in item
-  })
+  } )
 
-  if (validBreadcrumbItems.length >= 2) {
+  if ( validBreadcrumbItems.length >= 2 ) {
     return validBreadcrumbItems[validBreadcrumbItems.length - 2].id
   }
 
   return null
-})
+} )
 
-function handleBreadcrumbClick(item, index) {
-  emit('request-select-node', Number(item.id))
+function handleBreadcrumbClick( item, index ) {
+  emit( 'request-select-node', Number( item.id ) )
 }
 
-const activeTab = ref('details')
-const showAddDialog = ref(false)
-const showEditDialog = ref(false)
-const showDeactivateDialog = ref(false)
-const refreshKey = ref(0)
-const editDialogKey = ref(0)
+const activeTab = ref( 'details' )
+const showAddDialog = ref( false )
+const showEditDialog = ref( false )
+const showDeactivateDialog = ref( false )
+const refreshKey = ref( 0 )
+const editDialogKey = ref( 0 )
 
-console.log(props.node.id)
-console.log(props.breadcrumb)
+console.log( props.node.id )
+console.log( props.breadcrumb )
 
 const closeAddDialog = () => {
   showAddDialog.value = false
@@ -156,39 +156,39 @@ const handleCloseDialog = done => {
 
 const handleAddSuccess = newEquipment => {
   closeAddDialog()
-  emit('refresh-tree')
+  emit( 'refresh-tree' )
 }
 
 const handleEditSuccess = updatedEquipment => {
   closeEditDialog()
-  emit('refresh-tree')
+  emit( 'refresh-tree' )
 
-  setTimeout(() => {
+  setTimeout( () => {
     refreshViewData()
-  }, 100)
+  }, 100 )
 }
 
 const refreshViewData = () => {
   refreshKey.value += 1
-  emit('refresh-data', props.node.id)
+  emit( 'refresh-data', props.node.id )
 }
 
 const handleDeleteSuccess = deletedEquipmentId => {
   closeDeactivateDialog()
-  emit('refresh-tree')
-  emit('after-delete', { parentId: parentId.value, deletedId: deletedEquipmentId })
+  emit( 'refresh-tree' )
+  emit( 'after-delete', { parentId : parentId.value, deletedId : deletedEquipmentId } )
 }
 
 const handleRefreshTree = () => {
-  emit('refresh-tree')
+  emit( 'refresh-tree' )
 }
 
-function onSubItemSelect(id) {
+function onSubItemSelect( id ) {
   // bubble up so the parent can navigate to Tier 4
-  emit('request-select-node', Number(id))
+  emit( 'request-select-node', Number( id ) )
 }
 
-defineExpose({ openDeactivateDialog })
+defineExpose( { openDeactivateDialog } )
 </script>
 
 <style scoped>

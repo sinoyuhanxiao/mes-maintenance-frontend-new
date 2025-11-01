@@ -104,28 +104,28 @@ import AddEquipmentGroup from './components/AddEquipmentGroup.vue'
 import EditEquipmentGroup from './components/EditEquipmentGroup.vue'
 import DeactivateNode from '../common/DeactivateNode.vue'
 
-const props = defineProps({
-  node: { type: Object, required: true },
-  breadcrumb: { type: Array, default: () => [] },
-})
+const props = defineProps( {
+  node : { type : Object, required : true },
+  breadcrumb : { type : Array, default : () => [] }
+} )
 
-const emit = defineEmits(['refresh-tree', 'refresh-data', 'after-delete', 'request-select-node'])
+const emit = defineEmits( ['refresh-tree', 'refresh-data', 'after-delete', 'request-select-node'] )
 
-const parentId = computed(() => {
-  const valid = props.breadcrumb.filter((item, index) => index > 0 && item && typeof item === 'object' && 'id' in item)
+const parentId = computed( () => {
+  const valid = props.breadcrumb.filter( ( item, index ) => index > 0 && item && typeof item === 'object' && 'id' in item )
   return valid.length >= 2 ? valid[valid.length - 2].id : null
-})
+} )
 
-const activeTab = ref('details')
-const showAddDialog = ref(false)
-const showEditDialog = ref(false)
-const showDeactivateDialog = ref(false)
-const refreshKey = ref(0)
-const editDialogKey = ref(0)
+const activeTab = ref( 'details' )
+const showAddDialog = ref( false )
+const showEditDialog = ref( false )
+const showDeactivateDialog = ref( false )
+const refreshKey = ref( 0 )
+const editDialogKey = ref( 0 )
 
 /* ---- Breadcrumb click (same behavior as T3) ---- */
-function handleBreadcrumbClick(item, index) {
-  emit('request-select-node', Number(item.id))
+function handleBreadcrumbClick( item, index ) {
+  emit( 'request-select-node', Number( item.id ) )
 }
 
 const closeAddDialog = () => {
@@ -133,7 +133,7 @@ const closeAddDialog = () => {
 }
 const handleAddSuccess = () => {
   closeAddDialog()
-  emit('refresh-tree')
+  emit( 'refresh-tree' )
 }
 
 /* ---- Edit ---- */
@@ -146,10 +146,10 @@ const closeEditDialog = () => {
 }
 const handleEditSuccess = () => {
   closeEditDialog()
-  emit('refresh-tree')
-  setTimeout(() => {
+  emit( 'refresh-tree' )
+  setTimeout( () => {
     refreshViewData()
-  }, 100)
+  }, 100 )
 }
 
 /* ---- Delete ---- */
@@ -161,8 +161,8 @@ const closeDeactivateDialog = () => {
 }
 const handleDeleteSuccess = () => {
   closeDeactivateDialog()
-  emit('refresh-tree')
-  emit('after-delete', { parentId: parentId.value, deletedId: props.node.id })
+  emit( 'refresh-tree' )
+  emit( 'after-delete', { parentId : parentId.value, deletedId : props.node.id } )
 }
 
 /* ---- Misc ---- */
@@ -171,19 +171,19 @@ const handleCloseDialog = done => {
 }
 const refreshViewData = () => {
   refreshKey.value += 1
-  emit('refresh-data', props.node.id)
+  emit( 'refresh-data', props.node.id )
 }
 const handleRefreshTree = () => {
-  emit('refresh-tree')
+  emit( 'refresh-tree' )
 }
 
 /* Re-emit up to the container that owns <EquipmentTree> */
-function handleSelectFromCard(id) {
-  emit('request-select-node', Number(id))
+function handleSelectFromCard( id ) {
+  emit( 'request-select-node', Number( id ) )
 }
 
 /* Expose opener so parent can trigger Delete dialog */
-defineExpose({ openDeactivateDialog })
+defineExpose( { openDeactivateDialog } )
 </script>
 
 <style scoped>

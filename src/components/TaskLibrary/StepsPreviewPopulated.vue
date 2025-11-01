@@ -109,63 +109,63 @@ import TextStepPreview from '@/views/taskLibrary/components/Designer/StepCards/T
 import AttachmentStepPreview from '@/views/taskLibrary/components/Designer/StepCards/AttachmentStepPreview.vue'
 import ServiceStepPreview from '@/views/taskLibrary/components/Designer/StepCards/ServiceStepPreview.vue'
 
-const props = defineProps({
-  steps: {
-    type: Array,
-    default: () => [],
-  },
-})
+const props = defineProps( {
+  steps : {
+    type : Array,
+    default : () => []
+  }
+} )
 
 // Local state
-const loading = ref(false)
-const error = ref(false)
-const stepSearchQuery = ref('')
+const loading = ref( false )
+const error = ref( false )
+const stepSearchQuery = ref( '' )
 
 // Helper function to extract and clean filename from URL
 const removeTimestampFromFilename = filename => {
-  if (!filename || typeof filename !== 'string') return filename
+  if ( !filename || typeof filename !== 'string' ) return filename
   // Remove timestamp suffix pattern: -20251021180840125 (dash followed by 17 digits)
-  return filename.replace(/-\d{17}(\.[^.]+)$/, '$1')
+  return filename.replace( /-\d{17}(\.[^.]+)$/, '$1' )
 }
 
 const extractFilenameFromUrl = url => {
-  if (!url || typeof url !== 'string') return 'file'
+  if ( !url || typeof url !== 'string' ) return 'file'
   try {
-    const parts = url.split('/')
+    const parts = url.split( '/' )
     const lastPart = parts[parts.length - 1]
-    let filename = decodeURIComponent(lastPart)
-    filename = removeTimestampFromFilename(filename)
+    let filename = decodeURIComponent( lastPart )
+    filename = removeTimestampFromFilename( filename )
     return filename
-  } catch (error) {
+  } catch ( error ) {
     return 'file'
   }
 }
 
 // Map backend step value types to preview component types
 const mapValueTypeToPreviewType = valueType => {
-  const normalized = (valueType || '').toString().toLowerCase()
+  const normalized = ( valueType || '' ).toString().toLowerCase()
 
-  if (normalized.includes('numeric') || normalized === 'number') {
+  if ( normalized.includes( 'numeric' ) || normalized === 'number' ) {
     return 'number'
   }
 
-  if (normalized.includes('boolean') || normalized.includes('checkbox')) {
+  if ( normalized.includes( 'boolean' ) || normalized.includes( 'checkbox' ) ) {
     return 'checkbox'
   }
 
-  if (normalized.includes('inspection')) {
+  if ( normalized.includes( 'inspection' ) ) {
     return 'inspection'
   }
 
-  if (normalized.includes('file') || normalized.includes('attachment')) {
+  if ( normalized.includes( 'file' ) || normalized.includes( 'attachment' ) ) {
     return 'attachments'
   }
 
-  if (normalized.includes('service')) {
+  if ( normalized.includes( 'service' ) ) {
     return 'service'
   }
 
-  if (normalized.includes('text')) {
+  if ( normalized.includes( 'text' ) ) {
     return 'text'
   }
 
@@ -173,160 +173,160 @@ const mapValueTypeToPreviewType = valueType => {
 }
 
 // Process populated steps from task log data
-const processPopulatedStep = (s, idx) => {
-  if (!s || typeof s !== 'object') {
+const processPopulatedStep = ( s, idx ) => {
+  if ( !s || typeof s !== 'object' ) {
     return {
-      step_id: `step-${idx}`,
-      order: idx + 1,
-      type: 'text',
-      label: `Step ${idx + 1}`,
-      description: '',
-      required: false,
-      config: {},
-      completed_by: null,
-      completed_at: null,
-      uploaded_images: [],
-      relevant_tools: [],
+      step_id : `step-${idx}`,
+      order : idx + 1,
+      type : 'text',
+      label : `Step ${idx + 1}`,
+      description : '',
+      required : false,
+      config : {},
+      completed_by : null,
+      completed_at : null,
+      uploaded_images : [],
+      relevant_tools : []
     }
   }
 
   // Extract value data from step
   const v = s.value || {}
-  const type = mapValueTypeToPreviewType(v.type)
-  const tools = Array.isArray(s.tools) && s.tools.length > 0 ? s.tools : s.relevant_tools || []
+  const type = mapValueTypeToPreviewType( v.type )
+  const tools = Array.isArray( s.tools ) && s.tools.length > 0 ? s.tools : s.relevant_tools || []
 
   // Extract uploaded images and files separately
   const uploadedImages = []
   const uploadedFiles = []
 
-  if (v.image && Array.isArray(v.image)) {
-    uploadedImages.push(...v.image)
+  if ( v.image && Array.isArray( v.image ) ) {
+    uploadedImages.push( ...v.image )
   }
-  if (v.file && Array.isArray(v.file)) {
-    uploadedFiles.push(...v.file)
+  if ( v.file && Array.isArray( v.file ) ) {
+    uploadedFiles.push( ...v.file )
   }
 
   const base = {
-    step_id: s.id || s.step_id || `step-${idx}`,
-    order: idx + 1,
+    step_id : s.id || s.step_id || `step-${idx}`,
+    order : idx + 1,
     type,
-    label: s.name || s.label || `Step ${idx + 1}`,
-    description: s.description || '',
-    required: Boolean(s.required),
-    completed_by: s.completed_by,
-    completed_at: s.completed_at,
-    uploaded_images: uploadedImages,
-    uploaded_files: uploadedFiles,
-    relevant_tools: tools
-      .filter(t => t && (t.id || t.tool_id))
-      .map(t => ({
-        tool_id: t.id || t.tool_id,
-        name: t.name || t.tool_name || 'Unnamed Tool',
-      })),
-    config: {},
+    label : s.name || s.label || `Step ${idx + 1}`,
+    description : s.description || '',
+    required : Boolean( s.required ),
+    completed_by : s.completed_by,
+    completed_at : s.completed_at,
+    uploaded_images : uploadedImages,
+    uploaded_files : uploadedFiles,
+    relevant_tools : tools
+      .filter( t => t && ( t.id || t.tool_id ) )
+      .map( t => ( {
+        tool_id : t.id || t.tool_id,
+        name : t.name || t.tool_name || 'Unnamed Tool'
+      } ) ),
+    config : {}
   }
 
   // Build config with actual values from the task
-  if (type === 'number') {
+  if ( type === 'number' ) {
     const numericBounds = v.numeric_limit_bounds || v.numericLimitBounds || {}
     base.config = {
-      default: typeof v.value === 'number' ? v.value : 0,
-      default_value: typeof v.value === 'number' ? v.value : 0,
-      limits: {
-        lower_limit_inclusive: numericBounds.lower_limit_inclusive,
-        lower_limit_exclusive: numericBounds.lower_limit_exclusive,
-        upper_limit_inclusive: numericBounds.upper_limit_inclusive,
-        upper_limit_exclusive: numericBounds.upper_limit_exclusive,
-        equal_to: numericBounds.equal_to,
-      },
+      default : typeof v.value === 'number' ? v.value : 0,
+      default_value : typeof v.value === 'number' ? v.value : 0,
+      limits : {
+        lower_limit_inclusive : numericBounds.lower_limit_inclusive,
+        lower_limit_exclusive : numericBounds.lower_limit_exclusive,
+        upper_limit_inclusive : numericBounds.upper_limit_inclusive,
+        upper_limit_exclusive : numericBounds.upper_limit_exclusive,
+        equal_to : numericBounds.equal_to
+      }
     }
-  } else if (type === 'checkbox') {
+  } else if ( type === 'checkbox' ) {
     base.config = {
-      default: Boolean(v.value),
+      default : Boolean( v.value )
     }
-  } else if (type === 'text') {
-    console.log('[StepsPreviewPopulated] Processing text step:', s.name || s.label)
-    console.log('[StepsPreviewPopulated] Value object v:', v)
-    console.log('[StepsPreviewPopulated] v.value:', v.value)
+  } else if ( type === 'text' ) {
+    console.log( '[StepsPreviewPopulated] Processing text step:', s.name || s.label )
+    console.log( '[StepsPreviewPopulated] Value object v:', v )
+    console.log( '[StepsPreviewPopulated] v.value:', v.value )
     base.config = {
-      default: v.value ?? '',
-      default_value: v.value ?? '',
+      default : v.value ?? '',
+      default_value : v.value ?? ''
     }
-    console.log('[StepsPreviewPopulated] Created config:', base.config)
-  } else if (type === 'inspection') {
+    console.log( '[StepsPreviewPopulated] Created config:', base.config )
+  } else if ( type === 'inspection' ) {
     // For inspection, show the actual result (pass/fail) and remarks
     const result = v.value === true ? 'pass' : v.value === false ? 'fail' : 'pass'
     base.config = {
-      default: result,
+      default : result,
       result,
-      remarks: v.remarks || '',
+      remarks : v.remarks || ''
     }
     // Note: remarks are now displayed by InspectionStepPreview component, not in description
-  } else if (type === 'attachments') {
+  } else if ( type === 'attachments' ) {
     base.config = {
-      upload_style: { list_type: 'picture-card' },
-      files: uploadedFiles,
+      upload_style : { list_type : 'picture-card' },
+      files : uploadedFiles
     }
   }
 
   return base
 }
 
-const previewSteps = computed(() => {
-  return (props.steps || []).map((s, idx) => processPopulatedStep(s, idx))
-})
+const previewSteps = computed( () => {
+  return ( props.steps || [] ).map( ( s, idx ) => processPopulatedStep( s, idx ) )
+} )
 
-const filteredPreviewSteps = computed(() => {
-  if (!stepSearchQuery.value) {
+const filteredPreviewSteps = computed( () => {
+  if ( !stepSearchQuery.value ) {
     return previewSteps.value
   }
   const query = stepSearchQuery.value.toLowerCase()
-  return previewSteps.value.filter(step => step.label.toLowerCase().includes(query))
-})
+  return previewSteps.value.filter( step => step.label.toLowerCase().includes( query ) )
+} )
 
 // Desktop preview helpers
 const getStepComponent = stepType => {
   const components = {
-    inspection: InspectionStepPreview,
-    checkbox: CheckboxStepPreview,
-    number: NumberStepPreview,
-    text: TextStepPreview,
-    files: AttachmentStepPreview,
-    attachments: AttachmentStepPreview,
-    service: ServiceStepPreview,
+    inspection : InspectionStepPreview,
+    checkbox : CheckboxStepPreview,
+    number : NumberStepPreview,
+    text : TextStepPreview,
+    files : AttachmentStepPreview,
+    attachments : AttachmentStepPreview,
+    service : ServiceStepPreview
   }
   return components[stepType] || 'div'
 }
 
-const getStepWithNumber = (step, index) => {
-  if (!step || typeof step !== 'object') {
+const getStepWithNumber = ( step, index ) => {
+  if ( !step || typeof step !== 'object' ) {
     return {
-      step_id: `step-${index}`,
-      type: 'text',
-      label: `${index + 1}. Step`,
-      description: '',
-      required: false,
-      config: {},
+      step_id : `step-${index}`,
+      type : 'text',
+      label : `${index + 1}. Step`,
+      description : '',
+      required : false,
+      config : {}
     }
   }
   return {
     ...step,
-    label: `${index + 1}. ${step.label || 'Step'}`,
+    label : `${index + 1}. ${step.label || 'Step'}`
   }
 }
 
 const formatTimestamp = timestamp => {
-  if (!timestamp) return '-'
-  return convertToLocalTime(timestamp)
+  if ( !timestamp ) return '-'
+  return convertToLocalTime( timestamp )
 }
 
 const handleStepSearch = () => {
   // The computed property `filteredPreviewSteps` will automatically update.
 }
 
-defineOptions({
-  name: 'StepsPreviewPopulated',
-})
+defineOptions( {
+  name : 'StepsPreviewPopulated'
+} )
 </script>
 
 <style scoped>

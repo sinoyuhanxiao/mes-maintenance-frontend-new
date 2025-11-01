@@ -24,41 +24,41 @@
 import { ref, watch } from 'vue'
 import { Upload } from '@element-plus/icons-vue'
 
-const props = defineProps({
-  step: {
-    type: Object,
-    required: true,
+const props = defineProps( {
+  step : {
+    type : Object,
+    required : true
   },
-  modelValue: {
-    type: Array,
-    default: () => [],
+  modelValue : {
+    type : Array,
+    default : () => []
   },
-  disabled: {
-    type: Boolean,
-    default: false,
-  },
-})
+  disabled : {
+    type : Boolean,
+    default : false
+  }
+} )
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits( ['update:modelValue'] )
 
-const fileList = ref([])
+const fileList = ref( [] )
 
 watch(
   () => props.modelValue,
   newValue => {
-    fileList.value = Array.isArray(newValue) ? newValue : []
+    fileList.value = Array.isArray( newValue ) ? newValue : []
   },
-  { immediate: true }
+  { immediate : true }
 )
 
-const handleFileChange = (file, fileListUpdated) => {
+const handleFileChange = ( file, fileListUpdated ) => {
   fileList.value = fileListUpdated
-  emit('update:modelValue', fileList.value)
+  emit( 'update:modelValue', fileList.value )
 }
 
-const handleFileRemove = (file, fileListUpdated) => {
+const handleFileRemove = ( file, fileListUpdated ) => {
   fileList.value = fileListUpdated
-  emit('update:modelValue', fileList.value)
+  emit( 'update:modelValue', fileList.value )
 }
 </script>
 

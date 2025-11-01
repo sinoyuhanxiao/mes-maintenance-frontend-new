@@ -174,39 +174,39 @@ import StatusTag from '../Display/StatusTag.vue'
 import WorkOrderActions from '../Actions/WorkOrderActions.vue'
 
 // Props
-const props = defineProps({
-  data: {
-    type: Array,
-    default: () => [],
+const props = defineProps( {
+  data : {
+    type : Array,
+    default : () => []
   },
-  loading: {
-    type: Boolean,
-    default: false,
+  loading : {
+    type : Boolean,
+    default : false
   },
-  expandedRows: {
-    type: Set,
-    default: () => new Set(),
+  expandedRows : {
+    type : Set,
+    default : () => new Set()
   },
-  loadChildren: {
-    type: Function,
-    required: true,
+  loadChildren : {
+    type : Function,
+    required : true
   },
-  recurrenceViewMode: {
-    type: Boolean,
-    default: false,
-  },
-})
+  recurrenceViewMode : {
+    type : Boolean,
+    default : false
+  }
+} )
 
 // Emits
-const emit = defineEmits(['expand-change', 'view', 'edit', 'delete', 'view-recurrence'])
+const emit = defineEmits( ['expand-change', 'view', 'edit', 'delete', 'view-recurrence'] )
 
 // State
-const tableHeight = ref(300)
-const rootEl = ref(null)
+const tableHeight = ref( 300 )
+const rootEl = ref( null )
 
 // Computed
-const getRowClass = ({ row }) => {
-  return props.expandedRows.has(row.id) ? 'expanded-highlight' : ''
+const getRowClass = ( { row } ) => {
+  return props.expandedRows.has( row.id ) ? 'expanded-highlight' : ''
 }
 
 // Methods
@@ -215,28 +215,28 @@ let roTagsView = null
 let roHeader = null
 let roFooter = null
 
-const safeOffsetHeight = el => (el && el.offsetHeight) || 0
+const safeOffsetHeight = el => ( el && el.offsetHeight ) || 0
 
 const calcTableHeight = () => {
   try {
     let h = window.innerHeight
-    const navbar = document.querySelector('.main-container .fixed-header .navbar')
-    const tagsViewView = document.querySelector('.main-container .fixed-header .tags-view-wrapper .el-scrollbar__view')
-    const layout = rootEl.value ? rootEl.value.closest('.mes-layout') : null
-    const header = layout ? layout.querySelector(':scope > .header') : null
-    const footer = layout ? layout.querySelector(':scope > .footer') : null
+    const navbar = document.querySelector( '.main-container .fixed-header .navbar' )
+    const tagsViewView = document.querySelector( '.main-container .fixed-header .tags-view-wrapper .el-scrollbar__view' )
+    const layout = rootEl.value ? rootEl.value.closest( '.mes-layout' ) : null
+    const header = layout ? layout.querySelector( ':scope > .header' ) : null
+    const footer = layout ? layout.querySelector( ':scope > .footer' ) : null
 
-    h -= safeOffsetHeight(navbar)
-    h -= safeOffsetHeight(tagsViewView)
-    h -= safeOffsetHeight(header)
-    h -= safeOffsetHeight(footer)
+    h -= safeOffsetHeight( navbar )
+    h -= safeOffsetHeight( tagsViewView )
+    h -= safeOffsetHeight( header )
+    h -= safeOffsetHeight( footer )
     h -= 20
 
     // Minimum sensible height to prevent collapse
-    tableHeight.value = Math.max(h, 160)
-  } catch (e) {
+    tableHeight.value = Math.max( h, 160 )
+  } catch ( e ) {
     // Fallback if any selector breaks
-    tableHeight.value = Math.max(window.innerHeight - 320, 160)
+    tableHeight.value = Math.max( window.innerHeight - 320, 160 )
   }
 }
 
@@ -244,75 +244,75 @@ const updateTableHeight = () => {
   calcTableHeight()
 }
 
-const onExpandChange = (row, expanded) => {
-  emit('expand-change', row, expanded)
+const onExpandChange = ( row, expanded ) => {
+  emit( 'expand-change', row, expanded )
 }
 
 const formatDateTime = dateString => {
-  return dateString ? convertToLocalTime(dateString) : '-'
+  return dateString ? convertToLocalTime( dateString ) : '-'
 }
 
 const isOverdue = dueDate => {
-  return dueDate && new Date(dueDate) < new Date()
+  return dueDate && new Date( dueDate ) < new Date()
 }
 
 const handleRecurrenceClick = row => {
-  if (props.recurrenceViewMode || !row.recurrence_uuid || row.recurrence_type?.id === 1) {
+  if ( props.recurrenceViewMode || !row.recurrence_uuid || row.recurrence_type?.id === 1 ) {
     return
   }
-  emit('view-recurrence', row.recurrence_uuid)
+  emit( 'view-recurrence', row.recurrence_uuid )
 }
 
 // Lifecycle
-onMounted(async () => {
+onMounted( async() => {
   await nextTick()
   // Initial calculation after DOM paints
   calcTableHeight()
 
   // Recalculate on window resize
-  window.addEventListener('resize', updateTableHeight)
+  window.addEventListener( 'resize', updateTableHeight )
 
   // Observe dynamic height changes in relevant containers
-  if ('ResizeObserver' in window) {
-    const layout = rootEl.value ? rootEl.value.closest('.mes-layout') : null
-    const navbar = document.querySelector('.main-container .fixed-header .navbar')
-    const tagsViewView = document.querySelector('.main-container .fixed-header .tags-view-wrapper .el-scrollbar__view')
-    const header = layout ? layout.querySelector(':scope > .header') : null
-    const footer = layout ? layout.querySelector(':scope > .footer') : null
+  if ( 'ResizeObserver' in window ) {
+    const layout = rootEl.value ? rootEl.value.closest( '.mes-layout' ) : null
+    const navbar = document.querySelector( '.main-container .fixed-header .navbar' )
+    const tagsViewView = document.querySelector( '.main-container .fixed-header .tags-view-wrapper .el-scrollbar__view' )
+    const header = layout ? layout.querySelector( ':scope > .header' ) : null
+    const footer = layout ? layout.querySelector( ':scope > .footer' ) : null
 
-    const makeRO = () => new ResizeObserver(() => calcTableHeight())
+    const makeRO = () => new ResizeObserver( () => calcTableHeight() )
 
-    if (navbar) {
+    if ( navbar ) {
       roNavbar = makeRO()
-      roNavbar.observe(navbar)
+      roNavbar.observe( navbar )
     }
-    if (tagsViewView) {
+    if ( tagsViewView ) {
       roTagsView = makeRO()
-      roTagsView.observe(tagsViewView)
+      roTagsView.observe( tagsViewView )
     }
-    if (header) {
+    if ( header ) {
       roHeader = makeRO()
-      roHeader.observe(header)
+      roHeader.observe( header )
     }
-    if (footer) {
+    if ( footer ) {
       roFooter = makeRO()
-      roFooter.observe(footer)
+      roFooter.observe( footer )
     }
   }
-})
+} )
 
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', updateTableHeight)
+onBeforeUnmount( () => {
+  window.removeEventListener( 'resize', updateTableHeight )
   // Disconnect observers
-  if (roNavbar) roNavbar.disconnect()
-  if (roTagsView) roTagsView.disconnect()
-  if (roHeader) roHeader.disconnect()
-  if (roFooter) roFooter.disconnect()
-})
+  if ( roNavbar ) roNavbar.disconnect()
+  if ( roTagsView ) roTagsView.disconnect()
+  if ( roHeader ) roHeader.disconnect()
+  if ( roFooter ) roFooter.disconnect()
+} )
 
-defineOptions({
-  name: 'WorkOrderTable',
-})
+defineOptions( {
+  name : 'WorkOrderTable'
+} )
 </script>
 
 <style scoped lang="scss">

@@ -76,21 +76,21 @@ import { getAllToolClasses } from '@/api/resources'
 import FileUploadMultiple from '../../../../components/FileUpload/FileUploadMultiple.vue'
 import { uploadMultipleToMinio } from '@/api/minio'
 
-const emit = defineEmits(['createTool', 'cancel', 'close'])
-const formRef = ref(null)
-const labelPosition = ref('top')
+const emit = defineEmits( ['createTool', 'cancel', 'close'] )
+const formRef = ref( null )
+const labelPosition = ref( 'top' )
 
-const toolClasses = ref([])
+const toolClasses = ref( [] )
 
-const inputData = ref({
-  id: null,
-  name: '',
-  description: '',
-  tool_class_id: null,
-  code: '',
-  manufacturer: '',
-  image_list: [], // can contain existing URLs or new UploadFile objects
-})
+const inputData = ref( {
+  id : null,
+  name : '',
+  description : '',
+  tool_class_id : null,
+  code : '',
+  manufacturer : '',
+  image_list : [] // can contain existing URLs or new UploadFile objects
+} )
 
 async function getToolClasses() {
   try {
@@ -102,37 +102,37 @@ async function getToolClasses() {
 }
 getToolClasses()
 
-const rules = reactive({
-  name: [{ required: true, message: 'Please input Tool Name', trigger: 'blur' }],
-  code: [{ required: true, message: 'Please input Tool Code', trigger: 'blur' }],
-  tool_class_id: [{ required: true, message: 'Please select Tool Class', trigger: 'change' }],
-})
+const rules = reactive( {
+  name : [{ required : true, message : 'Please input Tool Name', trigger : 'blur' }],
+  code : [{ required : true, message : 'Please input Tool Code', trigger : 'blur' }],
+  tool_class_id : [{ required : true, message : 'Please select Tool Class', trigger : 'change' }]
+} )
 
 /** Element Plus UploadFile -> real File[] */
 const toRealFiles = arr =>
-  Array.isArray(arr)
-    ? arr.map(x => (x instanceof File ? x : x?.raw instanceof File ? x.raw : null)).filter(Boolean)
+  Array.isArray( arr )
+    ? arr.map( x => ( x instanceof File ? x : x?.raw instanceof File ? x.raw : null ) ).filter( Boolean )
     : []
 
 /** normalize various API response shapes to URLs */
 const extractUploadedUrls = resp => {
   const list = resp?.uploadedFiles ?? resp?.data?.uploadedFiles ?? resp?.data?.data?.uploadedFiles ?? resp?.files ?? []
-  return (Array.isArray(list) ? list : []).map(f => f?.url || f?.fileUrl || f?.location || f?.path).filter(Boolean)
+  return ( Array.isArray( list ) ? list : [] ).map( f => f?.url || f?.fileUrl || f?.location || f?.path ).filter( Boolean )
 }
 
 const handleImageListUpdate = images => {
   // Keep whatever the child gives (URLs or UploadFile objects)
-  inputData.value.image_list = Array.isArray(images) ? images : []
+  inputData.value.image_list = Array.isArray( images ) ? images : []
 }
 
-const uploadFilesToServer = async () => {
+const uploadFilesToServer = async() => {
   // Split into existing URLs + new Files
-  const urlsKept = (inputData.value.image_list || []).filter(x => typeof x === 'string')
-  const newFiles = toRealFiles(inputData.value.image_list)
+  const urlsKept = ( inputData.value.image_list || [] ).filter( x => typeof x === 'string' )
+  const newFiles = toRealFiles( inputData.value.image_list )
 
-  if (newFiles.length) {
-    const imageRes = await uploadMultipleToMinio(newFiles)
-    const uploadedUrls = extractUploadedUrls(imageRes)
+  if ( newFiles.length ) {
+    const imageRes = await uploadMultipleToMinio( newFiles )
+    const uploadedUrls = extractUploadedUrls( imageRes )
     inputData.value.image_list = [...urlsKept, ...uploadedUrls]
   } else {
     // Only existing URLs; keep as is
@@ -140,38 +140,38 @@ const uploadFilesToServer = async () => {
   }
 }
 
-const createTool = async () => {
-  if (!formRef.value) return
-  await formRef.value.validate(async valid => {
-    if (!valid) return
+const createTool = async() => {
+  if ( !formRef.value ) return
+  await formRef.value.validate( async valid => {
+    if ( !valid ) return
 
     // 1) upload new files (if any) -> image_list becomes URLs
     await uploadFilesToServer()
 
     // 2) emit a clean payload (URLs only for images)
-    emit('createTool', { ...inputData.value })
+    emit( 'createTool', { ...inputData.value } )
 
     // 3) reset + close
     resetForm()
-    emit('close')
-  })
+    emit( 'close' )
+  } )
 }
 
 const handleCancel = () => {
-  emit('cancel')
-  emit('close')
+  emit( 'cancel' )
+  emit( 'close' )
 }
 
 const resetForm = () => {
-  if (formRef.value) formRef.value.resetFields()
+  if ( formRef.value ) formRef.value.resetFields()
   inputData.value = {
-    id: null,
-    name: '',
-    description: '',
-    tool_class_id: null,
-    code: '',
-    manufacturer: '',
-    image_list: [],
+    id : null,
+    name : '',
+    description : '',
+    tool_class_id : null,
+    code : '',
+    manufacturer : '',
+    image_list : []
   }
 }
 </script>

@@ -15,7 +15,8 @@
             <el-text type="info" size="small">{{ wo.state?.name }}</el-text>
           </div>
           <div>
-            <el-text size="small" :style="{ color: wo.priority?.id === 1 ? 'red' : '' }"
+            <el-text size="small"
+:style="{ color: wo.priority?.id === 1 ? 'red' : '' }"
               ><i
                 class="fa-solid fa-circle-dot"
                 style="font-size: 8px; margin-right: 2px; vertical-align: middle; margin-bottom: 3px"
@@ -39,27 +40,27 @@ import router from '../../../router/index'
 import { convertToLocalTime } from '../../../utils/datetime'
 import RecurrenceTag from '@/components/WorkOrder/Display/RecurrenceTag.vue'
 
-const woData = defineProps({
-  wo: Object,
-  module: Number,
-})
+const woData = defineProps( {
+  wo : Object,
+  module : Number
+} )
 
-const fontSize = ref('14px')
+const fontSize = ref( '14px' )
 
-const emit = defineEmits(['requestData'])
+const emit = defineEmits( ['requestData'] )
 
-onMounted(() => {
-  if (window.innerWidth > 1600) {
+onMounted( () => {
+  if ( window.innerWidth > 1600 ) {
     fontSize.value = '20px'
   }
-})
+} )
 
 function handleSelectedWorkorder() {
-  if (woData.module === 2) {
-    emit('requestData', woData.wo)
+  if ( woData.module === 2 ) {
+    emit( 'requestData', woData.wo )
   } else {
-    console.log(woData.wo.id)
-    router.push({ name: 'ViewWorkOrder', params: { id: woData.wo.id } })
+    console.log( woData.wo.id )
+    router.push( { name : 'ViewWorkOrder', params : { id : woData.wo.id }} )
   }
 }
 </script>

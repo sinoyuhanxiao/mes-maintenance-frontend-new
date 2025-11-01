@@ -28,40 +28,40 @@ import { InfoFilled } from '@element-plus/icons-vue'
 import { formatLimitsText } from 'src/views/taskLibrary/utils/stepTransforms'
 
 // eslint-disable-next-line no-unused-vars
-const emit = defineEmits(['value-change', 'update:modelValue'])
+const emit = defineEmits( ['value-change', 'update:modelValue'] )
 
-const props = defineProps({
-  step: {
-    type: Object,
-    required: true,
+const props = defineProps( {
+  step : {
+    type : Object,
+    required : true
   },
-  previewMode: {
-    type: Boolean,
-    default: true,
+  previewMode : {
+    type : Boolean,
+    default : true
   },
-  interactive: {
-    type: Boolean,
-    default: false,
+  interactive : {
+    type : Boolean,
+    default : false
   },
-  modelValue: {
-    type: [Number, String, null],
-    default: null,
-  },
-})
+  modelValue : {
+    type : [Number, String, null],
+    default : null
+  }
+} )
 
 // Reactive state for user input
-const currentValue = ref(props.step.config?.default || 0)
+const currentValue = ref( props.step.config?.default || 0 )
 
 // Watch for prop changes to sync initial values
 watch(
   () => props.modelValue,
   newValue => {
-    if (newValue === null || newValue === undefined || newValue === '') {
+    if ( newValue === null || newValue === undefined || newValue === '' ) {
       const fallback = props.step.config?.default ?? props.step.config?.default_value
       currentValue.value = fallback !== undefined ? fallback : 0
     } else {
-      const numeric = Number(newValue)
-      if (Number.isFinite(numeric)) {
+      const numeric = Number( newValue )
+      if ( Number.isFinite( numeric ) ) {
         currentValue.value = numeric
       } else {
         const fallback = props.step.config?.default ?? props.step.config?.default_value
@@ -69,37 +69,37 @@ watch(
       }
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
 
 // Watch for step.config changes (for populated previews where config is set after mount)
 watch(
   () => [props.step.config?.default, props.step.config?.default_value, props.interactive],
-  ([defaultVal, defaultValueVal, interactive]) => {
+  ( [defaultVal, defaultValueVal, interactive] ) => {
     // In non-interactive mode (logs view), always use config values
     const shouldUseConfig =
       !interactive || props.modelValue === null || props.modelValue === undefined || props.modelValue === ''
 
-    if (shouldUseConfig) {
+    if ( shouldUseConfig ) {
       const fallback = defaultVal ?? defaultValueVal
-      if (fallback !== undefined && fallback !== null) {
-        const numeric = Number(fallback)
-        if (Number.isFinite(numeric)) {
+      if ( fallback !== undefined && fallback !== null ) {
+        const numeric = Number( fallback )
+        if ( Number.isFinite( numeric ) ) {
           currentValue.value = numeric
         }
       }
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
 
-watch(currentValue, newValue => {
-  if (!props.interactive) return
-  const numeric = newValue === null || newValue === undefined || newValue === '' ? null : Number(newValue)
-  const valueToEmit = Number.isFinite(numeric) ? numeric : null
-  emit('value-change', valueToEmit)
-  emit('update:modelValue', valueToEmit)
-})
+watch( currentValue, newValue => {
+  if ( !props.interactive ) return
+  const numeric = newValue === null || newValue === undefined || newValue === '' ? null : Number( newValue )
+  const valueToEmit = Number.isFinite( numeric ) ? numeric : null
+  emit( 'value-change', valueToEmit )
+  emit( 'update:modelValue', valueToEmit )
+} )
 </script>
 
 <style scoped>

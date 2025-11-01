@@ -18,13 +18,13 @@ import { ref } from 'vue'
 import approvalTree from './components/approvalTree/index.vue'
 import approvalDesigner from './components/approvalDesigner/index.vue'
 
-const selectedTemplateId = ref(null)
+const selectedTemplateId = ref( null )
 
 const handleNodeSelected = templateId => {
-  console.log('Parent received template ID:', templateId)
-  console.log('Previous template ID:', selectedTemplateId.value)
+  console.log( 'Parent received template ID:', templateId )
+  console.log( 'Previous template ID:', selectedTemplateId.value )
   selectedTemplateId.value = templateId
-  console.log('Updated template ID to:', selectedTemplateId.value)
+  console.log( 'Updated template ID to:', selectedTemplateId.value )
 }
 </script>
 

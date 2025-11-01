@@ -15,53 +15,53 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 
-const props = defineProps({
-  modelValue: {
-    type: Object,
-    default: () => ({ value: '', unit: 'minutes' }),
+const props = defineProps( {
+  modelValue : {
+    type : Object,
+    default : () => ( { value : '', unit : 'minutes' } )
   },
-  units: {
-    type: Array,
-    default: () => [
-      { label: 'Minutes', value: 'minutes' },
-      { label: 'Hours', value: 'hours' },
-      { label: 'Days', value: 'days' },
-    ],
-  },
-})
+  units : {
+    type : Array,
+    default : () => [
+      { label : 'Minutes', value : 'minutes' },
+      { label : 'Hours', value : 'hours' },
+      { label : 'Days', value : 'days' }
+    ]
+  }
+} )
 
-const emit = defineEmits(['update:modelValue', 'change', 'invalid'])
+const emit = defineEmits( ['update:modelValue', 'change', 'invalid'] )
 
-const localValue = ref(props.modelValue?.value ?? '')
-const localUnit = ref(props.modelValue?.unit ?? 'minutes')
-const errorMessage = ref('')
+const localValue = ref( props.modelValue?.value ?? '' )
+const localUnit = ref( props.modelValue?.unit ?? 'minutes' )
+const errorMessage = ref( '' )
 
 watch(
   () => props.modelValue,
   value => {
-    if (value) {
+    if ( value ) {
       localValue.value = value.value ?? ''
       localUnit.value = value.unit ?? 'minutes'
     }
   }
 )
 
-const selectedUnitLabel = computed(() => {
-  const option = props.units.find(unit => unit.value === localUnit.value)
+const selectedUnitLabel = computed( () => {
+  const option = props.units.find( unit => unit.value === localUnit.value )
   return option?.label ?? ''
-})
+} )
 
 const emitValue = () => {
-  const valueNumber = parseFloat(localValue.value)
-  if (Number.isNaN(valueNumber) || valueNumber < 0) {
+  const valueNumber = parseFloat( localValue.value )
+  if ( Number.isNaN( valueNumber ) || valueNumber < 0 ) {
     errorMessage.value = 'Enter a valid non-negative number.'
-    emit('invalid', { value: localValue.value, unit: localUnit.value })
+    emit( 'invalid', { value : localValue.value, unit : localUnit.value } )
     return
   }
   errorMessage.value = ''
-  const payload = { value: valueNumber, unit: localUnit.value }
-  emit('update:modelValue', payload)
-  emit('change', payload)
+  const payload = { value : valueNumber, unit : localUnit.value }
+  emit( 'update:modelValue', payload )
+  emit( 'change', payload )
 }
 
 const handleInput = () => {

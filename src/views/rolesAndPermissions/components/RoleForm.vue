@@ -72,85 +72,85 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { createRole, updateRole } from '@/api/rbac'
 
-defineExpose({
-  handleResetForm,
-})
+defineExpose( {
+  handleResetForm
+} )
 
-const prop = defineProps({
-  role: {
-    type: Object,
-    default: null,
-  },
+const prop = defineProps( {
+  role : {
+    type : Object,
+    default : null
+  }
   // permissionOptions : {
   //   type : Array,
   //   default : () => []
   // }
-})
+} )
 
 const { t } = useI18n()
-const emit = defineEmits(['confirm', 'cancel', 'update:loading'])
+const emit = defineEmits( ['confirm', 'cancel', 'update:loading'] )
 
 const roleFormRules = {
-  name: [{ required: true, message: t('common.nameRequired'), trigger: 'blur' }],
-  code: [
-    { required: true, message: 'Code is required', trigger: 'blur' },
+  name : [{ required : true, message : t( 'common.nameRequired' ), trigger : 'blur' }],
+  code : [
+    { required : true, message : 'Code is required', trigger : 'blur' },
     {
-      pattern: /^[A-Z_]+$/,
-      message: 'Code must contain only uppercase letters (A–Z) or underscores (_)',
-      trigger: ['blur', 'change'],
-    },
-  ],
+      pattern : /^[A-Z_]+$/,
+      message : 'Code must contain only uppercase letters (A–Z) or underscores (_)',
+      trigger : ['blur', 'change']
+    }
+  ]
 }
 const formRef = ref()
-const submitting = ref(false)
+const submitting = ref( false )
 
-const internalRole = ref(createEmptyRole())
+const internalRole = ref( createEmptyRole() )
 
 const moduleOptions = [
   {
-    label: 'Maintenance',
-    value: 'Maintenance',
+    label : 'Maintenance',
+    value : 'Maintenance'
   },
   {
-    label: 'Quality Control',
-    value: 'Quality Control',
+    label : 'Quality Control',
+    value : 'Quality Control'
   },
   {
-    label: 'Production',
-    value: 'Production',
+    label : 'Production',
+    value : 'Production'
   },
   {
-    label: 'Inventory',
-    value: 'Inventory',
-  },
+    label : 'Inventory',
+    value : 'Inventory'
+  }
 ]
 
 function createEmptyRole() {
   return {
-    id: null,
-    name: '',
-    code: null,
-    description: '',
-    permission_list: [],
-    module: null,
+    id : null,
+    name : '',
+    code : null,
+    description : '',
+    permission_list : [],
+    module : null
   }
 }
 
-function transformIncomingRole(role) {
+function transformIncomingRole( role ) {
   return {
     ...createEmptyRole(),
-    ...role,
+    ...role
   }
 }
-const originalRoleSnapshot = ref(null)
+const originalRoleSnapshot = ref( null )
 
 watch(
   () => prop.role,
   async role => {
-    if (role) {
-      const clonedRole = transformIncomingRole(role)
+    if ( role ) {
+      const clonedRole = transformIncomingRole( role )
       internalRole.value = clonedRole
-      originalRoleSnapshot.value = JSON.parse(JSON.stringify(clonedRole))
+      originalRoleSnapshot.value = JSON.parse( JSON.stringify( clonedRole ) )
     } else {
       internalRole.value = createEmptyRole()
       originalRoleSnapshot.value = null
@@ -158,103 +158,103 @@ watch(
 
     await nextTick()
 
-    if (formRef.value) {
+    if ( formRef.value ) {
       formRef.value.clearValidate()
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
 
-async function handleResetForm(skipConfirmation) {
+async function handleResetForm( skipConfirmation ) {
   try {
-    if (!skipConfirmation) {
-      await ElMessageBox.confirm('This will reset all fields to their original values. Continue?', 'Warning', {
-        type: 'warning',
-        confirmButtonText: t('common.confirm'),
-        cancelButtonText: t('common.cancel'),
-        distinguishCancelAndClose: true,
-      })
+    if ( !skipConfirmation ) {
+      await ElMessageBox.confirm( 'This will reset all fields to their original values. Continue?', 'Warning', {
+        type : 'warning',
+        confirmButtonText : t( 'common.confirm' ),
+        cancelButtonText : t( 'common.cancel' ),
+        distinguishCancelAndClose : true
+      } )
     }
 
-    if (originalRoleSnapshot.value === null) {
+    if ( originalRoleSnapshot.value === null ) {
       internalRole.value = createEmptyRole()
     } else {
-      internalRole.value = JSON.parse(JSON.stringify(originalRoleSnapshot.value))
+      internalRole.value = JSON.parse( JSON.stringify( originalRoleSnapshot.value ) )
     }
 
     formRef.value.clearValidate()
   } catch {}
 }
 
-const buildCreateRolePayload = entry => ({
-  name: entry.name,
-  description: entry.description,
-  permission_list: entry.permission_list,
-  code: entry.code,
-  module: entry.module || null,
-})
+const buildCreateRolePayload = entry => ( {
+  name : entry.name,
+  description : entry.description,
+  permission_list : entry.permission_list,
+  code : entry.code,
+  module : entry.module || null
+} )
 
-const buildUpdateRolePayload = (entry, original) => {
+const buildUpdateRolePayload = ( entry, original ) => {
   const payload = {}
-  if (entry.name !== original.name) {
+  if ( entry.name !== original.name ) {
     payload.name = entry.name
   }
 
-  if (entry.description !== original.description) {
+  if ( entry.description !== original.description ) {
     payload.description = entry.description
   }
 
-  if (entry.permission_list !== original.permission_list) {
+  if ( entry.permission_list !== original.permission_list ) {
     payload.permission_list = entry.permission_list
   }
 
-  if (entry.code !== original.code) {
+  if ( entry.code !== original.code ) {
     payload.code = entry.code
   }
 
-  if (entry.module !== original.module) {
+  if ( entry.module !== original.module ) {
     payload.module = entry.module || null
   }
 
   return payload
 }
 
-const isRoleEdited = computed(() => {
-  if (!internalRole.value.id || !originalRoleSnapshot.value) return true
+const isRoleEdited = computed( () => {
+  if ( !internalRole.value.id || !originalRoleSnapshot.value ) return true
 
-  const payload = buildUpdateRolePayload(internalRole.value, originalRoleSnapshot.value)
+  const payload = buildUpdateRolePayload( internalRole.value, originalRoleSnapshot.value )
 
-  return Object.keys(payload).length > 0
-})
+  return Object.keys( payload ).length > 0
+} )
 
 async function handleConfirm() {
   const isValid = await formRef.value.validate()
-  if (!isValid) {
-    return ElMessage.error(t('user.message.pleaseCorrectErrors'))
+  if ( !isValid ) {
+    return ElMessage.error( t( 'user.message.pleaseCorrectErrors' ) )
   }
 
   submitting.value = true
-  emit('update:loading', true)
+  emit( 'update:loading', true )
 
   try {
     const payload = internalRole.value.id
-      ? buildUpdateRolePayload(internalRole.value, originalRoleSnapshot.value)
-      : buildCreateRolePayload(internalRole.value)
+      ? buildUpdateRolePayload( internalRole.value, originalRoleSnapshot.value )
+      : buildCreateRolePayload( internalRole.value )
 
-    if (internalRole.value.id) {
-      await updateRole(internalRole.value.id, payload)
-      ElMessage.success('Role update successfully')
+    if ( internalRole.value.id ) {
+      await updateRole( internalRole.value.id, payload )
+      ElMessage.success( 'Role update successfully' )
     } else {
-      await createRole(payload)
-      ElMessage.success('Role create successfully')
+      await createRole( payload )
+      ElMessage.success( 'Role create successfully' )
     }
 
-    emit('confirm')
-  } catch (err) {
-    console.error('Error submitting role form:', err)
+    emit( 'confirm' )
+  } catch ( err ) {
+    console.error( 'Error submitting role form:', err )
   } finally {
     submitting.value = false
-    emit('update:loading', false)
+    emit( 'update:loading', false )
   }
 }
 </script>

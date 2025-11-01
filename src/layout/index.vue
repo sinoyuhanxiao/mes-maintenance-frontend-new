@@ -35,58 +35,58 @@ const settingsStore = useSettingsStore()
 
 const hiddenMainContainer = 'hidden-main-container'
 
-const set = reactive({
-  sidebar: computed(() => {
+const set = reactive( {
+  sidebar : computed( () => {
     return appStore.sidebar
-  }),
-  device: computed(() => {
+  } ),
+  device : computed( () => {
     return appStore.device
-  }),
-  showSettings: computed(() => {
+  } ),
+  showSettings : computed( () => {
     return settingsStore.showSettings
-  }),
-  needTagsView: computed(() => {
+  } ),
+  needTagsView : computed( () => {
     return settingsStore.tagsView
-  }),
-  fixedHeader: computed(() => {
+  } ),
+  fixedHeader : computed( () => {
     return settingsStore.fixedHeader
-  }),
-  classObject: computed(() => {
+  } ),
+  classObject : computed( () => {
     const obj = {
-      hideSidebar: !set.sidebar.opened,
-      openSidebar: !!set.sidebar.opened,
-      withoutAnimation: set.sidebar.withoutAnimation,
-      mobile: set.device === 'mobile',
+      hideSidebar : !set.sidebar.opened,
+      openSidebar : !!set.sidebar.opened,
+      withoutAnimation : set.sidebar.withoutAnimation,
+      mobile : set.device === 'mobile'
     }
     return obj
-  }),
-  layoutMod: computed(() => {
+  } ),
+  layoutMod : computed( () => {
     return settingsStore.layoutMod
-  }),
-})
+  } )
+} )
 
 const handleClickOutside = params => {
-  appStore.CLOSE_SIDEBAR({ withoutAnimation: params })
+  appStore.CLOSE_SIDEBAR( { withoutAnimation : params } )
 }
 
 const route = useRoute()
-const WIDTH = ref(992)
-const containerHiddenSideBar = ref(false)
+const WIDTH = ref( 992 )
+const containerHiddenSideBar = ref( false )
 
-watchEffect(() => {
-  if (set.device === 'mobile' && !set.sidebar.opened) {
-    handleClickOutside(false)
+watchEffect( () => {
+  if ( set.device === 'mobile' && !set.sidebar.opened ) {
+    handleClickOutside( false )
   }
-})
+} )
 
 watch(
   route,
-  async () => {
-    if (set.device === 'mobile' && set.sidebar.opened) {
-      handleClickOutside(false)
+  async() => {
+    if ( set.device === 'mobile' && set.sidebar.opened ) {
+      handleClickOutside( false )
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
 
 const $_isMobile = () => {
@@ -95,28 +95,28 @@ const $_isMobile = () => {
 }
 
 const $_resizeHandler = () => {
-  if (!document.hidden) {
+  if ( !document.hidden ) {
     const isMobile = $_isMobile()
     const currentDevice = isMobile ? 'mobile' : 'desktop'
-    appStore.TOGGLE_DEVICE(currentDevice)
-    if (isMobile) {
-      handleClickOutside(true)
+    appStore.TOGGLE_DEVICE( currentDevice )
+    if ( isMobile ) {
+      handleClickOutside( true )
     }
   }
 }
 
-onMounted(() => {
+onMounted( () => {
   const isMobile = $_isMobile()
-  if (isMobile) {
-    appStore.TOGGLE_DEVICE('mobile')
-    handleClickOutside(true)
+  if ( isMobile ) {
+    appStore.TOGGLE_DEVICE( 'mobile' )
+    handleClickOutside( true )
   }
-  toggleClass(unref(containerHiddenSideBar), hiddenMainContainer, document.querySelector('.main-container'))
-})
+  toggleClass( unref( containerHiddenSideBar ), hiddenMainContainer, document.querySelector( '.main-container' ) )
+} )
 
-onBeforeMount(() => {
-  useEventListener('resize', $_resizeHandler)
-})
+onBeforeMount( () => {
+  useEventListener( 'resize', $_resizeHandler )
+} )
 </script>
 
 <style lang="scss" scoped>

@@ -30,9 +30,9 @@ import { callback } from '@/api/user'
 import { gotoCognitoLogin } from '@/utils/cognito/cognito'
 import { useUserStore } from '@/store'
 
-const loading = ref(true)
-const error = ref(false)
-const errorMsg = ref('')
+const loading = ref( true )
+const error = ref( false )
+const errorMsg = ref( '' )
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -43,7 +43,7 @@ const gotoCognito = () => {
 }
 
 const goHome = () => {
-  router.replace('/')
+  router.replace( '/' )
 }
 
 const retry = () => {
@@ -53,35 +53,35 @@ const retry = () => {
   doCallback()
 }
 
-const doCallback = async () => {
+const doCallback = async() => {
   let code = route.query.code
 
-  if (!code) {
+  if ( !code ) {
     const hash = window.location.hash
-    const searchParams = new URLSearchParams(hash.split('?')[1])
-    code = searchParams.get('code')
+    const searchParams = new URLSearchParams( hash.split( '?' )[1] )
+    code = searchParams.get( 'code' )
   }
 
-  if (import.meta.env.DEV) {
-    console.log('Callback hash:', window.location.hash)
-    console.log('Final code:', code)
+  if ( import.meta.env.DEV ) {
+    console.log( 'Callback hash:', window.location.hash )
+    console.log( 'Final code:', code )
   }
 
-  if (!code) {
+  if ( !code ) {
     error.value = true
     loading.value = false
     errorMsg.value = 'No Cognito login code detected. Redirecting to login page...'
-    setTimeout(gotoCognito, 1800)
+    setTimeout( gotoCognito, 1800 )
     return
   }
   try {
-    const res = await callback(code)
-    console.log('Callback API result:', res)
+    const res = await callback( code )
+    console.log( 'Callback API result:', res )
     await userStore.GET_USER_INFO()
     loading.value = false
     error.value = false
-    await router.replace({ path: '/', query: {} })
-  } catch (err) {
+    await router.replace( { path : '/', query : {}} )
+  } catch ( err ) {
     loading.value = false
     error.value = true
     errorMsg.value =
@@ -91,10 +91,10 @@ const doCallback = async () => {
   }
 }
 
-onMounted(() => {
-  console.log('Callback page mounted!', route.query.code)
+onMounted( () => {
+  console.log( 'Callback page mounted!', route.query.code )
   doCallback()
-})
+} )
 </script>
 
 <style scoped>

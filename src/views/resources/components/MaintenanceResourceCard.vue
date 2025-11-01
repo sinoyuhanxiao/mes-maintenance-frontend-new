@@ -64,61 +64,61 @@
 <script setup>
 import { computed, ref, watchEffect } from 'vue'
 
-const props = defineProps({
-  data: { type: Object, required: true },
-  isSelected: { type: Boolean, default: false },
-})
+const props = defineProps( {
+  data : { type : Object, required : true },
+  isSelected : { type : Boolean, default : false }
+} )
 
-const emit = defineEmits(['selection'])
-const onCardClick = () => emit('selection', props.data)
+const emit = defineEmits( ['selection'] )
+const onCardClick = () => emit( 'selection', props.data )
 
 /* Display helpers */
-const displayName = computed(() => props.data?.name || '--')
-const displayCode = computed(() => props.data?.code || '--')
-const displayUniversalCode = computed(() => props.data?.universal_code || '--')
-const displayStock = computed(() => {
+const displayName = computed( () => props.data?.name || '--' )
+const displayCode = computed( () => props.data?.code || '--' )
+const displayUniversalCode = computed( () => props.data?.universal_code || '--' )
+const displayStock = computed( () => {
   const stock = props.data?.current_stock
-  if (stock === null || stock === undefined || stock === '') return '--'
+  if ( stock === null || stock === undefined || stock === '' ) return '--'
   return `${stock}`
-})
+} )
 
 /* Flags */
-const isOutOfStock = computed(() => {
+const isOutOfStock = computed( () => {
   const s = props.data?.current_stock
   return typeof s === 'number' && s <= 0
-})
+} )
 
-const isLowStock = computed(() => {
+const isLowStock = computed( () => {
   const s = props.data?.current_stock
   const min = props.data?.minimum_stock_level
   return typeof s === 'number' && typeof min === 'number' && s < min && s > 0
-})
+} )
 
 /* Image check */
-const validImage = ref('')
+const validImage = ref( '' )
 let probeToken = 0
 
-function normalizeFirstImage(src) {
-  const first = Array.isArray(src) ? src[0] : src
-  if (!first || (typeof first === 'string' && first.trim() === '')) return ''
+function normalizeFirstImage( src ) {
+  const first = Array.isArray( src ) ? src[0] : src
+  if ( !first || ( typeof first === 'string' && first.trim() === '' ) ) return ''
   return first
 }
 
-async function probeImage200(url) {
+async function probeImage200( url ) {
   try {
-    const head = await fetch(url, { method: 'HEAD', cache: 'no-store' })
-    if (head.ok) return true
-    if (head.status === 405) throw new Error('HEAD not allowed')
+    const head = await fetch( url, { method : 'HEAD', cache : 'no-store' } )
+    if ( head.ok ) return true
+    if ( head.status === 405 ) throw new Error( 'HEAD not allowed' )
   } catch {}
   try {
-    const get = await fetch(url, {
-      method: 'GET',
-      headers: { Range: 'bytes=0-0' },
-      cache: 'no-store',
-    })
-    if (!get.ok) return false
-    const ct = (get.headers.get('content-type') || '').toLowerCase()
-    return ct.startsWith('image/')
+    const get = await fetch( url, {
+      method : 'GET',
+      headers : { Range : 'bytes=0-0' },
+      cache : 'no-store'
+    } )
+    if ( !get.ok ) return false
+    const ct = ( get.headers.get( 'content-type' ) || '' ).toLowerCase()
+    return ct.startsWith( 'image/' )
   } catch {
     return false
   }
@@ -128,17 +128,17 @@ function onImgError() {
   validImage.value = ''
 }
 
-watchEffect(async () => {
-  const src = normalizeFirstImage(props.data?.image_list)
+watchEffect( async() => {
+  const src = normalizeFirstImage( props.data?.image_list )
   const myToken = ++probeToken
-  if (!src) {
+  if ( !src ) {
     validImage.value = ''
     return
   }
-  const ok = await probeImage200(src)
-  if (myToken !== probeToken) return
+  const ok = await probeImage200( src )
+  if ( myToken !== probeToken ) return
   validImage.value = ok ? src : ''
-})
+} )
 </script>
 
 <style scoped lang="scss">

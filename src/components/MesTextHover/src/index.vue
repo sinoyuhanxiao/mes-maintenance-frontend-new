@@ -7,20 +7,20 @@
 </template>
 
 <script setup>
-const props = defineProps({
-  className: {
-    type: String,
-    default: '',
+const props = defineProps( {
+  className : {
+    type : String,
+    default : ''
   },
-  text: {
-    type: String,
-    default: 'Vite Element Admin',
-  },
-})
+  text : {
+    type : String,
+    default : 'Vite Element Admin'
+  }
+} )
 
-defineOptions({
-  name: 'MesTextHover',
-})
+defineOptions( {
+  name : 'MesTextHover'
+} )
 </script>
 
 <style>

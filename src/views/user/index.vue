@@ -440,7 +440,7 @@ import {
   QuestionFilled,
   Search,
   Refresh as RefreshIcon,
-  Remove,
+  Remove
 } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -459,40 +459,40 @@ import { useUserStore } from '@/store'
 import { emitter } from '@/utils/mitt'
 import { formatAsLocalDateTimeString } from '@/utils/datetime'
 
-defineOptions({
-  name: 'UserManagement',
-})
+defineOptions( {
+  name : 'UserManagement'
+} )
 
 const { t } = useI18n()
 const router = useRouter()
 
 // Table related
-const usersTableData = ref([])
-const sortSettings = ref({ prop: 'created_at', order: 'descending' })
-const loading = ref(false)
-const currentPage = ref(1)
-const selectedPageSize = ref(20)
-const totalPages = ref(0)
-const totalElements = ref(0)
-const tableHeight = ref(window.innerHeight - 250)
+const usersTableData = ref( [] )
+const sortSettings = ref( { prop : 'created_at', order : 'descending' } )
+const loading = ref( false )
+const currentPage = ref( 1 )
+const selectedPageSize = ref( 20 )
+const totalPages = ref( 0 )
+const totalElements = ref( 0 )
+const tableHeight = ref( window.innerHeight - 250 )
 
 // Form related
-const isFormProcessing = ref(false)
+const isFormProcessing = ref( false )
 const userFormRef = ref()
-const isUserFormDialogVisible = ref(false)
-const currentEditingUser = ref(null) // null = create mode
-const showSuccessDialog = ref(false)
-const createdUsername = ref('')
+const isUserFormDialogVisible = ref( false )
+const currentEditingUser = ref( null ) // null = create mode
+const showSuccessDialog = ref( false )
+const createdUsername = ref( '' )
 
 const initialFilters = {
-  keyword: null,
+  keyword : null,
   // department_ids : [],
-  role_ids: [],
+  role_ids : []
 }
 
-const localFilters = reactive({ ...initialFilters })
+const localFilters = reactive( { ...initialFilters } )
 
-const roleOptions = ref([])
+const roleOptions = ref( [] )
 // const departmentOptions = ref( [] )
 
 // const departmentMap = computed( () => Object.fromEntries( departmentOptions.value.map( d => [d.id, d] ) ) )
@@ -502,10 +502,10 @@ async function openCreateForm() {
   isUserFormDialogVisible.value = true
 }
 
-async function handleUserSubmit(username) {
+async function handleUserSubmit( username ) {
   isUserFormDialogVisible.value = false
 
-  if (username) {
+  if ( username ) {
     createdUsername.value = username
     showSuccessDialog.value = true
   } else {
@@ -518,95 +518,95 @@ function closeSuccessDialog() {
   loadUsers()
 }
 
-function handleView(user) {
-  router.push({ name: 'UserDetail', params: { id: user.id } })
+function handleView( user ) {
+  router.push( { name : 'UserDetail', params : { id : user.id }} )
 }
 
-function handleEdit(user) {
+function handleEdit( user ) {
   currentEditingUser.value = { ...user }
   isUserFormDialogVisible.value = true
 }
 
-async function confirmDelete(row) {
+async function confirmDelete( row ) {
   try {
     // TODO: Delete user api in backend not ready
     await ElMessageBox.confirm(
-      t('common.deleteConfirmMessage', { name: row.first_name + ' ' + row.last_name }),
-      t('common.warning'), // title
+      t( 'common.deleteConfirmMessage', { name : row.first_name + ' ' + row.last_name } ),
+      t( 'common.warning' ), // title
       {
-        type: 'warning',
-        confirmButtonText: t('common.confirm'),
-        cancelButtonText: t('common.cancel'),
-        distinguishCancelAndClose: true,
+        type : 'warning',
+        confirmButtonText : t( 'common.confirm' ),
+        cancelButtonText : t( 'common.cancel' ),
+        distinguishCancelAndClose : true
       }
     )
-    await deleteUserById(row.id)
-    ElMessage.success(t('user.message.userDeletedSuccess'))
+    await deleteUserById( row.id )
+    ElMessage.success( t( 'user.message.userDeletedSuccess' ) )
     await loadUsers()
   } catch {
     // user canceled/closed — do nothing
   }
 }
 
-function handleCurrentPageChange(val) {
+function handleCurrentPageChange( val ) {
   currentPage.value = val
   loadUsers()
 }
 
 function handleFormClosed() {
   isUserFormDialogVisible.value = false
-  userFormRef.value?.handleResetForm(true)
+  userFormRef.value?.handleResetForm( true )
 }
 
-function handleSizeChange(val) {
+function handleSizeChange( val ) {
   selectedPageSize.value = val
   currentPage.value = 1
   loadUsers()
 }
 
-async function handleActivationStatusChange(userId, newStatus) {
+async function handleActivationStatusChange( userId, newStatus ) {
   const userStore = useUserStore()
 
   try {
     // Case: current user trying to deactivate self
-    if (userId === userStore.uid && newStatus === false) {
+    if ( userId === userStore.uid && newStatus === false ) {
       try {
-        await ElMessageBox.confirm(t('user.message.selfDeactivateConfirm'), t('common.warning'), {
-          type: 'warning',
-          confirmButtonText: t('common.confirm'),
-          cancelButtonText: t('common.cancel'),
-          distinguishCancelAndClose: true,
-        })
+        await ElMessageBox.confirm( t( 'user.message.selfDeactivateConfirm' ), t( 'common.warning' ), {
+          type : 'warning',
+          confirmButtonText : t( 'common.confirm' ),
+          cancelButtonText : t( 'common.cancel' ),
+          distinguishCancelAndClose : true
+        } )
       } catch {
         // User cancelled → revert switch state
-        const target = usersTableData.value.find(u => u.id === userId)
-        if (target) target.enabled = true
+        const target = usersTableData.value.find( u => u.id === userId )
+        if ( target ) target.enabled = true
         return
       }
     }
 
-    if (newStatus) {
-      await enableUsers([userId])
+    if ( newStatus ) {
+      await enableUsers( [userId] )
     } else {
-      await disableUsers([userId])
+      await disableUsers( [userId] )
     }
 
-    ElMessage.success(t('user.message.statusUpdatedSuccess'))
+    ElMessage.success( t( 'user.message.statusUpdatedSuccess' ) )
     await loadUsers()
-  } catch (err) {
-    console.error('Status update error:', err)
-    ElMessage.error(t('user.message.statusUpdatedFailed'))
+  } catch ( err ) {
+    console.error( 'Status update error:', err )
+    ElMessage.error( t( 'user.message.statusUpdatedFailed' ) )
   }
 }
 
 async function loadUsers() {
-  function snakeToCamel(str) {
-    return str.replace(/_([a-z])/g, (_, char) => char.toUpperCase())
+  function snakeToCamel( str ) {
+    return str.replace( /_([a-z])/g, ( _, char ) => char.toUpperCase() )
   }
 
   loading.value = true
   try {
-    const sortKey = snakeToCamel(sortSettings.value.prop)
+    const sortKey = snakeToCamel( sortSettings.value.prop )
 
     const response = await searchUsers(
       localFilters,
@@ -619,9 +619,9 @@ async function loadUsers() {
     usersTableData.value = dataObj.content || []
     totalPages.value = dataObj.totalPages
     totalElements.value = dataObj.totalElements
-  } catch (err) {
-    console.error('Failed to fetch users:', err)
-    ElMessage.error(t('user.message.userFetchFailed'))
+  } catch ( err ) {
+    console.error( 'Failed to fetch users:', err )
+    ElMessage.error( t( 'user.message.userFetchFailed' ) )
   } finally {
     loading.value = false
   }
@@ -629,10 +629,10 @@ async function loadUsers() {
 
 async function loadRoles() {
   try {
-    const response = await searchRoles({}, 1, 1000)
+    const response = await searchRoles( {}, 1, 1000 )
     roleOptions.value = response.data.content
-  } catch (e) {
-    ElMessage.error(e)
+  } catch ( e ) {
+    ElMessage.error( e )
   }
 }
 
@@ -652,18 +652,18 @@ async function handleFilterChange() {
     currentPage.value = 1
 
     await loadUsers()
-  } catch (err) {
-    ElMessage.error(t('user.message.userFetchFailed'))
+  } catch ( err ) {
+    ElMessage.error( t( 'user.message.userFetchFailed' ) )
   }
 }
 
 function clearLocalFilters() {
-  Object.assign(localFilters, initialFilters)
+  Object.assign( localFilters, initialFilters )
   handleFilterChange()
 }
 
 // Sorting
-function handleSortChange({ prop, order }) {
+function handleSortChange( { prop, order } ) {
   sortSettings.value = { prop, order }
   loadUsers()
 }
@@ -678,43 +678,43 @@ async function refreshTable() {
     await loadRoles()
     // await loadDepartments()
     await loadUsers()
-  } catch (e) {
+  } catch ( e ) {
   } finally {
     loading.value = false
   }
 }
 
-onBeforeUnmount(() => {
-  emitter.off('user:updated')
-})
+onBeforeUnmount( () => {
+  emitter.off( 'user:updated' )
+} )
 
-onMounted(async () => {
+onMounted( async() => {
   await loadRoles()
   // await loadDepartments()
   await loadUsers()
 
-  emitter.on('user:updated', async updatedUserId => {
+  emitter.on( 'user:updated', async updatedUserId => {
     // Attempt to update that user's data if exist in table
-    const idx = usersTableData.value.findIndex(u => u.id === updatedUserId)
-    if (idx !== -1) {
+    const idx = usersTableData.value.findIndex( u => u.id === updatedUserId )
+    if ( idx !== -1 ) {
       // Refresh only that user row
       try {
-        const res = await getUserById(updatedUserId)
+        const res = await getUserById( updatedUserId )
         usersTableData.value[idx] = res.data
-      } catch (err) {
-        console.error('Failed to refresh user row:', err)
+      } catch ( err ) {
+        console.error( 'Failed to refresh user row:', err )
       }
     }
-  })
-})
+  } )
+} )
 
-onMounted(() => {
-  window.addEventListener('resize', updateTableHeight)
-})
+onMounted( () => {
+  window.addEventListener( 'resize', updateTableHeight )
+} )
 
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', updateTableHeight)
-})
+onBeforeUnmount( () => {
+  window.removeEventListener( 'resize', updateTableHeight )
+} )
 </script>
 
 <style scoped lang="scss">

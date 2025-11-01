@@ -79,51 +79,51 @@ import { ArrowLeftBold } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { deleteObjectList, uploadMultipleToMinio } from '@/api/minio'
 
-const props = defineProps({
-  visible: {
-    type: Boolean,
-    required: true,
+const props = defineProps( {
+  visible : {
+    type : Boolean,
+    required : true
   },
-  certificate: {
-    type: Object,
-    default: null,
-  },
-})
-const emit = defineEmits(['confirm', 'close'])
+  certificate : {
+    type : Object,
+    default : null
+  }
+} )
+const emit = defineEmits( ['confirm', 'close'] )
 const { t } = useI18n()
-const isCertificateEdited = computed(() => {
-  if (!originalCertificateSnapshot.value) {
+const isCertificateEdited = computed( () => {
+  if ( !originalCertificateSnapshot.value ) {
     return false
   }
 
-  const payload = buildUpdateCertificatePayload(internalCertificate.value, originalCertificateSnapshot.value)
+  const payload = buildUpdateCertificatePayload( internalCertificate.value, originalCertificateSnapshot.value )
 
-  return Object.keys(payload).length > 0
-})
-const rules = ref({
-  name: [{ required: true, message: 'Certificate name is required', trigger: 'blur' }],
-  certificate_number: [{ required: true, message: 'Certificate number is required', trigger: 'blur' }],
-  issue_date: [{ required: true, message: 'Issue date is required', trigger: 'change' }],
-})
-const certificateFormImageUploadRef = ref(null)
-const formRef = ref(null)
-const newImages = ref([])
-const removedImages = ref([])
-const internalCertificate = ref(createEmptyCertificate())
-const originalCertificateSnapshot = ref(null)
+  return Object.keys( payload ).length > 0
+} )
+const rules = ref( {
+  name : [{ required : true, message : 'Certificate name is required', trigger : 'blur' }],
+  certificate_number : [{ required : true, message : 'Certificate number is required', trigger : 'blur' }],
+  issue_date : [{ required : true, message : 'Issue date is required', trigger : 'change' }]
+} )
+const certificateFormImageUploadRef = ref( null )
+const formRef = ref( null )
+const newImages = ref( [] )
+const removedImages = ref( [] )
+const internalCertificate = ref( createEmptyCertificate() )
+const originalCertificateSnapshot = ref( null )
 
 // When dialog opens, initialize form based on whether we're editing or creating
 watch(
   () => props.visible,
   isVisible => {
-    if (!isVisible) {
+    if ( !isVisible ) {
       return
     }
 
-    if (props.certificate) {
+    if ( props.certificate ) {
       const clonedCertificate = { ...props.certificate }
       internalCertificate.value = clonedCertificate
-      originalCertificateSnapshot.value = JSON.parse(JSON.stringify(clonedCertificate))
+      originalCertificateSnapshot.value = JSON.parse( JSON.stringify( clonedCertificate ) )
     } else {
       internalCertificate.value = createEmptyCertificate()
       originalCertificateSnapshot.value = null
@@ -137,8 +137,8 @@ watch(
   }
 )
 
-const handleUpdate = (type, data) => {
-  switch (type) {
+const handleUpdate = ( type, data ) => {
+  switch ( type ) {
     case 'imageList':
       newImages.value = data
       break
@@ -153,112 +153,112 @@ const handleUpdate = (type, data) => {
   }
 }
 
-const buildUpdateCertificatePayload = (entry, original) => {
+const buildUpdateCertificatePayload = ( entry, original ) => {
   const payload = {}
-  if (entry.id) {
+  if ( entry.id ) {
     payload.id = entry.id
   }
 
-  if (entry.name !== original.name) {
+  if ( entry.name !== original.name ) {
     payload.name = entry.name
   }
 
-  if (entry.certificate_number !== original.certificate_number) {
+  if ( entry.certificate_number !== original.certificate_number ) {
     payload.certificate_number = entry.certificate_number
   }
 
-  if (entry.issue_date !== original.issue_date) {
+  if ( entry.issue_date !== original.issue_date ) {
     payload.issue_date = entry.issue_date
   }
 
-  if (entry.expiration_date !== original.expiration_date) {
+  if ( entry.expiration_date !== original.expiration_date ) {
     payload.expiration_date = entry.expiration_date
   }
 
-  if (entry.review_date !== original.review_date) {
+  if ( entry.review_date !== original.review_date ) {
     payload.review_date = entry.review_date
   }
 
-  if (entry.reviewer_id !== original.reviewer_id) {
+  if ( entry.reviewer_id !== original.reviewer_id ) {
     payload.reviewer_id = entry.reviewer_id
   }
 
-  if (entry.external_reviewer_name !== original.external_reviewer_name) {
+  if ( entry.external_reviewer_name !== original.external_reviewer_name ) {
     payload.external_reviewer_name = entry.external_reviewer_name
   }
 
-  if (entry.note !== original.note) {
+  if ( entry.note !== original.note ) {
     payload.note = entry.note
   }
 
-  if (JSON.stringify(entry.file_list || []) !== JSON.stringify(original.file_list || [])) {
+  if ( JSON.stringify( entry.file_list || [] ) !== JSON.stringify( original.file_list || [] ) ) {
     payload.file_list = entry.file_list
   }
 
   return payload
 }
 
-const handleConfirm = async () => {
+const handleConfirm = async() => {
   try {
     const isValid = await formRef.value.validate()
 
-    if (!isValid) {
-      return ElMessage.error(t('user.message.pleaseCorrectErrors'))
+    if ( !isValid ) {
+      return ElMessage.error( t( 'user.message.pleaseCorrectErrors' ) )
     }
 
     // Upload images to minio
     try {
-      if (newImages.value.length > 0) {
-        const imageRes = await uploadMultipleToMinio(newImages.value)
+      if ( newImages.value.length > 0 ) {
+        const imageRes = await uploadMultipleToMinio( newImages.value )
         // Add every new uploaded image url to file list
-        imageRes.data.uploadedFiles?.map(file => internalCertificate.value.file_list.push(file.url))
+        imageRes.data.uploadedFiles?.map( file => internalCertificate.value.file_list.push( file.url ) )
       }
-    } catch (err) {
+    } catch ( err ) {
       // TODO: replace with translated key
-      ElMessage.error('Image file upload failed')
+      ElMessage.error( 'Image file upload failed' )
     }
 
     // Delete removed file in Minio
     try {
-      if (removedImages.value?.length > 0) {
+      if ( removedImages.value?.length > 0 ) {
         // Update file list by clearing removed image url
         internalCertificate.value.file_list = internalCertificate.value.file_list.filter(
-          f => !removedImages.value.includes(f)
+          f => !removedImages.value.includes( f )
         )
 
-        const deleteResponse = await deleteObjectList({
-          bucketName: 'sv-file-bucket',
-          objectUrls: removedImages.value,
-        })
+        const deleteResponse = await deleteObjectList( {
+          bucketName : 'sv-file-bucket',
+          objectUrls : removedImages.value
+        } )
 
-        if (deleteResponse.status === 0) {
-          ElMessage.success('Old files deleted successfully!')
+        if ( deleteResponse.status === 0 ) {
+          ElMessage.success( 'Old files deleted successfully!' )
         }
       }
-    } catch (err) {
+    } catch ( err ) {
       // console.log( err )
     }
 
     // Clear FileUploadMultiple component internal imageList
     certificateFormImageUploadRef.value?.resetNewFileLists()
 
-    emit('confirm', internalCertificate.value)
-  } catch (e) {
+    emit( 'confirm', internalCertificate.value )
+  } catch ( e ) {
     // validation failed; Element Plus already shows messages
   }
 }
 
 function createEmptyCertificate() {
   return {
-    name: null,
-    certificate_number: null,
-    issue_date: null,
-    expiration_date: null,
-    review_date: null,
-    external_reviewer_name: null,
-    reviewer_id: null,
-    note: null,
-    file_list: [],
+    name : null,
+    certificate_number : null,
+    issue_date : null,
+    expiration_date : null,
+    review_date : null,
+    external_reviewer_name : null,
+    reviewer_id : null,
+    note : null,
+    file_list : []
   }
 }
 
@@ -267,20 +267,20 @@ async function handleResetForm() {
     await ElMessageBox.confirm(
       t(
         'common.confirmMessage',
-        t('common.warning'), // title
+        t( 'common.warning' ), // title
         {
-          type: 'warning',
-          confirmButtonText: t('common.confirm'),
-          cancelButtonText: t('common.cancel'),
-          distinguishCancelAndClose: true,
+          type : 'warning',
+          confirmButtonText : t( 'common.confirm' ),
+          cancelButtonText : t( 'common.cancel' ),
+          distinguishCancelAndClose : true
         }
       )
     )
 
-    if (originalCertificateSnapshot.value === null) {
+    if ( originalCertificateSnapshot.value === null ) {
       internalCertificate.value = createEmptyCertificate()
     } else {
-      internalCertificate.value = JSON.parse(JSON.stringify(originalCertificateSnapshot.value))
+      internalCertificate.value = JSON.parse( JSON.stringify( originalCertificateSnapshot.value ) )
     }
 
     // Reset file upload component
@@ -290,16 +290,16 @@ async function handleResetForm() {
   } catch {}
 }
 
-const isExpired = computed(() => {
+const isExpired = computed( () => {
   const exp = internalCertificate.value.expiration_date
-  if (!exp) return false
+  if ( !exp ) return false
 
-  const expDate = new Date(exp)
+  const expDate = new Date( exp )
   const today = new Date()
-  today.setHours(0, 0, 0, 0) // normalize
+  today.setHours( 0, 0, 0, 0 ) // normalize
 
   return expDate < today
-})
+} )
 </script>
 
 <style scoped>

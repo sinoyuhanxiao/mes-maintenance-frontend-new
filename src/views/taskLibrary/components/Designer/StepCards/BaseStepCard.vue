@@ -276,7 +276,7 @@ import {
   Edit,
   View,
   Upload,
-  DeleteFilled,
+  DeleteFilled
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
@@ -289,108 +289,108 @@ import AttachmentStepPreview from './AttachmentStepPreview.vue'
 import ServiceStepPreview from './ServiceStepPreview.vue'
 import { formatLimitsText } from 'src/views/taskLibrary/utils/stepTransforms'
 
-const props = defineProps({
-  step: {
-    type: Object,
-    required: true,
+const props = defineProps( {
+  step : {
+    type : Object,
+    required : true
   },
-  stepIndex: {
-    type: Number,
-    required: true,
+  stepIndex : {
+    type : Number,
+    required : true
   },
-  isFocused: {
-    type: Boolean,
-    default: false,
-  },
-})
+  isFocused : {
+    type : Boolean,
+    default : false
+  }
+} )
 
-const emit = defineEmits(['focus', 'update', 'delete', 'configure', 'duplicate'])
+const emit = defineEmits( ['focus', 'update', 'delete', 'configure', 'duplicate'] )
 
 // Local reactive copy of step for editing
-const localStep = reactive({ ...props.step })
+const localStep = reactive( { ...props.step } )
 
 // Initialize service config if needed
-if (localStep.type === 'service') {
-  if (!localStep.config) {
+if ( localStep.type === 'service' ) {
+  if ( !localStep.config ) {
     localStep.config = {}
   }
   // Ensure all service config properties exist
-  if (!localStep.config.service_type) {
+  if ( !localStep.config.service_type ) {
     localStep.config.service_type = 'Replace'
   }
-  if (!localStep.config.device_tag) {
+  if ( !localStep.config.device_tag ) {
     localStep.config.device_tag = 'P100016'
   }
-  if (!localStep.config.quantity) {
+  if ( !localStep.config.quantity ) {
     localStep.config.quantity = 1
   }
-  if (!localStep.config.status) {
+  if ( !localStep.config.status ) {
     localStep.config.status = 'fail'
   }
 }
 
-const showDescriptionEdit = ref(false)
-const showPreview = ref(false)
-const isDeleteHovered = ref(false)
-const showToolsPreview = ref(false)
+const showDescriptionEdit = ref( false )
+const showPreview = ref( false )
+const isDeleteHovered = ref( false )
+const showToolsPreview = ref( false )
 
 // Computed property to check if step has limitations
-const hasLimitations = computed(() => {
+const hasLimitations = computed( () => {
   return (
     localStep.config?.limits &&
-    (localStep.config.limits.lower !== undefined || localStep.config.limits.upper !== undefined)
+    ( localStep.config.limits.lower !== undefined || localStep.config.limits.upper !== undefined )
   )
-})
+} )
 
 // Step types for dropdown
 const stepTypes = [
   {
-    type: 'inspection',
-    name: 'Inspection',
-    color: '#67c23a',
+    type : 'inspection',
+    name : 'Inspection',
+    color : '#67c23a'
   },
   {
-    type: 'checkbox',
-    name: 'Checkbox',
-    color: '#409eff',
+    type : 'checkbox',
+    name : 'Checkbox',
+    color : '#409eff'
   },
   {
-    type: 'number',
-    name: 'Number',
-    color: '#e6a23c',
+    type : 'number',
+    name : 'Number',
+    color : '#e6a23c'
   },
   {
-    type: 'text',
-    name: 'Text',
-    color: '#909399',
+    type : 'text',
+    name : 'Text',
+    color : '#909399'
   },
   {
-    type: 'attachments',
-    name: 'Files',
-    color: '#849aec',
+    type : 'attachments',
+    name : 'Files',
+    color : '#849aec'
   },
   {
-    type: 'service',
-    name: 'Service',
-    color: '#df869d',
-    disabled: true,
-  },
+    type : 'service',
+    name : 'Service',
+    color : '#df869d',
+    disabled : true
+  }
 ]
 
 // Watch for external changes to step
 watch(
   () => props.step,
   newStep => {
-    Object.assign(localStep, newStep)
+    Object.assign( localStep, newStep )
   },
-  { deep: true }
+  { deep : true }
 )
 
 // Event handlers
 const handleAction = command => {
-  switch (command) {
+  switch ( command ) {
     case 'description':
-      if (showDescriptionEdit.value || localStep.description) {
+      if ( showDescriptionEdit.value || localStep.description ) {
         // Remove description
         localStep.description = ''
         showDescriptionEdit.value = false
@@ -404,22 +404,22 @@ const handleAction = command => {
       showPreview.value = !showPreview.value
       break
     case 'tools':
-      emit('configure', props.step.step_id, 'tools')
+      emit( 'configure', props.step.step_id, 'tools' )
       break
     case 'resources':
-      emit('configure', props.step.step_id, 'resources')
+      emit( 'configure', props.step.step_id, 'resources' )
       break
     case 'limitations':
-      if (hasLimitations.value) {
+      if ( hasLimitations.value ) {
         // Remove limitations
         handleRemoveLimitations()
       } else {
         // Add/edit limitations
-        emit('configure', props.step.step_id, 'limits')
+        emit( 'configure', props.step.step_id, 'limits' )
       }
       break
     case 'duplicate':
-      emit('duplicate', props.step.step_id)
+      emit( 'duplicate', props.step.step_id )
       break
     default:
       break
@@ -436,7 +436,7 @@ const handleDescriptionChange = () => {
 
 const handleDescriptionBlur = () => {
   saveChanges()
-  if (!localStep.description) {
+  if ( !localStep.description ) {
     showDescriptionEdit.value = false
   }
 }
@@ -449,8 +449,8 @@ const handleRequiredImageChange = () => {
   saveChanges()
 }
 
-const updateServiceConfig = (key, value) => {
-  if (!localStep.config) {
+const updateServiceConfig = ( key, value ) => {
+  if ( !localStep.config ) {
     localStep.config = {}
   }
   localStep.config[key] = value
@@ -458,26 +458,26 @@ const updateServiceConfig = (key, value) => {
 }
 
 const handleStepUpdate = updates => {
-  Object.assign(localStep, updates)
+  Object.assign( localStep, updates )
   saveChanges()
 }
 
 const handleTypeChange = newType => {
   const baseConfig = {}
-  if (localStep.config) {
-    if (localStep.config.default && (newType === 'text' || newType === 'number')) {
+  if ( localStep.config ) {
+    if ( localStep.config.default && ( newType === 'text' || newType === 'number' ) ) {
       baseConfig.default = localStep.config.default
     }
   }
 
   // Update config for new type
-  if (newType === 'service') {
+  if ( newType === 'service' ) {
     localStep.config = {
-      service_type: 'Replace',
-      device_tag: 'P100016',
-      quantity: 1,
-      status: 'fail',
-      ...baseConfig,
+      service_type : 'Replace',
+      device_tag : 'P100016',
+      quantity : 1,
+      status : 'fail',
+      ...baseConfig
     }
   } else {
     localStep.config = baseConfig
@@ -487,46 +487,46 @@ const handleTypeChange = newType => {
 
 const handleRemoveLimitations = () => {
   // Remove limitations from the step config
-  if (localStep.config) {
+  if ( localStep.config ) {
     delete localStep.config.limits
     // If config becomes empty, remove it entirely
-    if (Object.keys(localStep.config).length === 0) {
+    if ( Object.keys( localStep.config ).length === 0 ) {
       localStep.config = undefined
     }
   }
   saveChanges()
-  ElMessage.success('Number limitations removed successfully')
+  ElMessage.success( 'Number limitations removed successfully' )
 }
 
 const saveChanges = () => {
-  emit('update', props.step.step_id, { ...localStep })
+  emit( 'update', props.step.step_id, { ...localStep } )
 }
 
 // Helper functions
 const getStepTypeLabel = type => {
   const labels = {
-    inspection: 'Inspection',
-    checkbox: 'Checkbox',
-    number: 'Number',
-    text: 'Text',
-    attachments: 'Files',
-    service: 'Service',
+    inspection : 'Inspection',
+    checkbox : 'Checkbox',
+    number : 'Number',
+    text : 'Text',
+    attachments : 'Files',
+    service : 'Service'
   }
   return labels[type] || type
 }
 
 const getLimitationsText = () => {
-  return formatLimitsText(localStep.config?.limits, localStep.config?.unit)
+  return formatLimitsText( localStep.config?.limits, localStep.config?.unit )
 }
 
 const getStepComponent = type => {
   const components = {
-    inspection: InspectionStepPreview,
-    checkbox: CheckboxStepPreview,
-    number: NumberStepPreview,
-    text: TextStepPreview,
-    attachments: AttachmentStepPreview,
-    service: ServiceStepPreview,
+    inspection : InspectionStepPreview,
+    checkbox : CheckboxStepPreview,
+    number : NumberStepPreview,
+    text : TextStepPreview,
+    attachments : AttachmentStepPreview,
+    service : ServiceStepPreview
   }
   return components[type] || 'div'
 }

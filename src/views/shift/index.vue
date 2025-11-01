@@ -174,19 +174,19 @@ import { formatAsLocalDateTimeString } from '@/utils/datetime'
 
 const { t } = useI18n()
 
-const loading = ref(false)
-const isFormProcessing = ref(false)
-const isDialogVisible = ref(false)
-const shiftsTableData = ref([])
-const sortSettings = ref({ prop: 'id', order: 'descending' })
-const currentPage = ref(1)
-const pageSize = ref(20)
-const totalElements = ref(0)
-const tableHeight = ref(window.innerHeight - 250)
-const currentEditingShift = ref(null)
-const userOptions = ref([])
-const initialFilters = { keyword: '' }
-const localFilters = reactive({ ...initialFilters })
+const loading = ref( false )
+const isFormProcessing = ref( false )
+const isDialogVisible = ref( false )
+const shiftsTableData = ref( [] )
+const sortSettings = ref( { prop : 'id', order : 'descending' } )
+const currentPage = ref( 1 )
+const pageSize = ref( 20 )
+const totalElements = ref( 0 )
+const tableHeight = ref( window.innerHeight - 250 )
+const currentEditingShift = ref( null )
+const userOptions = ref( [] )
+const initialFilters = { keyword : '' }
+const localFilters = reactive( { ...initialFilters } )
 const shiftFormRef = ref()
 
 // const userMap = computed( () =>
@@ -198,7 +198,7 @@ function openCreateForm() {
   isDialogVisible.value = true
 }
 
-function handleEdit(shift) {
+function handleEdit( shift ) {
   currentEditingShift.value = shift
   isDialogVisible.value = true
 }
@@ -215,7 +215,7 @@ function handleFilterChange() {
 
 function handleFormClosed() {
   isDialogVisible.value = false
-  shiftFormRef.value?.handleResetForm(true)
+  shiftFormRef.value?.handleResetForm( true )
 }
 
 // function clearLocalFilters() {
@@ -223,18 +223,18 @@ function handleFormClosed() {
 //   handleFilterChange()
 // }
 
-function handlePageChange(val) {
+function handlePageChange( val ) {
   currentPage.value = val
   loadShifts()
 }
 
-function handleSizeChange(val) {
+function handleSizeChange( val ) {
   pageSize.value = val
   currentPage.value = 1
   loadShifts()
 }
 
-function handleSortChange({ prop, order }) {
+function handleSortChange( { prop, order } ) {
   sortSettings.value = { prop, order }
   loadShifts()
 }
@@ -244,13 +244,13 @@ function handleSortChange({ prop, order }) {
 // }
 
 async function loadShifts() {
-  function snakeToCamel(str) {
-    return str.replace(/_([a-z])/g, (_, char) => char.toUpperCase())
+  function snakeToCamel( str ) {
+    return str.replace( /_([a-z])/g, ( _, char ) => char.toUpperCase() )
   }
 
   loading.value = true
   try {
-    const sortKey = snakeToCamel(sortSettings.value.prop)
+    const sortKey = snakeToCamel( sortSettings.value.prop )
 
     const response = await searchShifts(
       localFilters,
@@ -262,39 +262,39 @@ async function loadShifts() {
     const data = response.data
     shiftsTableData.value = data.content || []
     totalElements.value = data.totalElements
-  } catch (err) {
-    console.error('Failed to load shifts:', err)
-    ElMessage.error(t('shift.message.fetchFailed'))
+  } catch ( err ) {
+    console.error( 'Failed to load shifts:', err )
+    ElMessage.error( t( 'shift.message.fetchFailed' ) )
   } finally {
     loading.value = false
   }
 }
 
-async function handleDeactivate(id) {
+async function handleDeactivate( id ) {
   try {
-    await ElMessageBox.confirm(t('common.confirmMessage'), t('common.warning'), {
-      confirmButtonText: t('common.confirm'),
-      cancelButtonText: t('common.cancel'),
-      type: 'warning',
-      distinguishCancelAndClose: true,
-    })
-    await deactivateShift(id)
+    await ElMessageBox.confirm( t( 'common.confirmMessage' ), t( 'common.warning' ), {
+      confirmButtonText : t( 'common.confirm' ),
+      cancelButtonText : t( 'common.cancel' ),
+      type : 'warning',
+      distinguishCancelAndClose : true
+    } )
+    await deactivateShift( id )
     await loadShifts()
-    ElMessage.success(t('shift.message.deactivateSuccess'))
-  } catch (err) {
-    if (err === 'cancel' || err === 'close') return
-    console.error(err)
-    ElMessage.error(t('shift.message.deactivateFailed'))
+    ElMessage.success( t( 'shift.message.deactivateSuccess' ) )
+  } catch ( err ) {
+    if ( err === 'cancel' || err === 'close' ) return
+    console.error( err )
+    ElMessage.error( t( 'shift.message.deactivateFailed' ) )
   }
 }
 
 async function loadUsers() {
   try {
-    const response = await getAllUsers(1, 1000)
+    const response = await getAllUsers( 1, 1000 )
     userOptions.value = response?.data?.content || []
-  } catch (err) {
-    console.error('Failed to load users:', err)
-    ElMessage.error(t('user.message.errorLoadingUsersData'))
+  } catch ( err ) {
+    console.error( 'Failed to load users:', err )
+    ElMessage.error( t( 'user.message.errorLoadingUsersData' ) )
   }
 }
 
@@ -304,16 +304,16 @@ async function refreshTable() {
 
     await loadUsers()
     await loadShifts()
-  } catch (e) {
+  } catch ( e ) {
   } finally {
     loading.value = false
   }
 }
 
-onMounted(async () => {
+onMounted( async() => {
   await loadUsers()
   await loadShifts()
-})
+} )
 </script>
 
 <style scoped>

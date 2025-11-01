@@ -51,18 +51,40 @@
           {{ workOrder.name }}
         </h4>
 
-        <!-- Requested By -->
-        <div class="card-meta">
-          <span class="meta-label">{{ $t('workOrder.form.createdBy') }}:</span>
-          <span class="meta-value">{{ workOrder.created_by || 'N/A' }}</span>
-        </div>
-
         <!-- Due Date -->
         <div class="card-meta" v-if="workOrder.due_date">
           <span class="meta-label">{{ $t('workOrder.table.dueDate') }}:</span>
           <span class="meta-value" :class="{ 'incomplete-text': isIncomplete }">
             {{ formatDate(workOrder.due_date) }}
           </span>
+        </div>
+
+        <!-- Work Order Progress -->
+        <div class="card-meta progress-meta">
+          <span class="meta-label">{{ $t('workOrder.progress.label') }}:</span>
+          <div class="progress-wrapper">
+            <div class="custom-progress-bar">
+              <div
+                :class="[
+                  'progress-segment',
+                  'completed',
+                  {
+                    'all-completed':
+                      failedTasks === 0 &&
+                      totalTasks - completedTasks - failedTasks === 0 &&
+                      completedTasks === totalTasks,
+                  },
+                ]"
+                :style="{ width: `${(completedTasks / totalTasks) * 100}%` }"
+              ></div>
+              <div class="progress-segment failed" :style="{ width: `${(failedTasks / totalTasks) * 100}%` }"></div>
+              <div
+                class="progress-segment remaining"
+                :style="{ width: `${((totalTasks - completedTasks - failedTasks) / totalTasks) * 100}%` }"
+              ></div>
+            </div>
+            <div class="progress-text">{{ progressPercentage }}%</div>
+          </div>
         </div>
 
         <!-- Status and Priority Badges -->
@@ -91,12 +113,12 @@
       </div>
 
       <!-- Circular Thumbnail on Right -->
-      <div class="card-thumbnail-circle" v-if="workOrder.image_list && workOrder.image_list.length">
+      <div class="card-thumbnail-circle">
         <el-image
-          :src="workOrder.image_list[0]"
+          :src="workOrder.image_list && workOrder.image_list.length ? workOrder.image_list[0] : ''"
           fit="cover"
-          :preview-src-list="workOrder.image_list"
-          class="circular-image"
+          :preview-src-list="workOrder.image_list || []"
+          :class="['circular-image', { 'no-image': !workOrder.image_list || !workOrder.image_list.length }]"
           :z-index="2000"
           preview-teleported
         >
@@ -121,47 +143,65 @@ import { convertToLocalTime } from '@/utils/datetime'
 import { useSettingsStore } from '@/store'
 
 // Props
-const props = defineProps({
-  workOrder: {
-    type: Object,
-    required: true,
+const props = defineProps( {
+  workOrder : {
+    type : Object,
+    required : true
   },
-  isSelected: {
-    type: Boolean,
-    default: false,
-  },
-})
+  isSelected : {
+    type : Boolean,
+    default : false
+  }
+} )
 
 // Emits
-const emit = defineEmits(['select', 'action'])
+const emit = defineEmits( ['select', 'action'] )
 
 const { t } = useI18n()
 const settingsStore = useSettingsStore()
 
 // Computed
-const isIncomplete = computed(() => {
+const isIncomplete = computed( () => {
   return props.workOrder.state?.id === 13 || props.workOrder.state?.name === 'Incomplete'
-})
+} )
 
-const isFailed = computed(() => {
+const isFailed = computed( () => {
   return props.workOrder.state?.name === 'Failed'
-})
+} )
 
-const isHighPriority = computed(() => {
+const isHighPriority = computed( () => {
   return props.workOrder.priority?.name === 'High' || props.workOrder.priority?.name === 'Urgent'
-})
+} )
 
-const isPendingApproval = computed(() => {
+const isPendingApproval = computed( () => {
   return props.workOrder.state?.id === 14
-})
+} )
+
+// Progress calculations
+const totalTasks = computed( () => {
+  return props.workOrder.work_order_progress?.total_task_amount || 0
+} )
+
+const completedTasks = computed( () => {
+  return props.workOrder.work_order_progress?.completed_task_amount || 0
+} )
+
+const failedTasks = computed( () => {
+  return props.workOrder.work_order_progress?.failed_task_amount || 0
+} )
+
+const progressPercentage = computed( () => {
+  if ( totalTasks.value === 0 ) return 0
+  return Math.round( ( completedTasks.value / totalTasks.value ) * 100 )
+} )
 
 // Methods
 const formatDate = dateString => {
-  return convertToLocalTime(dateString)
+  return convertToLocalTime( dateString )
 }
 
 const getStatusTagType = status => {
-  switch (status) {
+  switch ( status ) {
     case 'Failed':
       return 'danger'
     case 'Incomplete':
@@ -177,16 +217,16 @@ const getStatusTagType = status => {
 
 const getStatusName = status => {
   const statusMap = {
-    Failed: t('workOrder.status.failed'),
-    Completed: t('workOrder.status.completed'),
-    'In Progress': t('workOrder.status.inProgress'),
-    Pending: t('workOrder.status.pending'),
+    Failed : t( 'workOrder.status.failed' ),
+    Completed : t( 'workOrder.status.completed' ),
+    'In Progress' : t( 'workOrder.status.inProgress' ),
+    Pending : t( 'workOrder.status.pending' )
   }
   return statusMap[status] || status
 }
 
 const getPriorityTagType = priority => {
-  switch (priority) {
+  switch ( priority ) {
     case 'Urgent':
       return 'danger'
     case 'High':
@@ -202,21 +242,21 @@ const getPriorityTagType = priority => {
 
 const getPriorityName = priority => {
   const priorityMap = {
-    Urgent: t('workOrder.priority.urgent'),
-    High: t('workOrder.priority.high'),
-    Medium: t('workOrder.priority.medium'),
-    Low: t('workOrder.priority.low'),
+    Urgent : t( 'workOrder.priority.urgent' ),
+    High : t( 'workOrder.priority.high' ),
+    Medium : t( 'workOrder.priority.medium' ),
+    Low : t( 'workOrder.priority.low' )
   }
   return priorityMap[priority] || priority
 }
 
 const handleAction = command => {
-  emit('action', { action: command, workOrder: props.workOrder })
+  emit( 'action', { action : command, workOrder : props.workOrder } )
 }
 
-defineOptions({
-  name: 'WorkOrderCard',
-})
+defineOptions( {
+  name : 'WorkOrderCard'
+} )
 </script>
 
 <style scoped lang="scss">
@@ -589,6 +629,57 @@ defineOptions({
       }
     }
 
+    .progress-meta {
+      align-items: center;
+
+      .progress-wrapper {
+        flex: 1;
+        margin-left: 8px;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+
+        .custom-progress-bar {
+          flex: 1;
+          display: flex;
+          height: 6px;
+          border-radius: 100px;
+          overflow: hidden;
+          background-color: var(--el-fill-color-light);
+
+          .progress-segment {
+            height: 100%;
+            transition: width 0.3s ease;
+
+            &.completed {
+              background-color: var(--el-color-primary);
+
+              &.all-completed {
+                background-color: var(--el-color-success);
+              }
+            }
+
+            &.failed {
+              background-color: var(--el-color-danger);
+            }
+
+            &.remaining {
+              background-color: var(--el-fill-color-light);
+            }
+          }
+        }
+
+        .progress-text {
+          font-size: 12px;
+          font-weight: 500;
+          color: var(--el-text-color-regular);
+          flex-shrink: 0;
+          min-width: 35px;
+        }
+      }
+    }
+
     .card-badges {
       display: flex;
       flex-wrap: wrap;
@@ -612,12 +703,22 @@ defineOptions({
       border-radius: 50%;
       overflow: hidden;
       border: 2px solid var(--el-border-color-lighter);
+      background: white;
       transition: all 0.2s ease;
       cursor: pointer;
 
       &:hover {
         border-color: var(--el-color-primary);
         transform: scale(1.05);
+      }
+
+      &.no-image {
+        cursor: default;
+
+        &:hover {
+          border-color: var(--el-border-color-lighter);
+          transform: none;
+        }
       }
 
       // Only apply border-radius to the image container, not the preview
@@ -642,7 +743,6 @@ defineOptions({
       color: var(--el-text-color-secondary);
       font-size: 24px;
       border-radius: 50%;
-      border: 2px solid var(--el-border-color-lighter);
     }
   }
 }

@@ -10,8 +10,8 @@ import { useWorkOrderDraftStore } from './modules/workOrderDraft'
 
 const store = createPinia()
 
-export function registerStore(app) {
-  app.use(store)
+export function registerStore( app ) {
+  app.use( store )
 }
 
 export {
@@ -22,7 +22,7 @@ export {
   usePermissionStore,
   useTaskLibraryStore,
   useTemplateDesignerStore,
-  useWorkOrderDraftStore,
+  useWorkOrderDraftStore
 }
 
 export default store

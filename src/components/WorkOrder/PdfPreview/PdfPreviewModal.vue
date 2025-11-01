@@ -92,48 +92,48 @@ import WorkOrderPdf from '../Reports/WorkOrderPdf.vue'
 import { Printer, Download, View, ArrowLeft, ArrowRight, ZoomIn, ZoomOut } from '@element-plus/icons-vue'
 
 // Props
-const props = defineProps({
-  visible: {
-    type: Boolean,
-    default: false,
+const props = defineProps( {
+  visible : {
+    type : Boolean,
+    default : false
   },
-  workOrder: {
-    type: Object,
-    default: null,
-  },
-})
+  workOrder : {
+    type : Object,
+    default : null
+  }
+} )
 
 // Emits
-const emit = defineEmits(['update:visible', 'close'])
+const emit = defineEmits( ['update:visible', 'close'] )
 
 // State
-const currentPage = ref(1)
-const totalPages = ref(2) // Will be calculated dynamically
-const zoomLevel = ref(1)
-const pdfPreviewContent = ref(null)
+const currentPage = ref( 1 )
+const totalPages = ref( 2 ) // Will be calculated dynamically
+const zoomLevel = ref( 1 )
+const pdfPreviewContent = ref( null )
 
 // Computed
-const isVisible = computed({
-  get: () => props.visible,
-  set: value => emit('update:visible', value),
-})
+const isVisible = computed( {
+  get : () => props.visible,
+  set : value => emit( 'update:visible', value )
+} )
 
 // Methods
 const handleClose = () => {
   currentPage.value = 1
   zoomLevel.value = 1
-  emit('close')
+  emit( 'close' )
 }
 
 const ensurePdfComponentRendered = () => {
-  const pdfElement = document.querySelector('.pdf-preview-content .work-order-pdf')
-  if (pdfElement) {
+  const pdfElement = document.querySelector( '.pdf-preview-content .work-order-pdf' )
+  if ( pdfElement ) {
     // Force a reflow to ensure all styles are applied
     // eslint-disable-next-line no-unused-expressions
     pdfElement.offsetHeight
 
     // Add a class to indicate the component is ready for export
-    pdfElement.classList.add('pdf-ready-for-export')
+    pdfElement.classList.add( 'pdf-ready-for-export' )
 
     // Calculate actual number of pages
     calculateActualPageCount()
@@ -142,11 +142,11 @@ const ensurePdfComponentRendered = () => {
 
 // Calculate the actual number of pages based on content height and print simulation
 const calculateActualPageCount = () => {
-  const pdfElement = document.querySelector('.pdf-preview-content .work-order-pdf')
-  if (!pdfElement) return
+  const pdfElement = document.querySelector( '.pdf-preview-content .work-order-pdf' )
+  if ( !pdfElement ) return
 
   // Create an iframe for accurate print simulation
-  const iframe = document.createElement('iframe')
+  const iframe = document.createElement( 'iframe' )
   iframe.style.position = 'absolute'
   iframe.style.top = '-9999px'
   iframe.style.left = '-9999px'
@@ -154,7 +154,7 @@ const calculateActualPageCount = () => {
   iframe.style.height = '297mm'
   iframe.style.border = 'none'
 
-  document.body.appendChild(iframe)
+  document.body.appendChild( iframe )
 
   // Create a complete HTML document for accurate measurement
   const printHTML = `
@@ -186,41 +186,41 @@ const calculateActualPageCount = () => {
 
   // Write the HTML to the iframe
   iframe.contentDocument.open()
-  iframe.contentDocument.write(printHTML)
+  iframe.contentDocument.write( printHTML )
   iframe.contentDocument.close()
 
   // Wait for the iframe to load and then count pages
-  setTimeout(() => {
+  setTimeout( () => {
     try {
       const iframeDoc = iframe.contentDocument || iframe.contentWindow.document
-      const pages = iframeDoc.querySelectorAll('.pdf-page')
+      const pages = iframeDoc.querySelectorAll( '.pdf-page' )
       const actualPageCount = pages.length
 
       // Update totalPages if different
-      if (actualPageCount !== totalPages.value && actualPageCount > 0) {
+      if ( actualPageCount !== totalPages.value && actualPageCount > 0 ) {
         totalPages.value = actualPageCount
       }
-    } catch (error) {
-      console.warn('Could not calculate page count:', error)
+    } catch ( error ) {
+      console.warn( 'Could not calculate page count:', error )
       // Fallback to counting existing pages
-      const pages = pdfElement.querySelectorAll('.pdf-page')
+      const pages = pdfElement.querySelectorAll( '.pdf-page' )
       totalPages.value = pages.length
     }
 
     // Cleanup
-    document.body.removeChild(iframe)
-  }, 1000)
+    document.body.removeChild( iframe )
+  }, 1000 )
 }
 
 // Setup scroll listener for automatic page detection
 const setupScrollListener = () => {
-  if (!pdfPreviewContent.value) return
+  if ( !pdfPreviewContent.value ) return
 
   const scrollContainer = pdfPreviewContent.value
 
   const handleScroll = () => {
-    const pages = scrollContainer.querySelectorAll('.pdf-page')
-    if (!pages.length) return
+    const pages = scrollContainer.querySelectorAll( '.pdf-page' )
+    if ( !pages.length ) return
 
     const containerTop = scrollContainer.scrollTop
     const containerHeight = scrollContainer.clientHeight
@@ -230,28 +230,28 @@ const setupScrollListener = () => {
     let closestPage = 1
     let closestDistance = Infinity
 
-    pages.forEach((page, index) => {
+    pages.forEach( ( page, index ) => {
       const pageTop = page.offsetTop
       const pageHeight = page.offsetHeight
       const pageCenter = pageTop + pageHeight / 2
-      const distance = Math.abs(viewportCenter - pageCenter)
+      const distance = Math.abs( viewportCenter - pageCenter )
 
-      if (distance < closestDistance) {
+      if ( distance < closestDistance ) {
         closestDistance = distance
         closestPage = index + 1
       }
-    })
+    } )
 
-    if (closestPage !== currentPage.value) {
+    if ( closestPage !== currentPage.value ) {
       currentPage.value = closestPage
     }
   }
 
-  scrollContainer.addEventListener('scroll', handleScroll)
+  scrollContainer.addEventListener( 'scroll', handleScroll )
 
   // Cleanup function
   const cleanup = () => {
-    scrollContainer.removeEventListener('scroll', handleScroll)
+    scrollContainer.removeEventListener( 'scroll', handleScroll )
   }
 
   // Store cleanup function for later use
@@ -259,25 +259,25 @@ const setupScrollListener = () => {
 }
 
 // PDF Preview Methods
-const printPdf = async () => {
+const printPdf = async() => {
   // Create a new window for printing
-  const printWindow = window.open('', '_blank')
+  const printWindow = window.open( '', '_blank' )
 
-  if (!printWindow) {
-    ElMessage.error('Unable to open print window. Please check popup blockers.')
+  if ( !printWindow ) {
+    ElMessage.error( 'Unable to open print window. Please check popup blockers.' )
     return
   }
 
   // Get the PDF component HTML and ensure it's ready
-  const pdfElement = document.querySelector('.pdf-preview-content .work-order-pdf')
-  if (!pdfElement) {
-    ElMessage.error('PDF content not found')
+  const pdfElement = document.querySelector( '.pdf-preview-content .work-order-pdf' )
+  if ( !pdfElement ) {
+    ElMessage.error( 'PDF content not found' )
     return
   }
 
   // Wait for component to be fully rendered if not ready
-  if (!pdfElement.classList.contains('pdf-ready-for-export')) {
-    await new Promise(resolve => setTimeout(resolve, 1000))
+  if ( !pdfElement.classList.contains( 'pdf-ready-for-export' ) ) {
+    await new Promise( resolve => setTimeout( resolve, 1000 ) )
     ensurePdfComponentRendered()
   }
 
@@ -332,29 +332,29 @@ const printPdf = async () => {
     </html>
   `
 
-  printWindow.document.write(printHTML)
+  printWindow.document.write( printHTML )
   printWindow.document.close()
 
   // Wait for content to load then print
   printWindow.onload = () => {
-    setTimeout(() => {
+    setTimeout( () => {
       printWindow.print()
       printWindow.close()
-    }, 500)
+    }, 500 )
   }
 }
 
-const downloadPdf = async () => {
+const downloadPdf = async() => {
   try {
     // Check if html2pdf is available
-    if (typeof window.html2pdf === 'undefined') {
-      ElMessage.error('PDF download requires html2pdf library. Using print instead.')
+    if ( typeof window.html2pdf === 'undefined' ) {
+      ElMessage.error( 'PDF download requires html2pdf library. Using print instead.' )
       printPdf()
       return
     }
 
     // Create a temporary container with the same styles as print
-    const tempContainer = document.createElement('div')
+    const tempContainer = document.createElement( 'div' )
     tempContainer.style.position = 'absolute'
     tempContainer.style.top = '-9999px'
     tempContainer.style.left = '-9999px'
@@ -362,15 +362,15 @@ const downloadPdf = async () => {
     tempContainer.style.height = 'auto'
 
     // Get the PDF component HTML and ensure it's ready
-    const pdfElement = document.querySelector('.pdf-preview-content .work-order-pdf')
-    if (!pdfElement) {
-      ElMessage.error('PDF content not found')
+    const pdfElement = document.querySelector( '.pdf-preview-content .work-order-pdf' )
+    if ( !pdfElement ) {
+      ElMessage.error( 'PDF content not found' )
       return
     }
 
     // Wait for component to be fully rendered if not ready
-    if (!pdfElement.classList.contains('pdf-ready-for-export')) {
-      await new Promise(resolve => setTimeout(resolve, 1000))
+    if ( !pdfElement.classList.contains( 'pdf-ready-for-export' ) ) {
+      await new Promise( resolve => setTimeout( resolve, 1000 ) )
       ensurePdfComponentRendered()
     }
 
@@ -385,51 +385,51 @@ const downloadPdf = async () => {
     `
 
     tempContainer.innerHTML = styledHTML
-    document.body.appendChild(tempContainer)
+    document.body.appendChild( tempContainer )
 
-    const filename = `WorkOrder_${props.workOrder?.id || 'Export'}_${new Date().toISOString().split('T')[0]}.pdf`
+    const filename = `WorkOrder_${props.workOrder?.id || 'Export'}_${new Date().toISOString().split( 'T' )[0]}.pdf`
 
     const opt = {
-      margin: 0,
+      margin : 0,
       filename,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: {
-        scale: 2,
-        useCORS: true,
-        letterRendering: true,
-        allowTaint: true,
-        foreignObjectRendering: true,
+      image : { type : 'jpeg', quality : 0.98 },
+      html2canvas : {
+        scale : 2,
+        useCORS : true,
+        letterRendering : true,
+        allowTaint : true,
+        foreignObjectRendering : true
       },
-      jsPDF: {
-        unit: 'mm',
-        format: 'a4',
-        orientation: 'portrait',
-      },
+      jsPDF : {
+        unit : 'mm',
+        format : 'a4',
+        orientation : 'portrait'
+      }
     }
 
-    await window.html2pdf().set(opt).from(tempContainer.firstChild).save()
+    await window.html2pdf().set( opt ).from( tempContainer.firstChild ).save()
 
     // Cleanup
-    document.body.removeChild(tempContainer)
+    document.body.removeChild( tempContainer )
 
-    ElMessage.success(`PDF downloaded: ${filename}`)
-  } catch (error) {
-    console.error('Download error:', error)
-    ElMessage.error('Failed to download PDF. Please try print instead.')
+    ElMessage.success( `PDF downloaded: ${filename}` )
+  } catch ( error ) {
+    console.error( 'Download error:', error )
+    ElMessage.error( 'Failed to download PDF. Please try print instead.' )
   }
 }
 
 const openInNewWindow = () => {
-  const newWindow = window.open('', '_blank', 'width=900,height=1200')
+  const newWindow = window.open( '', '_blank', 'width=900,height=1200' )
 
-  if (!newWindow) {
-    ElMessage.error('Unable to open new window. Please check popup blockers.')
+  if ( !newWindow ) {
+    ElMessage.error( 'Unable to open new window. Please check popup blockers.' )
     return
   }
 
-  const pdfElement = document.querySelector('.pdf-preview-content .work-order-pdf')
-  if (!pdfElement) {
-    ElMessage.error('PDF content not found')
+  const pdfElement = document.querySelector( '.pdf-preview-content .work-order-pdf' )
+  if ( !pdfElement ) {
+    ElMessage.error( 'PDF content not found' )
     return
   }
 
@@ -457,7 +457,7 @@ const openInNewWindow = () => {
     </html>
   `
 
-  newWindow.document.write(newWindowHTML)
+  newWindow.document.write( newWindowHTML )
   newWindow.document.close()
 }
 
@@ -665,46 +665,46 @@ const getPdfStyles = () => {
 
 // Page Navigation Methods
 const previousPage = () => {
-  if (currentPage.value > 1) {
+  if ( currentPage.value > 1 ) {
     currentPage.value--
-    scrollToPage(currentPage.value)
+    scrollToPage( currentPage.value )
   }
 }
 
 const nextPage = () => {
-  if (currentPage.value < totalPages.value) {
+  if ( currentPage.value < totalPages.value ) {
     currentPage.value++
-    scrollToPage(currentPage.value)
+    scrollToPage( currentPage.value )
   }
 }
 
 const goToPage = page => {
   currentPage.value = page
-  scrollToPage(page)
+  scrollToPage( page )
 }
 
 const scrollToPage = page => {
-  if (!pdfPreviewContent.value) return
+  if ( !pdfPreviewContent.value ) return
 
-  const pages = pdfPreviewContent.value.querySelectorAll('.pdf-page')
-  if (pages && pages[page - 1]) {
-    pages[page - 1].scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-    })
+  const pages = pdfPreviewContent.value.querySelectorAll( '.pdf-page' )
+  if ( pages && pages[page - 1] ) {
+    pages[page - 1].scrollIntoView( {
+      behavior : 'smooth',
+      block : 'start'
+    } )
   }
 }
 
 // Zoom Control Methods
 const zoomIn = () => {
-  if (zoomLevel.value < 2) {
-    zoomLevel.value = Math.min(2, zoomLevel.value + 0.25)
+  if ( zoomLevel.value < 2 ) {
+    zoomLevel.value = Math.min( 2, zoomLevel.value + 0.25 )
   }
 }
 
 const zoomOut = () => {
-  if (zoomLevel.value > 0.5) {
-    zoomLevel.value = Math.max(0.5, zoomLevel.value - 0.25)
+  if ( zoomLevel.value > 0.5 ) {
+    zoomLevel.value = Math.max( 0.5, zoomLevel.value - 0.25 )
   }
 }
 
@@ -716,18 +716,18 @@ const resetZoom = () => {
 watch(
   () => props.visible,
   isVisible => {
-    if (isVisible && props.workOrder) {
+    if ( isVisible && props.workOrder ) {
       currentPage.value = 1
       zoomLevel.value = 1
 
       // Add scroll listener after modal opens and component is rendered
-      nextTick(() => {
-        setTimeout(() => {
+      nextTick( () => {
+        setTimeout( () => {
           setupScrollListener()
           // Ensure the PDF component is fully rendered
           ensurePdfComponentRendered()
-        }, 500)
-      })
+        }, 500 )
+      } )
     }
   }
 )
@@ -736,19 +736,19 @@ watch(
 watch(
   () => props.workOrder,
   newWorkOrder => {
-    if (newWorkOrder && props.visible) {
+    if ( newWorkOrder && props.visible ) {
       // Reset page count and recalculate after component renders
       currentPage.value = 1
-      setTimeout(() => {
+      setTimeout( () => {
         calculateActualPageCount()
-      }, 1500) // Give more time for complex layouts
+      }, 1500 ) // Give more time for complex layouts
     }
   }
 )
 
-defineOptions({
-  name: 'PdfPreviewModal',
-})
+defineOptions( {
+  name : 'PdfPreviewModal'
+} )
 </script>
 
 <style scoped lang="scss">

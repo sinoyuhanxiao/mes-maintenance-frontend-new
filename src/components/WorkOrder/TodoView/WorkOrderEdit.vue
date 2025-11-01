@@ -106,6 +106,24 @@
         </el-form-item>
       </div>
 
+      <!-- Approval Template Tree Select -->
+      <div class="form-section">
+        <el-form-item :label="$t('workOrder.form.approvalTemplate')" prop="approval_id">
+          <el-tree-select
+            v-model="form.approval_id"
+            :data="approvalTreeData"
+            :props="approvalTreeProps"
+            :placeholder="$t('workOrder.placeholder.selectApprovalTemplate')"
+            check-strictly
+            :render-after-expand="false"
+            filterable
+            clearable
+            default-expand-all
+            style="width: 100%"
+          />
+        </el-form-item>
+      </div>
+
       <!-- Tasks -->
       <el-divider />
       <div class="form-section tasks-section">
@@ -201,8 +219,8 @@
         </el-form-item>
       </div>
 
-      <!-- Due Date -->
-      <div class="form-section">
+      <!-- Due Date (only for individual work orders) -->
+      <div v-if="props.workOrder?.editType === 'individual'" class="form-section">
         <el-form-item :label="$t('workOrder.create.dueDate')" prop="due_date">
           <el-date-picker
             v-model="form.due_date"
@@ -235,17 +253,20 @@
       </div>
 
       <!-- End Date -->
-      <div class="form-section">
+      <div v-if="props.workOrder?.editType !== 'individual' && form.recurrence_type_id !== 1" class="form-section">
         <el-form-item label="End Date" prop="end_date">
           <el-date-picker
             v-model="form.end_date"
             type="datetime"
             placeholder="Select end date"
             style="width: 100%"
-            format="MM/DD/YYYY HH:mm"
+            format="YYYY-MM-DD HH:mm"
             value-format="YYYY-MM-DD[T]HH:mm:ss"
             :disabled-date="disabledDueDates"
           />
+          <div v-if="showRecurrenceWorkOrderDuration" class="work-order-duration">
+            <el-text type="info" size="small"> Work order duration: {{ formatRecurrenceWorkOrderDuration() }} </el-text>
+          </div>
         </el-form-item>
       </div>
 
@@ -290,11 +311,11 @@
       </div>
 
       <!-- Recurrence Settings -->
-      <div class="form-section">
+      <div v-if="props.workOrder?.editType !== 'individual' && form.recurrence_type_id !== 1" class="form-section">
         <RecurrenceEditor
           v-model:recurrence-setting="form.recurrence_setting"
           :work-order-start-date="form.start_date"
-          :work-order-due-date="form.due_date"
+          :work-order-due-date="form.end_date"
           :recurrence-setting="form.recurrence_setting"
         />
       </div>
@@ -621,7 +642,7 @@ import {
   DocumentChecked,
   Edit,
   Calendar,
-  Search,
+  Search
 } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import RecurrenceEditor from '@/views/workOrder/components/RecurrenceEditor.vue'
@@ -643,8 +664,9 @@ import {
   getAllStates,
   getEquipmentNodeTrees,
   updateWorkOrder,
-  updateRecurrenceWorkOrders,
+  updateRecurrenceWorkOrders
 } from '@/api/work-order'
+import { searchApprovalTree } from '@/api/approval'
 import { getTaskEntryById } from '@/api/task-entry'
 import { useRouter, useRoute } from 'vue-router'
 import { useTaskLibraryStore } from '@/store/modules/taskLibrary'
@@ -654,37 +676,37 @@ import { DEFAULT_TASK_STATE, buildDisplayTaskFromTemplate } from './taskPayloadH
 import { calculateStepChangesForTask, hasAnyStepChanged } from './taskStepChangeTracking'
 
 // Props
-const props = defineProps({
-  workOrder: {
-    type: Object,
-    required: true,
-  },
-})
+const props = defineProps( {
+  workOrder : {
+    type : Object,
+    required : true
+  }
+} )
 
 // Emits
-const emit = defineEmits(['back-to-detail', 'work-order-updated', 'work-order-not-found'])
+const emit = defineEmits( ['back-to-detail', 'work-order-updated', 'work-order-not-found'] )
 
 // Dialog state
-const showAddTaskDialog = ref(false)
-const showAddStandardDialog = ref(false)
-const showEditStandardDialog = ref(false)
-const editingStandard = ref(null)
+const showAddTaskDialog = ref( false )
+const showAddStandardDialog = ref( false )
+const showEditStandardDialog = ref( false )
+const editingStandard = ref( null )
 
 // Preview dialog state
-const showTaskPreviewDialog = ref(false)
-const showStandardPreviewDialog = ref(false)
-const previewTaskTemplateId = ref(null)
-const previewTaskData = ref(null)
-const previewStandardData = ref(null)
-const isTaskInteractive = ref(false)
-const previewTaskLoading = ref(false)
+const showTaskPreviewDialog = ref( false )
+const showStandardPreviewDialog = ref( false )
+const previewTaskTemplateId = ref( null )
+const previewTaskData = ref( null )
+const previewStandardData = ref( null )
+const isTaskInteractive = ref( false )
+const previewTaskLoading = ref( false )
 
 // Task assignee dialog state
-const showTaskAssigneeDialog = ref(false)
-const currentEditingTask = ref(null)
-const userSearchQuery = ref('')
-const localSelectedTaskAssignees = ref([])
-const standalonePreviewTab = ref('general')
+const showTaskAssigneeDialog = ref( false )
+const currentEditingTask = ref( null )
+const userSearchQuery = ref( '' )
+const localSelectedTaskAssignees = ref( [] )
+const standalonePreviewTab = ref( 'general' )
 
 // Stores and utilities
 const { t } = useI18n()
@@ -695,101 +717,111 @@ const workOrderDraftStore = useWorkOrderDraftStore()
 const { currentPayload, showJsonDisplayer, logPayload } = usePayloadLogger()
 
 // Form refs and loading
-const formRef = ref(null)
-const loading = ref(false)
-const isLoggingInProgress = ref(false)
+const formRef = ref( null )
+const loading = ref( false )
+const isLoggingInProgress = ref( false )
 let logButtonTimeout = null
 
 // Form data - matching API requirements and using same structure as create
-const form = reactive(createEmptyWorkOrderForm())
+const form = reactive( createEmptyWorkOrderForm() )
 // Add workOrderId field to track current work order for change detection
 form.workOrderId = null
 let isHydratingForm = false
-const hasHydratedFromDraft = ref(false)
+const hasHydratedFromDraft = ref( false )
 
 // Task and Standard change tracking for proper API integration
-const originalTasks = ref([])
-const originalStandards = ref([])
-const taskChanges = reactive({
-  added: [],
-  updated: [],
-  deleted: [],
-})
-const standardChanges = reactive({
-  added: [],
-  updated: [],
-  deleted: [],
-})
+const originalTasks = ref( [] )
+const originalStandards = ref( [] )
+const taskChanges = reactive( {
+  added : [],
+  updated : [],
+  deleted : []
+} )
+const standardChanges = reactive( {
+  added : [],
+  updated : [],
+  deleted : []
+} )
 
-const editHeaderTitle = computed(() => {
-  const base = t('workOrder.editWorkOrder')
+const editHeaderTitle = computed( () => {
+  const editType = props.workOrder?.editType
   const name = form.name || props.workOrder?.name
+
+  // Build title based on editType
+  if ( editType === 'individual' ) {
+    return name ? `Edit Individual Work Order - ${name}` : 'Edit Individual Work Order'
+  } else if ( editType === 'recurrence' ) {
+    return name ? `Edit Recurrence Work Order - ${name}` : 'Edit Recurrence Work Order'
+  }
+
+  // Default for non-recurring edits
+  const base = t( 'workOrder.editWorkOrder' )
   return name ? `${base} - ${name}` : base
-})
+} )
 
-const createFallbackStep = () => ({
-  name: 'Checklist',
-  description: 'Auto-generated step',
-  type: 'template',
-  required: false,
-  remarks: '',
-  value: {
-    type: 'checkbox',
-    value: false,
-    require_image: false,
-    image: [],
+const createFallbackStep = () => ( {
+  name : 'Checklist',
+  description : 'Auto-generated step',
+  type : 'template',
+  required : false,
+  remarks : '',
+  value : {
+    type : 'checkbox',
+    value : false,
+    require_image : false,
+    image : []
   },
-  tools: [],
-})
+  tools : []
+} )
 
-const cloneArray = value => (Array.isArray(value) ? clonePayload(value) : [])
+const cloneArray = value => ( Array.isArray( value ) ? clonePayload( value ) : [] )
 
 const formatDateTimeForPicker = value => {
-  if (!value) return null
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) {
+  if ( !value ) return null
+  const date = new Date( value )
+  if ( Number.isNaN( date.getTime() ) ) {
     return null
   }
 
-  const pad = num => String(num).padStart(2, '0')
+  const pad = num => String( num ).padStart( 2, '0' )
   const year = date.getFullYear()
-  const month = pad(date.getMonth() + 1)
-  const day = pad(date.getDate())
-  const hours = pad(date.getHours())
-  const minutes = pad(date.getMinutes())
-  const seconds = pad(date.getSeconds())
+  const month = pad( date.getMonth() + 1 )
+  const day = pad( date.getDate() )
+  const hours = pad( date.getHours() )
+  const minutes = pad( date.getMinutes() )
+  const seconds = pad( date.getSeconds() )
 
   return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
 }
 
 const pickRandomOptionId = options => {
-  if (!Array.isArray(options) || options.length === 0) return null
-  const randomOption = options[Math.floor(Math.random() * options.length)]
+  if ( !Array.isArray( options ) || options.length === 0 ) return null
+  const randomOption = options[Math.floor( Math.random() * options.length )]
   return randomOption?.id ?? randomOption?.value ?? null
 }
 
 const normalizeIdentifier = value => {
-  if (value === undefined || value === null) return null
-  const normalized = String(value).trim()
+  if ( value === undefined || value === null ) return null
+  const normalized = String( value ).trim()
   return normalized.length > 0 ? normalized : null
 }
 
 const generatedIdPrefixes = ['work-order-task-', 'new-task-', 'existing-task-', 'temp-']
 
 const isGeneratedIdentifier = id => {
-  const normalized = normalizeIdentifier(id)
-  if (!normalized) return false
+  const normalized = normalizeIdentifier( id )
+  if ( !normalized ) return false
   const lower = normalized.toLowerCase()
-  return generatedIdPrefixes.some(prefix => lower.startsWith(prefix))
+  return generatedIdPrefixes.some( prefix => lower.startsWith( prefix ) )
 }
 
 const getTaskIdentityCandidates = task => {
-  if (!task || typeof task !== 'object') return []
+  if ( !task || typeof task !== 'object' ) return []
   const seen = new Set()
   const pushCandidate = candidate => {
-    const normalized = normalizeIdentifier(candidate)
-    if (normalized && !seen.has(normalized)) {
-      seen.add(normalized)
+    const normalized = normalizeIdentifier( candidate )
+    if ( normalized && !seen.has( normalized ) ) {
+      seen.add( normalized )
     }
   }
 
@@ -802,27 +834,27 @@ const getTaskIdentityCandidates = task => {
     task.id,
     payload.task_id,
     payload.id,
-    payload.work_order_task_id,
-  ].forEach(pushCandidate)
+    payload.work_order_task_id
+  ].forEach( pushCandidate )
 
-  return Array.from(seen)
+  return Array.from( seen )
 }
 
-const findTaskIndexInCollection = (collection, task) => {
-  if (!Array.isArray(collection) || !task) return -1
-  const candidates = getTaskIdentityCandidates(task)
-  if (candidates.length === 0) return -1
-  const candidateSet = new Set(candidates)
-  return collection.findIndex(item => {
-    const itemCandidates = getTaskIdentityCandidates(item)
-    return itemCandidates.some(candidate => candidateSet.has(candidate))
-  })
+const findTaskIndexInCollection = ( collection, task ) => {
+  if ( !Array.isArray( collection ) || !task ) return -1
+  const candidates = getTaskIdentityCandidates( task )
+  if ( candidates.length === 0 ) return -1
+  const candidateSet = new Set( candidates )
+  return collection.findIndex( item => {
+    const itemCandidates = getTaskIdentityCandidates( item )
+    return itemCandidates.some( candidate => candidateSet.has( candidate ) )
+  } )
 }
 
 const resolveTaskEntryId = task => {
-  const candidates = getTaskIdentityCandidates(task)
-  for (const candidate of candidates) {
-    if (candidate && !isGeneratedIdentifier(candidate)) {
+  const candidates = getTaskIdentityCandidates( task )
+  for ( const candidate of candidates ) {
+    if ( candidate && !isGeneratedIdentifier( candidate ) ) {
       return candidate
     }
   }
@@ -830,7 +862,7 @@ const resolveTaskEntryId = task => {
 }
 
 const hasTemplateAssociation = task => {
-  if (!task || typeof task !== 'object') return false
+  if ( !task || typeof task !== 'object' ) return false
   return Boolean(
     task.templateId ||
       task.template_id ||
@@ -841,83 +873,83 @@ const hasTemplateAssociation = task => {
 }
 
 const isStandaloneTaskRecord = task => {
-  if (!task || typeof task !== 'object') return false
-  if (hasTemplateAssociation(task)) return false
-  if (task.source && task.source !== 'adhoc') return false
+  if ( !task || typeof task !== 'object' ) return false
+  if ( hasTemplateAssociation( task ) ) return false
+  if ( task.source && task.source !== 'adhoc' ) return false
   return true
 }
 
 const needsStandaloneEntryFetch = task => {
-  if (!isStandaloneTaskRecord(task)) return false
-  if (task?.__hasLocalEdits || task?.__entryStepsLoaded) return false
-  return Boolean(resolveTaskEntryId(task))
+  if ( !isStandaloneTaskRecord( task ) ) return false
+  if ( task?.__hasLocalEdits || task?.__entryStepsLoaded ) return false
+  return Boolean( resolveTaskEntryId( task ) )
 }
 
-const applyStepsToTask = (targetTask, steps, { markLocalEdit = false, entryId = null } = {}) => {
-  if (!targetTask || typeof targetTask !== 'object') return
+const applyStepsToTask = ( targetTask, steps, { markLocalEdit = false, entryId = null } = {} ) => {
+  if ( !targetTask || typeof targetTask !== 'object' ) return
 
-  const normalizedSteps = Array.isArray(steps) && steps.length > 0 ? clonePayload(steps) : [createFallbackStep()]
-  targetTask.steps = clonePayload(normalizedSteps)
+  const normalizedSteps = Array.isArray( steps ) && steps.length > 0 ? clonePayload( steps ) : [createFallbackStep()]
+  targetTask.steps = clonePayload( normalizedSteps )
 
-  if (!targetTask.payload || typeof targetTask.payload !== 'object') {
+  if ( !targetTask.payload || typeof targetTask.payload !== 'object' ) {
     targetTask.payload = {}
   }
 
-  targetTask.payload.steps = clonePayload(normalizedSteps)
+  targetTask.payload.steps = clonePayload( normalizedSteps )
 
-  if (entryId) {
-    const currentId = normalizeIdentifier(targetTask.id)
-    if (!currentId || isGeneratedIdentifier(currentId)) {
+  if ( entryId ) {
+    const currentId = normalizeIdentifier( targetTask.id )
+    if ( !currentId || isGeneratedIdentifier( currentId ) ) {
       targetTask.id = entryId
     }
 
-    const payloadId = normalizeIdentifier(targetTask.payload.id)
-    if (!payloadId || isGeneratedIdentifier(payloadId)) {
+    const payloadId = normalizeIdentifier( targetTask.payload.id )
+    if ( !payloadId || isGeneratedIdentifier( payloadId ) ) {
       targetTask.payload.id = entryId
     }
 
-    const payloadTaskId = normalizeIdentifier(targetTask.payload.task_id)
-    if (!payloadTaskId || isGeneratedIdentifier(payloadTaskId)) {
+    const payloadTaskId = normalizeIdentifier( targetTask.payload.task_id )
+    if ( !payloadTaskId || isGeneratedIdentifier( payloadTaskId ) ) {
       targetTask.payload.task_id = entryId
     }
   }
 
-  if (markLocalEdit) {
+  if ( markLocalEdit ) {
     targetTask.__hasLocalEdits = true
   }
 
   targetTask.__entryStepsLoaded = true
 }
 
-const updateTaskStepsInCollection = (collection, task, steps, entryId = null) => {
-  if (!Array.isArray(collection) || !task) return
-  const normalizedSteps = Array.isArray(steps) && steps.length > 0 ? clonePayload(steps) : [createFallbackStep()]
-  const index = findTaskIndexInCollection(collection, task)
-  if (index === -1) return
+const updateTaskStepsInCollection = ( collection, task, steps, entryId = null ) => {
+  if ( !Array.isArray( collection ) || !task ) return
+  const normalizedSteps = Array.isArray( steps ) && steps.length > 0 ? clonePayload( steps ) : [createFallbackStep()]
+  const index = findTaskIndexInCollection( collection, task )
+  if ( index === -1 ) return
 
   const target = collection[index]
-  if (!target || typeof target !== 'object') return
+  if ( !target || typeof target !== 'object' ) return
 
-  target.steps = clonePayload(normalizedSteps)
+  target.steps = clonePayload( normalizedSteps )
 
-  if (!target.payload || typeof target.payload !== 'object') {
+  if ( !target.payload || typeof target.payload !== 'object' ) {
     target.payload = {}
   }
-  target.payload.steps = clonePayload(normalizedSteps)
+  target.payload.steps = clonePayload( normalizedSteps )
 
-  if (entryId) {
-    const currentId = normalizeIdentifier(target.id)
-    if (!currentId || isGeneratedIdentifier(currentId)) {
+  if ( entryId ) {
+    const currentId = normalizeIdentifier( target.id )
+    if ( !currentId || isGeneratedIdentifier( currentId ) ) {
       target.id = entryId
     }
 
-    const payloadId = normalizeIdentifier(target.payload.id)
-    if (!payloadId || isGeneratedIdentifier(payloadId)) {
+    const payloadId = normalizeIdentifier( target.payload.id )
+    if ( !payloadId || isGeneratedIdentifier( payloadId ) ) {
       target.payload.id = entryId
     }
 
-    const payloadTaskId = normalizeIdentifier(target.payload.task_id)
-    if (!payloadTaskId || isGeneratedIdentifier(payloadTaskId)) {
+    const payloadTaskId = normalizeIdentifier( target.payload.task_id )
+    if ( !payloadTaskId || isGeneratedIdentifier( payloadTaskId ) ) {
       target.payload.task_id = entryId
     }
   }
@@ -925,54 +957,54 @@ const updateTaskStepsInCollection = (collection, task, steps, entryId = null) =>
   target.__entryStepsLoaded = true
 }
 
-const syncOriginalTaskEntrySteps = (task, steps, entryId = null) => {
-  updateTaskStepsInCollection(originalTasks.value, task, steps, entryId)
-  if (Array.isArray(workOrderDraftStore.originalTasks)) {
-    updateTaskStepsInCollection(workOrderDraftStore.originalTasks, task, steps, entryId)
+const syncOriginalTaskEntrySteps = ( task, steps, entryId = null ) => {
+  updateTaskStepsInCollection( originalTasks.value, task, steps, entryId )
+  if ( Array.isArray( workOrderDraftStore.originalTasks ) ) {
+    updateTaskStepsInCollection( workOrderDraftStore.originalTasks, task, steps, entryId )
   }
 }
 
 const ensureStandaloneTaskEntryData = async task => {
-  if (!needsStandaloneEntryFetch(task)) {
-    const existingSteps = Array.isArray(task?.steps) && task.steps.length > 0 ? task.steps : task?.payload?.steps || []
-    return { steps: existingSteps }
+  if ( !needsStandaloneEntryFetch( task ) ) {
+    const existingSteps = Array.isArray( task?.steps ) && task.steps.length > 0 ? task.steps : task?.payload?.steps || []
+    return { steps : existingSteps }
   }
 
-  const entryId = resolveTaskEntryId(task)
-  if (!entryId) {
-    return { steps: task?.steps || [] }
+  const entryId = resolveTaskEntryId( task )
+  if ( !entryId ) {
+    return { steps : task?.steps || [] }
   }
 
-  const response = await getTaskEntryById(entryId)
+  const response = await getTaskEntryById( entryId )
   const entryData = response?.data ?? response
 
-  if (!entryData) {
-    throw new Error('Missing task entry payload')
+  if ( !entryData ) {
+    throw new Error( 'Missing task entry payload' )
   }
 
-  const entrySteps = Array.isArray(entryData.steps) ? entryData.steps : []
-  applyStepsToTask(task, entrySteps, { entryId })
-  syncOriginalTaskEntrySteps(task, entrySteps, entryId)
+  const entrySteps = Array.isArray( entryData.steps ) ? entryData.steps : []
+  applyStepsToTask( task, entrySteps, { entryId } )
+  syncOriginalTaskEntrySteps( task, entrySteps, entryId )
 
-  if (entryData.name && !task.name) {
+  if ( entryData.name && !task.name ) {
     task.name = entryData.name
   }
 
-  if (entryData.description !== undefined && entryData.description !== null && !task.description) {
+  if ( entryData.description !== undefined && entryData.description !== null && !task.description ) {
     task.description = entryData.description
   }
 
-  if (entryData.name) {
+  if ( entryData.name ) {
     task.payload.name = entryData.name
   }
 
-  if (entryData.description !== undefined && entryData.description !== null) {
+  if ( entryData.description !== undefined && entryData.description !== null ) {
     task.payload.description = entryData.description
   }
 
   return {
-    steps: entrySteps,
-    entryData,
+    steps : entrySteps,
+    entryData
   }
 }
 
@@ -983,23 +1015,23 @@ const getTaskIdentifier = task => {
 }
 
 const findOriginalTask = taskId => {
-  return originalTasks.value.find(task => getTaskIdentifier(task) === taskId)
+  return originalTasks.value.find( task => getTaskIdentifier( task ) === taskId )
 }
 
-const isTaskModified = (currentTask, originalTask) => {
-  if (!originalTask) return false
+const isTaskModified = ( currentTask, originalTask ) => {
+  if ( !originalTask ) return false
 
   // Check task-level metadata changes
   const metadataProps = ['name', 'description', 'estimated_minutes', 'category_id', 'equipment_node_id']
 
-  const metadataChanged = metadataProps.some(prop => currentTask[prop] !== originalTask[prop])
+  const metadataChanged = metadataProps.some( prop => currentTask[prop] !== originalTask[prop] )
 
-  if (metadataChanged) return true
+  if ( metadataChanged ) return true
 
   // Check if assignees changed
-  const currentAssignees = JSON.stringify(currentTask.assignee_ids || [])
-  const originalAssignees = JSON.stringify(originalTask.assignee_ids || [])
-  if (currentAssignees !== originalAssignees) return true
+  const currentAssignees = JSON.stringify( currentTask.assignee_ids || [] )
+  const originalAssignees = JSON.stringify( originalTask.assignee_ids || [] )
+  if ( currentAssignees !== originalAssignees ) return true
 
   // Check if steps changed (using the helper function for accurate detection)
   const currentSteps = currentTask.steps || currentTask.payload?.steps || []
@@ -1016,7 +1048,7 @@ const isTaskModified = (currentTask, originalTask) => {
     originalTask.payload?.steps ||
     []
 
-  return hasAnyStepChanged(currentSteps, originalSteps)
+  return hasAnyStepChanged( currentSteps, originalSteps )
 }
 
 const calculateTaskChanges = () => {
@@ -1026,28 +1058,28 @@ const calculateTaskChanges = () => {
   taskChanges.deleted.length = 0
 
   // Find added and updated tasks
-  form.tasks.forEach(currentTask => {
-    const taskId = getTaskIdentifier(currentTask)
-    const originalTask = findOriginalTask(taskId)
+  form.tasks.forEach( currentTask => {
+    const taskId = getTaskIdentifier( currentTask )
+    const originalTask = findOriginalTask( taskId )
 
-    if (!originalTask) {
+    if ( !originalTask ) {
       // New task - add to added list (clean payload)
-      const addPayload = { ...(currentTask.payload || currentTask) }
+      const addPayload = { ...( currentTask.payload || currentTask ) }
       delete addPayload.work_order_id
       delete addPayload.category_name
-      taskChanges.added.push(addPayload)
-    } else if (isTaskModified(currentTask, originalTask)) {
+      taskChanges.added.push( addPayload )
+    } else if ( isTaskModified( currentTask, originalTask ) ) {
       // Modified task - build structured update payload with step change tracking
       const updatePayload = {
-        id: originalTask.id || originalTask.task_id, // Ensure we have the original ID for updates
-        name: currentTask.name,
-        description: currentTask.description || '',
-        time_estimate_sec: currentTask.estimated_minutes
+        id : originalTask.id || originalTask.task_id, // Ensure we have the original ID for updates
+        name : currentTask.name,
+        description : currentTask.description || '',
+        time_estimate_sec : currentTask.estimated_minutes
           ? currentTask.estimated_minutes * 60
           : currentTask.time_estimate_sec || 1800,
-        category_id: currentTask.category_id,
-        equipment_node_id: currentTask.equipment_node_id,
-        assignee_ids: currentTask.assignee_ids || [],
+        category_id : currentTask.category_id,
+        equipment_node_id : currentTask.equipment_node_id,
+        assignee_ids : currentTask.assignee_ids || []
       }
 
       // For template tasks, use __originalTemplateSteps (fetched before navigation)
@@ -1055,30 +1087,30 @@ const calculateTaskChanges = () => {
       // This provides the baseline for comparing which steps were added/modified/deleted
       let comparisonTask = originalTask
 
-      if (currentTask.__originalTemplateSteps || currentTask.payload?.__originalTemplateSteps) {
+      if ( currentTask.__originalTemplateSteps || currentTask.payload?.__originalTemplateSteps ) {
         // Template task - use original template steps
         comparisonTask = {
           ...originalTask,
-          steps: currentTask.__originalTemplateSteps || currentTask.payload.__originalTemplateSteps,
-          payload: {
-            ...(originalTask.payload || {}),
-            steps: currentTask.__originalTemplateSteps || currentTask.payload.__originalTemplateSteps,
-          },
+          steps : currentTask.__originalTemplateSteps || currentTask.payload.__originalTemplateSteps,
+          payload : {
+            ...( originalTask.payload || {} ),
+            steps : currentTask.__originalTemplateSteps || currentTask.payload.__originalTemplateSteps
+          }
         }
-      } else if (currentTask.__originalSteps || currentTask.payload?.__originalSteps) {
+      } else if ( currentTask.__originalSteps || currentTask.payload?.__originalSteps ) {
         // Standalone task - use original task steps (from updateTasksWithTemplate)
         comparisonTask = {
           ...originalTask,
-          steps: currentTask.__originalSteps || currentTask.payload.__originalSteps,
-          payload: {
-            ...(originalTask.payload || {}),
-            steps: currentTask.__originalSteps || currentTask.payload.__originalSteps,
-          },
+          steps : currentTask.__originalSteps || currentTask.payload.__originalSteps,
+          payload : {
+            ...( originalTask.payload || {} ),
+            steps : currentTask.__originalSteps || currentTask.payload.__originalSteps
+          }
         }
       }
 
       // Calculate step-level changes using the new helper function
-      const stepChanges = calculateStepChangesForTask(currentTask, comparisonTask)
+      const stepChanges = calculateStepChangesForTask( currentTask, comparisonTask )
 
       // Add step change lists to the payload
       updatePayload.step_add_list = stepChanges.step_add_list
@@ -1090,22 +1122,22 @@ const calculateTaskChanges = () => {
       // New approach: { id, step_add_list, step_update_list, step_delete_list }
       delete updatePayload.steps
 
-      taskChanges.updated.push(updatePayload)
+      taskChanges.updated.push( updatePayload )
     }
-  })
+  } )
 
   // Find deleted tasks
-  originalTasks.value.forEach(originalTask => {
-    const taskId = getTaskIdentifier(originalTask)
-    const currentTask = form.tasks.find(task => getTaskIdentifier(task) === taskId)
+  originalTasks.value.forEach( originalTask => {
+    const taskId = getTaskIdentifier( originalTask )
+    const currentTask = form.tasks.find( task => getTaskIdentifier( task ) === taskId )
 
-    if (!currentTask) {
+    if ( !currentTask ) {
       // Task was deleted
       taskChanges.deleted.push(
         originalTask.id || originalTask.task_id || originalTask.template_id || originalTask.templateId
       )
     }
-  })
+  } )
 }
 
 // Standard change tracking utilities
@@ -1114,17 +1146,17 @@ const getStandardIdentifier = standard => {
 }
 
 const findOriginalStandard = standardId => {
-  return originalStandards.value.find(standard => getStandardIdentifier(standard) === standardId)
+  return originalStandards.value.find( standard => getStandardIdentifier( standard ) === standardId )
 }
 
-const isStandardModified = (currentStandard, originalStandard) => {
-  if (!originalStandard) return false
+const isStandardModified = ( currentStandard, originalStandard ) => {
+  if ( !originalStandard ) return false
 
   // Compare key properties
   const compareProps = ['name', 'description', 'category']
   return (
-    compareProps.some(prop => currentStandard[prop] !== originalStandard[prop]) ||
-    JSON.stringify(currentStandard.items || []) !== JSON.stringify(originalStandard.items || [])
+    compareProps.some( prop => currentStandard[prop] !== originalStandard[prop] ) ||
+    JSON.stringify( currentStandard.items || [] ) !== JSON.stringify( originalStandard.items || [] )
   )
 }
 
@@ -1135,42 +1167,42 @@ const calculateStandardChanges = () => {
   standardChanges.deleted.length = 0
 
   // Find added and updated standards
-  form.standards.forEach(currentStandard => {
-    const standardId = getStandardIdentifier(currentStandard)
-    const originalStandard = findOriginalStandard(standardId)
+  form.standards.forEach( currentStandard => {
+    const standardId = getStandardIdentifier( currentStandard )
+    const originalStandard = findOriginalStandard( standardId )
 
-    if (!originalStandard) {
+    if ( !originalStandard ) {
       // New standard - add to added list
-      standardChanges.added.push({
+      standardChanges.added.push( {
         ...currentStandard,
-        module: 200, // Standard module for work orders
-      })
-    } else if (isStandardModified(currentStandard, originalStandard)) {
+        module : 200 // Standard module for work orders
+      } )
+    } else if ( isStandardModified( currentStandard, originalStandard ) ) {
       // Modified standard - add to updated list
       // Destructure to remove 'id' field and use 'standard_id' instead
       // eslint-disable-next-line no-unused-vars
       const { id, ...standardWithoutId } = currentStandard
-      standardChanges.updated.push({
+      standardChanges.updated.push( {
         ...standardWithoutId,
-        standard_id: originalStandard.id || originalStandard.standard_id,
-        module: 200,
-      })
+        standard_id : originalStandard.id || originalStandard.standard_id,
+        module : 200
+      } )
     }
-  })
+  } )
 
   // Find deleted standards
-  originalStandards.value.forEach(originalStandard => {
-    const standardId = getStandardIdentifier(originalStandard)
-    const currentStandard = form.standards.find(standard => getStandardIdentifier(standard) === standardId)
+  originalStandards.value.forEach( originalStandard => {
+    const standardId = getStandardIdentifier( originalStandard )
+    const currentStandard = form.standards.find( standard => getStandardIdentifier( standard ) === standardId )
 
-    if (!currentStandard) {
+    if ( !currentStandard ) {
       // Standard was deleted
-      standardChanges.deleted.push(originalStandard.id || originalStandard.standard_id || originalStandard.standardId)
+      standardChanges.deleted.push( originalStandard.id || originalStandard.standard_id || originalStandard.standardId )
     }
-  })
+  } )
 }
 
-const buildExistingTaskId = (task, index) => {
+const buildExistingTaskId = ( task, index ) => {
   const candidates = [
     task.id,
     task.local_id,
@@ -1179,46 +1211,46 @@ const buildExistingTaskId = (task, index) => {
     task.reference_id,
     task.template_task_id,
     task.template_id,
-    task.templateId,
+    task.templateId
   ]
 
-  const rawId = candidates.find(candidate => {
-    if (candidate === undefined || candidate === null) return false
-    const str = String(candidate).trim()
+  const rawId = candidates.find( candidate => {
+    if ( candidate === undefined || candidate === null ) return false
+    const str = String( candidate ).trim()
     return str.length > 0
-  })
+  } )
 
-  if (!rawId) {
+  if ( !rawId ) {
     return `existing-task-${index}`
   }
 
-  const base = String(rawId).trim()
+  const base = String( rawId ).trim()
   return base.length > 0 ? base : `existing-task-${index}`
 }
 
 const decorateTaskCategory = task => {
-  if (!task || typeof task !== 'object') {
+  if ( !task || typeof task !== 'object' ) {
     return false
   }
 
   let changed = false
 
-  if (task.category && typeof task.category === 'object') {
+  if ( task.category && typeof task.category === 'object' ) {
     const fallbackName = task.category.name ?? task.category.label ?? task.category_name ?? ''
-    if (task.category_name !== fallbackName) {
+    if ( task.category_name !== fallbackName ) {
       task.category_name = fallbackName
       changed = true
     }
-  } else if (typeof task.category === 'string') {
-    if (task.category_name !== task.category) {
+  } else if ( typeof task.category === 'string' ) {
+    if ( task.category_name !== task.category ) {
       task.category_name = task.category
       changed = true
     }
   }
 
-  if (task.category && !task.category_name) {
+  if ( task.category && !task.category_name ) {
     const inferred = task.category.name ?? task.category.label ?? ''
-    if (task.category_name !== inferred) {
+    if ( task.category_name !== inferred ) {
       task.category_name = inferred
       changed = true
     }
@@ -1228,167 +1260,214 @@ const decorateTaskCategory = task => {
 }
 
 const decorateTasksCategories = tasks => {
-  if (!Array.isArray(tasks)) return false
+  if ( !Array.isArray( tasks ) ) return false
   let mutated = false
-  tasks.forEach(task => {
-    mutated = decorateTaskCategory(task) || mutated
-  })
+  tasks.forEach( task => {
+    mutated = decorateTaskCategory( task ) || mutated
+  } )
   return mutated
 }
 
-const buildPayloadFromExistingTask = (task, workOrderId) => {
-  if (task && typeof task === 'object' && task.payload && typeof task.payload === 'object') {
-    const payload = clonePayload(task.payload)
+const buildPayloadFromExistingTask = ( task, workOrderId ) => {
+  if ( task && typeof task === 'object' && task.payload && typeof task.payload === 'object' ) {
+    const payload = clonePayload( task.payload )
 
     payload.work_order_id = payload.work_order_id ?? task.work_order_id ?? workOrderId ?? 0
     payload.state = payload.state ?? task.state ?? DEFAULT_TASK_STATE
 
-    if (!Array.isArray(payload.steps) || payload.steps.length === 0) {
+    if ( !Array.isArray( payload.steps ) || payload.steps.length === 0 ) {
       payload.steps = [createFallbackStep()]
     }
 
-    if (!payload.time_estimate_sec || payload.time_estimate_sec <= 0) {
+    if ( !payload.time_estimate_sec || payload.time_estimate_sec <= 0 ) {
       const minutes = task.estimated_minutes ?? task.estimatedMinutes ?? 0
       payload.time_estimate_sec = task.time_estimate_sec ?? task.timeEstimateSec ?? minutes * 60
     }
 
-    if (payload.template_id == null) {
+    if ( payload.template_id == null ) {
       payload.template_id = task.template_id ?? task.templateId ?? null
     }
 
-    if (payload.category_id == null) {
+    if ( payload.category_id == null ) {
       payload.category_id = task.category_id ?? task.category?.id ?? null
     }
 
-    if (payload.category_name == null) {
+    if ( payload.category_name == null ) {
       payload.category_name = task.category?.name ?? task.category_name ?? ''
     }
 
-    payload.attachments = cloneArray(payload.attachments || task.attachments || task.file_list)
+    payload.attachments = cloneArray( payload.attachments || task.attachments || task.file_list )
 
     return payload
   }
 
-  const steps = Array.isArray(task?.steps) ? cloneArray(task.steps) : []
-  if (steps.length === 0) {
-    steps.push(createFallbackStep())
+  const steps = Array.isArray( task?.steps ) ? cloneArray( task.steps ) : []
+  if ( steps.length === 0 ) {
+    steps.push( createFallbackStep() )
   }
 
   const minutesEstimate = task?.estimated_minutes || task?.estimatedMinutes || 0
   const timeEstimate = task?.time_estimate_sec || task?.timeEstimateSec || minutesEstimate * 60
 
   return {
-    name: task?.name || task?.task_name || task?.task_list_text || `Task`,
-    description: task?.description || '',
-    time_estimate_sec: timeEstimate,
+    name : task?.name || task?.task_name || task?.task_list_text || `Task`,
+    description : task?.description || '',
+    time_estimate_sec : timeEstimate,
     steps,
-    attachments: cloneArray(task?.attachments || task?.file_list),
-    assignee_ids: cloneArray(task?.assignee_ids),
-    equipment_node_id: task?.equipment_node_id || task?.equipment_node?.id || null,
-    location_id: task?.location_id ?? null,
-    category_id: task?.category_id ?? task?.category?.id ?? null,
-    category_name: task?.category?.name ?? task?.category_name ?? '',
-    work_order_id: task?.work_order_id ?? workOrderId ?? 0,
-    state: task?.state ?? DEFAULT_TASK_STATE,
-    template_id: task?.template_id ?? task?.templateId ?? null,
+    attachments : cloneArray( task?.attachments || task?.file_list ),
+    assignee_ids : cloneArray( task?.assignee_ids ),
+    equipment_node_id : task?.equipment_node_id || task?.equipment_node?.id || null,
+    location_id : task?.location_id ?? null,
+    category_id : task?.category_id ?? task?.category?.id ?? null,
+    category_name : task?.category?.name ?? task?.category_name ?? '',
+    work_order_id : task?.work_order_id ?? workOrderId ?? 0,
+    state : task?.state ?? DEFAULT_TASK_STATE,
+    template_id : task?.template_id ?? task?.templateId ?? null
   }
 }
 
-const normalizeExistingTasks = (taskList, workOrderId) => {
-  if (!Array.isArray(taskList)) return []
+const normalizeExistingTasks = ( taskList, workOrderId ) => {
+  if ( !Array.isArray( taskList ) ) return []
 
-  return taskList.map((rawTask, index) => {
-    if (rawTask && typeof rawTask === 'object') {
-      const taskClone = clonePayload(rawTask)
-      const payload = buildPayloadFromExistingTask(taskClone, workOrderId)
+  return taskList.map( ( rawTask, index ) => {
+    if ( rawTask && typeof rawTask === 'object' ) {
+      const taskClone = clonePayload( rawTask )
+      const payload = buildPayloadFromExistingTask( taskClone, workOrderId )
 
       const category = taskClone.category
-        ? clonePayload(taskClone.category)
+        ? clonePayload( taskClone.category )
         : payload.category_name
-        ? {
-            id: payload.category_id ?? null,
-            name: payload.category_name,
+          ? {
+            id : payload.category_id ?? null,
+            name : payload.category_name
           }
-        : null
+          : null
 
       const estimatedMinutes =
-        (taskClone.estimated_minutes ??
+        ( taskClone.estimated_minutes ??
           taskClone.estimatedMinutes ??
-          Math.round((payload.time_estimate_sec || 0) / 60)) ||
+          Math.round( ( payload.time_estimate_sec || 0 ) / 60 ) ) ||
         0
 
       const displayTask = {
-        id: buildExistingTaskId(taskClone, index),
-        name: payload.name || `Task ${index + 1}`,
-        description: payload.description || '',
+        id : buildExistingTaskId( taskClone, index ),
+        name : payload.name || `Task ${index + 1}`,
+        description : payload.description || '',
         category,
-        category_name: category?.name || taskClone.category_name || payload.category_name || '',
-        estimated_minutes: estimatedMinutes,
-        templateId: payload.template_id,
-        template_id: payload.template_id,
-        steps: Array.isArray(payload.steps) ? payload.steps : [],
-        source: taskClone.source || (payload.template_id ? 'template' : 'adhoc'),
+        category_name : category?.name || taskClone.category_name || payload.category_name || '',
+        estimated_minutes : estimatedMinutes,
+        templateId : payload.template_id,
+        template_id : payload.template_id,
+        steps : Array.isArray( payload.steps ) ? payload.steps : [],
+        source : taskClone.source || ( payload.template_id ? 'template' : 'adhoc' ),
         payload,
-        rawTemplate: taskClone.rawTemplate || taskClone.template || null,
-        total_steps: taskClone.total_steps ?? payload.steps?.length ?? 0,
-        applicable_assets: Array.isArray(taskClone.applicable_assets)
-          ? cloneArray(taskClone.applicable_assets)
+        rawTemplate : taskClone.rawTemplate || taskClone.template || null,
+        total_steps : taskClone.total_steps ?? payload.steps?.length ?? 0,
+        applicable_assets : Array.isArray( taskClone.applicable_assets )
+          ? cloneArray( taskClone.applicable_assets )
           : taskClone.applicable_assets
-          ? [String(taskClone.applicable_assets)]
-          : [],
+            ? [String( taskClone.applicable_assets )]
+            : []
       }
 
-      decorateTaskCategory(displayTask)
+      decorateTaskCategory( displayTask )
       return displayTask
     }
 
     const fallbackName = typeof rawTask === 'string' ? rawTask : `Task ${index + 1}`
-    const payload = buildPayloadFromExistingTask({ name: fallbackName }, workOrderId)
+    const payload = buildPayloadFromExistingTask( { name : fallbackName }, workOrderId )
 
     return {
-      id: `existing-task-${index}`,
-      name: fallbackName,
-      description: '',
-      category: null,
-      category_name: '',
-      estimated_minutes: Math.round((payload.time_estimate_sec || 0) / 60) || 0,
-      templateId: null,
-      template_id: null,
-      steps: payload.steps,
-      source: 'adhoc',
+      id : `existing-task-${index}`,
+      name : fallbackName,
+      description : '',
+      category : null,
+      category_name : '',
+      estimated_minutes : Math.round( ( payload.time_estimate_sec || 0 ) / 60 ) || 0,
+      templateId : null,
+      template_id : null,
+      steps : payload.steps,
+      source : 'adhoc',
       payload,
-      rawTemplate: null,
-      total_steps: payload.steps.length,
-      applicable_assets: [],
+      rawTemplate : null,
+      total_steps : payload.steps.length,
+      applicable_assets : []
     }
-  })
+  } )
 }
 
 // Existing file tracking for edit mode
-const existingImages = ref([])
-const existingFiles = ref([])
+const existingImages = ref( [] )
+const existingFiles = ref( [] )
 
 // New file tracking - separate File objects from URLs
-const newImages = ref([])
-const newFiles = ref([])
-const newImageUrls = ref([])
-const newFileUrls = ref([])
+const newImages = ref( [] )
+const newFiles = ref( [] )
+const newImageUrls = ref( [] )
+const newFileUrls = ref( [] )
 
 // Options data
-const assigneeOptions = ref([])
+const assigneeOptions = ref( [] )
 
-const supervisorOptions = ref([])
-const workTypeOptions = ref([])
-const priorityOptions = ref([])
-const categoryOptions = ref([])
-const stateOptions = ref([])
-const assetTreeData = ref([])
+const supervisorOptions = ref( [] )
+const workTypeOptions = ref( [] )
+const priorityOptions = ref( [] )
+const categoryOptions = ref( [] )
+const stateOptions = ref( [] )
+const assetTreeData = ref( [] )
+const approvalTreeData = ref( [] )
 
 // Tree configuration
 const treeProps = {
-  children: 'children',
-  label: 'name',
-  value: 'id',
+  children : 'children',
+  label : 'name',
+  value : 'id'
+}
+
+// Approval tree props for el-tree-select
+const approvalTreeProps = {
+  children : 'children',
+  label : 'label',
+  value : 'id',
+  disabled : 'disabled'
+}
+
+/**
+ * Transform approval tree API response into hierarchical tree structure for el-tree-select
+ * Structure: Team > Approval Type > Approval Template (only templates are selectable)
+ */
+const buildApprovalTree = teams => {
+  return teams.map( team => {
+    const teamNode = {
+      id : `team-${team.id}`,
+      label : team.name,
+      children : [],
+      disabled : true // Teams are not selectable
+    }
+
+    if ( team.approval_types && Array.isArray( team.approval_types ) ) {
+      teamNode.children = team.approval_types.map( type => {
+        const typeNode = {
+          id : `type-${type.id}`,
+          label : type.approval_type,
+          children : [],
+          disabled : true // Approval types are not selectable
+        }
+
+        if ( type.approval_templates && Array.isArray( type.approval_templates ) ) {
+          typeNode.children = type.approval_templates.map( template => ( {
+            id : String( template.id ), // Ensure ID is a string for consistent matching
+            label : template.name,
+            disabled : false // Templates are selectable
+          } ) )
+        }
+
+        return typeNode
+      } )
+    }
+
+    return teamNode
+  } )
 }
 
 // Template update listener - matches WorkOrderCreate pattern
@@ -1397,106 +1476,127 @@ const handleTemplateUpdate = updatedTemplate => {
   const templateId = updatedTemplate.template_id || updatedTemplate.id
 
   // Update tasks that match this template
-  form.tasks.forEach((task, index) => {
-    if (task.source === 'template' && (task.templateId === templateId || task.template_id === templateId)) {
-      const refreshedTask = buildDisplayTaskFromTemplate(updatedTemplate)
+  form.tasks.forEach( ( task, index ) => {
+    if ( task.source === 'template' && ( task.templateId === templateId || task.template_id === templateId ) ) {
+      const refreshedTask = buildDisplayTaskFromTemplate( updatedTemplate )
       form.tasks[index] = {
         ...task,
         ...refreshedTask,
-        id: task.id,
-        payload: {
-          ...(task.payload || {}),
-          ...refreshedTask.payload,
-        },
+        id : task.id,
+        payload : {
+          ...( task.payload || {} ),
+          ...refreshedTask.payload
+        }
       }
-      decorateTaskCategory(form.tasks[index])
+      decorateTaskCategory( form.tasks[index] )
     }
-  })
+  } )
 
   // Show notification that tasks were refreshed
-  if (form.tasks.some(task => task.templateId === templateId || task.template_id === templateId)) {
+  if ( form.tasks.some( task => task.templateId === templateId || task.template_id === templateId ) ) {
     // ElMessage.success( `Tasks updated with latest template changes: ${updatedTemplate.name}` )
   }
 }
 
 // Setup template update listener
-onMounted(() => {
-  taskLibraryStore.addTemplateUpdateListener(handleTemplateUpdate)
-})
+onMounted( () => {
+  taskLibraryStore.addTemplateUpdateListener( handleTemplateUpdate )
+} )
 
-onBeforeUnmount(() => {
-  taskLibraryStore.removeTemplateUpdateListener(handleTemplateUpdate)
-})
+onBeforeUnmount( () => {
+  taskLibraryStore.removeTemplateUpdateListener( handleTemplateUpdate )
+} )
 
 // Form synchronization functions (copied from WorkOrderCreate)
 // Form data synchronization for draft saving - Enhanced for edit context
 const syncFormData = () => {
-  if (isHydratingForm) return
-  nextTick(() => {
+  if ( isHydratingForm ) return
+  nextTick( () => {
     isHydratingForm = false
     // Use context-aware draft saving for edit mode
-    workOrderDraftStore.saveContextAwareDraft(form, 'edit')
-  })
+    workOrderDraftStore.saveContextAwareDraft( form, 'edit' )
+  } )
 }
 
 watch(
   () => form.tasks,
   () => {
-    if (!isHydratingForm) {
-      decorateTasksCategories(form.tasks)
+    if ( !isHydratingForm ) {
+      decorateTasksCategories( form.tasks )
       syncFormData()
     }
   },
-  { deep: true }
+  { deep : true }
 )
 
 watch(
   () => form.standards,
   () => {
-    if (!isHydratingForm) {
+    if ( !isHydratingForm ) {
       syncFormData()
     }
   },
-  { deep: true }
+  { deep : true }
 )
 
 // Deep watch for form changes to save draft - Enhanced for edit context
 watch(
   form,
   () => {
-    if (isHydratingForm) return
-    workOrderDraftStore.saveContextAwareDraft(form, 'edit')
+    if ( isHydratingForm ) return
+    workOrderDraftStore.saveContextAwareDraft( form, 'edit' )
   },
-  { deep: true }
+  { deep : true }
 )
 
 // Date validation functions (copied from WorkOrderCreate)
 const disabledDueDates = time => {
-  if (!form.start_date) return false
-  return time.getTime() < new Date(form.start_date).getTime()
+  if ( !form.start_date ) return false
+  return time.getTime() < new Date( form.start_date ).getTime()
 }
 
 const disabledStartDates = time => {
   const now = new Date()
-  now.setHours(0, 0, 0, 0)
+  now.setHours( 0, 0, 0, 0 )
   return time.getTime() < now.getTime()
 }
 
-// Work order duration calculations
-const showWorkOrderDuration = computed(() => {
+// Work order duration calculations (for individual work orders)
+const showWorkOrderDuration = computed( () => {
   return form.start_date && form.due_date
-})
+} )
 
 const formatWorkOrderDuration = () => {
-  if (!form.start_date || !form.due_date) return ''
-  const start = new Date(form.start_date)
-  const due = new Date(form.due_date)
+  if ( !form.start_date || !form.due_date ) return ''
+  const start = new Date( form.start_date )
+  const due = new Date( form.due_date )
   const diffMs = due.getTime() - start.getTime()
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+  const diffDays = Math.ceil( diffMs / ( 1000 * 60 * 60 * 24 ) )
 
-  if (diffDays === 1) {
+  if ( diffDays === 1 ) {
     return '1 day'
-  } else if (diffDays > 1) {
+  } else if ( diffDays > 1 ) {
+    return `${diffDays} days`
+  } else {
+    return 'Less than 1 day'
+  }
+}
+
+// Work order duration calculations (for recurrence work orders)
+const showRecurrenceWorkOrderDuration = computed( () => {
+  return form.start_date && form.end_date
+} )
+
+const formatRecurrenceWorkOrderDuration = () => {
+  if ( !form.start_date || !form.end_date ) return ''
+  const start = new Date( form.start_date )
+  const end = new Date( form.end_date )
+  const diffMs = end.getTime() - start.getTime()
+  const diffDays = Math.ceil( diffMs / ( 1000 * 60 * 60 * 24 ) )
+
+  if ( diffDays === 1 ) {
+    return '1 day'
+  } else if ( diffDays > 1 ) {
     return `${diffDays} days`
   } else {
     return 'Less than 1 day'
@@ -1505,55 +1605,63 @@ const formatWorkOrderDuration = () => {
 
 // Date formatting utility
 const formatDate = dateString => {
-  if (!dateString) return 'N/A'
+  if ( !dateString ) return 'N/A'
   try {
-    return new Date(dateString).toLocaleDateString()
-  } catch (error) {
+    return new Date( dateString ).toLocaleDateString()
+  } catch ( error ) {
     return 'Invalid Date'
   }
 }
 
 // UTC date conversion utility (copied from WorkOrderCreate)
 const toUtcIso = dateValue => {
-  if (!dateValue) return null
+  if ( !dateValue ) return null
   try {
-    const date = new Date(dateValue)
+    const date = new Date( dateValue )
     return date.toISOString()
-  } catch (error) {
+  } catch ( error ) {
     return null
   }
 }
 
 // Form validation rules (copied and adapted from WorkOrderCreate)
-const rules = {
-  name: [
-    { required: true, message: 'Work order name is required', trigger: 'blur' },
-    { min: 3, max: 200, message: 'Name must be between 3 and 200 characters', trigger: 'blur' },
-  ],
-  equipment_node_ids: [{ required: true, message: 'Please select at least one asset', trigger: 'change' }],
-  assignee_ids: [{ required: true, message: 'Please assign at least one person', trigger: 'change' }],
-  due_date: [{ required: true, message: 'Due date is required', trigger: 'change' }],
-  start_date: [{ required: true, message: 'Start date is required', trigger: 'change' }],
-  end_date: [
-    {
-      required: false,
-      validator: (_, value, callback) => {
-        if (value && form.start_date && new Date(value) < new Date(form.start_date)) {
-          callback(new Error('End date must be after start date'))
-        } else {
-          callback()
-        }
-      },
-      trigger: 'change',
-    },
-  ],
-}
+const rules = computed( () => {
+  const baseRules = {
+    name : [
+      { required : true, message : 'Work order name is required', trigger : 'blur' },
+      { min : 3, max : 200, message : 'Name must be between 3 and 200 characters', trigger : 'blur' }
+    ],
+    equipment_node_ids : [{ required : true, message : 'Please select at least one asset', trigger : 'change' }],
+    assignee_ids : [{ required : true, message : 'Please assign at least one person', trigger : 'change' }],
+    start_date : [{ required : true, message : 'Start date is required', trigger : 'change' }],
+    end_date : [
+      {
+        required : false,
+        validator : ( _, value, callback ) => {
+          if ( value && form.start_date && new Date( value ) < new Date( form.start_date ) ) {
+            callback( new Error( 'End date must be after start date' ) )
+          } else {
+            callback()
+          }
+        },
+        trigger : 'change'
+      }
+    ]
+  }
+
+  // Add due_date validation only for individual work orders
+  if ( props.workOrder?.editType === 'individual' ) {
+    baseRules.due_date = [{ required : true, message : 'Due date is required', trigger : 'change' }]
+  }
+
+  return baseRules
+} )
 
 // Task management methods (copied from WorkOrderCreate)
 const handleAddTask = () => {
   // Sync current form to draft store before opening task dialog
   // This ensures the designer has access to current work order state
-  workOrderDraftStore.saveContextAwareDraft(form, 'edit')
+  workOrderDraftStore.saveContextAwareDraft( form, 'edit' )
   showAddTaskDialog.value = true
 }
 
@@ -1566,40 +1674,40 @@ const handleCloseAddTaskDialog = () => {
 }
 
 const onAddTaskTemplates = selectedTemplates => {
-  if (!Array.isArray(selectedTemplates)) return
+  if ( !Array.isArray( selectedTemplates ) ) return
 
   isHydratingForm = true
-  selectedTemplates.forEach(template => {
-    const displayTask = buildDisplayTaskFromTemplate(template)
-    form.tasks.push(displayTask)
-  })
+  selectedTemplates.forEach( template => {
+    const displayTask = buildDisplayTaskFromTemplate( template )
+    form.tasks.push( displayTask )
+  } )
 
   syncFormData()
   closeAddTaskDialog()
 }
 
-const handleTaskAction = async ({ action, data }) => {
-  switch (action) {
+const handleTaskAction = async( { action, data } ) => {
+  switch ( action ) {
     case 'preview':
-      await handlePreviewTask(data)
+      await handlePreviewTask( data )
       break
     case 'edit':
-      await handleEditTask(data)
+      await handleEditTask( data )
       break
     case 'delete':
-      if (handleRemoveTask(data)) {
-        ElMessage.success(`Task "${data?.name || 'Task'}" removed`)
+      if ( handleRemoveTask( data ) ) {
+        ElMessage.success( `Task "${data?.name || 'Task'}" removed` )
       }
       break
     default:
-      console.warn('Unknown task action:', action)
+      console.warn( 'Unknown task action:', action )
   }
 }
 
 const handleRemoveTask = task => {
-  const index = form.tasks.findIndex(t => t.id === task.id)
-  if (index !== -1) {
-    form.tasks.splice(index, 1)
+  const index = form.tasks.findIndex( t => t.id === task.id )
+  if ( index !== -1 ) {
+    form.tasks.splice( index, 1 )
     syncFormData()
     return true
   }
@@ -1607,23 +1715,23 @@ const handleRemoveTask = task => {
 }
 
 const handlePreviewTask = async taskData => {
-  if (!taskData) {
-    ElMessage.warning('Unable to preview this task.')
+  if ( !taskData ) {
+    ElMessage.warning( 'Unable to preview this task.' )
     return false
   }
 
-  const taskIndex = findTaskIndexInCollection(form.tasks, taskData)
+  const taskIndex = findTaskIndexInCollection( form.tasks, taskData )
   const targetTask = taskIndex !== -1 ? form.tasks[taskIndex] : taskData
 
   previewTaskTemplateId.value = null
   previewTaskData.value = null
 
-  if (needsStandaloneEntryFetch(targetTask)) {
+  if ( needsStandaloneEntryFetch( targetTask ) ) {
     try {
       previewTaskLoading.value = true
-      await ensureStandaloneTaskEntryData(targetTask)
-    } catch (error) {
-      ElMessage.error('Failed to load task preview.')
+      await ensureStandaloneTaskEntryData( targetTask )
+    } catch ( error ) {
+      ElMessage.error( 'Failed to load task preview.' )
       previewTaskLoading.value = false
       return false
     } finally {
@@ -1631,7 +1739,7 @@ const handlePreviewTask = async taskData => {
     }
   }
 
-  const freshestTask = getMostCurrentTaskData(taskIndex !== -1 ? form.tasks[taskIndex] : targetTask)
+  const freshestTask = getMostCurrentTaskData( taskIndex !== -1 ? form.tasks[taskIndex] : targetTask )
 
   const templateId =
     freshestTask.templateId ||
@@ -1641,22 +1749,22 @@ const handlePreviewTask = async taskData => {
     freshestTask.rawTemplate?.id ||
     null
 
-  if (isStandaloneTaskRecord(freshestTask) || !templateId) {
+  if ( isStandaloneTaskRecord( freshestTask ) || !templateId ) {
     const steps =
-      Array.isArray(freshestTask.steps) && freshestTask.steps.length > 0
+      Array.isArray( freshestTask.steps ) && freshestTask.steps.length > 0
         ? freshestTask.steps
-        : Array.isArray(freshestTask.payload?.steps)
-        ? freshestTask.payload.steps
-        : []
+        : Array.isArray( freshestTask.payload?.steps )
+          ? freshestTask.payload.steps
+          : []
 
-    if (!Array.isArray(steps) || steps.length === 0) {
-      ElMessage.warning('No steps available to preview for this task.')
+    if ( !Array.isArray( steps ) || steps.length === 0 ) {
+      ElMessage.warning( 'No steps available to preview for this task.' )
       return false
     }
 
     previewTaskData.value = {
       ...freshestTask,
-      steps: clonePayload(steps),
+      steps : clonePayload( steps )
     }
     previewTaskTemplateId.value = null
   } else {
@@ -1673,52 +1781,52 @@ const getMostCurrentTaskData = taskData => {
   calculateTaskChanges()
 
   // Look for the task in task_update_list first (most current version)
-  const taskId = getTaskIdentifier(taskData)
-  const updatedTask = taskChanges.updated.find(task => getTaskIdentifier(task) === taskId)
+  const taskId = getTaskIdentifier( taskData )
+  const updatedTask = taskChanges.updated.find( task => getTaskIdentifier( task ) === taskId )
 
-  if (updatedTask) {
+  if ( updatedTask ) {
     // Convert update payload back to display format
     return {
       ...taskData,
       ...updatedTask,
-      steps: updatedTask.steps || updatedTask.payload?.steps || taskData.steps || [],
-      payload: updatedTask,
+      steps : updatedTask.steps || updatedTask.payload?.steps || taskData.steps || [],
+      payload : updatedTask
     }
   }
 
   // Otherwise return the original task data with steps properly extracted
   return {
     ...taskData,
-    steps: taskData.steps || taskData.payload?.steps || [],
+    steps : taskData.steps || taskData.payload?.steps || []
   }
 }
 
 const handleEditTask = async taskData => {
-  if (!taskData) {
-    ElMessage.warning('Unable to edit this task.')
+  if ( !taskData ) {
+    ElMessage.warning( 'Unable to edit this task.' )
     return false
   }
 
-  const taskIndex = findTaskIndexInCollection(form.tasks, taskData)
+  const taskIndex = findTaskIndexInCollection( form.tasks, taskData )
   const baseTask = taskIndex !== -1 ? form.tasks[taskIndex] : taskData
 
   try {
     loading.value = true
 
-    let standaloneEntryId = resolveTaskEntryId(baseTask)
+    let standaloneEntryId = resolveTaskEntryId( baseTask )
 
-    if (needsStandaloneEntryFetch(baseTask)) {
+    if ( needsStandaloneEntryFetch( baseTask ) ) {
       try {
-        await ensureStandaloneTaskEntryData(baseTask)
+        await ensureStandaloneTaskEntryData( baseTask )
         baseTask.__entryStepsLoaded = true
-      } catch (fetchError) {
-        ElMessage.error('Failed to load task details for editing.')
+      } catch ( fetchError ) {
+        ElMessage.error( 'Failed to load task details for editing.' )
         return false
       }
     }
 
     // Get the most current version of the task data
-    const currentTaskData = getMostCurrentTaskData(taskIndex !== -1 ? form.tasks[taskIndex] : baseTask)
+    const currentTaskData = getMostCurrentTaskData( taskIndex !== -1 ? form.tasks[taskIndex] : baseTask )
 
     const originalTemplateId =
       currentTaskData.templateId ||
@@ -1734,39 +1842,39 @@ const handleEditTask = async taskData => {
     // This ensures we compare against what the task entry currently has, not the pristine template
     // Template tasks in work orders are instances that may have been customized (steps added/modified/deleted)
     // We need the task entry's actual state as the comparison baseline, similar to standalone tasks
-    if (!isStandaloneTask && originalTemplateId) {
-      const taskEntryId = resolveTaskEntryId(currentTaskData)
+    if ( !isStandaloneTask && originalTemplateId ) {
+      const taskEntryId = resolveTaskEntryId( currentTaskData )
 
-      if (taskEntryId) {
+      if ( taskEntryId ) {
         try {
-          const taskEntryResponse = await getTaskEntryById(taskEntryId)
+          const taskEntryResponse = await getTaskEntryById( taskEntryId )
           const taskEntryData = taskEntryResponse?.data || taskEntryResponse
 
-          if (taskEntryData && Array.isArray(taskEntryData.steps)) {
-            const entrySteps = clonePayload(taskEntryData.steps)
+          if ( taskEntryData && Array.isArray( taskEntryData.steps ) ) {
+            const entrySteps = clonePayload( taskEntryData.steps )
 
             // Store as __originalTemplateSteps to maintain compatibility with existing logic
             currentTaskData.__originalTemplateSteps = entrySteps
 
-            if (taskIndex !== -1) {
+            if ( taskIndex !== -1 ) {
               form.tasks[taskIndex].__originalTemplateSteps = entrySteps
             }
 
             // CRITICAL: Sync to originalTasks (same pattern as standalone tasks)
             // This ensures the comparison baseline reflects the task entry's actual state
-            syncOriginalTaskEntrySteps(currentTaskData, entrySteps, taskEntryId)
+            syncOriginalTaskEntrySteps( currentTaskData, entrySteps, taskEntryId )
           }
-        } catch (fetchError) {
-          console.warn('Failed to fetch task entry for comparison:', fetchError)
+        } catch ( fetchError ) {
+          console.warn( 'Failed to fetch task entry for comparison:', fetchError )
           // Continue anyway - comparison will use available data
         }
       } else {
-        console.warn('Template task missing task entry ID, cannot fetch accurate baseline')
+        console.warn( 'Template task missing task entry ID, cannot fetch accurate baseline' )
       }
     }
 
-    if (!originalTemplateId && !isStandaloneTask) {
-      ElMessage.warning('This task does not have an associated template to edit.')
+    if ( !originalTemplateId && !isStandaloneTask ) {
+      ElMessage.warning( 'This task does not have an associated template to edit.' )
       return
     }
 
@@ -1774,134 +1882,134 @@ const handleEditTask = async taskData => {
     const workOrderId = props.workOrder?.id ?? workOrderLabel
 
     // Sync current form to draft store before navigation with edit context
-    workOrderDraftStore.saveContextAwareDraft(form, 'edit')
-    workOrderDraftStore.setReturnRoute(route.fullPath)
-    workOrderDraftStore.setReturnPanel('edit')
-    workOrderDraftStore.setReturnWorkOrderId(props.workOrder?.id ?? null)
-    workOrderDraftStore.setShouldOpenCreatePanel(false)
+    workOrderDraftStore.saveContextAwareDraft( form, 'edit' )
+    workOrderDraftStore.setReturnRoute( route.fullPath )
+    workOrderDraftStore.setReturnPanel( 'edit' )
+    workOrderDraftStore.setReturnWorkOrderId( props.workOrder?.id ?? null )
+    workOrderDraftStore.setShouldOpenCreatePanel( false )
 
-    const taskIdentifier = getTaskIdentifier(currentTaskData)
-    if (!taskIdentifier) {
-      ElMessage.error('Unable to edit task: missing task identifier. Please try refreshing and editing again.')
+    const taskIdentifier = getTaskIdentifier( currentTaskData )
+    if ( !taskIdentifier ) {
+      ElMessage.error( 'Unable to edit task: missing task identifier. Please try refreshing and editing again.' )
       return false
     }
 
-    const taskIdentifierString = String(taskIdentifier)
+    const taskIdentifierString = String( taskIdentifier )
 
-    if (!standaloneEntryId) {
-      const fallbackId = normalizeIdentifier(taskIdentifierString)
-      if (fallbackId && !isGeneratedIdentifier(fallbackId)) {
+    if ( !standaloneEntryId ) {
+      const fallbackId = normalizeIdentifier( taskIdentifierString )
+      if ( fallbackId && !isGeneratedIdentifier( fallbackId ) ) {
         standaloneEntryId = fallbackId
       }
     }
 
     const baseQuery = {
-      fromWorkOrder: 'true',
-      workOrderId: String(workOrderId),
-      workOrderName: workOrderLabel,
-      taskId: taskIdentifierString,
-      returnPanel: 'edit',
+      fromWorkOrder : 'true',
+      workOrderId : String( workOrderId ),
+      workOrderName : workOrderLabel,
+      taskId : taskIdentifierString,
+      returnPanel : 'edit'
     }
 
-    if (props.workOrder?.id) {
-      baseQuery.returnWorkOrderId = String(props.workOrder.id)
+    if ( props.workOrder?.id ) {
+      baseQuery.returnWorkOrderId = String( props.workOrder.id )
     }
 
-    if (isStandaloneTask) {
+    if ( isStandaloneTask ) {
       // Ensure steps are available at the top level for the editor
       // Preserve original task data structure and only overlay necessary updates
       const standaloneTaskData = {
         ...taskData, // Start with original task data to preserve all properties
         ...currentTaskData, // Overlay with any updates from getMostCurrentTaskData
         // Ensure essential properties are preserved
-        name: currentTaskData.name || taskData.name,
-        description: currentTaskData.description || taskData.description,
-        category: currentTaskData.category || taskData.category,
-        estimated_minutes: currentTaskData.estimated_minutes || taskData.estimated_minutes,
-        equipment_node_id: currentTaskData.equipment_node_id || taskData.equipment_node_id,
+        name : currentTaskData.name || taskData.name,
+        description : currentTaskData.description || taskData.description,
+        category : currentTaskData.category || taskData.category,
+        estimated_minutes : currentTaskData.estimated_minutes || taskData.estimated_minutes,
+        equipment_node_id : currentTaskData.equipment_node_id || taskData.equipment_node_id,
         // Ensure steps are available at the top level for the editor
-        steps: currentTaskData.steps || currentTaskData.payload?.steps || taskData.steps || [],
+        steps : currentTaskData.steps || currentTaskData.payload?.steps || taskData.steps || []
       }
 
       // Normalize identifiers so the designer can return updates reliably
       standaloneTaskData.id = taskIdentifierString
-      if (standaloneTaskData.task_id == null) {
+      if ( standaloneTaskData.task_id == null ) {
         standaloneTaskData.task_id = taskIdentifierString
       }
-      if (standaloneTaskData.payload && typeof standaloneTaskData.payload === 'object') {
-        if (standaloneTaskData.payload.id == null) {
+      if ( standaloneTaskData.payload && typeof standaloneTaskData.payload === 'object' ) {
+        if ( standaloneTaskData.payload.id == null ) {
           standaloneTaskData.payload.id = taskIdentifierString
         }
-        if (standaloneTaskData.payload.task_id == null) {
+        if ( standaloneTaskData.payload.task_id == null ) {
           standaloneTaskData.payload.task_id = taskIdentifierString
         }
       }
 
-      if (standaloneEntryId) {
+      if ( standaloneEntryId ) {
         standaloneTaskData.entry_id = standaloneEntryId
       }
 
       // Validate that essential data is present before navigation
-      if (!standaloneTaskData.name) {
-        ElMessage.error('Unable to edit task: missing task name. Please try refreshing and editing again.')
+      if ( !standaloneTaskData.name ) {
+        ElMessage.error( 'Unable to edit task: missing task name. Please try refreshing and editing again.' )
         return
       }
 
-      if (!standaloneTaskData.id) {
-        ElMessage.error('Unable to edit task: missing task ID. Please try refreshing and editing again.')
+      if ( !standaloneTaskData.id ) {
+        ElMessage.error( 'Unable to edit task: missing task ID. Please try refreshing and editing again.' )
         return
       }
 
       // Store task data in sessionStorage to avoid URL length limits
       const storageKey = `standalone-task-${standaloneTaskData.id}-${Date.now()}`
-      sessionStorage.setItem(storageKey, JSON.stringify(standaloneTaskData))
+      sessionStorage.setItem( storageKey, JSON.stringify( standaloneTaskData ) )
       try {
-        sessionStorage.setItem('last-standalone-task-key', storageKey)
-      } catch (storageError) {
-        console.warn('WorkOrderEdit: Failed to persist last standalone task key', storageError)
+        sessionStorage.setItem( 'last-standalone-task-key', storageKey )
+      } catch ( storageError ) {
+        console.warn( 'WorkOrderEdit: Failed to persist last standalone task key', storageError )
       }
 
-      workOrderDraftStore.setPendingStandaloneTask(standaloneTaskData)
+      workOrderDraftStore.setPendingStandaloneTask( standaloneTaskData )
 
       let serializedTaskData = null
       try {
-        serializedTaskData = JSON.stringify(standaloneTaskData)
-      } catch (serializeError) {
-        console.warn('WorkOrderEdit: Failed to serialize standalone task data for query payload', serializeError)
+        serializedTaskData = JSON.stringify( standaloneTaskData )
+      } catch ( serializeError ) {
+        console.warn( 'WorkOrderEdit: Failed to serialize standalone task data for query payload', serializeError )
       }
 
       const queryPayload = {
         ...baseQuery,
-        standalone: 'true',
-        taskDataKey: storageKey,
-        taskData: serializedTaskData || undefined,
-        taskEntryId: standaloneEntryId ? String(standaloneEntryId) : undefined,
+        standalone : 'true',
+        taskDataKey : storageKey,
+        taskData : serializedTaskData || undefined,
+        taskEntryId : standaloneEntryId ? String( standaloneEntryId ) : undefined
       }
 
-      Object.keys(queryPayload).forEach(key => {
-        if (queryPayload[key] === undefined) {
+      Object.keys( queryPayload ).forEach( key => {
+        if ( queryPayload[key] === undefined ) {
           delete queryPayload[key]
         }
-      })
+      } )
 
-      await router.push({
-        name: 'TaskDesignerEdit',
-        params: { id: 'standalone' },
-        query: queryPayload,
-      })
+      await router.push( {
+        name : 'TaskDesignerEdit',
+        params : { id : 'standalone' },
+        query : queryPayload
+      } )
     } else {
-      await router.push({
-        name: 'TaskDesignerEdit',
-        params: { id: originalTemplateId },
-        query: {
+      await router.push( {
+        name : 'TaskDesignerEdit',
+        params : { id : originalTemplateId },
+        query : {
           ...baseQuery,
-          originalTemplateId,
-        },
-      })
+          originalTemplateId
+        }
+      } )
     }
-  } catch (error) {
+  } catch ( error ) {
     const errorMessage = error.response?.data?.message || error.message || 'Failed to open task editor'
-    ElMessage.error(errorMessage)
+    ElMessage.error( errorMessage )
     return false
   } finally {
     loading.value = false
@@ -1911,19 +2019,19 @@ const handleEditTask = async taskData => {
 }
 
 const handleDeleteAllTasks = () => {
-  ElMessageBox.confirm('Are you sure you want to remove all tasks?', 'Confirm Remove All Tasks', {
-    confirmButtonText: 'Remove All',
-    cancelButtonText: 'Cancel',
-    type: 'warning',
-  })
-    .then(() => {
-      form.tasks.splice(0)
+  ElMessageBox.confirm( 'Are you sure you want to remove all tasks?', 'Confirm Remove All Tasks', {
+    confirmButtonText : 'Remove All',
+    cancelButtonText : 'Cancel',
+    type : 'warning'
+  } )
+    .then( () => {
+      form.tasks.splice( 0 )
       syncFormData()
-      ElMessage.success('All tasks removed successfully')
-    })
-    .catch(() => {
+      ElMessage.success( 'All tasks removed successfully' )
+    } )
+    .catch( () => {
       // User cancelled
-    })
+    } )
 }
 
 // Task preview dialog methods
@@ -1938,11 +2046,11 @@ const handleBackToTaskList = () => {
 }
 
 const getPreviewTaskTitle = () => {
-  if (previewTaskData.value) {
+  if ( previewTaskData.value ) {
     return previewTaskData.value.name || 'Unnamed Task'
   }
 
-  if (previewTaskTemplateId.value) {
+  if ( previewTaskTemplateId.value ) {
     const templateId = previewTaskTemplateId.value
     const task = form.tasks.find(
       t =>
@@ -1972,39 +2080,39 @@ const handleCloseAddStandardDialog = () => {
 }
 
 const onAddStandards = selectedStandards => {
-  if (!Array.isArray(selectedStandards)) return
+  if ( !Array.isArray( selectedStandards ) ) return
 
   isHydratingForm = true
-  selectedStandards.forEach(standard => {
-    form.standards.push(standard)
-  })
+  selectedStandards.forEach( standard => {
+    form.standards.push( standard )
+  } )
 
   syncFormData()
   closeAddStandardDialog()
 }
 
-const handleStandardAction = ({ action, data }) => {
-  switch (action) {
+const handleStandardAction = ( { action, data } ) => {
+  switch ( action ) {
     case 'preview':
-      handlePreviewStandard(data)
+      handlePreviewStandard( data )
       break
     case 'edit':
-      handleEditStandard(data)
+      handleEditStandard( data )
       break
     case 'delete':
-      if (handleRemoveStandard(data)) {
-        ElMessage.success(`Standard "${data?.name || 'Standard'}" removed`)
+      if ( handleRemoveStandard( data ) ) {
+        ElMessage.success( `Standard "${data?.name || 'Standard'}" removed` )
       }
       break
     default:
-      console.warn('Unknown standard action:', action)
+      console.warn( 'Unknown standard action:', action )
   }
 }
 
 const handleRemoveStandard = standard => {
-  const index = form.standards.findIndex(s => s.id === standard.id)
-  if (index !== -1) {
-    form.standards.splice(index, 1)
+  const index = form.standards.findIndex( s => s.id === standard.id )
+  if ( index !== -1 ) {
+    form.standards.splice( index, 1 )
     syncFormData()
     return true
   }
@@ -2022,9 +2130,9 @@ const handleEditStandard = standard => {
 }
 
 const onStandardUpdate = updatedStandard => {
-  const index = form.standards.findIndex(s => s.id === updatedStandard.id)
-  if (index !== -1) {
-    form.standards.splice(index, 1, updatedStandard)
+  const index = form.standards.findIndex( s => s.id === updatedStandard.id )
+  if ( index !== -1 ) {
+    form.standards.splice( index, 1, updatedStandard )
     syncFormData()
   }
   showEditStandardDialog.value = false
@@ -2032,19 +2140,19 @@ const onStandardUpdate = updatedStandard => {
 }
 
 const handleDeleteAllStandards = () => {
-  ElMessageBox.confirm('Are you sure you want to remove all standards?', 'Confirm Remove All Standards', {
-    confirmButtonText: 'Remove All',
-    cancelButtonText: 'Cancel',
-    type: 'warning',
-  })
-    .then(() => {
-      form.standards.splice(0)
+  ElMessageBox.confirm( 'Are you sure you want to remove all standards?', 'Confirm Remove All Standards', {
+    confirmButtonText : 'Remove All',
+    cancelButtonText : 'Cancel',
+    type : 'warning'
+  } )
+    .then( () => {
+      form.standards.splice( 0 )
       syncFormData()
-      ElMessage.success('All standards removed successfully')
-    })
-    .catch(() => {
+      ElMessage.success( 'All standards removed successfully' )
+    } )
+    .catch( () => {
       // User cancelled
-    })
+    } )
 }
 
 // File handling methods
@@ -2064,19 +2172,19 @@ const handleRemovedExistingFiles = removedFileUrls => {
   form.removed_file_urls = removedFileUrls
 }
 
-const uploadFilesToServer = async () => {
+const uploadFilesToServer = async() => {
   try {
-    if (newImages.value.length > 0) {
-      const imageRes = await uploadMultipleToMinio(newImages.value)
-      newImageUrls.value = imageRes.data.uploadedFiles?.map(file => file.url) || []
+    if ( newImages.value.length > 0 ) {
+      const imageRes = await uploadMultipleToMinio( newImages.value )
+      newImageUrls.value = imageRes.data.uploadedFiles?.map( file => file.url ) || []
     }
 
-    if (newFiles.value.length > 0) {
-      const fileRes = await uploadMultipleToMinio(newFiles.value)
-      newFileUrls.value = fileRes.data.uploadedFiles?.map(file => file.url) || []
+    if ( newFiles.value.length > 0 ) {
+      const fileRes = await uploadMultipleToMinio( newFiles.value )
+      newFileUrls.value = fileRes.data.uploadedFiles?.map( file => file.url ) || []
     }
-  } catch (error) {
-    throw new Error('File upload failed. Please try again.')
+  } catch ( error ) {
+    throw new Error( 'File upload failed. Please try again.' )
   }
 }
 
@@ -2085,52 +2193,52 @@ const handleBackToDetail = () => {
   // Check for unsaved changes
   const hasChanges = checkForUnsavedChanges()
 
-  if (!hasChanges) {
-    emit('back-to-detail')
+  if ( !hasChanges ) {
+    emit( 'back-to-detail' )
     return
   }
 
-  ElMessageBox.confirm('Are you sure you want to leave the form? All unsaved changes will be lost.', 'Confirm Leave', {
-    confirmButtonText: 'Leave',
-    cancelButtonText: 'Cancel',
-    type: 'warning',
-  })
-    .then(() => {
-      emit('back-to-detail')
-    })
-    .catch(() => {
+  ElMessageBox.confirm( 'Are you sure you want to leave the form? All unsaved changes will be lost.', 'Confirm Leave', {
+    confirmButtonText : 'Leave',
+    cancelButtonText : 'Cancel',
+    type : 'warning'
+  } )
+    .then( () => {
+      emit( 'back-to-detail' )
+    } )
+    .catch( () => {
       // User cancelled
-    })
+    } )
 }
 
 const resetForm = () => {
-  ElMessageBox.confirm('Are you sure you want to reset the form? All unsaved changes will be lost.', 'Confirm Reset', {
-    confirmButtonText: 'Reset',
-    cancelButtonText: 'Cancel',
-    type: 'warning',
-  })
-    .then(() => {
+  ElMessageBox.confirm( 'Are you sure you want to reset the form? All unsaved changes will be lost.', 'Confirm Reset', {
+    confirmButtonText : 'Reset',
+    cancelButtonText : 'Cancel',
+    type : 'warning'
+  } )
+    .then( () => {
       resetFormSilent()
-    })
-    .catch(() => {
+    } )
+    .catch( () => {
       // User cancelled
-    })
+    } )
 }
 
 const resetFormSilent = () => {
   // Populate form with original work order data
-  populateFormFromWorkOrder(props.workOrder)
+  populateFormFromWorkOrder( props.workOrder )
 }
 
 // Check for unsaved changes
 const checkForUnsavedChanges = () => {
   // Simple check - in production you might want more sophisticated change detection
-  return form.name !== (props.workOrder?.name || '') || form.description !== (props.workOrder?.description || '')
+  return form.name !== ( props.workOrder?.name || '' ) || form.description !== ( props.workOrder?.description || '' )
 }
 
 // Work order data population for edit mode
 const populateFormFromWorkOrder = workOrder => {
-  if (!workOrder) return
+  if ( !workOrder ) return
 
   isHydratingForm = true
 
@@ -2142,127 +2250,136 @@ const populateFormFromWorkOrder = workOrder => {
     const dueDateSource = workOrder.due_date || workOrder.due_date_time || workOrder.expected_due_date
     const endDateSource = workOrder.end_date || workOrder.end_date_time || workOrder.expected_end_date || dueDateSource
 
-    form.start_date = formatDateTimeForPicker(startDateSource)
-    form.due_date = formatDateTimeForPicker(dueDateSource)
-    form.end_date = formatDateTimeForPicker(endDateSource)
+    form.start_date = formatDateTimeForPicker( startDateSource )
+    form.due_date = formatDateTimeForPicker( dueDateSource )
+    form.end_date = formatDateTimeForPicker( endDateSource )
 
     // Handle categories using the same fallback pattern as WorkOrderDetail.vue
-    if (Array.isArray(workOrder.categories) && workOrder.categories.length) {
-      form.category_ids = workOrder.categories.map(c => c.id)
-    } else if (Array.isArray(workOrder.category_list) && workOrder.category_list.length) {
-      form.category_ids = workOrder.category_list.map(c => c.id)
-    } else if (workOrder.category) {
+    if ( Array.isArray( workOrder.categories ) && workOrder.categories.length ) {
+      form.category_ids = workOrder.categories.map( c => c.id )
+    } else if ( Array.isArray( workOrder.category_list ) && workOrder.category_list.length ) {
+      form.category_ids = workOrder.category_list.map( c => c.id )
+    } else if ( workOrder.category ) {
       // Single category case - convert to array
       const categoryId = typeof workOrder.category === 'object' ? workOrder.category.id : workOrder.category
       form.category_ids = categoryId ? [categoryId] : []
     } else {
       // Fallback to direct category_ids
-      form.category_ids = cloneArray(workOrder.category_ids) || []
+      form.category_ids = cloneArray( workOrder.category_ids ) || []
     }
 
-    form.equipment_node_ids = Array.isArray(workOrder.equipment_nodes)
-      ? workOrder.equipment_nodes.map(e => e.id)
-      : cloneArray(workOrder.equipment_node_ids)
+    form.equipment_node_ids = Array.isArray( workOrder.equipment_nodes )
+      ? workOrder.equipment_nodes.map( e => e.id )
+      : cloneArray( workOrder.equipment_node_ids )
 
-    form.assignee_ids = Array.isArray(workOrder.assignees)
-      ? workOrder.assignees.map(a => a.id)
-      : cloneArray(workOrder.assignee_ids)
+    // Handle assignees from either user_list or assignees property
+    if ( Array.isArray( workOrder.user_list ) && workOrder.user_list.length > 0 ) {
+      form.assignee_ids = workOrder.user_list.map( u => u.id )
+    } else if ( Array.isArray( workOrder.assignees ) && workOrder.assignees.length > 0 ) {
+      form.assignee_ids = workOrder.assignees.map( a => a.id )
+    } else {
+      form.assignee_ids = cloneArray( workOrder.assignee_ids )
+    }
 
-    form.vendor_ids = cloneArray(workOrder.vendor_ids)
+    form.vendor_ids = cloneArray( workOrder.vendor_ids )
 
     form.priority_id = workOrder.priority?.id || workOrder.priority_id || null
     form.state_id = workOrder.state?.id || workOrder.state_id || 1
     form.work_type_id = workOrder.work_type?.id || workOrder.work_type_id || null
     form.approved_by_id = workOrder.approved_by?.id || workOrder.approved_by_id || null
 
-    if (!Array.isArray(form.assignee_ids) || form.assignee_ids.length === 0) {
+    // Ensure approval_id is a string to match tree node IDs
+    const approvalTemplateId = workOrder.approval_entry?.template_id || workOrder.approval_id
+    form.approval_id = approvalTemplateId ? String( approvalTemplateId ) : null
+
+    if ( !Array.isArray( form.assignee_ids ) || form.assignee_ids.length === 0 ) {
       // Default to "System" (ID 84)
       form.assignee_ids = [84]
     }
 
-    if ((form.approved_by_id == null || form.approved_by_id === '') && supervisorOptions.value.length > 0) {
-      const randomSupervisor = pickRandomOptionId(supervisorOptions.value)
-      if (randomSupervisor != null) {
+    if ( ( form.approved_by_id == null || form.approved_by_id === '' ) && supervisorOptions.value.length > 0 ) {
+      const randomSupervisor = pickRandomOptionId( supervisorOptions.value )
+      if ( randomSupervisor != null ) {
         form.approved_by_id = randomSupervisor
       }
     }
 
-    if ((!Array.isArray(form.category_ids) || form.category_ids.length === 0) && categoryOptions.value.length > 0) {
-      const randomCategory = pickRandomOptionId(categoryOptions.value)
+    if ( ( !Array.isArray( form.category_ids ) || form.category_ids.length === 0 ) && categoryOptions.value.length > 0 ) {
+      const randomCategory = pickRandomOptionId( categoryOptions.value )
       form.category_ids = randomCategory != null ? [randomCategory] : []
     }
 
     const sourceTasks =
-      Array.isArray(workOrder.tasks) && workOrder.tasks.length > 0
+      Array.isArray( workOrder.tasks ) && workOrder.tasks.length > 0
         ? workOrder.tasks
-        : Array.isArray(workOrder.task_list)
-        ? workOrder.task_list
-        : []
+        : Array.isArray( workOrder.task_list )
+          ? workOrder.task_list
+          : []
 
-    form.tasks = normalizeExistingTasks(sourceTasks, workOrder.id)
+    form.tasks = normalizeExistingTasks( sourceTasks, workOrder.id )
 
     const sourceStandards =
-      Array.isArray(workOrder.standards) && workOrder.standards.length > 0
+      Array.isArray( workOrder.standards ) && workOrder.standards.length > 0
         ? workOrder.standards
-        : Array.isArray(workOrder.standard_list)
-        ? workOrder.standard_list
-        : []
+        : Array.isArray( workOrder.standard_list )
+          ? workOrder.standard_list
+          : []
 
-    const standardsClone = clonePayload(sourceStandards)
-    form.standards = Array.isArray(standardsClone) ? standardsClone : []
+    const standardsClone = clonePayload( sourceStandards )
+    form.standards = Array.isArray( standardsClone ) ? standardsClone : []
 
     // Store original tasks and standards for change tracking
-    originalTasks.value = clonePayload(form.tasks)
-    originalStandards.value = clonePayload(form.standards)
+    originalTasks.value = clonePayload( form.tasks )
+    originalStandards.value = clonePayload( form.standards )
 
     // Sync original data to draft store for designer navigation consistency
-    workOrderDraftStore.originalTasks = clonePayload(form.tasks)
-    workOrderDraftStore.originalStandards = clonePayload(form.standards)
+    workOrderDraftStore.originalTasks = clonePayload( form.tasks )
+    workOrderDraftStore.originalStandards = clonePayload( form.standards )
 
-    form.image_list = cloneArray(workOrder.image_list)
-    form.file_list = cloneArray(workOrder.file_list)
-    existingImages.value = cloneArray(workOrder.image_list)
-    existingFiles.value = cloneArray(workOrder.file_list)
+    form.image_list = cloneArray( workOrder.image_list )
+    form.file_list = cloneArray( workOrder.file_list )
+    existingImages.value = cloneArray( workOrder.image_list )
+    existingFiles.value = cloneArray( workOrder.file_list )
 
     // Build recurrence_setting from work order data
     const recurrenceSetting = {}
-    if (workOrder.recurrence_type) {
+    if ( workOrder.recurrence_type ) {
       recurrenceSetting.recurrence_type = workOrder.recurrence_type.id
     }
 
     // For "Does not repeat" type (typically ID 1), use start_date_time and end_date_time
-    if (workOrder.recurrence_type?.id === 1) {
-      if (startDateSource) {
-        recurrenceSetting.start_date_time = formatDateTimeForPicker(startDateSource)
+    if ( workOrder.recurrence_type?.id === 1 ) {
+      if ( startDateSource ) {
+        recurrenceSetting.start_date_time = formatDateTimeForPicker( startDateSource )
       }
-      if (endDateSource) {
-        recurrenceSetting.end_date_time = formatDateTimeForPicker(endDateSource)
+      if ( endDateSource ) {
+        recurrenceSetting.end_date_time = formatDateTimeForPicker( endDateSource )
       }
     }
 
     form.recurrence_setting = recurrenceSetting
 
     // Set recurrence type fields
-    if (workOrder.recurrence_type) {
+    if ( workOrder.recurrence_type ) {
       form.recurrence_type = workOrder.recurrence_type.id
       form.recurrence_type_id = workOrder.recurrence_type.id
     }
 
     form.recurrence_setting_request = clonePayload(
       workOrder.recurrence_setting_request || {
-        start_date_time: startDateSource ? formatDateTimeForPicker(startDateSource) : null,
-        end_date_time: endDateSource ? formatDateTimeForPicker(endDateSource) : null,
+        start_date_time : startDateSource ? formatDateTimeForPicker( startDateSource ) : null,
+        end_date_time : endDateSource ? formatDateTimeForPicker( endDateSource ) : null
       }
     )
 
-    if (!form.recurrence_setting_request.start_date_time && startDateSource) {
-      form.recurrence_setting_request.start_date_time = formatDateTimeForPicker(startDateSource)
+    if ( !form.recurrence_setting_request.start_date_time && startDateSource ) {
+      form.recurrence_setting_request.start_date_time = formatDateTimeForPicker( startDateSource )
     }
-    if (!form.recurrence_setting_request.end_date_time && endDateSource) {
-      form.recurrence_setting_request.end_date_time = formatDateTimeForPicker(endDateSource)
+    if ( !form.recurrence_setting_request.end_date_time && endDateSource ) {
+      form.recurrence_setting_request.end_date_time = formatDateTimeForPicker( endDateSource )
     }
 
-    decorateTasksCategories(form.tasks)
+    decorateTasksCategories( form.tasks )
   } finally {
     isHydratingForm = false
   }
@@ -2271,12 +2388,12 @@ const populateFormFromWorkOrder = workOrder => {
 }
 
 // Task assignee dialog methods (matching tools dialog pattern)
-const handleTaskAssigneeUpdate = ({ taskId, assigneeIds, taskData }) => {
-  const taskIndex = form.tasks.findIndex(task => task.id === taskId)
-  if (taskIndex === -1) return
+const handleTaskAssigneeUpdate = ( { taskId, assigneeIds, taskData } ) => {
+  const taskIndex = form.tasks.findIndex( task => task.id === taskId )
+  if ( taskIndex === -1 ) return
 
   // Update the task's assignee_ids
-  if (form.tasks[taskIndex].payload) {
+  if ( form.tasks[taskIndex].payload ) {
     form.tasks[taskIndex].payload.assignee_ids = assigneeIds
   } else {
     form.tasks[taskIndex].assignee_ids = assigneeIds
@@ -2286,18 +2403,18 @@ const handleTaskAssigneeUpdate = ({ taskId, assigneeIds, taskData }) => {
 
   // Show success message
   const assigneeNames = assigneeOptions.value
-    .filter(user => assigneeIds.includes(user.id))
-    .map(user => user.name)
-    .join(', ')
+    .filter( user => assigneeIds.includes( user.id ) )
+    .map( user => user.name )
+    .join( ', ' )
 
-  if (assigneeIds.length === 0) {
-    ElMessage.success(`Removed all assignees from "${taskData.name}"`)
+  if ( assigneeIds.length === 0 ) {
+    ElMessage.success( `Removed all assignees from "${taskData.name}"` )
   } else {
-    ElMessage.success(`Updated assignees for "${taskData.name}": ${assigneeNames}`)
+    ElMessage.success( `Updated assignees for "${taskData.name}": ${assigneeNames}` )
   }
 }
 
-const handleOpenAssigneeDialog = ({ taskId, taskData, currentAssigneeIds }) => {
+const handleOpenAssigneeDialog = ( { taskId, taskData, currentAssigneeIds } ) => {
   currentEditingTask.value = taskData
   userSearchQuery.value = ''
 
@@ -2308,39 +2425,39 @@ const handleOpenAssigneeDialog = ({ taskId, taskData, currentAssigneeIds }) => {
   showTaskAssigneeDialog.value = true
 }
 
-const filteredAssigneeOptions = computed(() => {
-  if (!userSearchQuery.value) {
+const filteredAssigneeOptions = computed( () => {
+  if ( !userSearchQuery.value ) {
     return assigneeOptions.value
   }
 
   const query = userSearchQuery.value.toLowerCase()
   return assigneeOptions.value.filter(
-    user => user.name.toLowerCase().includes(query) || (user.email && user.email.toLowerCase().includes(query))
+    user => user.name.toLowerCase().includes( query ) || ( user.email && user.email.toLowerCase().includes( query ) )
   )
-})
+} )
 
 const isUserSelected = userId => {
-  return localSelectedTaskAssignees.value.includes(userId)
+  return localSelectedTaskAssignees.value.includes( userId )
 }
 
 const toggleUser = user => {
-  const isSelected = isUserSelected(user.id)
+  const isSelected = isUserSelected( user.id )
 
-  if (isSelected) {
-    removeSelectedUser(user.id)
+  if ( isSelected ) {
+    removeSelectedUser( user.id )
   } else {
-    addSelectedUser(user.id)
+    addSelectedUser( user.id )
   }
 }
 
 const addSelectedUser = userId => {
-  if (!localSelectedTaskAssignees.value.includes(userId)) {
-    localSelectedTaskAssignees.value.push(userId)
+  if ( !localSelectedTaskAssignees.value.includes( userId ) ) {
+    localSelectedTaskAssignees.value.push( userId )
   }
 }
 
 const removeSelectedUser = userId => {
-  localSelectedTaskAssignees.value = localSelectedTaskAssignees.value.filter(id => id !== userId)
+  localSelectedTaskAssignees.value = localSelectedTaskAssignees.value.filter( id => id !== userId )
 }
 
 const clearAllAssignees = () => {
@@ -2348,20 +2465,20 @@ const clearAllAssignees = () => {
 }
 
 const getSelectedUserObjects = () => {
-  return localSelectedTaskAssignees.value.map(id => {
-    const found = assigneeOptions.value.find(user => user.id === id)
-    return found || { id, name: `User #${id}`, email: '' }
-  })
+  return localSelectedTaskAssignees.value.map( id => {
+    const found = assigneeOptions.value.find( user => user.id === id )
+    return found || { id, name : `User #${id}`, email : '' }
+  } )
 }
 
 const saveTaskAssignees = () => {
-  if (!currentEditingTask.value) return
+  if ( !currentEditingTask.value ) return
 
-  handleTaskAssigneeUpdate({
-    taskId: currentEditingTask.value.id,
-    assigneeIds: [...localSelectedTaskAssignees.value],
-    taskData: currentEditingTask.value,
-  })
+  handleTaskAssigneeUpdate( {
+    taskId : currentEditingTask.value.id,
+    assigneeIds : [...localSelectedTaskAssignees.value],
+    taskData : currentEditingTask.value
+  } )
 
   resetTaskAssigneeDialog()
 }
@@ -2374,7 +2491,7 @@ const resetTaskAssigneeDialog = () => {
 }
 
 // Load form data from API
-const loadFormData = async () => {
+const loadFormData = async() => {
   try {
     loading.value = true
 
@@ -2386,14 +2503,16 @@ const loadFormData = async () => {
       statesResponse,
       equipmentResponse,
       usersResponse,
-    ] = await Promise.all([
+      approvalResponse
+    ] = await Promise.all( [
       getAllWorkTypes(),
       getAllPriorities(),
       getAllCategories(),
       getAllStates(),
       getEquipmentNodeTrees(),
-      searchUsers({ status_ids: [1] }, 1, 1000),
-    ])
+      searchUsers( { status_ids : [1] }, 1, 1000 ),
+      searchApprovalTree( {} )
+    ] )
 
     // Set options
     workTypeOptions.value = workTypesResponse.data || []
@@ -2404,18 +2523,24 @@ const loadFormData = async () => {
 
     // Set user options from API
     const users = usersResponse?.data?.content || []
-    assigneeOptions.value = users.map(user => ({
-      id: user.id,
-      name: `${user.first_name} ${user.last_name}`,
-    }))
+    assigneeOptions.value = users.map( user => ( {
+      id : user.id,
+      name : `${user.first_name} ${user.last_name}`
+    } ) )
 
     // Set supervisor options (same as assignee options for now)
     supervisorOptions.value = assigneeOptions.value
 
+    // Transform and set approval tree data
+    if ( approvalResponse.data ) {
+      const teams = Array.isArray( approvalResponse.data ) ? approvalResponse.data : approvalResponse.data.data || []
+      approvalTreeData.value = buildApprovalTree( teams )
+    }
+
     // Populate form with work order data
-    populateFormFromWorkOrder(props.workOrder)
-  } catch (error) {
-    ElMessage.error('Failed to load form data. Please refresh and try again.')
+    populateFormFromWorkOrder( props.workOrder )
+  } catch ( error ) {
+    ElMessage.error( 'Failed to load form data. Please refresh and try again.' )
   } finally {
     loading.value = false
   }
@@ -2423,9 +2548,9 @@ const loadFormData = async () => {
 
 // Payload creation for work order updates with proper API field mapping
 const createWorkOrderPayload = () => {
-  const formattedDueDate = toUtcIso(form.due_date)
-  const formattedStartDate = toUtcIso(form.start_date)
-  const formattedEndDate = toUtcIso(form.end_date)
+  const formattedDueDate = toUtcIso( form.due_date )
+  const formattedStartDate = toUtcIso( form.start_date )
+  const formattedEndDate = toUtcIso( form.end_date )
 
   // Calculate task and standard changes
   calculateTaskChanges()
@@ -2433,51 +2558,56 @@ const createWorkOrderPayload = () => {
 
   const basePayload = {
     // Core work order fields
-    name: form.name,
-    description: form.description || '',
-    category_ids: form.category_ids || [],
-    priority_id: form.priority_id,
-    state_id: form.state_id,
-    work_type_id: form.work_type_id,
+    name : form.name,
+    description : form.description || '',
+    category_ids : form.category_ids || [],
+    priority_id : form.priority_id,
+    state_id : form.state_id,
+    work_type_id : form.work_type_id,
 
     // Date fields
-    start_date: formattedStartDate,
-    due_date: formattedDueDate,
-    end_date: formattedEndDate,
+    start_date : formattedStartDate,
+    end_date : formattedEndDate,
 
     // Assignment fields
-    assignee_ids: form.assignee_ids || [],
-    approved_by_id: form.approved_by_id,
+    assignee_ids : form.assignee_ids || [],
+    approved_by_id : form.approved_by_id,
+    approval_id : form.approval_id ?? null,
 
     // Equipment and vendors
-    equipment_node_ids: form.equipment_node_ids || [],
-    vendor_ids: form.vendor_ids || [],
+    equipment_node_ids : form.equipment_node_ids || [],
+    vendor_ids : form.vendor_ids || [],
 
     // Task management using proper API structure
-    task_add_list: taskChanges.added,
-    task_update_list: taskChanges.updated,
-    task_delete_list: taskChanges.deleted,
+    task_add_list : taskChanges.added,
+    task_update_list : taskChanges.updated,
+    task_delete_list : taskChanges.deleted,
 
     // Standard management using proper API structure
-    standard_add_list: standardChanges.added,
-    standard_update_list: standardChanges.updated,
-    standard_delete_list: standardChanges.deleted,
+    standard_add_list : standardChanges.added,
+    standard_update_list : standardChanges.updated,
+    standard_delete_list : standardChanges.deleted,
 
     // File attachments
-    image_list: form.image_list || [],
-    file_list: form.file_list || [],
+    image_list : form.image_list || [],
+    file_list : form.file_list || [],
 
     // Recurrence settings
-    recurrence_setting_request: form.recurrence_setting_request || {},
-    recurrence_type: form.recurrence_type || form.recurrence_type_id || 1,
-    recurrence_type_id: form.recurrence_type || form.recurrence_type_id || 1,
+    recurrence_setting_request : form.recurrence_setting_request || {},
+    recurrence_type : form.recurrence_type || form.recurrence_type_id || 1,
+    recurrence_type_id : form.recurrence_type || form.recurrence_type_id || 1,
 
     // System fields
-    time_zone: form.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone,
+    time_zone : form.time_zone || Intl.DateTimeFormat().resolvedOptions().timeZone
+  }
+
+  // Add due_date only for individual work orders
+  if ( props.workOrder?.editType === 'individual' ) {
+    basePayload.due_date = formattedDueDate
   }
 
   // Add recurrence_uuid for recurrence updates
-  if (props.workOrder?.recurrence_uuid) {
+  if ( props.workOrder?.recurrence_uuid ) {
     basePayload.recurrence_uuid = props.workOrder.recurrence_uuid
   }
 
@@ -2486,64 +2616,64 @@ const createWorkOrderPayload = () => {
 
 // Payload logging
 const logCurrentPayload = () => {
-  if (isLoggingInProgress.value) return
+  if ( isLoggingInProgress.value ) return
 
   isLoggingInProgress.value = true
 
-  if (logButtonTimeout) {
-    clearTimeout(logButtonTimeout)
+  if ( logButtonTimeout ) {
+    clearTimeout( logButtonTimeout )
   }
 
-  logButtonTimeout = setTimeout(() => {
+  logButtonTimeout = setTimeout( () => {
     isLoggingInProgress.value = false
-  }, 500)
+  }, 500 )
 
   const rawPayload = createWorkOrderPayload()
-  logPayload(rawPayload, 'workOrderEdit', {
-    delay: 50,
-    showMessage: true,
-  })
+  logPayload( rawPayload, 'workOrderEdit', {
+    delay : 50,
+    showMessage : true
+  } )
 }
 
 // Main submit function for updating work order
-const submitForm = async () => {
-  if (!formRef.value) return
+const submitForm = async() => {
+  if ( !formRef.value ) return
 
   try {
     const valid = await formRef.value.validate()
-    if (!valid) {
-      ElMessage.error(t('workOrder.messages.validationFailed'))
+    if ( !valid ) {
+      ElMessage.error( t( 'workOrder.messages.validationFailed' ) )
       return
     }
 
     loading.value = true
 
     // Upload new files to MinIO and get URLs
-    if (newImages.value.length > 0 || newFiles.value.length > 0) {
+    if ( newImages.value.length > 0 || newFiles.value.length > 0 ) {
       await uploadFilesToServer()
     }
 
     // Merge existing URLs with newly uploaded URLs
-    let finalImageList = [...(existingImages.value || []), ...(newImageUrls.value || [])]
-    let finalFileList = [...(existingFiles.value || []), ...(newFileUrls.value || [])]
+    let finalImageList = [...( existingImages.value || [] ), ...( newImageUrls.value || [] )]
+    let finalFileList = [...( existingFiles.value || [] ), ...( newFileUrls.value || [] )]
 
     // Filter out removed files
-    finalImageList = finalImageList.filter(imageUrl => !form.removed_image_urls?.includes(imageUrl))
-    finalFileList = finalFileList.filter(fileUrl => !form.removed_file_urls?.includes(fileUrl))
+    finalImageList = finalImageList.filter( imageUrl => !form.removed_image_urls?.includes( imageUrl ) )
+    finalFileList = finalFileList.filter( fileUrl => !form.removed_file_urls?.includes( fileUrl ) )
 
     // Update form with final URLs
     form.image_list = finalImageList
     form.file_list = finalFileList
 
     // Ensure recurrence settings are properly populated
-    const formattedStartDate = toUtcIso(form.start_date)
-    const formattedEndDate = toUtcIso(form.end_date)
+    const formattedStartDate = toUtcIso( form.start_date )
+    const formattedEndDate = toUtcIso( form.end_date )
 
-    if (form.recurrence_setting_request) {
-      if (!form.recurrence_setting_request.start_date_time && formattedStartDate) {
+    if ( form.recurrence_setting_request ) {
+      if ( !form.recurrence_setting_request.start_date_time && formattedStartDate ) {
         form.recurrence_setting_request.start_date_time = formattedStartDate
       }
-      if (!form.recurrence_setting_request.end_date_time && formattedEndDate) {
+      if ( !form.recurrence_setting_request.end_date_time && formattedEndDate ) {
         form.recurrence_setting_request.end_date_time = formattedEndDate
       }
     }
@@ -2552,20 +2682,28 @@ const submitForm = async () => {
     const updatePayload = createWorkOrderPayload()
 
     // Apply transformation for logging and debugging
-    const finalPayload = transformPayload(updatePayload, 'workOrderUpdate')
+    const finalPayload = transformPayload( updatePayload, 'workOrderUpdate' )
 
-    // Determine API endpoint based on work order type
+    // Determine API endpoint based on work order type and editType choice
     let response
     const hasRecurrenceUuid = props.workOrder?.recurrence_uuid && props.workOrder.recurrence_uuid.trim() !== ''
     const isDoesNotRepeat = props.workOrder?.recurrence_type?.id === 1
     const isRecurrenceWorkOrder = hasRecurrenceUuid && !isDoesNotRepeat
+    const editType = props.workOrder?.editType // Get the edit type from user choice
 
-    if (isRecurrenceWorkOrder) {
-      // Update all work orders in this recurrence
-      response = await updateRecurrenceWorkOrders(finalPayload)
+    // Determine which API to use based on editType or auto-detection
+    if ( editType === 'individual' ) {
+      // User explicitly chose to edit individual work order
+      response = await updateWorkOrder( props.workOrder.id, finalPayload )
+    } else if ( editType === 'recurrence' ) {
+      // User explicitly chose to edit recurrence
+      response = await updateRecurrenceWorkOrders( finalPayload )
+    } else if ( isRecurrenceWorkOrder ) {
+      // Auto-detection: Update all work orders in this recurrence (backward compatibility)
+      response = await updateRecurrenceWorkOrders( finalPayload )
     } else {
-      // Update individual work order (includes "Does not repeat" cases)
-      response = await updateWorkOrder(props.workOrder.id, finalPayload)
+      // Auto-detection: Update individual work order (includes "Does not repeat" cases)
+      response = await updateWorkOrder( props.workOrder.id, finalPayload )
     }
 
     // Reset file state after successful update
@@ -2575,12 +2713,12 @@ const submitForm = async () => {
     newFileUrls.value = []
 
     // Emit the updated work order
-    const updatedWorkOrder = Array.isArray(response.data) ? response.data[0] : response.data
-    emit('work-order-updated', updatedWorkOrder)
+    const updatedWorkOrder = Array.isArray( response.data ) ? response.data[0] : response.data
+    emit( 'work-order-updated', updatedWorkOrder )
 
     // Navigate back to detail view
-    emit('back-to-detail')
-  } catch (error) {
+    emit( 'back-to-detail' )
+  } catch ( error ) {
     loading.value = false
   } finally {
     loading.value = false
@@ -2589,13 +2727,13 @@ const submitForm = async () => {
 
 // Handle hydrating form from draft store - Enhanced for better context handling
 const hydrateFormFromDraft = () => {
-  if (!workOrderDraftStore.hasDraft) {
+  if ( !workOrderDraftStore.hasDraft ) {
     return
   }
 
   // Be more permissive about context - if we have a draft and we're in WorkOrderEdit, use it
-  if (!workOrderDraftStore.isEditMode && workOrderDraftStore.currentContext !== null) {
-    workOrderDraftStore.setContext('edit')
+  if ( !workOrderDraftStore.isEditMode && workOrderDraftStore.currentContext !== null ) {
+    workOrderDraftStore.setContext( 'edit' )
   }
 
   isHydratingForm = true
@@ -2610,94 +2748,94 @@ const hydrateFormFromDraft = () => {
   let updatedCount = 0
 
   // Process tasks from draft - completely replace the array to ensure reactivity
-  if (draftTasks.length > 0) {
+  if ( draftTasks.length > 0 ) {
     const newTasksArray = []
 
     // Start with existing tasks
-    form.tasks.forEach(existingTask => {
-      const taskId = getTaskIdentifier(existingTask)
-      const draftUpdate = draftTasks.find(draftTask => getTaskIdentifier(draftTask) === taskId)
+    form.tasks.forEach( existingTask => {
+      const taskId = getTaskIdentifier( existingTask )
+      const draftUpdate = draftTasks.find( draftTask => getTaskIdentifier( draftTask ) === taskId )
 
-      if (draftUpdate) {
+      if ( draftUpdate ) {
         // Task was updated in draft
-        newTasksArray.push({
+        newTasksArray.push( {
           ...draftUpdate,
-          isFromEdit: true,
-        })
+          isFromEdit : true
+        } )
         updatedCount++
       } else {
         // Task wasn't modified in draft, keep original
-        newTasksArray.push(existingTask)
+        newTasksArray.push( existingTask )
       }
-    })
+    } )
 
     // Add completely new tasks from draft
-    draftTasks.forEach(draftTask => {
-      const draftId = getTaskIdentifier(draftTask)
-      const alreadyExists = form.tasks.some(task => getTaskIdentifier(task) === draftId)
+    draftTasks.forEach( draftTask => {
+      const draftId = getTaskIdentifier( draftTask )
+      const alreadyExists = form.tasks.some( task => getTaskIdentifier( task ) === draftId )
 
-      if (!alreadyExists) {
-        newTasksArray.push({
+      if ( !alreadyExists ) {
+        newTasksArray.push( {
           ...draftTask,
-          isFromEdit: true,
-        })
+          isFromEdit : true
+        } )
         addedCount++
       }
-    })
+    } )
 
     // Replace the entire array to trigger Vue reactivity
-    form.tasks.splice(0, form.tasks.length, ...newTasksArray)
+    form.tasks.splice( 0, form.tasks.length, ...newTasksArray )
   }
 
   // Process standards from draft - completely replace the array to ensure reactivity
-  if (draftStandards.length > 0) {
+  if ( draftStandards.length > 0 ) {
     const newStandardsArray = []
 
     // Start with existing standards
-    form.standards.forEach(existingStandard => {
-      const standardId = getStandardIdentifier(existingStandard)
-      const draftUpdate = draftStandards.find(draftStandard => getStandardIdentifier(draftStandard) === standardId)
+    form.standards.forEach( existingStandard => {
+      const standardId = getStandardIdentifier( existingStandard )
+      const draftUpdate = draftStandards.find( draftStandard => getStandardIdentifier( draftStandard ) === standardId )
 
-      if (draftUpdate) {
-        newStandardsArray.push(draftUpdate)
+      if ( draftUpdate ) {
+        newStandardsArray.push( draftUpdate )
       } else {
-        newStandardsArray.push(existingStandard)
+        newStandardsArray.push( existingStandard )
       }
-    })
+    } )
 
     // Add completely new standards from draft
-    draftStandards.forEach(draftStandard => {
-      const draftId = getStandardIdentifier(draftStandard)
-      const alreadyExists = form.standards.some(standard => getStandardIdentifier(standard) === draftId)
+    draftStandards.forEach( draftStandard => {
+      const draftId = getStandardIdentifier( draftStandard )
+      const alreadyExists = form.standards.some( standard => getStandardIdentifier( standard ) === draftId )
 
-      if (!alreadyExists) {
-        newStandardsArray.push(draftStandard)
+      if ( !alreadyExists ) {
+        newStandardsArray.push( draftStandard )
       }
-    })
+    } )
 
     // Replace the entire array to trigger Vue reactivity
-    form.standards.splice(0, form.standards.length, ...newStandardsArray)
+    form.standards.splice( 0, form.standards.length, ...newStandardsArray )
   }
 
   // Ensure categories are decorated
-  decorateTasksCategories(form.tasks)
+  decorateTasksCategories( form.tasks )
 
   // Sync form data
   syncFormData()
 
   // Force Vue reactivity update and UI refresh
-  nextTick(() => {
+  nextTick( () => {
     // Force re-render of both tasks and standards sections by triggering reactivity
-    if (form.tasks.length > 0) {
+    if ( form.tasks.length > 0 ) {
       // Create a completely new array reference to trigger Vue reactivity
       const updatedTasks = [...form.tasks]
-      form.tasks.splice(0, form.tasks.length, ...updatedTasks)
+      form.tasks.splice( 0, form.tasks.length, ...updatedTasks )
     }
 
-    if (form.standards.length > 0) {
+    if ( form.standards.length > 0 ) {
       // Same for standards
       const updatedStandards = [...form.standards]
-      form.standards.splice(0, form.standards.length, ...updatedStandards)
+      form.standards.splice( 0, form.standards.length, ...updatedStandards )
     }
 
     // Force a full form reactivity update by triggering the watch
@@ -2705,53 +2843,53 @@ const hydrateFormFromDraft = () => {
 
     // Mark that we've successfully hydrated from draft
     hasHydratedFromDraft.value = true
-  })
+  } )
 
   // Restore original task/standard tracking from draft store if available
-  if (workOrderDraftStore.originalTasks && workOrderDraftStore.originalTasks.length > 0) {
-    originalTasks.value = clonePayload(workOrderDraftStore.originalTasks)
+  if ( workOrderDraftStore.originalTasks && workOrderDraftStore.originalTasks.length > 0 ) {
+    originalTasks.value = clonePayload( workOrderDraftStore.originalTasks )
   }
-  if (workOrderDraftStore.originalStandards && workOrderDraftStore.originalStandards.length > 0) {
-    originalStandards.value = clonePayload(workOrderDraftStore.originalStandards)
+  if ( workOrderDraftStore.originalStandards && workOrderDraftStore.originalStandards.length > 0 ) {
+    originalStandards.value = clonePayload( workOrderDraftStore.originalStandards )
   }
 
   // Don't clear the draft immediately - let the UI render first
   // This will be cleared after the next tick to ensure Vue has processed the changes
-  nextTick(() => {
+  nextTick( () => {
     isHydratingForm = false
 
     // Wait for Vue to process reactivity updates before clearing draft
-    setTimeout(() => {
+    setTimeout( () => {
       workOrderDraftStore.clearDraft()
       workOrderDraftStore.clearReturnContext()
       // Reset the hydration flag after a successful draft clear
       hasHydratedFromDraft.value = false
-    }, 100)
-  })
+    }, 100 )
+  } )
 }
 
 // Initialize component
-onMounted(async () => {
+onMounted( async() => {
   // Set edit mode context before loading any data
-  workOrderDraftStore.setEditModeData(props.workOrder)
+  workOrderDraftStore.setEditModeData( props.workOrder )
 
   await loadFormData()
 
   // Use nextTick and small delay to ensure draft store is ready
   // This handles the case where we're returning from designer
-  nextTick(() => {
-    setTimeout(() => {
+  nextTick( () => {
+    setTimeout( () => {
       // Hydrate form from draft store (this handles tasks from library designer)
       hydrateFormFromDraft()
-    }, 150) // Slightly longer delay than TodoView context clearing
-  })
-})
+    }, 150 ) // Slightly longer delay than TodoView context clearing
+  } )
+} )
 
 // Watch for work order prop changes - but avoid overriding hydrated data
 watch(
   () => props.workOrder,
   newWorkOrder => {
-    if (newWorkOrder) {
+    if ( newWorkOrder ) {
       // Check hydration state more reliably
       const workOrderChanged = newWorkOrder.id !== form.workOrderId
       const hasDraftData = workOrderDraftStore.hasDraft
@@ -2760,23 +2898,23 @@ watch(
       // Only populate from work order if:
       // 1. Work order actually changed, OR
       // 2. We haven't recently hydrated from draft AND there's no draft data
-      if (workOrderChanged || (!hasRecentlyHydrated && !hasDraftData)) {
+      if ( workOrderChanged || ( !hasRecentlyHydrated && !hasDraftData ) ) {
         // Store the work order ID to detect changes
         form.workOrderId = newWorkOrder.id
-        populateFormFromWorkOrder(newWorkOrder)
+        populateFormFromWorkOrder( newWorkOrder )
       } else {
-        console.log('WorkOrderEdit: Skipping populateFormFromWorkOrder - preserving hydrated/draft state')
+        console.log( 'WorkOrderEdit: Skipping populateFormFromWorkOrder - preserving hydrated/draft state' )
       }
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
 
 // Watch for draft store changes - rehydrate when draft becomes available
 watch(
   () => workOrderDraftStore.hasDraft,
   hasDraft => {
-    if (hasDraft && workOrderDraftStore.isEditMode) {
+    if ( hasDraft && workOrderDraftStore.isEditMode ) {
       hydrateFormFromDraft()
     }
   }
@@ -2785,58 +2923,58 @@ watch(
 // Watch route query for returned standalone taskData
 const applyStandaloneTaskReturn = returnedTaskData => {
   const taskIdCandidates = new Set()
-  if (returnedTaskData.id != null) taskIdCandidates.add(String(returnedTaskData.id))
-  if (returnedTaskData.task_id != null) taskIdCandidates.add(String(returnedTaskData.task_id))
+  if ( returnedTaskData.id != null ) taskIdCandidates.add( String( returnedTaskData.id ) )
+  if ( returnedTaskData.task_id != null ) taskIdCandidates.add( String( returnedTaskData.task_id ) )
 
-  const taskIndex = form.tasks.findIndex(task => {
-    const existingCandidates = getTaskIdentityCandidates(task).map(normalizeIdentifier).filter(Boolean)
-    return existingCandidates.some(candidate => taskIdCandidates.has(candidate))
-  })
+  const taskIndex = form.tasks.findIndex( task => {
+    const existingCandidates = getTaskIdentityCandidates( task ).map( normalizeIdentifier ).filter( Boolean )
+    return existingCandidates.some( candidate => taskIdCandidates.has( candidate ) )
+  } )
 
-  if (taskIndex === -1) {
-    ElMessage.warning('Could not find task to update')
+  if ( taskIndex === -1 ) {
+    ElMessage.warning( 'Could not find task to update' )
     return
   }
 
   const existingTask = form.tasks[taskIndex]
   const updatedStepsSource =
-    Array.isArray(returnedTaskData.steps) && returnedTaskData.steps.length > 0
-      ? clonePayload(returnedTaskData.steps)
-      : Array.isArray(returnedTaskData.payload?.steps) && returnedTaskData.payload.steps.length > 0
-      ? clonePayload(returnedTaskData.payload.steps)
-      : existingTask.steps
+    Array.isArray( returnedTaskData.steps ) && returnedTaskData.steps.length > 0
+      ? clonePayload( returnedTaskData.steps )
+      : Array.isArray( returnedTaskData.payload?.steps ) && returnedTaskData.payload.steps.length > 0
+        ? clonePayload( returnedTaskData.payload.steps )
+        : existingTask.steps
 
   const mergedTask = {
     ...existingTask,
     ...returnedTaskData,
-    id: existingTask.id,
+    id : existingTask.id
   }
 
-  if (updatedStepsSource) {
-    mergedTask.steps = clonePayload(updatedStepsSource)
+  if ( updatedStepsSource ) {
+    mergedTask.steps = clonePayload( updatedStepsSource )
   }
 
-  if (returnedTaskData.payload) {
+  if ( returnedTaskData.payload ) {
     mergedTask.payload = {
-      ...(existingTask.payload || {}),
+      ...( existingTask.payload || {} ),
       ...returnedTaskData.payload,
-      steps: clonePayload(returnedTaskData.payload.steps || updatedStepsSource || existingTask.payload?.steps || []),
+      steps : clonePayload( returnedTaskData.payload.steps || updatedStepsSource || existingTask.payload?.steps || [] )
     }
   } else {
     const fallbackPayloadSteps = updatedStepsSource || existingTask.payload?.steps || []
     mergedTask.payload = {
-      ...(existingTask.payload || {}),
-      name: mergedTask.name ?? existingTask.payload?.name,
-      description: mergedTask.description ?? existingTask.payload?.description,
-      steps: clonePayload(fallbackPayloadSteps),
+      ...( existingTask.payload || {} ),
+      name : mergedTask.name ?? existingTask.payload?.name,
+      description : mergedTask.description ?? existingTask.payload?.description,
+      steps : clonePayload( fallbackPayloadSteps )
     }
   }
 
   mergedTask.__hasLocalEdits = true
   mergedTask.__entryStepsLoaded = true
 
-  form.tasks.splice(taskIndex, 1, mergedTask)
-  decorateTaskCategory(form.tasks[taskIndex])
+  form.tasks.splice( taskIndex, 1, mergedTask )
+  decorateTaskCategory( form.tasks[taskIndex] )
   syncFormData()
 
   // ElMessage.success( `Task "${returnedTaskData.name || 'Unnamed'}" updated` )
@@ -2845,67 +2983,67 @@ const applyStandaloneTaskReturn = returnedTaskData => {
 watch(
   () => route.query.taskData,
   taskDataJSON => {
-    if (!taskDataJSON) return
+    if ( !taskDataJSON ) return
     try {
-      const returnedTaskData = JSON.parse(taskDataJSON)
-      applyStandaloneTaskReturn(returnedTaskData)
-    } catch (error) {
-      ElMessage.error('Failed to process returned task data')
+      const returnedTaskData = JSON.parse( taskDataJSON )
+      applyStandaloneTaskReturn( returnedTaskData )
+    } catch ( error ) {
+      ElMessage.error( 'Failed to process returned task data' )
     } finally {
-      router.replace({
-        query: {
+      router.replace( {
+        query : {
           ...route.query,
-          taskData: undefined,
-          taskId: undefined,
-          shouldFetchEntry: undefined,
-          taskEntryId: undefined,
-        },
-      })
+          taskData : undefined,
+          taskId : undefined,
+          shouldFetchEntry : undefined,
+          taskEntryId : undefined
+        }
+      } )
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
 
 watch(
   () => route.query.taskDataKey,
   taskDataKey => {
-    if (!taskDataKey) return
+    if ( !taskDataKey ) return
     try {
-      const stored = sessionStorage.getItem(taskDataKey)
-      if (stored) {
-        const returnedTaskData = JSON.parse(stored)
-        sessionStorage.removeItem(taskDataKey)
-        applyStandaloneTaskReturn(returnedTaskData)
+      const stored = sessionStorage.getItem( taskDataKey )
+      if ( stored ) {
+        const returnedTaskData = JSON.parse( stored )
+        sessionStorage.removeItem( taskDataKey )
+        applyStandaloneTaskReturn( returnedTaskData )
       } else {
-        console.warn('WorkOrderEdit: No session data found for key', taskDataKey)
+        console.warn( 'WorkOrderEdit: No session data found for key', taskDataKey )
       }
-    } catch (error) {
-      ElMessage.error('Failed to process returned task data')
+    } catch ( error ) {
+      ElMessage.error( 'Failed to process returned task data' )
     } finally {
-      router.replace({
-        query: {
+      router.replace( {
+        query : {
           ...route.query,
-          taskDataKey: undefined,
-          taskId: undefined,
-          shouldFetchEntry: undefined,
-          taskEntryId: undefined,
-        },
-      })
+          taskDataKey : undefined,
+          taskId : undefined,
+          shouldFetchEntry : undefined,
+          taskEntryId : undefined
+        }
+      } )
     }
   },
-  { immediate: true }
+  { immediate : true }
 )
 
 // Handle keep-alive component reactivation
-onActivated(() => {
+onActivated( () => {
   // Re-hydrate if there's a draft available
-  if (workOrderDraftStore.hasDraft && workOrderDraftStore.isEditMode) {
+  if ( workOrderDraftStore.hasDraft && workOrderDraftStore.isEditMode ) {
     hydrateFormFromDraft()
   }
 
   // Re-register template update listener in case it was lost
-  taskLibraryStore.addTemplateUpdateListener(handleTemplateUpdate)
-})
+  taskLibraryStore.addTemplateUpdateListener( handleTemplateUpdate )
+} )
 </script>
 
 <style scoped lang="scss">
@@ -3156,144 +3294,235 @@ onActivated(() => {
   color: var(--el-text-color-secondary);
 }
 
-// Standalone standard preview
+// Standalone standard preview - matching StandardsPreview.vue exactly
 .standalone-standard-preview {
+  padding: 0;
+  overflow: visible;
+
   .standard-details {
-    .fixed-header-section {
-      margin-bottom: 20px;
+    padding: 24px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
 
-      .standard-tabs-header {
-        .details-tabs {
-          :deep(.el-tabs__header) {
-            margin: 0 0 16px 0;
-          }
+  .fixed-header-section {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: #fff;
+  }
 
-          :deep(.el-tabs__nav-wrap::after) {
-            height: 1px;
-          }
+  .scrollable-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
 
-          :deep(.el-tabs__item) {
-            font-size: 14px;
-            font-weight: 500;
-          }
+  .scrollable-content::-webkit-scrollbar {
+    width: 6px;
+  }
 
-          :deep(.el-tabs__item.is-top) {
-            font-size: 16px;
-            width: 50%;
-          }
+  .scrollable-content::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
 
-          :deep(.el-tabs__nav.is-top) {
-            width: 100%;
-          }
-        }
-      }
+  .scrollable-content::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+  }
+
+  .scrollable-content::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
+
+  .details-tabs {
+    height: 100%;
+
+    :deep(.el-tabs__header) {
+      margin: 0 0 16px 0;
     }
 
-    .scrollable-content {
-      max-height: 500px;
-      overflow-y: auto;
-
-      .tab-content-wrapper {
-        .tab-pane-content {
-          .overview-card,
-          .description-card {
-            background: var(--el-fill-color-light);
-            border-radius: 8px;
-            margin-bottom: 16px;
-
-            .card-header {
-              padding: 16px 16px 0 16px;
-
-              .card-title {
-                font-size: 16px;
-                font-weight: 600;
-                margin: 0;
-              }
-            }
-
-            .card-content {
-              padding: 16px;
-
-              .description-text {
-                line-height: 1.6;
-                color: var(--el-text-color-regular);
-              }
-
-              .info-value {
-                font-weight: 600;
-
-                &.highlight {
-                  color: var(--el-color-primary);
-                }
-              }
-            }
-          }
-
-          .rules-list {
-            .card-header {
-              display: flex;
-              align-items: center;
-              justify-content: space-between;
-              padding: 16px;
-              background: var(--el-fill-color-light);
-              border-radius: 8px 8px 0 0;
-
-              .card-title {
-                font-size: 16px;
-                font-weight: 600;
-                margin: 0;
-              }
-            }
-
-            .rules-container {
-              background: white;
-              border-radius: 0 0 8px 8px;
-              border: 1px solid var(--el-border-color-light);
-              border-top: none;
-
-              .rule-item {
-                display: flex;
-                gap: 12px;
-                padding: 16px;
-                border-bottom: 1px solid var(--el-border-color-lighter);
-
-                &:last-child {
-                  border-bottom: none;
-                }
-
-                .rule-number {
-                  flex-shrink: 0;
-                  width: 24px;
-                  height: 24px;
-                  background: var(--el-color-primary);
-                  color: white;
-                  border-radius: 50%;
-                  display: flex;
-                  align-items: center;
-                  justify-content: center;
-                  font-size: 12px;
-                  font-weight: 600;
-                }
-
-                .rule-content {
-                  flex: 1;
-
-                  .rule-text {
-                    line-height: 1.6;
-                    color: var(--el-text-color-regular);
-                  }
-                }
-              }
-            }
-          }
-
-          .empty-rules {
-            padding: 40px;
-            text-align: center;
-          }
-        }
-      }
+    :deep(.el-tabs__nav-wrap::after) {
+      height: 1px;
     }
+
+    :deep(.el-tabs__item) {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    :deep(.el-tabs__item.is-top) {
+      font-size: 16px;
+      width: 50%;
+    }
+
+    :deep(.el-tabs__nav.is-top) {
+      width: 100%;
+    }
+  }
+
+  // Card Components - matching StandardsPreview exactly
+  .overview-card,
+  .description-card {
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 24px;
+  }
+
+  .card-header {
+    padding: 8px 24px 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .card-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #303133;
+    margin: 0;
+  }
+
+  .card-content {
+    padding: 12px 24px 12px 24px;
+  }
+
+  .info-value {
+    color: #606266;
+    font-weight: 200;
+    font-size: 14px;
+    text-align: right;
+    margin-right: 20px;
+  }
+
+  .info-value.highlight {
+    color: #409eff;
+    font-weight: 600;
+  }
+
+  // Description Card
+  .description-text {
+    color: #303133;
+    line-height: 1.7;
+    font-size: 14px;
+    padding: 16px 16px 16px 0px;
+    border-radius: 6px;
+    max-height: 32vh;
+    overflow-y: auto;
+  }
+
+  // Rules List - matching StandardsPreview exactly
+  .rules-list {
+    margin-bottom: 24px;
+  }
+
+  .rules-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 24px 24px 24px;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  .rule-item {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    border: 1px solid #e4e7ed;
+    border-radius: 8px;
+    background: #fafafa;
+    transition: all 0.3s ease;
+  }
+
+  .rule-item:hover {
+    border-color: #409eff;
+    background: #f0f7ff;
+  }
+
+  .rule-number {
+    width: 23px;
+    height: 23px;
+    background: #409eff;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    margin-right: 16px;
+    flex-shrink: 0;
+  }
+
+  .rule-content {
+    flex: 1;
+    margin-right: 12px;
+  }
+
+  .rule-text {
+    color: #303133;
+    line-height: 1.6;
+    font-size: 14px;
+  }
+
+  .empty-rules {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 300px;
+  }
+
+  // Tab styling matching StandardsPreview
+  :deep(.el-tabs__item.is-top) {
+    font-size: 16px;
+    width: 50%;
+  }
+
+  :deep(.el-tabs__nav.is-top) {
+    width: 100%;
+  }
+
+  // Custom scrollbar for rules container only
+  .rules-container::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .rules-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+
+  .rules-container::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+  }
+
+  .rules-container::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
+
+  // Custom scrollbar for description text
+  .description-text::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .description-text::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+  }
+
+  .description-text::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+  }
+
+  .description-text::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
   }
 }
 
