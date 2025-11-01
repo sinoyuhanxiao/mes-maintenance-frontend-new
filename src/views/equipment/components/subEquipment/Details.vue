@@ -114,7 +114,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { ArrowRight } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import FileDisplay from '@/components/common/FileDisplay.vue'
+import FileDisplay from '@/components/Common/FileDisplay.vue'
 import { getEquipmentById } from '@/api/equipment.js'
 import { getLocationPathById } from '@/api/location.js'
 

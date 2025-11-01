@@ -250,7 +250,7 @@ import { ElMessage } from 'element-plus'
 import { updateLocationById, getLocationPathById, getLocationById } from '@/api/location'
 import { getEquipmentNodes } from '@/api/equipment.js'
 import { uploadMultipleToMinio, deleteObjectList } from '@/api/minio'
-import LocationPath from '@/components/common/LocationPath.vue'
+import LocationPath from '@/components/Common/LocationPath.vue'
 
 const props = defineProps( {
   location : Object,
