@@ -67,80 +67,80 @@ import StepPassFail from '@/components/TaskLibrary/components/preview/StepPassFa
 import StepFile from '@/components/TaskLibrary/components/preview/StepFile.vue'
 
 const componentMap = {
-  checklist : StepCheckbox,
-  checkbox : StepCheckbox,
-  boolean_field : StepBoolean,
-  text_field : StepText,
-  numeric_field : StepNumeric,
-  pass_fail : StepPassFail,
-  file_field : StepFile
+  checklist: StepCheckbox,
+  checkbox: StepCheckbox,
+  boolean_field: StepBoolean,
+  text_field: StepText,
+  numeric_field: StepNumeric,
+  pass_fail: StepPassFail,
+  file_field: StepFile,
 }
 
-const props = defineProps( {
-  task : {
-    type : Object,
-    required : true
+const props = defineProps({
+  task: {
+    type: Object,
+    required: true,
   },
-  progress : {
-    type : Object,
-    default : () => ( {
-      status : 'not_started',
-      time_spent : { value : 0, unit : 'minutes' },
-      step_progress : {}
-    } )
+  progress: {
+    type: Object,
+    default: () => ({
+      status: 'not_started',
+      time_spent: { value: 0, unit: 'minutes' },
+      step_progress: {},
+    }),
   },
-  index : {
-    type : Number,
-    default : 0
-  }
-} )
+  index: {
+    type: Number,
+    default: 0,
+  },
+})
 
-const emit = defineEmits( ['save-draft', 'submit', 'time-change', 'step-change'] )
+const emit = defineEmits(['save-draft', 'submit', 'time-change', 'step-change'])
 
-const indexLabel = computed( () => props.index + 1 )
+const indexLabel = computed(() => props.index + 1)
 
-const stepList = computed( () => {
-  if ( Array.isArray( props.task?.steps ) && props.task.steps.length ) return props.task.steps
-  if ( Array.isArray( props.task?.payload?.steps ) ) return props.task.payload.steps
+const stepList = computed(() => {
+  if (Array.isArray(props.task?.steps) && props.task.steps.length) return props.task.steps
+  if (Array.isArray(props.task?.payload?.steps)) return props.task.payload.steps
   return []
-} )
+})
 
-const currentStatus = computed( () => props.progress?.status || 'draft' )
-const isCompleted = computed( () => currentStatus.value === 'completed' )
+const currentStatus = computed(() => props.progress?.status || 'draft')
+const isCompleted = computed(() => currentStatus.value === 'completed')
 
-const timeState = ref( {
-  value : props.progress?.time_spent?.value ?? 0,
-  unit : props.progress?.time_spent?.unit ?? 'minutes'
-} )
+const timeState = ref({
+  value: props.progress?.time_spent?.value ?? 0,
+  unit: props.progress?.time_spent?.unit ?? 'minutes',
+})
 
-const stepProgressState = reactive( { ...props.progress?.step_progress } )
+const stepProgressState = reactive({ ...props.progress?.step_progress })
 
 watch(
   () => props.progress,
   value => {
     timeState.value = {
-      value : value?.time_spent?.value ?? 0,
-      unit : value?.time_spent?.unit ?? 'minutes'
+      value: value?.time_spent?.value ?? 0,
+      unit: value?.time_spent?.unit ?? 'minutes',
     }
-    Object.keys( stepProgressState ).forEach( key => delete stepProgressState[key] )
-    Object.assign( stepProgressState, value?.step_progress || {} )
+    Object.keys(stepProgressState).forEach(key => delete stepProgressState[key])
+    Object.assign(stepProgressState, value?.step_progress || {})
   }
 )
 
 watch(
   stepList,
   list => {
-    list.forEach( step => {
+    list.forEach(step => {
       const key = step.id || step.name
-      if ( key && !Object.prototype.hasOwnProperty.call( stepProgressState, key ) ) {
+      if (key && !Object.prototype.hasOwnProperty.call(stepProgressState, key)) {
         stepProgressState[key] = props.progress?.step_progress?.[key] || 'todo'
       }
-    } )
+    })
   },
-  { immediate : true }
+  { immediate: true }
 )
 
-const statusClass = computed( () => `status-${currentStatus.value}` )
+const statusClass = computed(() => `status-${currentStatus.value}`)
 
 const getStepComponent = step => {
   const type = step.type || step.value?.type
@@ -150,44 +150,44 @@ const getStepComponent = step => {
 const emitProgress = status => {
   const payload = {
     status,
-    time_spent : { ...timeState.value },
-    step_progress : { ...stepProgressState }
+    time_spent: { ...timeState.value },
+    step_progress: { ...stepProgressState },
   }
   return payload
 }
 
 const handleTimeChange = value => {
   timeState.value = value
-  emit( 'time-change', {
-    taskId : props.task.id,
-    value
-  } )
+  emit('time-change', {
+    taskId: props.task.id,
+    value,
+  })
 }
 
-const handleStepChange = ( step, newValue ) => {
+const handleStepChange = (step, newValue) => {
   const key = step.id || step.name
   stepProgressState[key] = newValue
-  emit( 'step-change', {
-    taskId : props.task.id,
-    stepId : key,
-    value : newValue
-  } )
+  emit('step-change', {
+    taskId: props.task.id,
+    stepId: key,
+    value: newValue,
+  })
 }
 
 const handleSaveDraft = () => {
-  const payload = emitProgress( 'draft' )
-  emit( 'save-draft', payload )
+  const payload = emitProgress('draft')
+  emit('save-draft', payload)
 }
 
 const handleSubmit = () => {
-  const payload = emitProgress( 'completed' )
-  emit( 'submit', payload )
+  const payload = emitProgress('completed')
+  emit('submit', payload)
 }
 
 const formatDate = value => {
-  if ( !value ) return ''
-  const date = new Date( value )
-  if ( Number.isNaN( date.getTime() ) ) return ''
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return ''
   return date.toLocaleString()
 }
 </script>

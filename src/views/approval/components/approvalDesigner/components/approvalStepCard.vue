@@ -31,21 +31,21 @@
 </template>
 
 <script setup>
-defineProps( {
-  stepNumber : {
-    type : Number,
-    default : 1
+defineProps({
+  stepNumber: {
+    type: Number,
+    default: 1,
   },
-  stepData : {
-    type : Object,
-    default : () => ( {
-      approverType : '',
-      approverName : '',
-      requiresApproval : false,
-      approvalAmount : ''
-    } )
-  }
-} )
+  stepData: {
+    type: Object,
+    default: () => ({
+      approverType: '',
+      approverName: '',
+      requiresApproval: false,
+      approvalAmount: '',
+    }),
+  },
+})
 </script>
 
 <style scoped>

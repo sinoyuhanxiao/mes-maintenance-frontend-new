@@ -48,63 +48,63 @@ import { ref, computed } from 'vue'
 import { DataAnalysis, Warning, Aim } from '@element-plus/icons-vue'
 import { formatLimitsText } from 'src/views/taskLibrary/utils/stepTransforms'
 
-const props = defineProps( {
-  step : {
-    type : Object,
-    required : true
+const props = defineProps({
+  step: {
+    type: Object,
+    required: true,
   },
-  interactive : {
-    type : Boolean,
-    default : false
+  interactive: {
+    type: Boolean,
+    default: false,
   },
-  config : {
-    type : Object,
-    default : () => ( {
-      showUnits : true,
-      showLimits : true,
-      unitsField : 'unit',
-      limitsField : 'limits'
-    } )
-  }
-} )
+  config: {
+    type: Object,
+    default: () => ({
+      showUnits: true,
+      showLimits: true,
+      unitsField: 'unit',
+      limitsField: 'limits',
+    }),
+  },
+})
 
-const numberValue = ref( props.step.ui.default || null )
+const numberValue = ref(props.step.ui.default || null)
 
-const showUnits = computed( () => props.config.showUnits )
-const showLimits = computed( () => props.config.showLimits )
+const showUnits = computed(() => props.config.showUnits)
+const showLimits = computed(() => props.config.showLimits)
 
-const unit = computed( () => {
+const unit = computed(() => {
   const unitField = props.config.unitsField || 'unit'
   return props.step.ui[unitField] || ''
-} )
+})
 
-const limits = computed( () => {
+const limits = computed(() => {
   const limitsField = props.config.limitsField || 'limits'
   return props.step.ui[limitsField] || null
-} )
+})
 
-const isOutOfRange = computed( () => {
-  if ( !limits.value || numberValue.value === null || numberValue.value === undefined ) {
+const isOutOfRange = computed(() => {
+  if (!limits.value || numberValue.value === null || numberValue.value === undefined) {
     return false
   }
 
   const value = numberValue.value
   const { lower, upper } = limits.value
 
-  if ( lower !== undefined && value < lower ) return true
-  if ( upper !== undefined && value > upper ) return true
+  if (lower !== undefined && value < lower) return true
+  if (upper !== undefined && value > upper) return true
 
   return false
-} )
+})
 
 const getPlaceholder = () => {
-  if ( limits.value ) {
+  if (limits.value) {
     const { lower, upper } = limits.value
-    if ( lower !== undefined && upper !== undefined ) {
+    if (lower !== undefined && upper !== undefined) {
       return `${lower} - ${upper}`
-    } else if ( lower !== undefined ) {
+    } else if (lower !== undefined) {
       return `Min: ${lower}`
-    } else if ( upper !== undefined ) {
+    } else if (upper !== undefined) {
       return `Max: ${upper}`
     }
   }

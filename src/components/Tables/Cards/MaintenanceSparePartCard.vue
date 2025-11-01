@@ -70,27 +70,27 @@ import { Picture, Document, View, Edit, Delete } from '@element-plus/icons-vue'
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import defaultImageUrl from '@/assets/imgs/default-image.png'
 
-defineProps( {
-  item : {
-    type : Object,
-    required : true
-  }
-} )
+defineProps({
+  item: {
+    type: Object,
+    required: true,
+  },
+})
 
 // 3/4 columns when wide, else 2 (your existing logic with 1440 breakpoint)
-const columns = ref( 2 )
+const columns = ref(2)
 function updateColumns() {
-  if ( typeof window !== 'undefined' ) {
+  if (typeof window !== 'undefined') {
     columns.value = window.innerWidth >= 1440 ? 4 : 3
   }
 }
-onMounted( () => {
+onMounted(() => {
   updateColumns()
-  window.addEventListener( 'resize', updateColumns )
-} )
-onBeforeUnmount( () => {
-  window.removeEventListener( 'resize', updateColumns )
-} )
+  window.addEventListener('resize', updateColumns)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateColumns)
+})
 </script>
 
 <style scoped>

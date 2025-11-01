@@ -37,8 +37,7 @@
             {{ new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(props.spData.unit_price) }}
           </el-descriptions-item>
           <el-descriptions-item :span="1" label="Currency: ">{{ props.spData.price_uom.name }}</el-descriptions-item>
-          <el-descriptions-item :span="1"
-label="Lead Time: "
+          <el-descriptions-item :span="1" label="Lead Time: "
             >{{ props.spData.lead_time_days }} Days</el-descriptions-item
           >
         </el-descriptions>
@@ -50,20 +49,20 @@ label="Lead Time: "
 <script setup>
 // import { Close } from '@element-plus/icons-vue'
 // import { ref } from 'vue'
-const props = defineProps( {
-  data : Object,
-  spData : Object
-} )
+const props = defineProps({
+  data: Object,
+  spData: Object,
+})
 
-const emit = defineEmits( ['existing', 'new'] )
+const emit = defineEmits(['existing', 'new'])
 
 function sendEmit() {
-  console.log( props.spData )
-  if ( props.spData ) {
-    console.log( 'existing sent' )
-    emit( 'existing', props )
+  console.log(props.spData)
+  if (props.spData) {
+    console.log('existing sent')
+    emit('existing', props)
   } else {
-    emit( 'new', props.data.vendor )
+    emit('new', props.data.vendor)
   }
 }
 </script>

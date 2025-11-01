@@ -215,34 +215,34 @@ import LocationTreeSelect from '@/views/team/components/LocationTreeSelect.vue'
 import TagPopover from '@/views/team/components/TagPopover.vue'
 
 const { t } = useI18n()
-const loading = ref( false )
-const isFormProcessing = ref( false )
-const isDialogVisible = ref( false )
-const departmentsTableData = ref( [] )
-const sortSettings = ref( { prop : 'id', order : 'descending' } )
-const currentPage = ref( 1 )
-const pageSize = ref( 20 )
-const totalElements = ref( 0 )
-const tableHeight = ref( window.innerHeight - 250 )
-const currentEditingDepartment = ref( null )
-const locationMap = ref( {} )
-const userOptions = ref( [] )
+const loading = ref(false)
+const isFormProcessing = ref(false)
+const isDialogVisible = ref(false)
+const departmentsTableData = ref([])
+const sortSettings = ref({ prop: 'id', order: 'descending' })
+const currentPage = ref(1)
+const pageSize = ref(20)
+const totalElements = ref(0)
+const tableHeight = ref(window.innerHeight - 250)
+const currentEditingDepartment = ref(null)
+const locationMap = ref({})
+const userOptions = ref([])
 const initialFilters = {
-  keyword : '',
-  manager_ids : [],
-  location_ids : []
+  keyword: '',
+  manager_ids: [],
+  location_ids: [],
 }
-const localFilters = reactive( { ...initialFilters } )
-const userMap = computed( () => {
-  return Object.fromEntries( userOptions.value.map( user => [user.id, user] ) )
-} )
+const localFilters = reactive({ ...initialFilters })
+const userMap = computed(() => {
+  return Object.fromEntries(userOptions.value.map(user => [user.id, user]))
+})
 
 function openCreateForm() {
   currentEditingDepartment.value = null
   isDialogVisible.value = true
 }
 
-function handleEdit( department ) {
+function handleEdit(department) {
   currentEditingDepartment.value = department
   isDialogVisible.value = true
 }
@@ -258,22 +258,22 @@ function handleFilterChange() {
 }
 
 function clearLocalFilters() {
-  Object.assign( localFilters, initialFilters )
+  Object.assign(localFilters, initialFilters)
   handleFilterChange()
 }
 
-function handlePageChange( val ) {
+function handlePageChange(val) {
   currentPage.value = val
   loadDepartments()
 }
 
-function handleSizeChange( val ) {
+function handleSizeChange(val) {
   pageSize.value = val
   currentPage.value = 1
   loadDepartments()
 }
 
-function handleSortChange( { prop, order } ) {
+function handleSortChange({ prop, order }) {
   sortSettings.value = { prop, order }
   loadDepartments()
 }
@@ -281,12 +281,12 @@ function handleSortChange( { prop, order } ) {
 async function loadLocations() {
   // Fetch fixed number of locations assuming all location count are less than 1000.
   try {
-    const response = await searchLocations( { status_ids : [1] }, 1, 1000 )
+    const response = await searchLocations({ status_ids: [1] }, 1, 1000)
     const locations = response?.data?.content || []
 
-    locationMap.value = Object.fromEntries( locations.map( location => [String( location.id ), location] ) )
-  } catch ( err ) {
-    ElMessage.error( 'Error loading location data' )
+    locationMap.value = Object.fromEntries(locations.map(location => [String(location.id), location]))
+  } catch (err) {
+    ElMessage.error('Error loading location data')
   }
 }
 
@@ -303,39 +303,39 @@ async function loadDepartments() {
     const data = response.data
     departmentsTableData.value = data.content || []
     totalElements.value = data.totalElements
-  } catch ( err ) {
-    console.error( 'Failed to load departments:', err )
-    ElMessage.error( t( 'department.message.fetchFailed' ) )
+  } catch (err) {
+    console.error('Failed to load departments:', err)
+    ElMessage.error(t('department.message.fetchFailed'))
   } finally {
     loading.value = false
   }
 }
 
-async function handleDeactivate( id ) {
+async function handleDeactivate(id) {
   try {
-    await ElMessageBox.confirm( t( 'common.confirmMessage' ), t( 'common.warning' ), {
-      confirmButtonText : t( 'common.confirm' ),
-      cancelButtonText : t( 'common.cancel' ),
-      type : 'warning',
-      distinguishCancelAndClose : true
-    } )
-    await deactivateDepartment( id )
+    await ElMessageBox.confirm(t('common.confirmMessage'), t('common.warning'), {
+      confirmButtonText: t('common.confirm'),
+      cancelButtonText: t('common.cancel'),
+      type: 'warning',
+      distinguishCancelAndClose: true,
+    })
+    await deactivateDepartment(id)
     await loadDepartments()
-    ElMessage.success( t( 'department.message.deactivateSuccess' ) )
-  } catch ( err ) {
-    if ( err === 'cancel' || err === 'close' ) return
-    console.error( err )
-    ElMessage.error( t( 'department.message.deactivateFailed' ) )
+    ElMessage.success(t('department.message.deactivateSuccess'))
+  } catch (err) {
+    if (err === 'cancel' || err === 'close') return
+    console.error(err)
+    ElMessage.error(t('department.message.deactivateFailed'))
   }
 }
 
 async function loadUsers() {
   try {
-    const response = await searchUsers( {}, 1, 1000 ) // adjust page/size if needed
+    const response = await searchUsers({}, 1, 1000) // adjust page/size if needed
     userOptions.value = response?.data?.content || []
-  } catch ( err ) {
-    console.error( 'Failed to load users:', err )
-    ElMessage.error( t( 'user.message.errorLoadingUsersData' ) )
+  } catch (err) {
+    console.error('Failed to load users:', err)
+    ElMessage.error(t('user.message.errorLoadingUsersData'))
   }
 }
 
@@ -344,14 +344,14 @@ watch(
   () => {
     handleFilterChange()
   },
-  { deep : true }
+  { deep: true }
 )
 
-onMounted( async() => {
+onMounted(async () => {
   await loadLocations()
   await loadUsers()
   await loadDepartments()
-} )
+})
 </script>
 
 <style scoped>

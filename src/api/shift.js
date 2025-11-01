@@ -12,14 +12,14 @@ const USER_CLIENT_URL = ENV_CONFIG.USER_CLIENT_URL
  * @param {"ASC"|"DESC"} direction
  * @returns {Promise} API response with PagingResult<ShiftDTO>
  */
-export const searchShifts = ( search = {}, page = 1, size = 10, sortField = 'createdAt', direction = 'DESC' ) => {
-  return http.request( {
-    method : 'post',
-    url : '/shift/search',
-    baseURL : USER_CLIENT_URL,
-    data : search,
-    params : { page, size, sortField, direction }
-  } )
+export const searchShifts = (search = {}, page = 1, size = 10, sortField = 'createdAt', direction = 'DESC') => {
+  return http.request({
+    method: 'post',
+    url: '/shift/search',
+    baseURL: USER_CLIENT_URL,
+    data: search,
+    params: { page, size, sortField, direction },
+  })
 }
 
 /**
@@ -28,11 +28,11 @@ export const searchShifts = ( search = {}, page = 1, size = 10, sortField = 'cre
  * @returns {Promise} API response with ShiftDTO.
  */
 export const getShiftById = id => {
-  return http.request( {
-    method : 'get',
-    url : `/shift/${id}`,
-    baseURL : USER_CLIENT_URL
-  } )
+  return http.request({
+    method: 'get',
+    url: `/shift/${id}`,
+    baseURL: USER_CLIENT_URL,
+  })
 }
 
 /**
@@ -41,12 +41,12 @@ export const getShiftById = id => {
  * @returns {Promise} API response with created ShiftDTO.
  */
 export const createShift = data => {
-  return http.request( {
-    method : 'post',
-    url : '/shift',
-    baseURL : USER_CLIENT_URL,
-    data
-  } )
+  return http.request({
+    method: 'post',
+    url: '/shift',
+    baseURL: USER_CLIENT_URL,
+    data,
+  })
 }
 
 /**
@@ -55,13 +55,13 @@ export const createShift = data => {
  * @param {Object} data - ShiftUpdateRequest payload.
  * @returns {Promise} API response with updated ShiftDTO.
  */
-export const updateShift = ( id, data ) => {
-  return http.request( {
-    method : 'patch',
-    url : `/shift/${id}`,
-    baseURL : USER_CLIENT_URL,
-    data
-  } )
+export const updateShift = (id, data) => {
+  return http.request({
+    method: 'patch',
+    url: `/shift/${id}`,
+    baseURL: USER_CLIENT_URL,
+    data,
+  })
 }
 
 /**
@@ -70,11 +70,11 @@ export const updateShift = ( id, data ) => {
  * @returns {Promise} API response (Void).
  */
 export const activateShift = id => {
-  return http.request( {
-    method : 'post',
-    url : `/shift/${id}/activate`,
-    baseURL : USER_CLIENT_URL
-  } )
+  return http.request({
+    method: 'post',
+    url: `/shift/${id}/activate`,
+    baseURL: USER_CLIENT_URL,
+  })
 }
 
 /**
@@ -83,9 +83,9 @@ export const activateShift = id => {
  * @returns {Promise} API response (Void).
  */
 export const deactivateShift = id => {
-  return http.request( {
-    method : 'post',
-    url : `/shift/${id}/deactivate`,
-    baseURL : USER_CLIENT_URL
-  } )
+  return http.request({
+    method: 'post',
+    url: `/shift/${id}/deactivate`,
+    baseURL: USER_CLIENT_URL,
+  })
 }

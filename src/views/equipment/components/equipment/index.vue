@@ -3,7 +3,9 @@
     <div class="t3-main-header">
       <el-breadcrumb separator="/">
         <el-breadcrumb-item v-for="(item, index) in breadcrumb" :key="index">
-          {{ item.label }}
+          <el-link class="crumb-link" :underline="true" @click="handleBreadcrumbClick(item, index)">
+            {{ item.label }}
+          </el-link>
         </el-breadcrumb-item>
       </el-breadcrumb>
       <div class="t3-sub-header">
@@ -35,7 +37,7 @@
         <el-tab-pane label="Work Orders" name="workOrders">
           <WorkOrderTab :equipmentId="props.node.id" :key="`workorders-${refreshKey}`" />
         </el-tab-pane>
-        <el-tab-pane label="Tasks" name="tasks">
+        <el-tab-pane label="Task Templates" name="tasks">
           <TasksTab :equipmentId="props.node.id" :key="`tasks-${refreshKey}`" />
         </el-tab-pane>
         <el-tab-pane label="Personnel" name="personnel">
@@ -88,40 +90,44 @@ import AddEquipment from './components/AddEquipment.vue'
 import EditEquipment from './components/EditEquipment.vue'
 import DeactivateNode from '../common/DeactivateNode.vue'
 
-const props = defineProps( {
-  node : {
-    type : Object,
-    required : true
+const props = defineProps({
+  node: {
+    type: Object,
+    required: true,
   },
-  breadcrumb : {
-    type : Array,
-    default : () => []
-  }
-} )
+  breadcrumb: {
+    type: Array,
+    default: () => [],
+  },
+})
 
-const emit = defineEmits( ['refresh-tree', 'refresh-data', 'after-delete', 'request-select-node'] )
+const emit = defineEmits(['refresh-tree', 'refresh-data', 'after-delete', 'request-select-node'])
 
-const parentId = computed( () => {
-  const validBreadcrumbItems = props.breadcrumb.filter( ( item, index ) => {
+const parentId = computed(() => {
+  const validBreadcrumbItems = props.breadcrumb.filter((item, index) => {
     return index > 0 && item && typeof item === 'object' && 'id' in item
-  } )
+  })
 
-  if ( validBreadcrumbItems.length >= 2 ) {
+  if (validBreadcrumbItems.length >= 2) {
     return validBreadcrumbItems[validBreadcrumbItems.length - 2].id
   }
 
   return null
-} )
+})
 
-const activeTab = ref( 'details' )
-const showAddDialog = ref( false )
-const showEditDialog = ref( false )
-const showDeactivateDialog = ref( false )
-const refreshKey = ref( 0 )
-const editDialogKey = ref( 0 )
+function handleBreadcrumbClick(item, index) {
+  emit('request-select-node', Number(item.id))
+}
 
-console.log( props.node.id )
-console.log( props.breadcrumb )
+const activeTab = ref('details')
+const showAddDialog = ref(false)
+const showEditDialog = ref(false)
+const showDeactivateDialog = ref(false)
+const refreshKey = ref(0)
+const editDialogKey = ref(0)
+
+console.log(props.node.id)
+console.log(props.breadcrumb)
 
 const closeAddDialog = () => {
   showAddDialog.value = false
@@ -150,39 +156,39 @@ const handleCloseDialog = done => {
 
 const handleAddSuccess = newEquipment => {
   closeAddDialog()
-  emit( 'refresh-tree' )
+  emit('refresh-tree')
 }
 
 const handleEditSuccess = updatedEquipment => {
   closeEditDialog()
-  emit( 'refresh-tree' )
+  emit('refresh-tree')
 
-  setTimeout( () => {
+  setTimeout(() => {
     refreshViewData()
-  }, 100 )
+  }, 100)
 }
 
 const refreshViewData = () => {
   refreshKey.value += 1
-  emit( 'refresh-data', props.node.id )
+  emit('refresh-data', props.node.id)
 }
 
 const handleDeleteSuccess = deletedEquipmentId => {
   closeDeactivateDialog()
-  emit( 'refresh-tree' )
-  emit( 'after-delete', { parentId : parentId.value, deletedId : deletedEquipmentId } )
+  emit('refresh-tree')
+  emit('after-delete', { parentId: parentId.value, deletedId: deletedEquipmentId })
 }
 
 const handleRefreshTree = () => {
-  emit( 'refresh-tree' )
+  emit('refresh-tree')
 }
 
-function onSubItemSelect( id ) {
+function onSubItemSelect(id) {
   // bubble up so the parent can navigate to Tier 4
-  emit( 'request-select-node', Number( id ) )
+  emit('request-select-node', Number(id))
 }
 
-defineExpose( { openDeactivateDialog } )
+defineExpose({ openDeactivateDialog })
 </script>
 
 <style scoped>
@@ -229,5 +235,24 @@ defineExpose( { openDeactivateDialog } )
 
 .kebab-icon:hover {
   background-color: var(--el-fill-color-light);
+}
+
+/* base: inherit normal breadcrumb color */
+.t3-main-header :deep(.crumb-link) {
+  color: var(--el-text-color-regular) !important; /* default gray */
+  font-weight: 400;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* on hover: turn primary blue */
+.t3-main-header :deep(.crumb-link:hover),
+.t3-main-header :deep(.el-breadcrumb__inner:hover .crumb-link) {
+  color: var(--el-color-primary) !important;
+}
+
+/* prevent wrapper hover color override */
+.t3-main-header :deep(.el-breadcrumb__inner:hover) {
+  color: inherit !important;
 }
 </style>

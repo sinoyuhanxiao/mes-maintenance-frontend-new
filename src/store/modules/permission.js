@@ -8,10 +8,10 @@ const isAllowAll = import.meta.env.VITE_ALL_PERMISSION === 'true'
  * @param {Array} userRoleNames
  * @param {Object} route
  */
-function hasPermission( userRoleNames, route ) {
-  if ( isAllowAll ) return true
-  if ( route.meta && route.meta.roles ) {
-    return userRoleNames.some( r => route.meta.roles.includes( r ) )
+function hasPermission(userRoleNames, route) {
+  if (isAllowAll) return true
+  if (route.meta && route.meta.roles) {
+    return userRoleNames.some(r => route.meta.roles.includes(r))
   }
   return true
 }
@@ -21,45 +21,45 @@ function hasPermission( userRoleNames, route ) {
  * @param {Array} routes
  * @param {Array} userRoleNames
  */
-export function filterAsyncRoutes( routes, userRoleNames ) {
+export function filterAsyncRoutes(routes, userRoleNames) {
   const res = []
-  routes.forEach( route => {
+  routes.forEach(route => {
     const tmp = { ...route }
-    if ( hasPermission( userRoleNames, tmp ) ) {
-      if ( tmp.children ) {
-        tmp.children = filterAsyncRoutes( tmp.children, userRoleNames )
+    if (hasPermission(userRoleNames, tmp)) {
+      if (tmp.children) {
+        tmp.children = filterAsyncRoutes(tmp.children, userRoleNames)
       }
-      res.push( tmp )
+      res.push(tmp)
     }
-  } )
+  })
   return res
 }
 
-const usePermissionStore = defineStore( {
-  id : 'permission',
-  state : () => ( {
-    routes : [],
-    addRoutes : [],
-    directivePermission : []
-  } ),
-  actions : {
+const usePermissionStore = defineStore({
+  id: 'permission',
+  state: () => ({
+    routes: [],
+    addRoutes: [],
+    directivePermission: [],
+  }),
+  actions: {
     /**
      * roles: The roles returned by the backend (array, supports ['ADMIN'] or [{name:'ADMIN'}])
      */
-    SET_ROUTES( roles = [] ) {
+    SET_ROUTES(roles = []) {
       let accessedRoutes
-      if ( isAllowAll ) {
+      if (isAllowAll) {
         accessedRoutes = asyncRoutes
       } else {
-        const roleNames = roles.map( r => ( typeof r === 'string' ? r : r?.name ) ).filter( Boolean )
-        if ( roleNames.includes( 'ADMIN' ) || roleNames.includes( 'admin' ) ) {
+        const roleNames = roles.map(r => (typeof r === 'string' ? r : r?.name)).filter(Boolean)
+        if (roleNames.includes('ADMIN') || roleNames.includes('admin')) {
           accessedRoutes = asyncRoutes
         } else {
-          accessedRoutes = filterAsyncRoutes( asyncRoutes, roleNames )
+          accessedRoutes = filterAsyncRoutes(asyncRoutes, roleNames)
         }
       }
       this.addRoutes = accessedRoutes
-      this.routes = constantRoutes.concat( accessedRoutes )
+      this.routes = constantRoutes.concat(accessedRoutes)
       return accessedRoutes
     },
 
@@ -68,9 +68,9 @@ const usePermissionStore = defineStore( {
      */
     SET_DIRECTIVE_PERMISSION() {
       this.directivePermission = ['*']
-    }
-  }
-} )
+    },
+  },
+})
 
 /*
 /!**

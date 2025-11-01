@@ -82,15 +82,15 @@ import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
 
-defineProps( { certificates : { type : Array, default : () => [] }} )
+defineProps({ certificates: { type: Array, default: () => [] } })
 
-function fmt( iso ) {
-  if ( !iso ) return '-'
-  const d = new Date( iso )
-  return `${d.getFullYear()}-${String( d.getMonth() + 1 ).padStart( 2, '0' )}-${String( d.getDate() ).padStart( 2, '0' )}`
+function fmt(iso) {
+  if (!iso) return '-'
+  const d = new Date(iso)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
-function isExpired( iso ) {
-  return iso && new Date( iso ).getTime() < Date.now()
+function isExpired(iso) {
+  return iso && new Date(iso).getTime() < Date.now()
 }
 </script>
 

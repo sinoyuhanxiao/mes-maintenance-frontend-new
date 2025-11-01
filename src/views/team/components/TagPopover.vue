@@ -35,52 +35,52 @@
 import { ref, computed } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 
-const props = defineProps( {
-  items : {
-    type : Array,
-    default : () => []
+const props = defineProps({
+  items: {
+    type: Array,
+    default: () => [],
   },
-  singularLabel : {
-    type : String,
-    default : 'item'
+  singularLabel: {
+    type: String,
+    default: 'item',
   },
-  pluralLabel : {
-    type : String,
-    default : 'items'
+  pluralLabel: {
+    type: String,
+    default: 'items',
   },
-  searchKey : {
-    type : [String, Function],
-    default : 'name' // string key or function
+  searchKey: {
+    type: [String, Function],
+    default: 'name', // string key or function
   },
-  itemKey : {
-    type : Function,
-    default : item => item.id ?? item.name
+  itemKey: {
+    type: Function,
+    default: item => item.id ?? item.name,
   },
-  width : {
-    type : [String, Number],
-    default : 320
-  }
-} )
+  width: {
+    type: [String, Number],
+    default: 320,
+  },
+})
 
-const search = ref( '' )
+const search = ref('')
 
-const filteredItems = computed( () => {
-  if ( !search.value ) return props.items
+const filteredItems = computed(() => {
+  if (!search.value) return props.items
 
-  return props.items.filter( item => {
+  return props.items.filter(item => {
     let label = ''
 
-    if ( typeof props.searchKey === 'function' ) {
-      label = props.searchKey( item )
-    } else if ( typeof props.searchKey === 'string' ) {
+    if (typeof props.searchKey === 'function') {
+      label = props.searchKey(item)
+    } else if (typeof props.searchKey === 'string') {
       label = item[props.searchKey]
     }
 
-    return String( label || '' )
+    return String(label || '')
       .toLowerCase()
-      .includes( search.value.toLowerCase() )
-  } )
-} )
+      .includes(search.value.toLowerCase())
+  })
+})
 </script>
 
 <style scoped lang="scss">

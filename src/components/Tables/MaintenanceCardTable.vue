@@ -2,11 +2,7 @@
   <div class="table-container">
     <div class="search-container">
       <!-- <i class="fa-solid fa-magnifying-glass"></i> -->
-      <el-button v-if="searchActive === false"
-@click="handleSearchOption"
-size="small"
-:icon="Search"
-round
+      <el-button v-if="searchActive === false" @click="handleSearchOption" size="small" :icon="Search" round
         >Search</el-button
       >
       <input
@@ -14,11 +10,7 @@ round
         :placeholder="searchPlaceholder"
         style="border: solid 1px #d5d5d5; border-radius: 5px; width: 100%"
       />
-      <el-button v-if="searchActive === true"
-@click="handleSearchOption"
-size="small"
-:icon="Close"
-round
+      <el-button v-if="searchActive === true" @click="handleSearchOption" size="small" :icon="Close" round
         >Cancel</el-button
       >
     </div>
@@ -58,49 +50,49 @@ import MaintenanceRequestCard from './Cards/MaintenanceRequestCard.vue'
 import MaintenanceSparePartCard from './Cards/MaintenanceSparePartCard.vue'
 import { Search, Close } from '@element-plus/icons-vue'
 
-const props = defineProps( {
-  items : Object,
-  pageSize : Number,
-  searchable : Boolean,
-  module : Number,
-  height : String,
-  totalItems : Number,
-  handleCurrentChange : Function,
-  currentPage : Number
-} )
+const props = defineProps({
+  items: Object,
+  pageSize: Number,
+  searchable: Boolean,
+  module: Number,
+  height: String,
+  totalItems: Number,
+  handleCurrentChange: Function,
+  currentPage: Number,
+})
 
-const searchActive = ref( false )
+const searchActive = ref(false)
 
-const searchPlaceholder = computed( () => {
-  if ( props.module == 1 || props.module == 2 ) {
+const searchPlaceholder = computed(() => {
+  if (props.module == 1 || props.module == 2) {
     return 'Search Work Orders'
-  } else if ( props.module == 3 ) {
+  } else if (props.module == 3) {
     return 'Search Requests'
   }
   return 'Search Work Orders'
-} )
+})
 
-const items = ref( props.items )
+const items = ref(props.items)
 
 watch(
   () => props.items,
   newItems => {
     items.value = newItems
-    console.log( 'Updated items:', items.value )
+    console.log('Updated items:', items.value)
   },
-  { immediate : true, deep : true }
+  { immediate: true, deep: true }
 )
 
-const pageSize = ref( props.pageSize )
+const pageSize = ref(props.pageSize)
 
-const emit = defineEmits( ['requestData'] )
+const emit = defineEmits(['requestData'])
 
-function handleRequestData( data ) {
-  emit( 'requestData', data )
+function handleRequestData(data) {
+  emit('requestData', data)
 }
 
 function handleSearchOption() {
-  if ( searchActive.value == true ) {
+  if (searchActive.value == true) {
     searchActive.value = false
   } else {
     searchActive.value = true

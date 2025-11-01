@@ -16,30 +16,30 @@ import { useAppStore } from '@/store'
 import ChatbotFloating from '@/components/aiChatbot/ChatbotFloating.vue'
 import { useChatbotStore } from '@/store/modules/ai-chatbot'
 
-export default defineComponent( {
-  name : 'App',
-  components : {
-    [ElConfigProvider.name] : ElConfigProvider,
-    ChatbotFloating
+export default defineComponent({
+  name: 'App',
+  components: {
+    [ElConfigProvider.name]: ElConfigProvider,
+    ChatbotFloating,
   },
   setup() {
     // const { t } = useI18n()
     const appStore = useAppStore()
     const chatbotStore = useChatbotStore()
-    const locale = computed( () => ( appStore.lang === 'zh' ? zh : en ) )
-    const size = computed( () => appStore.size )
+    const locale = computed(() => (appStore.lang === 'zh' ? zh : en))
+    const size = computed(() => appStore.size)
 
     // Two-way binding for v-model:open
-    const chatbotOpen = computed( {
-      get : () => chatbotStore.open,
-      set : v => ( chatbotStore.open = v )
-    } )
+    const chatbotOpen = computed({
+      get: () => chatbotStore.open,
+      set: v => (chatbotStore.open = v),
+    })
 
     return {
       locale,
       size,
-      chatbotOpen
+      chatbotOpen,
     }
-  }
-} )
+  },
+})
 </script>

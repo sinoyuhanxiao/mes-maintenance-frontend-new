@@ -93,17 +93,17 @@
 
 <script setup>
 import { Picture, Edit, Delete } from '@element-plus/icons-vue'
-defineProps( { item : { type : Object, required : true }} )
+defineProps({ item: { type: Object, required: true } })
 
-function formatDays( n ) {
-  if ( n == null || Number.isNaN( Number( n ) ) ) return '—'
-  const v = Number( n )
+function formatDays(n) {
+  if (n == null || Number.isNaN(Number(n))) return '—'
+  const v = Number(n)
   return v === 1 ? '1' : `${v}`
 }
-function formatDate( iso ) {
-  if ( !iso ) return '—'
-  const d = new Date( iso )
-  return Number.isNaN( d.getTime() ) ? '—' : d.toISOString().slice( 0, 10 )
+function formatDate(iso) {
+  if (!iso) return '—'
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? '—' : d.toISOString().slice(0, 10)
 }
 </script>
 
@@ -129,28 +129,29 @@ function formatDate( iso ) {
   align-items: center;
   min-width: 0; /* prevent overflow */
 }
+
 .image-section {
-  width: 150px;
   display: flex;
   flex-direction: column;
 }
-.part-image {
-  width: 150px;
-  height: 150px;
+
+/* Default (below 1440px): smaller image */
+.part-image,
+.image-slot {
+  width: 80px;
+  height: 80px;
   border-radius: 8px;
   overflow: hidden;
 }
 
 /* unified fallback */
 .image-slot {
-  width: 150px;
-  height: 150px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-direction: column;
   color: var(--el-text-color-secondary);
-  border-radius: 8px;
+  background: var(--el-fill-color-light);
   gap: 6px;
 }
 .image-slot .el-icon {
@@ -205,8 +206,14 @@ function formatDate( iso ) {
   margin: 12px 0;
 }
 
-/* only bump icon size on big monitors */
+/* Larger screens (1440px+): restore bigger image & icon size */
 @media (min-width: 1440px) {
+  .part-image,
+  .image-slot {
+    width: 120px;
+    height: 120px;
+  }
+
   .sp-action-btn :deep(.el-icon) {
     font-size: 16px !important;
   }

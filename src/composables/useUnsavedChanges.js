@@ -7,15 +7,15 @@ import { isEqual, cloneDeep } from 'lodash-es'
  * @param {Object} currentData - The current form data (reactive)
  * @returns {Object} - Methods and state for managing unsaved changes
  */
-export function useUnsavedChanges( initialData, currentData ) {
-  const initialFormData = ref( cloneDeep( initialData ) )
-  const hasUnsavedChanges = ref( false )
-  const pendingNavigation = ref( null )
+export function useUnsavedChanges(initialData, currentData) {
+  const initialFormData = ref(cloneDeep(initialData))
+  const hasUnsavedChanges = ref(false)
+  const pendingNavigation = ref(null)
 
   // Track if current data differs from initial data
-  const hasChanges = computed( () => {
-    return !isEqual( initialFormData.value, currentData.value )
-  } )
+  const hasChanges = computed(() => {
+    return !isEqual(initialFormData.value, currentData.value)
+  })
 
   // Update hasUnsavedChanges when form data changes
   watch(
@@ -23,18 +23,18 @@ export function useUnsavedChanges( initialData, currentData ) {
     newValue => {
       hasUnsavedChanges.value = newValue
     },
-    { deep : true, immediate : true }
+    { deep: true, immediate: true }
   )
 
   // Reset the initial data (useful after saving or when starting fresh)
   const resetInitialData = newData => {
-    initialFormData.value = cloneDeep( newData || currentData.value )
+    initialFormData.value = cloneDeep(newData || currentData.value)
     hasUnsavedChanges.value = false
   }
 
   // Mark changes as saved (without changing the current data)
   const markAsSaved = () => {
-    initialFormData.value = cloneDeep( currentData.value )
+    initialFormData.value = cloneDeep(currentData.value)
     hasUnsavedChanges.value = false
   }
 
@@ -45,7 +45,7 @@ export function useUnsavedChanges( initialData, currentData ) {
 
   // Execute pending navigation
   const executePendingNavigation = () => {
-    if ( pendingNavigation.value && typeof pendingNavigation.value === 'function' ) {
+    if (pendingNavigation.value && typeof pendingNavigation.value === 'function') {
       pendingNavigation.value()
       pendingNavigation.value = null
     }
@@ -63,6 +63,6 @@ export function useUnsavedChanges( initialData, currentData ) {
     markAsSaved,
     setPendingNavigation,
     executePendingNavigation,
-    clearPendingNavigation
+    clearPendingNavigation,
   }
 }

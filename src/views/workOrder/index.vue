@@ -143,7 +143,7 @@ const workOrderDraftStore = useWorkOrderDraftStore()
 
 // Work Order composable
 const {
-  loading : listLoading,
+  loading: listLoading,
   list,
   total,
   listQuery,
@@ -160,64 +160,64 @@ const {
   handleCurrentChange,
   toggleRowHighlight,
   // eslint-disable-next-line no-unused-vars
-  handleDelete : deleteWorkOrder,
-  initializeCommonData
+  handleDelete: deleteWorkOrder,
+  initializeCommonData,
 } = useWorkOrder()
 
 // State
-const downloadLoading = ref( false )
-const currentView = ref( 'todo' ) // 'table' or 'todo' or 'calendar'
+const downloadLoading = ref(false)
+const currentView = ref('todo') // 'table' or 'todo' or 'calendar'
 const calendarViewRef = ref()
-const todoViewRef = ref( null )
+const todoViewRef = ref(null)
 
 const clearShowCreateFlag = () => {
-  if ( route.query.showCreate === undefined ) return
+  if (route.query.showCreate === undefined) return
   // eslint-disable-next-line no-unused-vars
   const { showCreate, ...rest } = route.query
-  router.replace( { path : route.path, query : { ...rest }} )
+  router.replace({ path: route.path, query: { ...rest } })
 }
 
 watch(
   () => route.query.showCreate,
   value => {
-    if ( value === '1' || value === 'true' ) {
-      nextTick( () => {
+    if (value === '1' || value === 'true') {
+      nextTick(() => {
         todoViewRef.value?.showCreateForm()
         clearShowCreateFlag()
-      } )
+      })
     }
   },
-  { immediate : true }
+  { immediate: true }
 )
 
 watch(
   () => workOrderDraftStore.shouldOpenCreatePanel,
   value => {
-    if ( value ) {
+    if (value) {
       // Ensure we're in todo view
-      if ( currentView.value !== 'todo' ) {
+      if (currentView.value !== 'todo') {
         currentView.value = 'todo'
       }
-      nextTick( () => {
+      nextTick(() => {
         todoViewRef.value?.showCreateForm()
-        workOrderDraftStore.setShouldOpenCreatePanel( false )
-      } )
+        workOrderDraftStore.setShouldOpenCreatePanel(false)
+      })
     }
   }
 )
 
 // Methods
 const handleView = row => {
-  router.push( { name : 'ViewWorkOrder', params : { id : row.id }} )
+  router.push({ name: 'ViewWorkOrder', params: { id: row.id } })
 }
 
 const handleCreate = () => {
-  if ( currentView.value === 'todo' ) {
+  if (currentView.value === 'todo') {
     // For this view, emit create event to TodoView
     todoViewRef.value?.showCreateForm()
   } else {
     // For table view, navigate to separate page
-    router.push( { name : 'NewWorkOrder' } )
+    router.push({ name: 'NewWorkOrder' })
   }
 }
 
@@ -225,14 +225,14 @@ const handleUpdate = row => {
   // Edit work order functionality
 }
 
-const handleDelete = async( row, index ) => {
+const handleDelete = async (row, index) => {
   // WorkOrderDetail component already handles the deletion and shows confirmation dialogs
   // This handler just needs to refresh the list after the delete event is emitted
   try {
-    showSuccess( t( 'workOrder.messages.deleteSuccess' ) )
+    showSuccess(t('workOrder.messages.deleteSuccess'))
     // Refresh the work order list to reflect the deletion
     await fetchWorkOrders()
-  } catch ( error ) {
+  } catch (error) {
     // Error handled by fetchWorkOrders
   }
 }
@@ -241,7 +241,7 @@ const handleViewChange = async view => {
   currentView.value = view
 
   // Reset filter params that are specific to calendar view
-  if ( view !== 'calendar' ) {
+  if (view !== 'calendar') {
     delete listQuery.start_date_from
     delete listQuery.end_date_to
     listQuery.page = 1
@@ -249,28 +249,28 @@ const handleViewChange = async view => {
   }
 
   // When switching to to-do view, set default status filter for "to-do" tab
-  if ( view === 'todo' ) {
-    updateFilters( { status : 'pending,in_progress' } )
-  } else if ( view === 'table' ) {
+  if (view === 'todo') {
+    updateFilters({ status: 'pending,in_progress' })
+  } else if (view === 'table') {
     // Clear status filter for table view to show all items
-    updateFilters( { status : null } )
+    updateFilters({ status: null })
   }
 }
 
-const handleRefresh = async() => {
+const handleRefresh = async () => {
   try {
     await fetchWorkOrders()
-    showSuccess( 'Refreshed!' )
-  } catch ( error ) {
+    showSuccess('Refreshed!')
+  } catch (error) {
     // Error handled by fetchWorkOrders composable
   }
 }
 
 const handleFilterUpdate = newFilters => {
   // Avoid breaking reactivity of listQuery by mutating its property
-  Object.assign( listQuery, newFilters )
+  Object.assign(listQuery, newFilters)
   // If current view is calendar, trigger calendar to sync its internal events with the newest version of list
-  if ( currentView.value === 'calendar' ) {
+  if (currentView.value === 'calendar') {
     calendarViewRef.value?.refetchEvents()
   } else {
     handleFilter() // Triggers fetch
@@ -281,18 +281,18 @@ const handleDownload = () => {
   // Download functionality to be implemented
 }
 
-const handleCalendarDisplayDateChange = async( { start_date_from, end_date_to, resolve, reject } ) => {
-  Object.assign( listQuery, { start_date_from, end_date_to } )
+const handleCalendarDisplayDateChange = async ({ start_date_from, end_date_to, resolve, reject }) => {
+  Object.assign(listQuery, { start_date_from, end_date_to })
 
   // Set page to -1 and limit to -1 to indicate using non page fetchWorkOrder as calendar don't have table's page concept
   listQuery.page = -1
   listQuery.limit = -1
   try {
     await fetchWorkOrders()
-    resolve( list.value )
-  } catch ( e ) {
-    reject( e )
-    ElMessage.error( 'Unable to load work-orders' )
+    resolve(list.value)
+  } catch (e) {
+    reject(e)
+    ElMessage.error('Unable to load work-orders')
   }
 }
 
@@ -305,15 +305,15 @@ const handleWorkOrderCreated = async newWorkOrder => {
     await fetchWorkOrders()
 
     // Auto-select the newly created work order in todo view
-    if ( todoViewRef.value && newWorkOrder.id ) {
+    if (todoViewRef.value && newWorkOrder.id) {
       // Give the Vue reactivity system a tick to update the computed properties
       await nextTick()
 
-      const selected = todoViewRef.value.selectWorkOrderById( newWorkOrder.id )
-      if ( !selected ) {
-        const foundInList = list.value.find( wo => wo.id === newWorkOrder.id )
+      const selected = todoViewRef.value.selectWorkOrderById(newWorkOrder.id)
+      if (!selected) {
+        const foundInList = list.value.find(wo => wo.id === newWorkOrder.id)
 
-        if ( !foundInList ) {
+        if (!foundInList) {
           // Try fetching without status filter to see if it's a filtering issue
           const tempStatus = listQuery.status
           listQuery.status = null // Remove status filter temporarily
@@ -329,89 +329,89 @@ const handleWorkOrderCreated = async newWorkOrder => {
     }
 
     // Show success message after everything is updated
-    showSuccess( t( 'workOrder.messages.createSuccess' ) )
-  } catch ( error ) {
+    showSuccess(t('workOrder.messages.createSuccess'))
+  } catch (error) {
     // Still show success since creation succeeded, just list refresh failed
-    showSuccess( t( 'workOrder.messages.createSuccess' ) )
+    showSuccess(t('workOrder.messages.createSuccess'))
   }
 }
 
 const handleWorkOrderUpdated = async updatedWorkOrder => {
   // Update the work order in the list
-  const index = list.value.findIndex( wo => wo.id === updatedWorkOrder.id )
-  if ( index !== -1 ) {
+  const index = list.value.findIndex(wo => wo.id === updatedWorkOrder.id)
+  if (index !== -1) {
     list.value[index] = updatedWorkOrder
   }
   // Refresh to ensure data consistency with server
   await fetchWorkOrders()
 }
 
-const handleTabChange = async( { tab, statusFilter } ) => {
+const handleTabChange = async ({ tab, statusFilter }) => {
   // Update the status filter using the new updateFilters method
-  updateFilters( { status : statusFilter } )
+  updateFilters({ status: statusFilter })
 }
 
 // Recurrence view handlers
 const handleViewRecurrence = async recurrenceId => {
-  if ( !recurrenceId ) return
+  if (!recurrenceId) return
   try {
-    await fetchRecurringWorkOrders( recurrenceId )
-    showSuccess( t( 'workOrder.messages.recurrenceViewEnabled' ) )
-  } catch ( error ) {
+    await fetchRecurringWorkOrders(recurrenceId)
+    showSuccess(t('workOrder.messages.recurrenceViewEnabled'))
+  } catch (error) {
     // Error handled by fetchRecurringWorkOrders composable
   }
 }
 
 const handleExitRecurrenceView = () => {
   exitRecurrenceView()
-  showSuccess( t( 'workOrder.messages.recurrenceViewDisabled' ) )
+  showSuccess(t('workOrder.messages.recurrenceViewDisabled'))
 }
 
 // Handle creating work order from maintenance request
-const handleCreateFromRequest = async() => {
-  if ( route.query.action !== 'create' || !route.query.requestId ) return
+const handleCreateFromRequest = async () => {
+  if (route.query.action !== 'create' || !route.query.requestId) return
 
   // Switch to todo view if not already there
-  if ( currentView.value !== 'todo' ) {
+  if (currentView.value !== 'todo') {
     currentView.value = 'todo'
   }
 
   // Import the API function and load request data
-  const { getMaintenanceRequestById } = await import( '@/api/maintenance-requests' )
-  const requestId = Number( route.query.requestId )
+  const { getMaintenanceRequestById } = await import('@/api/maintenance-requests')
+  const requestId = Number(route.query.requestId)
 
   try {
-    const response = await getMaintenanceRequestById( requestId )
+    const response = await getMaintenanceRequestById(requestId)
     const requestData = response.data
 
     // Wait for TodoView to be ready, then pass the request data
     await nextTick()
-    if ( todoViewRef.value ) {
-      todoViewRef.value.showCreateFormWithRequestData( requestData )
+    if (todoViewRef.value) {
+      todoViewRef.value.showCreateFormWithRequestData(requestData)
     }
 
     // Clear query params after processing
     // eslint-disable-next-line no-unused-vars
-    const { action, requestId : rid, ...rest } = route.query
-    router.replace( { path : route.path, query : { ...rest }} )
-  } catch ( error ) {
-    ElMessage.error( 'Failed to load maintenance request data' )
+    const { action, requestId: rid, ...rest } = route.query
+    router.replace({ path: route.path, query: { ...rest } })
+  } catch (error) {
+    ElMessage.error('Failed to load maintenance request data')
   }
 }
 
 // Watch for route changes to handle creating work order from maintenance request
 watch(
   () => route.query,
-  async() => {
+  async () => {
     await handleCreateFromRequest()
   }
 )
 
 // Lifecycle
-onMounted( async() => {
+onMounted(async () => {
   try {
     // Set currentView from query parameter if provided
-    if ( route.query.view ) {
+    if (route.query.view) {
       currentView.value = route.query.view
     }
 
@@ -424,22 +424,22 @@ onMounted( async() => {
     // Handle shouldOpenCreatePanel flag after everything is initialized
     // This ensures todoViewRef is available
     await nextTick()
-    if ( workOrderDraftStore.shouldOpenCreatePanel ) {
-      if ( currentView.value !== 'todo' ) {
+    if (workOrderDraftStore.shouldOpenCreatePanel) {
+      if (currentView.value !== 'todo') {
         currentView.value = 'todo'
       }
       await nextTick()
       todoViewRef.value?.showCreateForm()
-      workOrderDraftStore.setShouldOpenCreatePanel( false )
+      workOrderDraftStore.setShouldOpenCreatePanel(false)
     }
-  } catch ( error ) {
+  } catch (error) {
     // Error handled by individual initialization functions
   }
-} )
+})
 
-defineOptions( {
-  name : 'WorkOrderManagement'
-} )
+defineOptions({
+  name: 'WorkOrderManagement',
+})
 </script>
 
 <style scoped lang="scss">

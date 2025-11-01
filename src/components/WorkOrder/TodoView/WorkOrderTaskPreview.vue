@@ -140,38 +140,38 @@
 // import { computed } from 'vue' // Removed unused import
 import { Clock, Timer, Document, Camera, Picture, Tools } from '@element-plus/icons-vue'
 
-defineProps( {
-  task : {
-    type : Object,
-    required : true
-  }
-} )
+defineProps({
+  task: {
+    type: Object,
+    required: true,
+  },
+})
 
 const getStepTypeLabel = type => {
   const typeMap = {
-    numeric_field : 'Number',
-    boolean_field : 'Yes/No',
-    text_field : 'Text',
-    file_field : 'File',
-    inspection : 'Inspection'
+    numeric_field: 'Number',
+    boolean_field: 'Yes/No',
+    text_field: 'Text',
+    file_field: 'File',
+    inspection: 'Inspection',
   }
   return typeMap[type] || type
 }
 
 const getStepTypeTag = type => {
   const tagMap = {
-    numeric_field : 'primary',
-    boolean_field : 'success',
-    text_field : 'info',
-    file_field : 'warning',
-    inspection : 'danger'
+    numeric_field: 'primary',
+    boolean_field: 'success',
+    text_field: 'info',
+    file_field: 'warning',
+    inspection: 'danger',
   }
   return tagMap[type] || 'default'
 }
 
-defineOptions( {
-  name : 'WorkOrderTaskPreview'
-} )
+defineOptions({
+  name: 'WorkOrderTaskPreview',
+})
 </script>
 
 <style scoped lang="scss">

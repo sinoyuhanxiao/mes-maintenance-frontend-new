@@ -21,26 +21,26 @@ import { useI18n } from 'vue-i18n'
 const appStore = useAppStore()
 const { locale } = useI18n()
 
-const language = computed( () => {
+const language = computed(() => {
   return appStore.lang
-} )
+})
 
 locale.value = language.value
 
 const handleSetLanguage = val => {
-  appStore.SET_LANG( val )
+  appStore.SET_LANG(val)
   locale.value = val
 
-  ElMessage( {
-    message : '成功',
-    type : 'success',
-    duration : '1500'
-  } )
+  ElMessage({
+    message: '成功',
+    type: 'success',
+    duration: '1500',
+  })
 }
 
-defineOptions( {
-  name : 'LangSelect'
-} )
+defineOptions({
+  name: 'LangSelect',
+})
 </script>
 
 <style lang="scss" scoped>

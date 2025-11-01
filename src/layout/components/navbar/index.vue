@@ -104,29 +104,29 @@ const toggleSideBar = () => {
   appStore.TOGGLE_SIDEBAR()
 }
 
-const set = reactive( {
-  showLogo : computed( () => {
+const set = reactive({
+  showLogo: computed(() => {
     return settingsStore.sidebarLogo
-  } ),
-  layoutMod : computed( () => {
+  }),
+  layoutMod: computed(() => {
     return settingsStore.layoutMod
-  } ),
-  sidebar : computed( () => {
+  }),
+  sidebar: computed(() => {
     return appStore.sidebar
-  } ),
-  avatar : computed( () => {
+  }),
+  avatar: computed(() => {
     return userStore.avatar
-  } ),
-  fullName : computed( () => {
+  }),
+  fullName: computed(() => {
     return userStore.firstName + ' ' + userStore.lastName
-  } ),
-  device : computed( () => {
+  }),
+  device: computed(() => {
     return appStore.device
-  } )
-} )
+  }),
+})
 
 // 退出登录
-const logout = async() => {
+const logout = async () => {
   await userStore.LOGIN_OUT()
   /* router.push( '/login' ) */
   gotoCognitoLogin()
@@ -134,12 +134,12 @@ const logout = async() => {
 }
 
 const openSettings = () => {
-  emitter.emit( 'openSettings' )
+  emitter.emit('openSettings')
 }
 
-defineOptions( {
-  name : 'NavBar'
-} )
+defineOptions({
+  name: 'NavBar',
+})
 </script>
 
 <style lang="scss" scoped>

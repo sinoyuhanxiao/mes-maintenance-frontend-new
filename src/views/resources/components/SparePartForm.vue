@@ -192,206 +192,206 @@ import { getAllSparePartClasses, createSparePart, updateSparePart } from '@/api/
 import { uploadMultipleToMinio } from '@/api/minio'
 import FileUploadMultiple from '@/components/FileUpload/FileUploadMultiple.vue'
 
-const props = defineProps( {
-  mode : { type : String, default : 'create' }, // 'create' | 'edit'
-  initialData : { type : Object, default : null }
-} )
-const emit = defineEmits( ['close', 'cancel', 'success'] )
+const props = defineProps({
+  mode: { type: String, default: 'create' }, // 'create' | 'edit'
+  initialData: { type: Object, default: null },
+})
+const emit = defineEmits(['close', 'cancel', 'success'])
 
 const DEBUG = true
 
-const formRef = ref( null )
-const labelPosition = ref( 'top' )
-const submitLoading = ref( false )
+const formRef = ref(null)
+const labelPosition = ref('top')
+const submitLoading = ref(false)
 
-const sparePartClasses = ref( [] )
-const manufacturers = ref( [{ id : 1, name : 'FPS' }] )
-const uploaderKey = ref( 0 )
+const sparePartClasses = ref([])
+const manufacturers = ref([{ id: 1, name: 'FPS' }])
+const uploaderKey = ref(0)
 let lastSeedId = null
 
-const formData = reactive( {
-  id : null,
-  name : '',
-  spare_parts_class_id : null,
-  description : '',
-  code : '',
-  priority : null,
+const formData = reactive({
+  id: null,
+  name: '',
+  spare_parts_class_id: null,
+  description: '',
+  code: '',
+  priority: null,
 
   // EXISTING URLs from server (seed previews)
-  image_list : [],
-  file_list : [],
+  image_list: [],
+  file_list: [],
 
   // NEW Files picked in this session (like VendorForm)
-  image_files : [],
-  file_files : [],
+  image_files: [],
+  file_files: [],
 
   // Track removed existing URLs (if your backend needs to delete them)
-  removed_existing_images : [],
-  removed_existing_files : [],
+  removed_existing_images: [],
+  removed_existing_files: [],
 
-  reorder_point : 0,
-  maximum_stock_level : 1,
-  minimum_stock_level : 0,
-  current_stock : 0,
-  universal_code : '',
-  status : 1,
-  inventory_requests : [],
-  manufacturer_id : null
-} )
+  reorder_point: 0,
+  maximum_stock_level: 1,
+  minimum_stock_level: 0,
+  current_stock: 0,
+  universal_code: '',
+  status: 1,
+  inventory_requests: [],
+  manufacturer_id: null,
+})
 
 /* ---------- validators ---------- */
-const toNumberOrNull = v => ( v === '' || v === null || v === undefined ? null : Number( v ) )
-const validateNonNegativeInteger = ( rule, value, callback ) => {
-  if ( value === '' || value === null || value === undefined ) return callback()
-  if ( !Number.isInteger( Number( value ) ) || Number( value ) < 0 ) {
-    return callback( new Error( 'Value must be a non-negative integer' ) )
+const toNumberOrNull = v => (v === '' || v === null || v === undefined ? null : Number(v))
+const validateNonNegativeInteger = (rule, value, callback) => {
+  if (value === '' || value === null || value === undefined) return callback()
+  if (!Number.isInteger(Number(value)) || Number(value) < 0) {
+    return callback(new Error('Value must be a non-negative integer'))
   }
   callback()
 }
-const validateMaxGteMin = ( rule, value, callback ) => {
-  const min = Number( formData.minimum_stock_level ?? 0 )
-  const max = Number( value ?? 0 )
-  if ( max < min ) return callback( new Error( 'Max Stock must be ≥ Min Stock' ) )
+const validateMaxGteMin = (rule, value, callback) => {
+  const min = Number(formData.minimum_stock_level ?? 0)
+  const max = Number(value ?? 0)
+  if (max < min) return callback(new Error('Max Stock must be ≥ Min Stock'))
   callback()
 }
-const validateReorderWithinRange = ( rule, value, callback ) => {
-  const min = Number( formData.minimum_stock_level ?? 0 )
-  const max = Number( formData.maximum_stock_level ?? Number.MAX_SAFE_INTEGER )
-  const rp = Number( value ?? 0 )
-  if ( rp < min ) return callback( new Error( 'Reorder Point must be ≥ Min Stock' ) )
-  if ( Number.isFinite( max ) && rp > max ) return callback( new Error( 'Reorder Point must be ≤ Max Stock' ) )
+const validateReorderWithinRange = (rule, value, callback) => {
+  const min = Number(formData.minimum_stock_level ?? 0)
+  const max = Number(formData.maximum_stock_level ?? Number.MAX_SAFE_INTEGER)
+  const rp = Number(value ?? 0)
+  if (rp < min) return callback(new Error('Reorder Point must be ≥ Min Stock'))
+  if (Number.isFinite(max) && rp > max) return callback(new Error('Reorder Point must be ≤ Max Stock'))
   callback()
 }
-const rules = reactive( {
-  name : [{ required : true, message : 'Please input Part Name', trigger : 'blur' }],
-  code : [{ required : true, message : 'Please enter Material Code', trigger : 'blur' }],
-  universal_code : [{ required : true, message : 'Please enter Inventory Code', trigger : 'blur' }]
-} )
+const rules = reactive({
+  name: [{ required: true, message: 'Please input Part Name', trigger: 'blur' }],
+  code: [{ required: true, message: 'Please enter Material Code', trigger: 'blur' }],
+  universal_code: [{ required: true, message: 'Please enter Inventory Code', trigger: 'blur' }],
+})
 
 /* ---------- helpers ---------- */
-const mapToUrls = arr => ( Array.isArray( arr ) ? arr.map( x => ( typeof x === 'string' ? x : x?.url ) ).filter( Boolean ) : [] )
+const mapToUrls = arr => (Array.isArray(arr) ? arr.map(x => (typeof x === 'string' ? x : x?.url)).filter(Boolean) : [])
 
 const toRealFiles = arr =>
-  Array.isArray( arr )
-    ? arr.map( x => ( x instanceof File ? x : x?.raw instanceof File ? x.raw : null ) ).filter( Boolean )
+  Array.isArray(arr)
+    ? arr.map(x => (x instanceof File ? x : x?.raw instanceof File ? x.raw : null)).filter(Boolean)
     : []
 
 /* ---------- existing lists for uploader thumbnails ---------- */
-const existingImageUrls = computed( () => mapToUrls( formData.image_list ) )
-const existingFileUrls = computed( () => mapToUrls( formData.file_list ) )
+const existingImageUrls = computed(() => mapToUrls(formData.image_list))
+const existingFileUrls = computed(() => mapToUrls(formData.file_list))
 
 /* ---------- prefill on edit ---------- */
 const prefill = src => {
-  if ( !src ) return
+  if (!src) return
   const m = {
-    id : src.id ?? null,
-    name : src.name ?? '',
-    spare_parts_class_id : src.spare_parts_class_id ?? src.spare_parts_class?.id ?? null,
-    description : src.description ?? '',
-    code : src.code ?? '',
-    priority : src.priority ?? null,
+    id: src.id ?? null,
+    name: src.name ?? '',
+    spare_parts_class_id: src.spare_parts_class_id ?? src.spare_parts_class?.id ?? null,
+    description: src.description ?? '',
+    code: src.code ?? '',
+    priority: src.priority ?? null,
 
     // keep URLs for previews
-    image_list : mapToUrls( src.image_list ),
-    file_list : mapToUrls( src.file_list ?? src.files_list ),
+    image_list: mapToUrls(src.image_list),
+    file_list: mapToUrls(src.file_list ?? src.files_list),
 
     // reset session picks and removed trackers
-    image_files : [],
-    file_files : [],
-    removed_existing_images : [],
-    removed_existing_files : [],
+    image_files: [],
+    file_files: [],
+    removed_existing_images: [],
+    removed_existing_files: [],
 
-    reorder_point : src.reorder_point ?? 0,
-    maximum_stock_level : src.maximum_stock_level ?? 1,
-    minimum_stock_level : src.minimum_stock_level ?? 0,
-    current_stock : src.current_stock ?? 0,
-    universal_code : src.universal_code ?? '',
-    status : src.status ?? 1,
-    inventory_requests : src.inventory_requests ?? [],
-    manufacturer_id : src.manufacturer_id ?? src.manufacturer?.id ?? null
+    reorder_point: src.reorder_point ?? 0,
+    maximum_stock_level: src.maximum_stock_level ?? 1,
+    minimum_stock_level: src.minimum_stock_level ?? 0,
+    current_stock: src.current_stock ?? 0,
+    universal_code: src.universal_code ?? '',
+    status: src.status ?? 1,
+    inventory_requests: src.inventory_requests ?? [],
+    manufacturer_id: src.manufacturer_id ?? src.manufacturer?.id ?? null,
   }
-  Object.assign( formData, m )
+  Object.assign(formData, m)
 }
 
 // 👇 replace your existing watch(props.initialData, ...) with this
 watch(
   () => props.initialData,
   async v => {
-    if ( DEBUG ) {
-      console.log( '[SparePartForm] props.initialData (raw):', v )
-      console.log( '[SparePartForm] raw.image_list:', v?.image_list )
-      console.log( '[SparePartForm] raw.file_list:', v?.file_list )
+    if (DEBUG) {
+      console.log('[SparePartForm] props.initialData (raw):', v)
+      console.log('[SparePartForm] raw.image_list:', v?.image_list)
+      console.log('[SparePartForm] raw.file_list:', v?.file_list)
     }
 
     // ✅ prefill form fields
-    if ( props.mode === 'edit' && v ) prefill( v )
+    if (props.mode === 'edit' && v) prefill(v)
 
     // ✅ only bump uploaderKey when switching to a *different* record
     const newId = v?.id ?? null
-    if ( newId !== lastSeedId ) {
+    if (newId !== lastSeedId) {
       uploaderKey.value += 1
       lastSeedId = newId
-      if ( DEBUG ) console.log( '[SparePartForm] uploaderKey bumped:', uploaderKey.value )
+      if (DEBUG) console.log('[SparePartForm] uploaderKey bumped:', uploaderKey.value)
     }
 
     await nextTick()
 
-    if ( DEBUG ) {
-      console.log( '[SparePartForm] after prefill -> formData.image_list:', formData.image_list )
-      console.log( '[SparePartForm] after prefill -> formData.file_list:', formData.file_list )
+    if (DEBUG) {
+      console.log('[SparePartForm] after prefill -> formData.image_list:', formData.image_list)
+      console.log('[SparePartForm] after prefill -> formData.file_list:', formData.file_list)
     }
   },
-  { immediate : true }
+  { immediate: true }
 )
 
 /* ---------- uploader events (VendorForm-style) ---------- */
 // new picks (Files only)
 const onNewImages = files => {
-  formData.image_files = toRealFiles( files )
+  formData.image_files = toRealFiles(files)
 }
 const onNewFiles = files => {
-  formData.file_files = toRealFiles( files )
+  formData.file_files = toRealFiles(files)
 }
 
 // removed existing URLs
 const onRemovedExistingImages = urls => {
-  const removed = Array.isArray( urls ) ? urls : []
-  formData.removed_existing_images = Array.from( new Set( [...( formData.removed_existing_images || [] ), ...removed] ) )
-  const rm = new Set( removed )
-  formData.image_list = ( formData.image_list || [] ).filter( u => !rm.has( typeof u === 'string' ? u : u?.url ) )
+  const removed = Array.isArray(urls) ? urls : []
+  formData.removed_existing_images = Array.from(new Set([...(formData.removed_existing_images || []), ...removed]))
+  const rm = new Set(removed)
+  formData.image_list = (formData.image_list || []).filter(u => !rm.has(typeof u === 'string' ? u : u?.url))
 }
 const onRemovedExistingFiles = urls => {
-  const removed = Array.isArray( urls ) ? urls : []
-  formData.removed_existing_files = Array.from( new Set( [...( formData.removed_existing_files || [] ), ...removed] ) )
-  const rm = new Set( removed )
-  formData.file_list = ( formData.file_list || [] ).filter( u => !rm.has( typeof u === 'string' ? u : u?.url ) )
+  const removed = Array.isArray(urls) ? urls : []
+  formData.removed_existing_files = Array.from(new Set([...(formData.removed_existing_files || []), ...removed]))
+  const rm = new Set(removed)
+  formData.file_list = (formData.file_list || []).filter(u => !rm.has(typeof u === 'string' ? u : u?.url))
 }
 
 /* ---------- uploads ---------- */
-const needsUpload = arr => Array.isArray( arr ) && arr.length > 0
+const needsUpload = arr => Array.isArray(arr) && arr.length > 0
 
-const uploadFilesToServer = async() => {
+const uploadFilesToServer = async () => {
   // ONLY upload new Files; existing URLs stay
-  if ( needsUpload( formData.image_files ) ) {
-    const imageRes = await uploadMultipleToMinio( formData.image_files )
+  if (needsUpload(formData.image_files)) {
+    const imageRes = await uploadMultipleToMinio(formData.image_files)
     const imgs = imageRes?.data?.uploadedFiles || []
     // append new uploaded URLs to existing kept URLs
-    formData.image_list = [...mapToUrls( formData.image_list ), ...imgs.map( f => f.url ).filter( Boolean )]
+    formData.image_list = [...mapToUrls(formData.image_list), ...imgs.map(f => f.url).filter(Boolean)]
     formData.image_files = []
   }
-  if ( needsUpload( formData.file_files ) ) {
-    const fileRes = await uploadMultipleToMinio( formData.file_files )
+  if (needsUpload(formData.file_files)) {
+    const fileRes = await uploadMultipleToMinio(formData.file_files)
     const fls = fileRes?.data?.uploadedFiles || []
-    formData.file_list = [...mapToUrls( formData.file_list ), ...fls.map( f => f.url ).filter( Boolean )]
+    formData.file_list = [...mapToUrls(formData.file_list), ...fls.map(f => f.url).filter(Boolean)]
     formData.file_files = []
   }
 }
 
 /* ---------- actions ---------- */
-const handleConfirm = async() => {
-  if ( !formRef.value ) return
+const handleConfirm = async () => {
+  if (!formRef.value) return
   const isValid = await formRef.value.validate()
-  if ( !isValid ) return
+  if (!isValid) return
 
   submitLoading.value = true
   try {
@@ -401,23 +401,23 @@ const handleConfirm = async() => {
     // 2) payload: URLs only (server-friendly)
     const payload = {
       ...formData,
-      image_list : mapToUrls( formData.image_list ),
-      file_list : mapToUrls( formData.file_list )
+      image_list: mapToUrls(formData.image_list),
+      file_list: mapToUrls(formData.file_list),
     }
 
     let res
-    if ( props.mode === 'edit' ) {
-      res = await updateSparePart( payload.id, payload )
-      ElMessage.success( 'Spare part updated successfully!' )
+    if (props.mode === 'edit') {
+      res = await updateSparePart(payload.id, payload)
+      ElMessage.success('Spare part updated successfully!')
     } else {
-      res = await createSparePart( payload )
-      ElMessage.success( 'Spare part created successfully!' )
+      res = await createSparePart(payload)
+      ElMessage.success('Spare part created successfully!')
     }
 
-    emit( 'success', res?.data || payload )
-    emit( 'close' )
+    emit('success', res?.data || payload)
+    emit('close')
     resetForm()
-  } catch ( err ) {
+  } catch (err) {
     ElMessage.error(
       `Failed to ${props.mode === 'edit' ? 'update' : 'create'} spare part: ${err?.message || 'Unknown error'}`
     )
@@ -427,44 +427,44 @@ const handleConfirm = async() => {
 }
 
 const handleCancel = () => {
-  emit( 'cancel' )
-  emit( 'close' )
+  emit('cancel')
+  emit('close')
 }
 
 const resetForm = () => {
-  if ( formRef.value ) formRef.value.resetFields?.()
-  Object.assign( formData, {
-    id : null,
-    name : '',
-    spare_parts_class_id : null,
-    description : '',
-    code : '',
-    priority : null,
-    image_list : [],
-    file_list : [],
-    image_files : [],
-    file_files : [],
-    removed_existing_images : [],
-    removed_existing_files : [],
-    reorder_point : 0,
-    maximum_stock_level : 1,
-    minimum_stock_level : 0,
-    current_stock : 0,
-    universal_code : '',
-    status : 1,
-    inventory_requests : [],
-    manufacturer_id : null
-  } )
+  if (formRef.value) formRef.value.resetFields?.()
+  Object.assign(formData, {
+    id: null,
+    name: '',
+    spare_parts_class_id: null,
+    description: '',
+    code: '',
+    priority: null,
+    image_list: [],
+    file_list: [],
+    image_files: [],
+    file_files: [],
+    removed_existing_images: [],
+    removed_existing_files: [],
+    reorder_point: 0,
+    maximum_stock_level: 1,
+    minimum_stock_level: 0,
+    current_stock: 0,
+    universal_code: '',
+    status: 1,
+    inventory_requests: [],
+    manufacturer_id: null,
+  })
 }
 
 /* ---------- init ---------- */
-const getAllData = async() => {
+const getAllData = async () => {
   const spcRes = await getAllSparePartClasses()
   sparePartClasses.value = spcRes?.data || []
 }
-onMounted( () => {
+onMounted(() => {
   getAllData()
-} )
+})
 </script>
 
 <style scoped>

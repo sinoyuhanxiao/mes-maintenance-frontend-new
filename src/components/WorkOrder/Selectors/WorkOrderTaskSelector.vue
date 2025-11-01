@@ -30,53 +30,53 @@
 import AddNewTaskCard from '@/components/Tables/Cards/AddNewTaskCard.vue'
 
 // eslint-disable-next-line no-unused-vars
-const props = defineProps( {
-  data : {
-    type : Array,
-    default : () => []
+const props = defineProps({
+  data: {
+    type: Array,
+    default: () => [],
   },
-  selectedItems : {
-    type : Set,
-    default : () => new Set()
+  selectedItems: {
+    type: Set,
+    default: () => new Set(),
   },
-  focusedCardId : {
-    type : [String, Number],
-    default : null
+  focusedCardId: {
+    type: [String, Number],
+    default: null,
   },
-  currentPage : {
-    type : Number,
-    default : 1
+  currentPage: {
+    type: Number,
+    default: 1,
   },
-  pageSize : {
-    type : Number,
-    default : 20
+  pageSize: {
+    type: Number,
+    default: 20,
   },
-  totalItems : {
-    type : Number,
-    default : 0
+  totalItems: {
+    type: Number,
+    default: 0,
   },
-  maxHeight : {
-    type : String,
-    default : '60vh'
+  maxHeight: {
+    type: String,
+    default: '60vh',
   },
-  showBorder : {
-    type : Boolean,
-    default : true
+  showBorder: {
+    type: Boolean,
+    default: true,
   },
-  showPagination : {
-    type : Boolean,
-    default : true
-  }
-} )
+  showPagination: {
+    type: Boolean,
+    default: true,
+  },
+})
 
-const emit = defineEmits( ['selection', 'page-change'] )
+const emit = defineEmits(['selection', 'page-change'])
 
-function handleSelection( data ) {
-  emit( 'selection', data )
+function handleSelection(data) {
+  emit('selection', data)
 }
 
-function handlePageChange( page ) {
-  emit( 'page-change', page )
+function handlePageChange(page) {
+  emit('page-change', page)
 }
 </script>
 

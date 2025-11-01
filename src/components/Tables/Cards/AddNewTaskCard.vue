@@ -34,42 +34,42 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 
-const props = defineProps( {
-  template : {
-    type : Object,
-    required : true
+const props = defineProps({
+  template: {
+    type: Object,
+    required: true,
   },
-  selected : {
-    type : Boolean,
-    default : false
+  selected: {
+    type: Boolean,
+    default: false,
   },
-  focused : {
-    type : Boolean,
-    default : false
-  }
-} )
+  focused: {
+    type: Boolean,
+    default: false,
+  },
+})
 
-const emit = defineEmits( ['selection'] )
+const emit = defineEmits(['selection'])
 
-const checked = ref( props.selected )
+const checked = ref(props.selected)
 
-const stepsCount = computed( () => {
+const stepsCount = computed(() => {
   // Use new backend format total_steps if available, fallback to old format
   return props.template?.total_steps ?? props.template?.steps?.length ?? 0
-} )
+})
 
-const categoryLabel = computed( () => {
+const categoryLabel = computed(() => {
   const category = props.template?.category
-  if ( !category ) return ''
+  if (!category) return ''
   // Handle both string and object formats
   return typeof category === 'object' ? category.name : category
-} )
+})
 
-const assetLabel = computed( () => {
+const assetLabel = computed(() => {
   const a = props.template?.applicable_assets
-  if ( !a || a.length === 0 ) return ''
+  if (!a || a.length === 0) return ''
   return a.length === 1 ? a[0] : `${a.length} assets`
-} )
+})
 
 // Watch for external changes to selected prop
 watch(
@@ -80,7 +80,7 @@ watch(
 )
 
 const handleCheckboxChange = value => {
-  if ( value ) {
+  if (value) {
     handleCheck()
   } else {
     handleUncheck()
@@ -88,27 +88,27 @@ const handleCheckboxChange = value => {
 }
 
 const handleCheck = () => {
-  emit( 'selection', {
-    id : props.template.id,
-    action : 'check',
-    data : props.template
-  } )
+  emit('selection', {
+    id: props.template.id,
+    action: 'check',
+    data: props.template,
+  })
 }
 
 const handleUncheck = () => {
-  emit( 'selection', {
-    id : props.template.id,
-    action : 'uncheck',
-    data : props.template
-  } )
+  emit('selection', {
+    id: props.template.id,
+    action: 'uncheck',
+    data: props.template,
+  })
 }
 
 const handleCardClick = () => {
-  emit( 'selection', {
-    id : props.template.id,
-    action : 'focus',
-    data : props.template
-  } )
+  emit('selection', {
+    id: props.template.id,
+    action: 'focus',
+    data: props.template,
+  })
 }
 </script>
 

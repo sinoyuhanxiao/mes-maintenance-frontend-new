@@ -98,53 +98,53 @@ import { ref, watch, nextTick } from 'vue'
 import { Plus, Edit, Delete, Check, Close } from '@element-plus/icons-vue'
 import { ElMessageBox } from 'element-plus'
 
-const props = defineProps( {
-  visible : {
-    type : Boolean,
-    default : false
+const props = defineProps({
+  visible: {
+    type: Boolean,
+    default: false,
   },
-  isEditMode : {
-    type : Boolean,
-    default : false
+  isEditMode: {
+    type: Boolean,
+    default: false,
   },
-  initialData : {
-    type : Object,
-    default : () => ( {
-      name : '',
-      description : '',
-      category : '',
-      items : []
-    } )
+  initialData: {
+    type: Object,
+    default: () => ({
+      name: '',
+      description: '',
+      category: '',
+      items: [],
+    }),
   },
-  loading : {
-    type : Boolean,
-    default : false
-  }
-} )
+  loading: {
+    type: Boolean,
+    default: false,
+  },
+})
 
-const emit = defineEmits( ['close', 'submit'] )
+const emit = defineEmits(['close', 'submit'])
 
 // Form state
-const standardForm = ref( null )
-const isFormValid = ref( false )
-const formData = ref( {
-  name : '',
-  description : '',
-  category : '',
-  items : []
-} )
+const standardForm = ref(null)
+const isFormValid = ref(false)
+const formData = ref({
+  name: '',
+  description: '',
+  category: '',
+  items: [],
+})
 
 // Rule editing state
-const editingRuleIndex = ref( null )
-const editingRuleText = ref( '' )
+const editingRuleIndex = ref(null)
+const editingRuleText = ref('')
 
 // Form validation rules
 const formRules = {
-  name : [
-    { required : true, message : 'Please enter standard title', trigger : 'blur' },
-    { min : 2, max : 100, message : 'Title should be between 2 and 100 characters', trigger : 'blur' }
+  name: [
+    { required: true, message: 'Please enter standard title', trigger: 'blur' },
+    { min: 2, max: 100, message: 'Title should be between 2 and 100 characters', trigger: 'blur' },
   ],
-  category : [{ required : true, message : 'Please choose a category', trigger : 'blur' }]
+  category: [{ required: true, message: 'Please choose a category', trigger: 'blur' }],
 }
 
 // Helper function to reset form data
@@ -159,19 +159,19 @@ const resetFormData = () => {
 watch(
   () => props.visible,
   newValue => {
-    if ( newValue ) {
+    if (newValue) {
       // Reset form data when dialog opens
       resetFormData()
       editingRuleIndex.value = null
       editingRuleText.value = ''
 
       // Reset validation on open for new forms
-      nextTick( () => {
+      nextTick(() => {
         standardForm.value?.clearValidate()
-      } )
+      })
     }
   },
-  { immediate : true }
+  { immediate: true }
 )
 
 // Watch for form changes to validate
@@ -179,51 +179,51 @@ watch(
   formData,
   () => {
     // Simple validation - check required fields
-    isFormValid.value = !!( formData.value.name?.trim() && formData.value.category )
+    isFormValid.value = !!(formData.value.name?.trim() && formData.value.category)
   },
-  { deep : true, immediate : true }
+  { deep: true, immediate: true }
 )
 
 // Dialog event handlers
 const handleClose = value => {
-  if ( !value ) {
+  if (!value) {
     handleFormCancel()
   }
 }
 
 const handleFormCancel = () => {
   formData.value = {
-    name : '',
-    description : '',
-    category : '',
-    items : []
+    name: '',
+    description: '',
+    category: '',
+    items: [],
   }
   editingRuleIndex.value = null
   editingRuleText.value = ''
-  emit( 'close' )
+  emit('close')
 }
 
-const handleFormSubmit = async() => {
-  if ( !standardForm.value ) return
+const handleFormSubmit = async () => {
+  if (!standardForm.value) return
 
   try {
     const valid = await standardForm.value.validate()
-    if ( valid ) {
-      emit( 'submit', { ...formData.value } )
+    if (valid) {
+      emit('submit', { ...formData.value })
     }
-  } catch ( error ) {
-    console.error( 'Validation failed:', error )
+  } catch (error) {
+    console.error('Validation failed:', error)
   }
 }
 
 // Rule management functions
 const addNewRuleToForm = () => {
   // If there's a rule being edited, check if it has unsaved text
-  if ( editingRuleIndex.value !== null ) {
+  if (editingRuleIndex.value !== null) {
     // Check if the editing rule has text that needs to be saved
-    if ( editingRuleText.value && editingRuleText.value.trim() !== '' ) {
+    if (editingRuleText.value && editingRuleText.value.trim() !== '') {
       // Auto-save the current rule before adding a new one
-      saveRuleInForm( editingRuleIndex.value )
+      saveRuleInForm(editingRuleIndex.value)
     } else {
       // If current rule is empty, just return without adding new rule
       return
@@ -232,22 +232,22 @@ const addNewRuleToForm = () => {
 
   editingRuleIndex.value = formData.value.items.length
   editingRuleText.value = ''
-  formData.value.items.push( '' )
+  formData.value.items.push('')
 }
 
-const editRuleInForm = ( index, rule ) => {
+const editRuleInForm = (index, rule) => {
   editingRuleIndex.value = index
   editingRuleText.value = rule
 }
 
 const cancelRuleEditInForm = () => {
-  if ( editingRuleIndex.value === null ) return
+  if (editingRuleIndex.value === null) return
 
   const isEmptyRule = formData.value.items[editingRuleIndex.value] === ''
 
-  if ( isEmptyRule ) {
+  if (isEmptyRule) {
     // Remove empty rule completely
-    formData.value.items.splice( editingRuleIndex.value, 1 )
+    formData.value.items.splice(editingRuleIndex.value, 1)
   }
 
   editingRuleIndex.value = null
@@ -255,9 +255,9 @@ const cancelRuleEditInForm = () => {
 }
 
 const saveRuleInForm = index => {
-  if ( editingRuleText.value.trim() === '' ) {
+  if (editingRuleText.value.trim() === '') {
     // Remove empty rule completely
-    formData.value.items.splice( index, 1 )
+    formData.value.items.splice(index, 1)
     editingRuleIndex.value = null
     editingRuleText.value = ''
     return
@@ -270,21 +270,21 @@ const saveRuleInForm = index => {
 
 const deleteRuleFromForm = async index => {
   try {
-    await ElMessageBox.confirm( 'Are you sure you want to delete this rule?', 'Confirm Deletion', {
-      confirmButtonText : 'Delete',
-      cancelButtonText : 'Cancel',
-      type : 'warning'
-    } )
+    await ElMessageBox.confirm('Are you sure you want to delete this rule?', 'Confirm Deletion', {
+      confirmButtonText: 'Delete',
+      cancelButtonText: 'Cancel',
+      type: 'warning',
+    })
 
-    formData.value.items.splice( index, 1 )
-  } catch ( error ) {
+    formData.value.items.splice(index, 1)
+  } catch (error) {
     // User cancelled, do nothing
   }
 }
 
-defineOptions( {
-  name : 'CreateStandardDialog'
-} )
+defineOptions({
+  name: 'CreateStandardDialog',
+})
 </script>
 
 <style scoped lang="scss">

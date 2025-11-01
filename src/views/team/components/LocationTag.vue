@@ -1,12 +1,12 @@
 <script setup>
 import { useI18n } from 'vue-i18n'
 
-defineProps( {
-  location : {
-    type : Object,
-    default : null
-  }
-} )
+defineProps({
+  location: {
+    type: Object,
+    default: null,
+  },
+})
 
 const { t } = useI18n()
 </script>

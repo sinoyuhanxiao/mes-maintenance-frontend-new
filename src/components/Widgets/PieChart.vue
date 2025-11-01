@@ -20,87 +20,87 @@ import * as echarts from 'echarts'
 import { onMounted, ref, watch, onBeforeUnmount, nextTick } from 'vue'
 import ColorDisplayButton from 'src/components/Common/ColorDisplayButton.vue'
 
-const props = defineProps( {
-  title : { type : String, default : 'Pie Chart' },
-  data : { type : Array, required : true }
-} )
+const props = defineProps({
+  title: { type: String, default: 'Pie Chart' },
+  data: { type: Array, required: true },
+})
 
 /* ✅ NEW: emit events without changing props */
-const emit = defineEmits( ['slice-click', 'legend-click'] )
+const emit = defineEmits(['slice-click', 'legend-click'])
 
-const chart = ref( null )
-const myChart = ref( null )
+const chart = ref(null)
+const myChart = ref(null)
 let resizeObserver = null
 
 /* ✅ NEW: label/button click -> emit */
-function handleSelect( name ) {
-  if ( !name ) return
-  emit( 'legend-click', name )
+function handleSelect(name) {
+  if (!name) return
+  emit('legend-click', name)
 }
 
 function renderChart() {
-  if ( !chart.value ) return
+  if (!chart.value) return
 
   const rect = chart.value.getBoundingClientRect()
-  if ( rect.width === 0 || rect.height === 0 ) {
-    setTimeout( renderChart, 100 )
+  if (rect.width === 0 || rect.height === 0) {
+    setTimeout(renderChart, 100)
     return
   }
 
-  const existing = echarts.getInstanceByDom( chart.value )
-  if ( existing ) existing.dispose()
+  const existing = echarts.getInstanceByDom(chart.value)
+  if (existing) existing.dispose()
 
-  myChart.value = echarts.init( chart.value )
-  myChart.value.setOption( {
-    title : { text : '', left : 'center' },
-    tooltip : { trigger : 'item' },
-    color : props.data.map( item => item.color ),
-    series : [
+  myChart.value = echarts.init(chart.value)
+  myChart.value.setOption({
+    title: { text: '', left: 'center' },
+    tooltip: { trigger: 'item' },
+    color: props.data.map(item => item.color),
+    series: [
       {
-        name : 'Status',
-        type : 'pie',
-        radius : ['40%', '70%'],
-        avoidLabelOverlap : false,
-        itemStyle : { borderRadius : 10, borderColor : '#fff', borderWidth : 2 },
-        label : { show : false, position : 'center' },
-        emphasis : { label : { show : true, fontSize : 25, fontWeight : 'bold' }},
-        labelLine : { show : false },
-        data : props.data
-      }
-    ]
-  } )
+        name: 'Status',
+        type: 'pie',
+        radius: ['40%', '70%'],
+        avoidLabelOverlap: false,
+        itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+        label: { show: false, position: 'center' },
+        emphasis: { label: { show: true, fontSize: 25, fontWeight: 'bold' } },
+        labelLine: { show: false },
+        data: props.data,
+      },
+    ],
+  })
 
   /* ✅ NEW: slice click -> emit */
-  myChart.value.off( 'click' )
-  myChart.value.on( 'click', params => {
+  myChart.value.off('click')
+  myChart.value.on('click', params => {
     const name = params?.name
-    if ( name ) emit( 'slice-click', name )
-  } )
+    if (name) emit('slice-click', name)
+  })
 }
 
-onMounted( async() => {
+onMounted(async () => {
   await nextTick()
-  setTimeout( renderChart, 50 )
+  setTimeout(renderChart, 50)
 
-  resizeObserver = new ResizeObserver( () => {
+  resizeObserver = new ResizeObserver(() => {
     myChart.value && myChart.value.resize()
-  } )
-  chart.value && resizeObserver.observe( chart.value )
-} )
+  })
+  chart.value && resizeObserver.observe(chart.value)
+})
 
-onBeforeUnmount( () => {
-  if ( resizeObserver && chart.value ) resizeObserver.unobserve( chart.value )
-  if ( myChart.value ) myChart.value.dispose()
-} )
+onBeforeUnmount(() => {
+  if (resizeObserver && chart.value) resizeObserver.unobserve(chart.value)
+  if (myChart.value) myChart.value.dispose()
+})
 
 watch(
   () => props.data,
   newData => {
-    if ( myChart.value ) {
-      myChart.value.setOption( {
-        color : newData.map( item => item.color ),
-        series : [{ data : newData }]
-      } )
+    if (myChart.value) {
+      myChart.value.setOption({
+        color: newData.map(item => item.color),
+        series: [{ data: newData }],
+      })
     } else {
       renderChart()
     }
@@ -110,7 +110,7 @@ watch(
 watch(
   () => props.title,
   newTitle => {
-    myChart.value && myChart.value.setOption( { title : { text : newTitle }} )
+    myChart.value && myChart.value.setOption({ title: { text: newTitle } })
   }
 )
 </script>

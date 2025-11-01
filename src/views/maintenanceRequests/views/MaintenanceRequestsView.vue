@@ -353,7 +353,7 @@ import {
   DocumentAdd,
   Picture,
   Edit,
-  Delete
+  Delete,
 } from '@element-plus/icons-vue'
 import { debounce } from 'lodash-es'
 import { useMaintenanceRequests } from '@/composables/maintenanceRequests/useMaintenanceRequests'
@@ -384,87 +384,87 @@ const {
   setFilter,
   clearFilters,
   setPage,
-  setPageSize
+  setPageSize,
 } = useMaintenanceRequests()
 
 // Local state management
-const selectedRequestId = ref( null )
-const createDialogVisible = ref( false )
-const editDialogVisible = ref( false )
-const showFilters = ref( false )
-const containerHeight = ref( 'calc(100vh - 84px)' )
+const selectedRequestId = ref(null)
+const createDialogVisible = ref(false)
+const editDialogVisible = ref(false)
+const showFilters = ref(false)
+const containerHeight = ref('calc(100vh - 84px)')
 
 // Filters
-const searchQuery = ref( '' )
-const equipmentFilter = ref( [] )
-const statusFilter = ref( null )
-const equipmentTreeData = ref( [] )
+const searchQuery = ref('')
+const equipmentFilter = ref([])
+const statusFilter = ref(null)
+const equipmentTreeData = ref([])
 
 // Pagination
-const currentPage = ref( 1 )
-const pageSize = ref( 20 )
+const currentPage = ref(1)
+const pageSize = ref(20)
 
 // Computed properties
-const selectedRequest = computed( () => {
-  return currentRequest.value || requests.value.find( r => r.id === selectedRequestId.value )
-} )
+const selectedRequest = computed(() => {
+  return currentRequest.value || requests.value.find(r => r.id === selectedRequestId.value)
+})
 
-const displayedRequests = computed( () => {
-  return Array.isArray( requests.value ) ? requests.value : []
-} )
+const displayedRequests = computed(() => {
+  return Array.isArray(requests.value) ? requests.value : []
+})
 
-const availableStatuses = computed( () => [
-  { value : 0, label : 'Pending' },
-  { value : 1, label : 'Rejected' },
-  { value : 2, label : 'Approved' }
-] )
+const availableStatuses = computed(() => [
+  { value: 0, label: 'Pending' },
+  { value: 1, label: 'Rejected' },
+  { value: 2, label: 'Approved' },
+])
 
-const paginationInfo = computed( () => {
-  const start = ( pagination.page - 1 ) * pagination.size + 1
-  const end = Math.min( pagination.page * pagination.size, pagination.total )
+const paginationInfo = computed(() => {
+  const start = (pagination.page - 1) * pagination.size + 1
+  const end = Math.min(pagination.page * pagination.size, pagination.total)
   return {
-    start : pagination.total > 0 ? start : 0,
+    start: pagination.total > 0 ? start : 0,
     end,
-    total : pagination.total
+    total: pagination.total,
   }
-} )
+})
 
-const requestImages = computed( () => {
-  if ( !selectedRequest.value?.image_list ) return []
-  if ( Array.isArray( selectedRequest.value.image_list ) ) {
+const requestImages = computed(() => {
+  if (!selectedRequest.value?.image_list) return []
+  if (Array.isArray(selectedRequest.value.image_list)) {
     return selectedRequest.value.image_list
   }
-  if ( typeof selectedRequest.value.image_list === 'string' ) {
-    return selectedRequest.value.image_list.split( ',' ).filter( Boolean )
+  if (typeof selectedRequest.value.image_list === 'string') {
+    return selectedRequest.value.image_list.split(',').filter(Boolean)
   }
   return []
-} )
+})
 
-const hasAssociatedWorkOrders = computed( () => {
+const hasAssociatedWorkOrders = computed(() => {
   return selectedRequest.value?.request_work_orders?.length > 0
-} )
+})
 
-const hasDropdownActions = computed( () => {
-  if ( !selectedRequest.value ) return false
+const hasDropdownActions = computed(() => {
+  if (!selectedRequest.value) return false
   // Always show dropdown since Delete is available for all statuses (disabled for approved)
   return true
-} )
+})
 
 // Status helpers
 const statusLabel = status => {
   const statusMap = {
-    0 : 'Pending',
-    1 : 'Rejected',
-    2 : 'Approved'
+    0: 'Pending',
+    1: 'Rejected',
+    2: 'Approved',
   }
   return statusMap[status] || 'Unknown'
 }
 
 const statusTagType = status => {
   const typeMap = {
-    0 : 'info',
-    1 : 'danger',
-    2 : 'success'
+    0: 'info',
+    1: 'danger',
+    2: 'success',
   }
   return typeMap[status] || 'info'
 }
@@ -472,10 +472,10 @@ const statusTagType = status => {
 const getWorkOrderStatusLabel = status => {
   // Map work order status values to labels
   const statusMap = {
-    0 : 'Pending',
-    1 : 'In Progress',
-    2 : 'Completed',
-    3 : 'Cancelled'
+    0: 'Pending',
+    1: 'In Progress',
+    2: 'Completed',
+    3: 'Cancelled',
   }
   return statusMap[status] || 'Unknown'
 }
@@ -487,16 +487,16 @@ const isTextOverflowing = text => {
 }
 
 // Event handlers
-const handleSearch = debounce( () => {
-  setFilter( 'keyword', searchQuery.value )
-}, 300 )
+const handleSearch = debounce(() => {
+  setFilter('keyword', searchQuery.value)
+}, 300)
 
 const handleEquipmentFilter = () => {
-  setFilter( 'equipment_node_id', equipmentFilter.value )
+  setFilter('equipment_node_id', equipmentFilter.value)
 }
 
 const handleStatusFilter = () => {
-  setFilter( 'status', statusFilter.value )
+  setFilter('status', statusFilter.value)
 }
 
 const toggleFilterVisibility = () => {
@@ -517,22 +517,22 @@ const clearAllFilters = () => {
 
 const handleRequestSelect = async request => {
   selectedRequestId.value = request.id
-  await loadRequest( request.id )
+  await loadRequest(request.id)
 }
 
 const handlePageChange = page => {
   currentPage.value = page
   pagination.page = page
-  setPage( page )
+  setPage(page)
 }
 
 const handlePageSizeChange = size => {
   pageSize.value = size
-  setPageSize( size )
+  setPageSize(size)
 }
 
 const handleHeaderAction = async command => {
-  switch ( command ) {
+  switch (command) {
     case 'edit':
       openEditDialog()
       break
@@ -554,80 +554,80 @@ const handleHeaderAction = async command => {
   }
 }
 
-const handleApprove = async() => {
+const handleApprove = async () => {
   try {
-    await ElMessageBox.confirm( 'Approve this maintenance request?', 'Confirm Approval', {
-      confirmButtonText : 'Approve',
-      cancelButtonText : 'Cancel',
-      type : 'success'
-    } )
+    await ElMessageBox.confirm('Approve this maintenance request?', 'Confirm Approval', {
+      confirmButtonText: 'Approve',
+      cancelButtonText: 'Cancel',
+      type: 'success',
+    })
 
-    await approveRequest( selectedRequestId.value )
-    ElMessage.success( 'Request approved successfully' )
+    await approveRequest(selectedRequestId.value)
+    ElMessage.success('Request approved successfully')
     selectedRequestId.value = null
     currentRequest.value = null
     await loadRequests()
-  } catch ( error ) {
-    if ( error !== 'cancel' && error !== 'close' ) {
-      ElMessage.error( 'Failed to approve request' )
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') {
+      ElMessage.error('Failed to approve request')
     }
   }
 }
 
-const handleReject = async() => {
+const handleReject = async () => {
   try {
-    await ElMessageBox.confirm( 'Reject this maintenance request?', 'Confirm Rejection', {
-      confirmButtonText : 'Reject',
-      cancelButtonText : 'Cancel',
-      type : 'warning',
-      confirmButtonClass : 'el-button--danger'
-    } )
+    await ElMessageBox.confirm('Reject this maintenance request?', 'Confirm Rejection', {
+      confirmButtonText: 'Reject',
+      cancelButtonText: 'Cancel',
+      type: 'warning',
+      confirmButtonClass: 'el-button--danger',
+    })
 
-    await rejectRequest( selectedRequestId.value )
-    ElMessage.success( 'Request rejected successfully' )
+    await rejectRequest(selectedRequestId.value)
+    ElMessage.success('Request rejected successfully')
     selectedRequestId.value = null
     currentRequest.value = null
     await loadRequests()
-  } catch ( error ) {
-    if ( error !== 'cancel' && error !== 'close' ) {
-      ElMessage.error( 'Failed to reject request' )
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') {
+      ElMessage.error('Failed to reject request')
     }
   }
 }
 
-const handleDelete = async() => {
+const handleDelete = async () => {
   try {
     await ElMessageBox.confirm(
       'This action will permanently delete this maintenance request. This cannot be undone.',
       'Delete Maintenance Request',
       {
-        confirmButtonText : 'Delete',
-        cancelButtonText : 'Cancel',
-        type : 'warning',
-        confirmButtonClass : 'el-button--danger'
+        confirmButtonText: 'Delete',
+        cancelButtonText: 'Cancel',
+        type: 'warning',
+        confirmButtonClass: 'el-button--danger',
       }
     )
 
-    await deleteRequest( selectedRequestId.value )
-    ElMessage.success( 'Request deleted successfully' )
+    await deleteRequest(selectedRequestId.value)
+    ElMessage.success('Request deleted successfully')
     selectedRequestId.value = null
     currentRequest.value = null
     await loadRequests()
-  } catch ( error ) {
-    if ( error !== 'cancel' && error !== 'close' ) {
-      ElMessage.error( 'Failed to delete request' )
+  } catch (error) {
+    if (error !== 'cancel' && error !== 'close') {
+      ElMessage.error('Failed to delete request')
     }
   }
 }
 
 const handleCreateWorkOrder = () => {
-  router.push( {
-    path : '/work-order/table',
-    query : {
-      action : 'create',
-      requestId : selectedRequestId.value
-    }
-  } )
+  router.push({
+    path: '/work-order/table',
+    query: {
+      action: 'create',
+      requestId: selectedRequestId.value,
+    },
+  })
 }
 
 const openCreateDialog = () => {
@@ -640,69 +640,69 @@ const openEditDialog = () => {
 
 const handleCreateRequest = async formData => {
   try {
-    const createdRequest = await createRequest( formData )
-    ElMessage.success( 'Maintenance request created successfully' )
+    const createdRequest = await createRequest(formData)
+    ElMessage.success('Maintenance request created successfully')
     createDialogVisible.value = false
     await loadRequests()
 
     // Automatically select the newly created request
     const newRequestId = createdRequest?.id || createdRequest
-    if ( newRequestId ) {
+    if (newRequestId) {
       selectedRequestId.value = newRequestId
-      await loadRequest( newRequestId )
+      await loadRequest(newRequestId)
     }
-  } catch ( error ) {
-    ElMessage.error( 'Failed to create maintenance request' )
+  } catch (error) {
+    ElMessage.error('Failed to create maintenance request')
   }
 }
 
 const handleUpdateRequest = async formData => {
   try {
-    await updateRequest( formData.id, formData )
-    ElMessage.success( 'Maintenance request updated successfully' )
+    await updateRequest(formData.id, formData)
+    ElMessage.success('Maintenance request updated successfully')
     editDialogVisible.value = false
-  } catch ( error ) {
-    ElMessage.error( 'Failed to update maintenance request' )
+  } catch (error) {
+    ElMessage.error('Failed to update maintenance request')
   }
 }
 
 const navigateToWorkOrder = workOrderId => {
-  router.push( {
-    path : '/work-order/table',
-    query : { workOrderId }
-  } )
+  router.push({
+    path: '/work-order/table',
+    query: { workOrderId },
+  })
 }
 
 const formatDate = dateString => {
-  if ( !dateString ) return 'N/A'
-  const date = new Date( dateString )
+  if (!dateString) return 'N/A'
+  const date = new Date(dateString)
   const year = date.getFullYear()
-  const month = String( date.getMonth() + 1 ).padStart( 2, '0' )
-  const day = String( date.getDate() ).padStart( 2, '0' )
-  const hours = String( date.getHours() ).padStart( 2, '0' )
-  const minutes = String( date.getMinutes() ).padStart( 2, '0' )
-  const seconds = String( date.getSeconds() ).padStart( 2, '0' )
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
   return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
 
 // Equipment tree data fetching
-const fetchEquipmentTreeData = async() => {
+const fetchEquipmentTreeData = async () => {
   try {
     const response = await getEquipmentTree()
     const data = response.data?.data || response.data
 
-    const transformEquipmentNode = node => ( {
-      value : node.id,
-      label : node.name,
-      children : node.children?.length > 0 ? node.children.map( transformEquipmentNode ) : undefined
-    } )
+    const transformEquipmentNode = node => ({
+      value: node.id,
+      label: node.name,
+      children: node.children?.length > 0 ? node.children.map(transformEquipmentNode) : undefined,
+    })
 
-    if ( Array.isArray( data ) ) {
-      equipmentTreeData.value = data.map( transformEquipmentNode )
-    } else if ( data?.equipment_nodes ) {
-      equipmentTreeData.value = data.equipment_nodes.map( transformEquipmentNode )
+    if (Array.isArray(data)) {
+      equipmentTreeData.value = data.map(transformEquipmentNode)
+    } else if (data?.equipment_nodes) {
+      equipmentTreeData.value = data.equipment_nodes.map(transformEquipmentNode)
     }
-  } catch ( error ) {
+  } catch (error) {
     // Error handled by equipment API
   }
 }
@@ -715,29 +715,29 @@ const calculateHeight = () => {
   containerHeight.value = `calc(100vh - ${totalOffset}px)`
 }
 
-const handleResize = debounce( () => {
+const handleResize = debounce(() => {
   calculateHeight()
-}, 100 )
+}, 100)
 
 // Lifecycle
-onMounted( async() => {
+onMounted(async () => {
   calculateHeight()
-  window.addEventListener( 'resize', handleResize )
-  await Promise.all( [loadRequests(), fetchEquipmentTreeData()] )
+  window.addEventListener('resize', handleResize)
+  await Promise.all([loadRequests(), fetchEquipmentTreeData()])
 
   // Handle requestId query parameter
-  if ( route.query.requestId ) {
-    const requestId = Number( route.query.requestId )
-    if ( requestId ) {
+  if (route.query.requestId) {
+    const requestId = Number(route.query.requestId)
+    if (requestId) {
       selectedRequestId.value = requestId
-      await loadRequest( requestId )
+      await loadRequest(requestId)
     }
   }
-} )
+})
 
-onBeforeUnmount( () => {
-  window.removeEventListener( 'resize', handleResize )
-} )
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', handleResize)
+})
 
 // Watch for settings changes
 watch(
@@ -751,24 +751,24 @@ watch(
 watch(
   () => route.query.requestId,
   async newRequestId => {
-    if ( newRequestId ) {
-      const requestId = Number( newRequestId )
-      if ( requestId ) {
+    if (newRequestId) {
+      const requestId = Number(newRequestId)
+      if (requestId) {
         selectedRequestId.value = requestId
-        await loadRequest( requestId )
+        await loadRequest(requestId)
       }
     }
   }
 )
 
 // Expose methods for parent component
-defineExpose( {
-  openCreateDialog
-} )
+defineExpose({
+  openCreateDialog,
+})
 
-defineOptions( {
-  name : 'MaintenanceRequestsView'
-} )
+defineOptions({
+  name: 'MaintenanceRequestsView',
+})
 </script>
 
 <style scoped>

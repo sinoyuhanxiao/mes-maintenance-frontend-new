@@ -31,16 +31,16 @@
 import { ref, watch } from 'vue'
 import { WarningFilled } from '@element-plus/icons-vue'
 
-const props = defineProps( {
-  modelValue : {
-    type : Boolean,
-    default : false
-  }
-} )
+const props = defineProps({
+  modelValue: {
+    type: Boolean,
+    default: false,
+  },
+})
 
-const emit = defineEmits( ['update:modelValue', 'confirm', 'cancel'] )
+const emit = defineEmits(['update:modelValue', 'confirm', 'cancel'])
 
-const visible = ref( props.modelValue )
+const visible = ref(props.modelValue)
 
 watch(
   () => props.modelValue,
@@ -49,28 +49,28 @@ watch(
   }
 )
 
-watch( visible, newValue => {
-  emit( 'update:modelValue', newValue )
-} )
+watch(visible, newValue => {
+  emit('update:modelValue', newValue)
+})
 
 const handleClose = () => {
   visible.value = false
-  emit( 'cancel' )
+  emit('cancel')
 }
 
 const handleCancel = () => {
   visible.value = false
-  emit( 'cancel' )
+  emit('cancel')
 }
 
 const handleConfirm = () => {
   visible.value = false
-  emit( 'confirm' )
+  emit('confirm')
 }
 
-defineOptions( {
-  name : 'DiscardConfirmationDialog'
-} )
+defineOptions({
+  name: 'DiscardConfirmationDialog',
+})
 </script>
 
 <style scoped>

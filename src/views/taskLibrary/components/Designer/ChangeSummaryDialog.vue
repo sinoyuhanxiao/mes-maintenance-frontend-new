@@ -26,10 +26,7 @@
           <div class="section-header">
             <el-icon class="section-icon"><Edit /></el-icon>
             <h4>Template Information</h4>
-            <el-tag size="default"
-type="warning"
-effect="plain"
-style="font-size: 14px"
+            <el-tag size="default" type="warning" effect="plain" style="font-size: 14px"
               >{{ changes.metadata.length }} change(s)</el-tag
             >
           </div>
@@ -56,9 +53,7 @@ style="font-size: 14px"
           <div class="section-header">
             <el-icon class="section-icon"><Plus /></el-icon>
             <h4>Steps Added</h4>
-            <el-tag size="default"
-effect="plain"
-style="font-size: 14px"
+            <el-tag size="default" effect="plain" style="font-size: 14px"
               >{{ changes.steps_added.length }} step(s)</el-tag
             >
           </div>
@@ -82,9 +77,7 @@ style="font-size: 14px"
           <div class="section-header">
             <el-icon class="section-icon"><Edit /></el-icon>
             <h4>Steps Modified</h4>
-            <el-tag size="default"
-effect="plain"
-style="font-size: 14px"
+            <el-tag size="default" effect="plain" style="font-size: 14px"
               >{{ changes.steps_modified.length }} step(s)</el-tag
             >
           </div>
@@ -115,10 +108,7 @@ style="font-size: 14px"
           <div class="section-header">
             <el-icon class="section-icon"><Delete /></el-icon>
             <h4>Steps Deleted</h4>
-            <el-tag size="default"
-type="danger"
-effect="plain"
-style="font-size: 14px"
+            <el-tag size="default" type="danger" effect="plain" style="font-size: 14px"
               >{{ changes.steps_deleted.length }} step(s)</el-tag
             >
           </div>
@@ -144,9 +134,7 @@ style="font-size: 14px"
           <div class="section-header">
             <el-icon class="section-icon"><Sort /></el-icon>
             <h4>Steps Reordered</h4>
-            <el-tag size="default"
-effect="plain"
-style="font-size: 14px"
+            <el-tag size="default" effect="plain" style="font-size: 14px"
               >{{ changes.steps_reordered.length }} step(s)</el-tag
             >
           </div>
@@ -188,36 +176,36 @@ import { computed } from 'vue'
 import { Edit, Plus, Delete, Sort, Right, Check, InfoFilled } from '@element-plus/icons-vue'
 
 // Props
-const props = defineProps( {
-  visible : {
-    type : Boolean,
-    default : false
+const props = defineProps({
+  visible: {
+    type: Boolean,
+    default: false,
   },
-  changes : {
-    type : Object,
-    default : () => ( {
-      metadata : [],
-      steps_added : [],
-      steps_modified : [],
-      steps_deleted : [],
-      steps_reordered : []
-    } )
+  changes: {
+    type: Object,
+    default: () => ({
+      metadata: [],
+      steps_added: [],
+      steps_modified: [],
+      steps_deleted: [],
+      steps_reordered: [],
+    }),
   },
-  loading : {
-    type : Boolean,
-    default : false
+  loading: {
+    type: Boolean,
+    default: false,
   },
-  currentSteps : {
-    type : Array,
-    default : () => []
-  }
-} )
+  currentSteps: {
+    type: Array,
+    default: () => [],
+  },
+})
 
 // Emits
-const emit = defineEmits( ['confirm', 'cancel', 'close'] )
+const emit = defineEmits(['confirm', 'cancel', 'close'])
 
 // Computed properties
-const hasAnyChanges = computed( () => {
+const hasAnyChanges = computed(() => {
   return (
     props.changes.metadata.length > 0 ||
     props.changes.steps_added.length > 0 ||
@@ -225,67 +213,67 @@ const hasAnyChanges = computed( () => {
     props.changes.steps_deleted.length > 0 ||
     props.changes.steps_reordered.length > 0
   )
-} )
+})
 
 // Step type utilities
 const getStepTypeColor = type => {
   const colors = {
-    inspection : '#67c23a',
-    checkbox : '#409eff',
-    number : '#e6a23c',
-    text : '#909399',
-    attachments : '#849aec',
-    service : '#df869d'
+    inspection: '#67c23a',
+    checkbox: '#409eff',
+    number: '#e6a23c',
+    text: '#909399',
+    attachments: '#849aec',
+    service: '#df869d',
   }
   return colors[type] || '#c0c4cc'
 }
 
 const getStepNumberStyle = type => {
-  const color = getStepTypeColor( type )
+  const color = getStepTypeColor(type)
   return {
-    backgroundColor : 'white',
+    backgroundColor: 'white',
     color,
-    border : `2px solid ${color}`
+    border: `2px solid ${color}`,
   }
 }
 
 const getStepPosition = stepId => {
   // Find the step in currentSteps and return its position (1-indexed)
-  const stepIndex = props.currentSteps.findIndex( s => s.step_id === stepId )
+  const stepIndex = props.currentSteps.findIndex(s => s.step_id === stepId)
   return stepIndex !== -1 ? stepIndex + 1 : '?'
 }
 
 const getStepType = stepId => {
-  const step = props.currentSteps.find( s => s.step_id === stepId )
+  const step = props.currentSteps.find(s => s.step_id === stepId)
   return step?.type || 'text'
 }
 
 const capitalizeFirst = str => {
-  return str.charAt( 0 ).toUpperCase() + str.slice( 1 )
+  return str.charAt(0).toUpperCase() + str.slice(1)
 }
 
 // Event handlers
 const handleClose = done => {
-  if ( props.loading ) {
+  if (props.loading) {
     return
   }
-  if ( typeof done === 'function' ) {
+  if (typeof done === 'function') {
     done()
   }
-  emit( 'close' )
+  emit('close')
 }
 
 const handleConfirm = () => {
-  emit( 'confirm' )
+  emit('confirm')
 }
 
 const handleCancel = () => {
-  emit( 'cancel' )
+  emit('cancel')
 }
 
-defineOptions( {
-  name : 'ChangeSummaryDialog'
-} )
+defineOptions({
+  name: 'ChangeSummaryDialog',
+})
 </script>
 
 <style scoped>

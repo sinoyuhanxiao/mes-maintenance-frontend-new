@@ -6,7 +6,7 @@
 </template>
 
 <script setup>
-defineOptions( {
-  name : 'Menu2'
-} )
+defineOptions({
+  name: 'Menu2',
+})
 </script>

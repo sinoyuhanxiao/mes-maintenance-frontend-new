@@ -1,11 +1,6 @@
 <template>
-  <el-dialog style="top: 20%"
-width="500"
-title="Remove Vendor"
-v-model="removeVendor"
-    ><ConfirmDeletion :data="toRemove"
-@removeVendor="handleRemove"
-@close="removeVendor = false"
+  <el-dialog style="top: 20%" width="500" title="Remove Vendor" v-model="removeVendor"
+    ><ConfirmDeletion :data="toRemove" @removeVendor="handleRemove" @close="removeVendor = false"
   /></el-dialog>
   <el-card>
     <div class="details-layout">
@@ -46,42 +41,42 @@ import ConfirmDeletion from './ConfirmDeletion.vue'
 import { updateSparePart } from '../../../../api/resources'
 import { ElMessage } from 'element-plus'
 
-const props = defineProps( {
-  spvData : Object,
-  sparePart : Object
-} )
+const props = defineProps({
+  spvData: Object,
+  sparePart: Object,
+})
 
-const existingVendors = ref( [] )
+const existingVendors = ref([])
 
-const removalRequest = ref( [] )
+const removalRequest = ref([])
 
 watch(
   [() => props.spvData, () => props.sparePart],
-  ( [newSpv, newSparePart] ) => {
+  ([newSpv, newSparePart]) => {
     existingVendors.value =
-      newSparePart?.spare_part_vendors?.map( v => ( {
-        vendor_id : v.vendor?.id ?? null,
-        order_code : v.order_code ?? null,
-        lead_time_days : v.lead_time_days ?? null,
-        unit_price : v.unit_price ?? null,
-        price_uom_id : v.price_uom?.id ?? null
-      } ) ) ?? []
+      newSparePart?.spare_part_vendors?.map(v => ({
+        vendor_id: v.vendor?.id ?? null,
+        order_code: v.order_code ?? null,
+        lead_time_days: v.lead_time_days ?? null,
+        unit_price: v.unit_price ?? null,
+        price_uom_id: v.price_uom?.id ?? null,
+      })) ?? []
 
-    removalRequest.value = existingVendors.value.filter( v => v.vendor_id != newSpv.vendor.id )
+    removalRequest.value = existingVendors.value.filter(v => v.vendor_id != newSpv.vendor.id)
   },
-  { deep : true, immediate : true }
+  { deep: true, immediate: true }
 )
 
-const emit = defineEmits( ['deletedVendor'] )
+const emit = defineEmits(['deletedVendor'])
 
-const removeVendor = ref( null )
-const toRemove = ref( null )
+const removeVendor = ref(null)
+const toRemove = ref(null)
 
 const vendorDeleted = vendor => {
-  ElMessage( {
-    message : 'Spare Part Vendor Removed: ' + vendor,
-    type : 'success'
-  } )
+  ElMessage({
+    message: 'Spare Part Vendor Removed: ' + vendor,
+    type: 'success',
+  })
 }
 
 function deleteVendor() {
@@ -90,13 +85,13 @@ function deleteVendor() {
 }
 
 async function handleRemove() {
-  const newSparePartVendor = await updateSparePart( props.sparePart.id, {
-    code : props.sparePart.code,
-    vendor_requests : removalRequest.value
-  } )
-  if ( newSparePartVendor ) {
-    emit( 'deletedVendor', newSparePartVendor.data )
-    vendorDeleted( props.spvData.vendor.name )
+  const newSparePartVendor = await updateSparePart(props.sparePart.id, {
+    code: props.sparePart.code,
+    vendor_requests: removalRequest.value,
+  })
+  if (newSparePartVendor) {
+    emit('deletedVendor', newSparePartVendor.data)
+    vendorDeleted(props.spvData.vendor.name)
     removeVendor.value = false
   }
 }

@@ -81,70 +81,70 @@ import { ref, watch, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus, ZoomIn, Download, Delete } from '@element-plus/icons-vue'
 
-const imageList = ref( [] )
-const dialogVisible = ref( false )
-const dialogImageUrl = ref( '' )
-const uploading = ref( false )
-const fileList = ref( [] )
-const removedExistingImages = ref( [] )
-const removedExistingFiles = ref( [] )
+const imageList = ref([])
+const dialogVisible = ref(false)
+const dialogImageUrl = ref('')
+const uploading = ref(false)
+const fileList = ref([])
+const removedExistingImages = ref([])
+const removedExistingFiles = ref([])
 
-const props = defineProps( {
-  existingImageList : {
-    type : Array,
-    default : () => []
+const props = defineProps({
+  existingImageList: {
+    type: Array,
+    default: () => [],
   },
-  existingFileList : {
-    type : Array,
-    default : () => []
+  existingFileList: {
+    type: Array,
+    default: () => [],
   },
-  imageLabel : {
-    type : String,
-    default : 'Upload Images'
+  imageLabel: {
+    type: String,
+    default: 'Upload Images',
   },
-  fileLabel : {
-    type : String,
-    default : 'Upload Files'
+  fileLabel: {
+    type: String,
+    default: 'Upload Files',
   },
-  uploadType : {
-    type : String,
-    default : 'both' // 'both', 'images', 'files'
+  uploadType: {
+    type: String,
+    default: 'both', // 'both', 'images', 'files'
   },
-  maxImages : {
-    type : Number,
-    default : 0 // 0 means no limit
+  maxImages: {
+    type: Number,
+    default: 0, // 0 means no limit
   },
-  maxFiles : {
-    type : Number,
-    default : 0 // 0 means no limit
+  maxFiles: {
+    type: Number,
+    default: 0, // 0 means no limit
   },
-  titleLabelPosition : { type : String, default : 'top' }
-} )
+  titleLabelPosition: { type: String, default: 'top' },
+})
 
-const emit = defineEmits( [
+const emit = defineEmits([
   'update:imageList',
   'update:filesList',
   'update:removedExistingImages',
-  'update:removedExistingFiles'
-] )
+  'update:removedExistingFiles',
+])
 
 // Show/hide sections based on uploadType
-const showImages = computed( () => {
+const showImages = computed(() => {
   return props.uploadType === 'both' || props.uploadType === 'images'
-} )
+})
 
-const showFiles = computed( () => {
+const showFiles = computed(() => {
   return props.uploadType === 'both' || props.uploadType === 'files'
-} )
+})
 
 // Check if limits are reached
-const isImageLimitReached = computed( () => {
+const isImageLimitReached = computed(() => {
   return props.maxImages > 0 && combinedImageList.value.length >= props.maxImages
-} )
+})
 
-const isFileLimitReached = computed( () => {
+const isFileLimitReached = computed(() => {
   return props.maxFiles > 0 && combinedFileList.value.length >= props.maxFiles
-} )
+})
 
 // const logEmitInfo = () => {
 //   console.log(
@@ -160,160 +160,160 @@ const isFileLimitReached = computed( () => {
 // }
 
 // Computed to combine existing and new images/files for display
-const combinedImageList = computed( () => {
+const combinedImageList = computed(() => {
   const existing = props.existingImageList
-    .filter( url => !removedExistingImages.value.includes( url ) )
-    .map( ( url, index ) => ( {
-      uid : `existing-image-${index}`,
-      name : `existing-image-${index}`,
+    .filter(url => !removedExistingImages.value.includes(url))
+    .map((url, index) => ({
+      uid: `existing-image-${index}`,
+      name: `existing-image-${index}`,
       url,
-      status : 'success',
-      isExisting : true
-    } ) )
+      status: 'success',
+      isExisting: true,
+    }))
 
   return [...existing, ...imageList.value]
-} )
+})
 
-const combinedFileList = computed( () => {
+const combinedFileList = computed(() => {
   const existing = props.existingFileList
-    .filter( url => !removedExistingFiles.value.includes( url ) )
-    .map( ( url, index ) => {
+    .filter(url => !removedExistingFiles.value.includes(url))
+    .map((url, index) => {
       // Extract filename from URL
-      const filename = url.split( '/' ).pop() || `existing-file-${index}`
+      const filename = url.split('/').pop() || `existing-file-${index}`
       return {
-        uid : `existing-file-${index}`,
-        name : filename,
+        uid: `existing-file-${index}`,
+        name: filename,
         url,
-        status : 'success',
-        isExisting : true
+        status: 'success',
+        isExisting: true,
       }
-    } )
+    })
   return [...existing, ...fileList.value]
-} )
+})
 
-const handleFileChange = ( file, newFileList ) => {
+const handleFileChange = (file, newFileList) => {
   // Only process new files (files with raw property) and filter out existing files
   // Also filter out any files that might be from removed existing files
-  const newFiles = newFileList.filter( uploadedFile => {
+  const newFiles = newFileList.filter(uploadedFile => {
     // Must have raw property (new upload)
-    if ( !uploadedFile.raw ) return false
+    if (!uploadedFile.raw) return false
 
     // Must not be marked as existing
-    if ( uploadedFile.isExisting ) return false
+    if (uploadedFile.isExisting) return false
 
     // Must not be in the removed list (extra safety check)
-    if ( uploadedFile.url && removedExistingFiles.value.includes( uploadedFile.url ) ) return false
+    if (uploadedFile.url && removedExistingFiles.value.includes(uploadedFile.url)) return false
 
     return true
-  } )
+  })
 
-  const readerPromises = newFiles.map( uploadedFile => {
-    return new Promise( resolve => {
-      if ( !uploadedFile.uid ) {
+  const readerPromises = newFiles.map(uploadedFile => {
+    return new Promise(resolve => {
+      if (!uploadedFile.uid) {
         uploadedFile.uid = Date.now().toString()
       }
 
       const reader = new FileReader()
       reader.onload = e => {
         uploadedFile.url = e.target.result
-        resolve( uploadedFile )
+        resolve(uploadedFile)
       }
-      reader.readAsDataURL( uploadedFile.raw )
-    } )
-  } )
+      reader.readAsDataURL(uploadedFile.raw)
+    })
+  })
 
-  Promise.all( readerPromises ).then( resolvedList => {
+  Promise.all(readerPromises).then(resolvedList => {
     // Final safety check - ensure no existing files sneak into new list
-    const cleanedList = resolvedList.filter( file => !file.isExisting && !removedExistingFiles.value.includes( file.url ) )
+    const cleanedList = resolvedList.filter(file => !file.isExisting && !removedExistingFiles.value.includes(file.url))
     fileList.value = cleanedList
-  } )
+  })
 }
 
 const handleFileRemove = file => {
-  if ( file.isExisting ) {
+  if (file.isExisting) {
     // Handle removal of existing file
-    if ( !removedExistingFiles.value.includes( file.url ) ) {
-      removedExistingFiles.value.push( file.url )
+    if (!removedExistingFiles.value.includes(file.url)) {
+      removedExistingFiles.value.push(file.url)
     }
   } else {
     // Handle removal of newly uploaded file
-    const index = fileList.value.findIndex( item => item.uid === file.uid )
-    if ( index !== -1 ) {
-      fileList.value.splice( index, 1 )
+    const index = fileList.value.findIndex(item => item.uid === file.uid)
+    if (index !== -1) {
+      fileList.value.splice(index, 1)
     }
   }
 }
 
 const handlePictureCardPreview = file => {
-  if ( file.url ) {
+  if (file.url) {
     dialogImageUrl.value = file.url
     dialogVisible.value = true
   }
 }
 
 const handleImageRemove = file => {
-  if ( file.isExisting ) {
+  if (file.isExisting) {
     // Handle removal of existing image
-    if ( !removedExistingImages.value.includes( file.url ) ) {
-      removedExistingImages.value.push( file.url )
+    if (!removedExistingImages.value.includes(file.url)) {
+      removedExistingImages.value.push(file.url)
     }
   } else {
     // Handle removal of newly uploaded image
-    const index = imageList.value.findIndex( item => item.uid === file.uid )
-    if ( index !== -1 ) {
-      imageList.value.splice( index, 1 )
+    const index = imageList.value.findIndex(item => item.uid === file.uid)
+    if (index !== -1) {
+      imageList.value.splice(index, 1)
     }
   }
 }
 
-const handleImageChange = ( file, uploadFileList ) => {
+const handleImageChange = (file, uploadFileList) => {
   // Only process new files (files with raw property) and filter out existing files
   // Also filter out any files that might be from removed existing images
-  const newFiles = uploadFileList.filter( uploadedFile => {
+  const newFiles = uploadFileList.filter(uploadedFile => {
     // Must have raw property (new upload)
-    if ( !uploadedFile.raw ) return false
+    if (!uploadedFile.raw) return false
 
     // Must not be marked as existing
-    if ( uploadedFile.isExisting ) return false
+    if (uploadedFile.isExisting) return false
 
     // Must not be in the removed list (extra safety check)
-    if ( uploadedFile.url && removedExistingImages.value.includes( uploadedFile.url ) ) return false
+    if (uploadedFile.url && removedExistingImages.value.includes(uploadedFile.url)) return false
 
     return true
-  } )
+  })
 
-  const readerPromises = newFiles.map( uploadedFile => {
-    return new Promise( resolve => {
-      if ( !uploadedFile.uid ) {
+  const readerPromises = newFiles.map(uploadedFile => {
+    return new Promise(resolve => {
+      if (!uploadedFile.uid) {
         uploadedFile.uid = Date.now().toString()
       }
 
       const reader = new FileReader()
       reader.onload = e => {
         uploadedFile.url = e.target.result
-        resolve( uploadedFile )
+        resolve(uploadedFile)
       }
-      reader.readAsDataURL( uploadedFile.raw )
-    } )
-  } )
+      reader.readAsDataURL(uploadedFile.raw)
+    })
+  })
 
-  Promise.all( readerPromises ).then( resolvedList => {
+  Promise.all(readerPromises).then(resolvedList => {
     // Final safety check - ensure no existing files sneak into new list
-    const cleanedList = resolvedList.filter( file => !file.isExisting && !removedExistingImages.value.includes( file.url ) )
+    const cleanedList = resolvedList.filter(file => !file.isExisting && !removedExistingImages.value.includes(file.url))
     imageList.value = cleanedList
-  } )
+  })
 }
 
 // Upload validation functions
 const beforeImageUpload = file => {
-  const isValidType = file.type.startsWith( 'image/' )
-  if ( !isValidType ) {
-    ElMessage.error( 'Only image files are allowed!' )
+  const isValidType = file.type.startsWith('image/')
+  if (!isValidType) {
+    ElMessage.error('Only image files are allowed!')
     return false
   }
 
-  if ( props.maxImages > 0 && combinedImageList.value.length >= props.maxImages ) {
-    ElMessage.error( `Maximum ${props.maxImages} images allowed!` )
+  if (props.maxImages > 0 && combinedImageList.value.length >= props.maxImages) {
+    ElMessage.error(`Maximum ${props.maxImages} images allowed!`)
     return false
   }
 
@@ -334,18 +334,18 @@ const beforeFileUpload = file => {
     '.json',
     '.xml',
     '.ppt',
-    '.pptx'
+    '.pptx',
   ]
-  const fileExtension = '.' + file.name.split( '.' ).pop().toLowerCase()
-  const isValidType = allowedTypes.includes( fileExtension )
+  const fileExtension = '.' + file.name.split('.').pop().toLowerCase()
+  const isValidType = allowedTypes.includes(fileExtension)
 
-  if ( !isValidType ) {
-    ElMessage.error( 'File type not allowed!' )
+  if (!isValidType) {
+    ElMessage.error('File type not allowed!')
     return false
   }
 
-  if ( props.maxFiles > 0 && combinedFileList.value.length >= props.maxFiles ) {
-    ElMessage.error( `Maximum ${props.maxFiles} files allowed!` )
+  if (props.maxFiles > 0 && combinedFileList.value.length >= props.maxFiles) {
+    ElMessage.error(`Maximum ${props.maxFiles} files allowed!`)
     return false
   }
 
@@ -353,50 +353,50 @@ const beforeFileUpload = file => {
 }
 
 const handleDownload = file => {
-  if ( file.url ) {
-    const link = document.createElement( 'a' )
+  if (file.url) {
+    const link = document.createElement('a')
     link.href = file.url
     link.download = file.name || 'downloaded_file.png'
-    document.body.appendChild( link )
+    document.body.appendChild(link)
     link.click()
-    document.body.removeChild( link )
+    document.body.removeChild(link)
   }
 }
 
 watch(
   imageList,
   newList => {
-    const fileArray = newList.map( file => file.raw ).filter( file => file instanceof File )
-    emit( 'update:imageList', fileArray )
+    const fileArray = newList.map(file => file.raw).filter(file => file instanceof File)
+    emit('update:imageList', fileArray)
   },
-  { deep : true }
+  { deep: true }
 )
 
 watch(
   fileList,
   newList => {
-    const fileArray = newList.map( file => file.raw ).filter( file => file instanceof File )
-    emit( 'update:filesList', fileArray )
+    const fileArray = newList.map(file => file.raw).filter(file => file instanceof File)
+    emit('update:filesList', fileArray)
   },
-  { deep : true }
+  { deep: true }
 )
 
 watch(
   removedExistingImages,
   list => {
-    console.log( 'Emitting removedExistingImages list:', list.slice() )
-    emit( 'update:removedExistingImages', list.slice() )
+    console.log('Emitting removedExistingImages list:', list.slice())
+    emit('update:removedExistingImages', list.slice())
   },
-  { deep : true }
+  { deep: true }
 )
 
 watch(
   removedExistingFiles,
   list => {
-    console.log( 'Emitting removedExistingFiles list:', list.slice() )
-    emit( 'update:removedExistingFiles', list.slice() )
+    console.log('Emitting removedExistingFiles list:', list.slice())
+    emit('update:removedExistingFiles', list.slice())
   },
-  { deep : true }
+  { deep: true }
 )
 
 // Reset removed items when component reinitializes
@@ -408,9 +408,9 @@ const resetRemovedItems = () => {
 // Clear any existing files that might have accidentally been added to new file lists
 const clearExistingFromNewLists = () => {
   // Remove any existing files that got into imageList
-  imageList.value = imageList.value.filter( file => !file.isExisting )
+  imageList.value = imageList.value.filter(file => !file.isExisting)
   // Remove any existing files that got into fileList
-  fileList.value = fileList.value.filter( file => !file.isExisting )
+  fileList.value = fileList.value.filter(file => !file.isExisting)
 }
 
 const resetNewFileLists = () => {
@@ -425,30 +425,30 @@ watch(
     resetRemovedItems()
     clearExistingFromNewLists()
   },
-  { deep : true }
+  { deep: true }
 )
 
 // Initialize existing files on mount or when props change
-onMounted( () => {
+onMounted(() => {
   // Reset removed items on mount
   resetRemovedItems()
   clearExistingFromNewLists()
 
   // Initialize with existing data if provided
-  if ( props.existingImageList.length > 0 || props.existingFileList.length > 0 ) {
-    console.log( 'Initialized with existing files:', {
-      images : props.existingImageList,
-      files : props.existingFileList
-    } )
+  if (props.existingImageList.length > 0 || props.existingFileList.length > 0) {
+    console.log('Initialized with existing files:', {
+      images: props.existingImageList,
+      files: props.existingFileList,
+    })
   }
-} )
+})
 
 // Expose reset function for parent components
-defineExpose( {
+defineExpose({
   resetRemovedItems,
   clearExistingFromNewLists,
-  resetNewFileLists
-} )
+  resetNewFileLists,
+})
 </script>
 
 <style scoped>

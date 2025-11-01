@@ -36,27 +36,27 @@ import 'vue3-lottie/dist/style.css'
 import { createPinia } from 'pinia'
 import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 
-const app = createApp( App )
+const app = createApp(App)
 
-const initApp = async() => {
-  app.use( Vue3Lottie )
-  app.use( router )
-  useSvgIcon( app )
+const initApp = async () => {
+  app.use(Vue3Lottie)
+  app.use(router)
+  useSvgIcon(app)
 
   const pinia = createPinia()
-  pinia.use( piniaPluginPersistedstate )
-  app.use( pinia )
+  pinia.use(piniaPluginPersistedstate)
+  app.use(pinia)
 
-  registerStore( app )
-  registerDirective( app )
+  registerStore(app)
+  registerDirective(app)
   await router.isReady()
 
-  setupI18n( app )
-  setupElementIcons( app )
+  setupI18n(app)
+  setupElementIcons(app)
 
-  app.use( globalEmitter )
-  app.use( ElementPlus )
-  app.mount( '#app' )
+  app.use(globalEmitter)
+  app.use(ElementPlus)
+  app.mount('#app')
 }
 
 initApp()

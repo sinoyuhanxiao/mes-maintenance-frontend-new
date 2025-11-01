@@ -37,6 +37,7 @@
         <el-form-item label="Description" prop="description">
           <el-input v-model="formData.description" type="textarea" :rows="3" />
         </el-form-item>
+
         <!-- Location (prefilled from parent; user may change) -->
         <el-form-item
           label="Location"
@@ -49,6 +50,7 @@
               placeholder="Search locations"
               style="width: 100%; margin-bottom: 10px"
               clearable
+              @clear="onClearSearch"
             />
             <div v-if="loading" class="tree-loading">
               <el-icon class="is-loading">
@@ -128,61 +130,61 @@ import { getEquipmentNodes, createNewNode, getEquipmentById } from '@/api/equipm
 import { uploadMultipleToMinio } from '@/api/minio.js'
 import FileUploadMultiple from '@/components/FileUpload/FileUploadMultiple.vue'
 
-const formRef = ref( null )
-const labelPosition = ref( 'top' )
-const treeData = ref( [] )
-const loading = ref( false )
-const error = ref( null )
-const filterText = ref( '' )
-const treeRef = ref( null )
-const selectedNodeId = ref( null )
-const submitLoading = ref( false )
-const sequenceOrders = ref( [] )
-const uploadedImages = ref( [] )
-const uploadedFiles = ref( [] )
-const uploadedExplosionView = ref( [] )
+const formRef = ref(null)
+const labelPosition = ref('top')
+const treeData = ref([])
+const loading = ref(false)
+const error = ref(null)
+const filterText = ref('')
+const treeRef = ref(null)
+const selectedNodeId = ref(null)
+const submitLoading = ref(false)
+const sequenceOrders = ref([])
+const uploadedImages = ref([])
+const uploadedFiles = ref([])
+const uploadedExplosionView = ref([])
 
-const props = defineProps( {
-  parentId : {
-    type : [Number, String],
-    default : null
-  }
-} )
+const props = defineProps({
+  parentId: {
+    type: [Number, String],
+    default: null,
+  },
+})
 
-const emit = defineEmits( ['close', 'cancel', 'success'] )
+const emit = defineEmits(['close', 'cancel', 'success'])
 
-const formData = reactive( {
-  name : '',
-  code : '',
-  model : '',
-  description : '',
-  parentId : props.parentId,
-  selectedLocationId : null,
-  sequenceOrder : 1,
-  imageList : [],
-  explodedViewDrawing : [],
-  filesList : []
-} )
+const formData = reactive({
+  name: '',
+  code: '',
+  model: '',
+  description: '',
+  parentId: props.parentId,
+  selectedLocationId: null,
+  sequenceOrder: 1,
+  imageList: [],
+  explodedViewDrawing: [],
+  filesList: [],
+})
 
 /** ---------------- Validators ---------------- */
-const validateLocation = ( _rule, value, callback ) => {
-  const num = Number( value )
-  if ( value === null || value === undefined || value === '' || Number.isNaN( num ) ) {
-    callback( new Error( 'Location is required' ) )
+const validateLocation = (_rule, value, callback) => {
+  const num = Number(value)
+  if (value === null || value === undefined || value === '' || Number.isNaN(num)) {
+    callback(new Error('Location is required'))
   } else {
     callback()
   }
 }
-const validateSequence = ( _rule, value, callback ) => {
-  const num = Number( value )
-  if ( Number.isNaN( num ) || num < 1 ) callback( new Error( 'Sequence Order must be a positive number' ) )
+const validateSequence = (_rule, value, callback) => {
+  const num = Number(value)
+  if (Number.isNaN(num) || num < 1) callback(new Error('Sequence Order must be a positive number'))
   else callback()
 }
 
 /** ---------------- Tree config ---------------- */
 const treeProps = {
-  children : 'children',
-  label : 'name'
+  children: 'children',
+  label: 'name',
 }
 
 /** ---------------- File handlers ---------------- */
@@ -199,108 +201,150 @@ const handleFilesListUpdate = files => {
   formData.filesList = files
 }
 
-const uploadFilesToServer = async() => {
+const uploadFilesToServer = async () => {
   try {
     let uploadedImagesRes = []
     let uploadedExplosionViewRes = []
     let uploadedFilesRes = []
 
-    if ( formData.imageList.length > 0 ) {
-      const imageRes = await uploadMultipleToMinio( formData.imageList )
+    if (formData.imageList.length > 0) {
+      const imageRes = await uploadMultipleToMinio(formData.imageList)
       uploadedImagesRes = imageRes.data.uploadedFiles || []
-      formData.imageList = uploadedImagesRes.map( file => file.url )
+      formData.imageList = uploadedImagesRes.map(file => file.url)
     }
 
-    if ( formData.explodedViewDrawing.length > 0 ) {
-      const explosionRes = await uploadMultipleToMinio( formData.explodedViewDrawing )
+    if (formData.explodedViewDrawing.length > 0) {
+      const explosionRes = await uploadMultipleToMinio(formData.explodedViewDrawing)
       uploadedExplosionViewRes = explosionRes.data.uploadedFiles || []
-      formData.explodedViewDrawing = uploadedExplosionViewRes.map( file => file.url )
+      formData.explodedViewDrawing = uploadedExplosionViewRes.map(file => file.url)
     }
 
-    if ( formData.filesList.length > 0 ) {
-      const fileRes = await uploadMultipleToMinio( formData.filesList )
+    if (formData.filesList.length > 0) {
+      const fileRes = await uploadMultipleToMinio(formData.filesList)
       uploadedFilesRes = fileRes.data.uploadedFiles || []
-      formData.filesList = uploadedFilesRes.map( file => file.url )
+      formData.filesList = uploadedFilesRes.map(file => file.url)
     }
 
     return { uploadedImagesRes, uploadedExplosionViewRes, uploadedFilesRes }
   } catch {
-    throw new Error( 'File upload failed' )
+    throw new Error('File upload failed')
   }
 }
 
 /** ---------------- Location tree helpers ---------------- */
+// Search bar clear (keep selection)
+const onClearSearch = () => {
+  // Only clear search text; selection remains highlighted.
+  // If you also want to clear the selection on clear, uncomment:
+  // selectedNodeId.value = null
+  // formData.selectedLocationId = null
+}
+
+// Build full breadcrumb label from id
+function findPathById(nodes, targetId, path = []) {
+  for (const n of nodes || []) {
+    const next = [...path, n]
+    if (Number(n.id) === Number(targetId)) return next
+    if (n.children?.length) {
+      const hit = findPathById(n.children, targetId, next)
+      if (hit) return hit
+    }
+  }
+  return null
+}
+function getPathLabelById(id) {
+  const path = findPathById(treeData.value, id)
+  return path ? path.map(n => n.name).join(' / ') : ''
+}
+
 const setCurrentTreeNode = async locationId => {
-  if ( !treeRef.value || locationId == null ) return
+  if (!treeRef.value || locationId == null) return
   await nextTick()
-  if ( treeData.value.length === 0 ) return
-  const idNum = Number( locationId )
-  treeRef.value.setCurrentKey( idNum )
-  const node = treeRef.value.getNode( idNum )
-  if ( !node ) return
+  if (treeData.value.length === 0) return
+  const idNum = Number(locationId)
+  treeRef.value.setCurrentKey(idNum)
+  const node = treeRef.value.getNode(idNum)
+  if (!node) return
   // expand parents
   let parentNode = node.parent
-  while ( parentNode && parentNode.key !== undefined ) {
+  while (parentNode && parentNode.key !== undefined) {
     parentNode.expanded = true
     parentNode = parentNode.parent
   }
   // sync model + highlight
   formData.selectedLocationId = idNum
   selectedNodeId.value = idNum
+
+  // mirror into the search bar (full path)
+  filterText.value = getPathLabelById(idNum) || node.label || ''
+
   await nextTick()
-  formRef.value?.clearValidate( 'selectedLocationId' )
+  formRef.value?.clearValidate('selectedLocationId')
 }
 
-const fetchLocationTree = async() => {
+const fetchLocationTree = async () => {
   loading.value = true
   error.value = null
   try {
     const response = await getLocationTree()
     let dataArray
-    if ( response.data?.data ) dataArray = response.data.data
-    else if ( Array.isArray( response.data ) ) dataArray = response.data
-    else if ( response.data ) dataArray = [response.data]
+    if (response.data?.data) dataArray = response.data.data
+    else if (Array.isArray(response.data)) dataArray = response.data
+    else if (response.data) dataArray = [response.data]
     else dataArray = []
     treeData.value = dataArray
-  } catch ( err ) {
+
+    // If we already have a selected location, reflect it
+    if (formData.selectedLocationId != null) {
+      await setCurrentTreeNode(formData.selectedLocationId)
+    }
+  } catch (err) {
     error.value = err.message || 'Failed to load location tree'
-    ElMessage.error( 'Failed to load location tree' )
+    ElMessage.error('Failed to load location tree')
   } finally {
     loading.value = false
   }
 }
 
-watch( filterText, val => {
-  treeRef.value?.filter( val )
-} )
-const filterNode = ( value, data ) => {
-  if ( !value ) return true
-  return data.name.toLowerCase().includes( value.toLowerCase() )
+watch(filterText, val => {
+  treeRef.value?.filter(val)
+})
+const filterNode = (value, data) => {
+  if (!value) return true
+  return data.name.toLowerCase().includes(value.toLowerCase())
 }
+
 const handleNodeClick = data => {
-  const idNum = Number( data.id )
+  const idNum = Number(data.id)
   selectedNodeId.value = idNum
   formData.selectedLocationId = idNum
-  nextTick( () => {
-    formRef.value?.validateField( 'selectedLocationId' )
-  } )
+
+  // show full path in the search bar (fallback to leaf)
+  filterText.value = data.name || ''
+
+  nextTick(() => {
+    formRef.value?.validateField('selectedLocationId')
+  })
 }
 
 /** ---------------- Parent prefill ---------------- */
-const prefillLocationFromParent = async() => {
-  if ( !props.parentId ) return
+const prefillLocationFromParent = async () => {
+  if (!props.parentId) return
   try {
-    const res = await getEquipmentById( props.parentId )
+    const res = await getEquipmentById(props.parentId)
     const raw = res.data?.data || res.data || {}
     const parentLocId =
-      raw.location?.id != null ? Number( raw.location.id ) : raw.location_id != null ? Number( raw.location_id ) : null
+      raw.location?.id != null ? Number(raw.location.id) : raw.location_id != null ? Number(raw.location_id) : null
 
     // Only prefill if user hasn’t chosen anything yet
-    if ( parentLocId != null && formData.selectedLocationId == null ) {
+    if (parentLocId != null && formData.selectedLocationId == null) {
       formData.selectedLocationId = parentLocId
       selectedNodeId.value = parentLocId
-      if ( treeData.value.length > 0 ) {
-        await setCurrentTreeNode( parentLocId )
+      if (treeData.value.length > 0) {
+        await setCurrentTreeNode(parentLocId) // also mirrors into filterText
+      } else {
+        // tree not ready yet — at least mirror name later when tree loads
+        filterText.value = String(parentLocId)
       }
     }
   } catch {
@@ -309,138 +353,129 @@ const prefillLocationFromParent = async() => {
 }
 
 /** ---------------- Sequence order ---------------- */
-const fetchSequenceOrders = async() => {
-  if ( !props.parentId ) return
+const fetchSequenceOrders = async () => {
+  if (!props.parentId) return
   try {
-    const equipmentGroupsResponse = await getEquipmentNodes( 1, 100, 'sequenceOrder', 'ASC', {
-      node_type_ids : [6],
-      parent_ids : [props.parentId]
-    } )
+    const equipmentGroupsResponse = await getEquipmentNodes(1, 100, 'sequenceOrder', 'ASC', {
+      node_type_ids: [6],
+      parent_ids: [props.parentId],
+    })
     const equipmentGroupsContent = equipmentGroupsResponse.data?.content || []
     const sequenceOrdersArray = equipmentGroupsContent
-      .map( item => item.sequence_order )
-      .filter( order => order !== null && order !== undefined && !isNaN( order ) )
+      .map(item => item.sequence_order)
+      .filter(order => order !== null && order !== undefined && !isNaN(order))
     sequenceOrders.value = sequenceOrdersArray
 
-    const maxSequenceOrder = sequenceOrdersArray.length > 0 ? Math.max( ...sequenceOrdersArray ) : 0
+    const maxSequenceOrder = sequenceOrdersArray.length > 0 ? Math.max(...sequenceOrdersArray) : 0
     const nextSequenceOrder = maxSequenceOrder + 1
     const maxAllowedSequence = sequenceOrdersArray.length + 1
     const finalSequenceOrder = nextSequenceOrder > maxAllowedSequence ? maxAllowedSequence : nextSequenceOrder
     formData.sequenceOrder = finalSequenceOrder
   } catch {
-    ElMessage.error( 'Failed to load sequence orders' )
+    ElMessage.error('Failed to load sequence orders')
   }
 }
-const maxSequenceOrder = computed( () => {
+const maxSequenceOrder = computed(() => {
   const calculatedMax = sequenceOrders.value.length + 1
-  return Math.max( calculatedMax, formData.sequenceOrder || 1 )
-} )
+  return Math.max(calculatedMax, formData.sequenceOrder || 1)
+})
 
 /** ---------------- Error sanitization helpers ---------------- */
-function extractErrorText( err ) {
+function extractErrorText(err) {
   const parts = []
-  if ( err?.response?.data ) {
-    parts.push( typeof err.response.data === 'string' ? err.response.data : JSON.stringify( err.response.data ) )
+  if (err?.response?.data) {
+    parts.push(typeof err.response.data === 'string' ? err.response.data : JSON.stringify(err.response.data))
   }
-  if ( err?.message ) parts.push( err.message )
-  return parts.join( ' ' ).toLowerCase()
+  if (err?.message) parts.push(err.message)
+  return parts.join(' ').toLowerCase()
 }
 
-function isDuplicateError( err ) {
-  const t = extractErrorText( err )
+function isDuplicateError(err) {
+  const t = extractErrorText(err)
   return (
     err?.response?.status === 409 ||
-    t.includes( 'duplicate key value' ) ||
-    t.includes( 'unique constraint' ) ||
-    t.includes( 'already exists' ) ||
-    t.includes( 'conflict' ) ||
-    t.includes( 'constraint [equipment_node_unique]' ) ||
-    t.includes( 'equipment_node_unique' )
+    t.includes('duplicate key value') ||
+    t.includes('unique constraint') ||
+    t.includes('already exists') ||
+    t.includes('conflict') ||
+    t.includes('constraint [equipment_node_unique]') ||
+    t.includes('equipment_node_unique')
   )
 }
 
-function friendlyCreateError( err ) {
-  if ( isDuplicateError( err ) ) {
-    return { title : 'Duplicate code. Please choose another.' }
+function friendlyCreateError(err) {
+  if (isDuplicateError(err)) {
+    return { title: 'Duplicate code. Please choose another.' }
   }
-  if ( err?.response?.status === 400 ) {
-    return { title : 'Invalid data', message : 'Please check the form and try again.' }
+  if (err?.response?.status === 400) {
+    return { title: 'Invalid data', message: 'Please check the form and try again.' }
   }
-  if ( err?.response?.status === 403 ) {
-    return { title : 'Permission denied', message : 'You do not have permission to perform this action.' }
+  if (err?.response?.status === 403) {
+    return { title: 'Permission denied', message: 'You do not have permission to perform this action.' }
   }
-  if ( extractErrorText( err ).includes( 'network' ) ) {
-    return { title : 'Network error', message : 'Please check your connection and try again.' }
+  if (extractErrorText(err).includes('network')) {
+    return { title: 'Network error', message: 'Please check your connection and try again.' }
   }
-  return { title : 'Error', message : 'Failed to create sub equipment. Please try again.' + err }
+  return { title: 'Error', message: 'Failed to create sub equipment. Please try again.' + err }
 }
 
 /** ---------------- Submit ---------------- */
-const handleConfirm = async() => {
-  if ( !formRef.value ) return
+const handleConfirm = async () => {
+  if (!formRef.value) return
 
   // Force sync before validation
   await nextTick()
-  if ( !formData.selectedLocationId && selectedNodeId.value != null ) {
-    formData.selectedLocationId = Number( selectedNodeId.value )
+  if (!formData.selectedLocationId && selectedNodeId.value != null) {
+    formData.selectedLocationId = Number(selectedNodeId.value)
   }
-  await formRef.value.clearValidate( ['selectedLocationId'] )
+  await formRef.value.clearValidate(['selectedLocationId'])
 
   const isValid = await formRef.value.validate()
-  if ( !isValid ) return
+  if (!isValid) return
 
   submitLoading.value = true
   try {
-    if ( formData.imageList.length > 0 || formData.filesList.length > 0 || formData.explodedViewDrawing.length > 0 ) {
+    if (formData.imageList.length > 0 || formData.filesList.length > 0 || formData.explodedViewDrawing.length > 0) {
       await uploadFilesToServer()
     }
 
     const submissionData = {
-      name : formData.name,
-      code : ( formData.code || '' ).trim(),
-      serial_number : formData.model,
-      description : formData.description,
-      node_type_id : 6,
-      parent_id : formData.parentId != null ? Number( formData.parentId ) : null,
-      location_id : formData.selectedLocationId != null ? Number( formData.selectedLocationId ) : null,
-      sequence_order : Number( formData.sequenceOrder ),
-      image_list : formData.imageList,
-      exploded_view_drawing : formData.explodedViewDrawing,
-      file_list : formData.filesList
+      name: formData.name,
+      code: (formData.code || '').trim(),
+      serial_number: formData.model,
+      description: formData.description,
+      node_type_id: 6,
+      parent_id: formData.parentId != null ? Number(formData.parentId) : null,
+      location_id: formData.selectedLocationId != null ? Number(formData.selectedLocationId) : null,
+      sequence_order: Number(formData.sequenceOrder),
+      image_list: formData.imageList,
+      exploded_view_drawing: formData.explodedViewDrawing,
+      file_list: formData.filesList,
     }
 
-    // If your axios wrapper supports silencing global toasts, pass a flag:
-    // const response = await createNewNode(submissionData, { meta: { silent: true } })
-    const response = await createNewNode( submissionData )
+    const response = await createNewNode(submissionData)
 
-    ElMessage.success( 'Sub Equipment created successfully!' )
+    ElMessage.success('Sub Equipment created successfully!')
 
     // extract new node id robustly
     const newId = response?.data?.id ?? response?.data?.data?.id ?? response?.id ?? response?.data?.content?.id ?? null
 
-    emit( 'success', {
-      id : newId != null ? Number( newId ) : null,
-      parentId : submissionData.parent_id,
-      locationId : submissionData.location_id
-    } )
+    emit('success', {
+      id: newId != null ? Number(newId) : null,
+      parentId: submissionData.parent_id,
+      locationId: submissionData.location_id,
+    })
 
-    emit( 'close' )
+    emit('close')
     resetForm()
-  } catch ( error ) {
-    // Close any toast opened by global interceptors to avoid double messages
+  } catch (error) {
     ElMessage.closeAll()
-
-    const { title, message } = friendlyCreateError( error )
-
-    // If it’s a duplicate, nudge to Code field
-    if ( isDuplicateError( error ) ) {
+    const { title, message } = friendlyCreateError(error)
+    if (isDuplicateError(error)) {
       await nextTick()
-      formRef.value?.scrollToField?.( 'code' )
+      formRef.value?.scrollToField?.('code')
     }
-
-    // Show a single, friendly toast (no raw SQL)
-    ElMessage.error( `${title}: ${message}` )
-
+    ElMessage.error(`${title}: ${message}`)
     return
   } finally {
     submitLoading.value = false
@@ -449,25 +484,26 @@ const handleConfirm = async() => {
 
 /** ---------------- Reset / Cancel ---------------- */
 const resetFormData = () => {
-  if ( formRef.value ) {
+  if (formRef.value) {
     formRef.value.resetFields()
   }
-  Object.assign( formData, {
-    name : '',
-    code : '',
-    model : '',
-    description : '',
-    parentId : props.parentId,
-    selectedLocationId : null,
-    sequenceOrder : 1,
-    imageList : [],
-    explodedViewDrawing : [],
-    filesList : []
-  } )
+  Object.assign(formData, {
+    name: '',
+    code: '',
+    model: '',
+    description: '',
+    parentId: props.parentId,
+    selectedLocationId: null,
+    sequenceOrder: 1,
+    imageList: [],
+    explodedViewDrawing: [],
+    filesList: [],
+  })
   selectedNodeId.value = null
   uploadedImages.value = []
   uploadedExplosionView.value = []
   uploadedFiles.value = []
+  filterText.value = '' // clear the search bar text
 }
 const resetForm = () => {
   resetFormData()
@@ -475,43 +511,43 @@ const resetForm = () => {
 }
 const handleCancel = () => {
   resetForm()
-  emit( 'close' )
-  emit( 'cancel' )
+  emit('close')
+  emit('cancel')
 }
 
 /** ---------------- Reactivity ---------------- */
 watch(
   () => props.parentId,
-  async( newParentId, oldParentId ) => {
-    if ( newParentId !== oldParentId && newParentId !== null ) {
+  async (newParentId, oldParentId) => {
+    if (newParentId !== oldParentId && newParentId !== null) {
       formData.parentId = newParentId
       resetFormData()
       await fetchSequenceOrders()
       await prefillLocationFromParent()
-      if ( formData.selectedLocationId != null && treeData.value.length > 0 ) {
-        await setCurrentTreeNode( formData.selectedLocationId )
+      if (formData.selectedLocationId != null && treeData.value.length > 0) {
+        await setCurrentTreeNode(formData.selectedLocationId) // will also mirror into filterText
       }
     }
   },
-  { immediate : false }
+  { immediate: false }
 )
 
-watch( treeData, async newTree => {
-  if ( newTree.length > 0 && formData.selectedLocationId != null ) {
-    await setCurrentTreeNode( formData.selectedLocationId )
+watch(treeData, async newTree => {
+  if (newTree.length > 0 && formData.selectedLocationId != null) {
+    await setCurrentTreeNode(formData.selectedLocationId) // also mirrors into filterText
   }
-} )
+})
 
 /** ---------------- Mount ---------------- */
-onMounted( async() => {
+onMounted(async () => {
   await fetchLocationTree()
-  if ( props.parentId ) {
-    await Promise.all( [fetchSequenceOrders(), prefillLocationFromParent()] )
+  if (props.parentId) {
+    await Promise.all([fetchSequenceOrders(), prefillLocationFromParent()])
   }
-  if ( formData.selectedLocationId != null ) {
-    await setCurrentTreeNode( formData.selectedLocationId )
+  if (formData.selectedLocationId != null) {
+    await setCurrentTreeNode(formData.selectedLocationId) // also mirrors into filterText
   }
-} )
+})
 </script>
 
 <style scoped>

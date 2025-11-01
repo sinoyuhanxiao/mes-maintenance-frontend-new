@@ -25,26 +25,26 @@
 </template>
 
 <script setup>
-const props = defineProps( {
-  step : {
-    type : Object,
-    required : true
+const props = defineProps({
+  step: {
+    type: Object,
+    required: true,
   },
-  modelValue : {
-    type : [Boolean, String],
-    default : null
+  modelValue: {
+    type: [Boolean, String],
+    default: null,
   },
-  disabled : {
-    type : Boolean,
-    default : false
-  }
-} )
+  disabled: {
+    type: Boolean,
+    default: false,
+  },
+})
 
-const emit = defineEmits( ['update:modelValue'] )
+const emit = defineEmits(['update:modelValue'])
 
 const updateValue = value => {
-  if ( !props.disabled ) {
-    emit( 'update:modelValue', value )
+  if (!props.disabled) {
+    emit('update:modelValue', value)
   }
 }
 </script>

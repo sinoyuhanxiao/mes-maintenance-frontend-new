@@ -13,9 +13,7 @@
 
       <el-form ref="formRef" :model="inputData" :rules="rules" label-width="150px">
         <!-- Code Input -->
-        <el-form-item style="flex: 1"
-label="Ordering Code"
-prop="order_code"
+        <el-form-item style="flex: 1" label="Ordering Code" prop="order_code"
           ><el-input
             clearable
             v-model="inputData.order_code"
@@ -24,9 +22,7 @@ prop="order_code"
           ></el-input
         ></el-form-item>
 
-        <el-form-item style="flex: 1"
-label="Unit Price"
-prop="unit_price"
+        <el-form-item style="flex: 1" label="Unit Price" prop="unit_price"
           ><el-input
             clearable
             v-model="inputData.unit_price"
@@ -45,9 +41,7 @@ prop="unit_price"
           </el-select>
         </el-form-item>
 
-        <el-form-item style="flex: 1"
-label="Lead Time (Days)"
-prop="lead_time_days"
+        <el-form-item style="flex: 1" label="Lead Time (Days)" prop="lead_time_days"
           ><el-input
             clearable
             v-model="inputData.lead_time_days"
@@ -72,24 +66,24 @@ import { getUnitByType } from '../../../../api/common'
 import { ElMessage } from 'element-plus'
 import { updateSparePart } from '../../../../api/resources'
 
-const props = defineProps( {
-  vendor : Object,
-  sparePart : Object
-} )
+const props = defineProps({
+  vendor: Object,
+  sparePart: Object,
+})
 
-const formRef = ref( null )
-const sparePartData = ref( props.sparePart )
-const vendorData = ref( props.vendor )
-const price_units = ref( null )
+const formRef = ref(null)
+const sparePartData = ref(props.sparePart)
+const vendorData = ref(props.vendor)
+const price_units = ref(null)
 
 const existingVendors = ref(
-  props.sparePart?.spare_part_vendors?.map( v => ( {
-    vendor_id : v.vendor?.id ?? null,
-    order_code : v.order_code ?? null,
-    lead_time_days : v.lead_time_days ?? null,
-    unit_price : v.unit_price ?? null,
-    price_uom_id : v.price_uom?.id ?? null
-  } ) ) ?? []
+  props.sparePart?.spare_part_vendors?.map(v => ({
+    vendor_id: v.vendor?.id ?? null,
+    order_code: v.order_code ?? null,
+    lead_time_days: v.lead_time_days ?? null,
+    unit_price: v.unit_price ?? null,
+    price_uom_id: v.price_uom?.id ?? null,
+  })) ?? []
 )
 
 watch(
@@ -98,67 +92,67 @@ watch(
     vendorData.value = props.vendor
     sparePartData.value = props.sparePart
   },
-  { deep : true }
+  { deep: true }
 )
 
-const emit = defineEmits( ['addVendor'] )
+const emit = defineEmits(['addVendor'])
 
 async function getUnits() {
-  const response = await getUnitByType( 11 )
+  const response = await getUnitByType(11)
 
   price_units.value = response.data
 }
 
 getUnits()
 
-const inputData = ref( {
-  vendor_id : props.vendor.id,
-  order_code : null,
-  unit_price : null,
-  lead_time_days : null,
-  price_uom_id : null
-} )
+const inputData = ref({
+  vendor_id: props.vendor.id,
+  order_code: null,
+  unit_price: null,
+  lead_time_days: null,
+  price_uom_id: null,
+})
 
 // Form rules
-const rules = reactive( {
-  order_code : [{ required : true, message : 'Please enter Ordering Code', trigger : 'blur' }],
-  unit_price : [{ required : true, message : 'Please enter Unit Price', trigger : 'blur' }],
-  price_uom_id : [{ required : true, message : 'Please select Currency', trigger : 'blur' }],
-  lead_time_days : [{ required : true, message : 'Please enter Lead Time', trigger : 'blur' }]
-} )
+const rules = reactive({
+  order_code: [{ required: true, message: 'Please enter Ordering Code', trigger: 'blur' }],
+  unit_price: [{ required: true, message: 'Please enter Unit Price', trigger: 'blur' }],
+  price_uom_id: [{ required: true, message: 'Please select Currency', trigger: 'blur' }],
+  lead_time_days: [{ required: true, message: 'Please enter Lead Time', trigger: 'blur' }],
+})
 
 const vendorAdded = vendor => {
-  ElMessage( {
-    message : 'Spare Part Vendor Added: ' + vendor,
-    type : 'success'
-  } )
+  ElMessage({
+    message: 'Spare Part Vendor Added: ' + vendor,
+    type: 'success',
+  })
 }
 
-const addVendor = async() => {
-  if ( !formRef.value ) return
+const addVendor = async () => {
+  if (!formRef.value) return
 
   try {
     const valid = await formRef.value.validate()
-    if ( !valid ) return
+    if (!valid) return
 
-    existingVendors.value.push( inputData.value )
+    existingVendors.value.push(inputData.value)
 
-    const newSparePartVendor = await updateSparePart( props.sparePart.id, {
-      code : props.sparePart.code,
-      vendor_requests : existingVendors.value
-    } )
-    if ( newSparePartVendor ) {
-      emit( 'addVendor', newSparePartVendor.data )
-      vendorAdded( props.vendor.name )
+    const newSparePartVendor = await updateSparePart(props.sparePart.id, {
+      code: props.sparePart.code,
+      vendor_requests: existingVendors.value,
+    })
+    if (newSparePartVendor) {
+      emit('addVendor', newSparePartVendor.data)
+      vendorAdded(props.vendor.name)
       resetForm()
     }
-  } catch ( err ) {
-    console.error( 'Creation of Spare Part Vendor Failed', err )
+  } catch (err) {
+    console.error('Creation of Spare Part Vendor Failed', err)
   }
 }
 
 const resetForm = () => {
-  if ( formRef.value ) {
+  if (formRef.value) {
     formRef.value.resetFields()
   }
 }

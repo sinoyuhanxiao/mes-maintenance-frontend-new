@@ -230,53 +230,53 @@ import { ref, watch, computed, onMounted, nextTick } from 'vue'
 import { Warning, Clock } from '@element-plus/icons-vue'
 import { getAllRecurrenceTypes } from '@/api/work-order'
 
-const startDate = ref( null )
-const endDate = ref( null )
-const recurrence = ref( 'none' ) // Initialize with 'none' instead of empty string
-const repeatInterval = ref( 1 ) // Control for how many weeks to repeat
-const selectedDays = ref( [] ) // Store selected days as numbers (1 to 7)
-const monthlyRepeatInterval = ref( 1 ) // Control for how many months to repeat
-const monthlyDate = ref( 1 ) // Control for which date to repeat
-const yearlyRepeatInterval = ref( 1 ) // Control for how many years to repeat
-const yearlyMonth = ref( 1 ) // default to January
-const yearlyDay = ref( 1 ) // default to 1st
+const startDate = ref(null)
+const endDate = ref(null)
+const recurrence = ref('none') // Initialize with 'none' instead of empty string
+const repeatInterval = ref(1) // Control for how many weeks to repeat
+const selectedDays = ref([]) // Store selected days as numbers (1 to 7)
+const monthlyRepeatInterval = ref(1) // Control for how many months to repeat
+const monthlyDate = ref(1) // Control for which date to repeat
+const yearlyRepeatInterval = ref(1) // Control for how many years to repeat
+const yearlyMonth = ref(1) // default to January
+const yearlyDay = ref(1) // default to 1st
 
 // New fields for recurring time only
-const startTime = ref( null )
-const endTime = ref( null )
-const props = defineProps( {
-  workOrderStartDate : {
-    type : String,
-    default : null
+const startTime = ref(null)
+const endTime = ref(null)
+const props = defineProps({
+  workOrderStartDate: {
+    type: String,
+    default: null,
   },
-  workOrderDueDate : {
-    type : String,
-    default : null
+  workOrderDueDate: {
+    type: String,
+    default: null,
   },
-  recurrenceSetting : {
-    type : Object,
-    default : () => ( {} )
-  }
-} )
+  recurrenceSetting: {
+    type: Object,
+    default: () => ({}),
+  },
+})
 
-const emit = defineEmits( ['update:recurrenceSetting'] )
+const emit = defineEmits(['update:recurrenceSetting'])
 
 // Dynamic recurrence types from backend
-const recurrenceTypes = ref( [] )
-const recurrenceTypeMap = ref( {} )
+const recurrenceTypes = ref([])
+const recurrenceTypeMap = ref({})
 
 // Load recurrence types from API
-const loadRecurrenceTypes = async() => {
+const loadRecurrenceTypes = async () => {
   try {
     const response = await getAllRecurrenceTypes()
-    if ( response.data ) {
+    if (response.data) {
       recurrenceTypes.value = response.data
 
       // Create mapping from name/key to ID
       const mapping = {}
-      response.data.forEach( type => {
+      response.data.forEach(type => {
         // Map based on type name or create a standard mapping
-        switch ( type.name?.toLowerCase() || type.type?.toLowerCase() ) {
+        switch (type.name?.toLowerCase() || type.type?.toLowerCase()) {
           case 'none':
           case 'does not repeat':
           case '不重复':
@@ -303,24 +303,24 @@ const loadRecurrenceTypes = async() => {
             // If we can't match by name, use the ID as key
             mapping[type.id] = type.id
         }
-      } )
+      })
       recurrenceTypeMap.value = mapping
     }
-  } catch ( error ) {
+  } catch (error) {
     // Fallback to hardcoded values if API fails
     recurrenceTypeMap.value = {
-      none : 1,
-      daily : 2,
-      weekly : 3,
-      monthlyByDate : 4,
-      yearly : 5
+      none: 1,
+      daily: 2,
+      weekly: 3,
+      monthlyByDate: 4,
+      yearly: 5,
     }
   }
 }
 
 // Initialize form from incoming recurrence setting
 const initializeFromRecurrenceSetting = () => {
-  if ( !props.recurrenceSetting || Object.keys( props.recurrenceSetting ).length === 0 ) {
+  if (!props.recurrenceSetting || Object.keys(props.recurrenceSetting).length === 0) {
     return
   }
 
@@ -328,10 +328,10 @@ const initializeFromRecurrenceSetting = () => {
 
   // Find the recurrence type string from the ID
   let recurrenceTypeString = 'none'
-  if ( setting.recurrence_type ) {
+  if (setting.recurrence_type) {
     // Find the string key that maps to this ID
-    for ( const [key, value] of Object.entries( recurrenceTypeMap.value ) ) {
-      if ( value === setting.recurrence_type ) {
+    for (const [key, value] of Object.entries(recurrenceTypeMap.value)) {
+      if (value === setting.recurrence_type) {
         recurrenceTypeString = key
         break
       }
@@ -341,75 +341,75 @@ const initializeFromRecurrenceSetting = () => {
   recurrence.value = recurrenceTypeString
 
   // Initialize date/time fields based on type
-  if ( recurrenceTypeString === 'none' ) {
-    if ( setting.start_date_time ) {
+  if (recurrenceTypeString === 'none') {
+    if (setting.start_date_time) {
       startDate.value = setting.start_date_time
     }
-    if ( setting.end_date_time ) {
+    if (setting.end_date_time) {
       endDate.value = setting.end_date_time
     }
   } else {
     // For recurring types, initialize time fields
-    if ( setting.start_time ) {
+    if (setting.start_time) {
       startTime.value = setting.start_time
     }
-    if ( setting.end_time ) {
+    if (setting.end_time) {
       endTime.value = setting.end_time
     }
 
     // Initialize type-specific fields
-    if ( recurrenceTypeString === 'weekly' ) {
-      if ( setting.interval ) repeatInterval.value = setting.interval
-      if ( setting.days_of_week ) selectedDays.value = setting.days_of_week
-    } else if ( recurrenceTypeString === 'monthlyByDate' ) {
-      if ( setting.interval ) monthlyRepeatInterval.value = setting.interval
-      if ( setting.day_of_month ) monthlyDate.value = setting.day_of_month
-    } else if ( recurrenceTypeString === 'yearly' ) {
-      if ( setting.interval ) yearlyRepeatInterval.value = setting.interval
-      if ( setting.month ) yearlyMonth.value = setting.month
-      if ( setting.day_of_month ) yearlyDay.value = setting.day_of_month
+    if (recurrenceTypeString === 'weekly') {
+      if (setting.interval) repeatInterval.value = setting.interval
+      if (setting.days_of_week) selectedDays.value = setting.days_of_week
+    } else if (recurrenceTypeString === 'monthlyByDate') {
+      if (setting.interval) monthlyRepeatInterval.value = setting.interval
+      if (setting.day_of_month) monthlyDate.value = setting.day_of_month
+    } else if (recurrenceTypeString === 'yearly') {
+      if (setting.interval) yearlyRepeatInterval.value = setting.interval
+      if (setting.month) yearlyMonth.value = setting.month
+      if (setting.day_of_month) yearlyDay.value = setting.day_of_month
     }
   }
 }
 
-onMounted( async() => {
+onMounted(async () => {
   await loadRecurrenceTypes()
   // Initialize after recurrence types are loaded
   initializeFromRecurrenceSetting()
-} )
+})
 
 // Watch for changes to recurrenceSetting prop
 watch(
   () => props.recurrenceSetting,
   () => {
-    if ( Object.keys( recurrenceTypeMap.value ).length > 0 ) {
+    if (Object.keys(recurrenceTypeMap.value).length > 0) {
       initializeFromRecurrenceSetting()
     }
   },
-  { deep : true }
+  { deep: true }
 )
 
 // Date validation functions
 const disabledStartDate = date => {
   // Allow dates from 30 days ago to 2 years in the future
   const thirtyDaysAgo = new Date()
-  thirtyDaysAgo.setDate( thirtyDaysAgo.getDate() - 30 )
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
 
   const twoYearsFromNow = new Date()
-  twoYearsFromNow.setFullYear( twoYearsFromNow.getFullYear() + 2 )
+  twoYearsFromNow.setFullYear(twoYearsFromNow.getFullYear() + 2)
 
   // Check if date is outside the general allowed range
-  if ( date < thirtyDaysAgo || date > twoYearsFromNow ) {
+  if (date < thirtyDaysAgo || date > twoYearsFromNow) {
     return true
   }
 
   // If work order start date is provided, recurrence start cannot be before it
-  if ( props.workOrderStartDate ) {
-    const workOrderStart = new Date( props.workOrderStartDate )
-    workOrderStart.setHours( 0, 0, 0, 0 ) // Reset time for date-only comparison
+  if (props.workOrderStartDate) {
+    const workOrderStart = new Date(props.workOrderStartDate)
+    workOrderStart.setHours(0, 0, 0, 0) // Reset time for date-only comparison
 
-    const compareDate = new Date( date )
-    compareDate.setHours( 0, 0, 0, 0 )
+    const compareDate = new Date(date)
+    compareDate.setHours(0, 0, 0, 0)
 
     return compareDate < workOrderStart
   }
@@ -418,26 +418,26 @@ const disabledStartDate = date => {
 }
 
 const disabledEndDate = date => {
-  if ( !startDate.value ) return false
+  if (!startDate.value) return false
 
-  const start = new Date( startDate.value )
-  start.setHours( 0, 0, 0, 0 )
+  const start = new Date(startDate.value)
+  start.setHours(0, 0, 0, 0)
 
   const twoYearsFromNow = new Date()
-  twoYearsFromNow.setFullYear( twoYearsFromNow.getFullYear() + 2 )
+  twoYearsFromNow.setFullYear(twoYearsFromNow.getFullYear() + 2)
 
   // Check if date is before start date or beyond 2 years
-  if ( date < start || date > twoYearsFromNow ) {
+  if (date < start || date > twoYearsFromNow) {
     return true
   }
 
   // Check if date exceeds the work order due date
-  if ( props.workOrderDueDate ) {
-    const dueDate = new Date( props.workOrderDueDate )
-    dueDate.setHours( 23, 59, 59, 999 ) // Allow end times up to end of due date
+  if (props.workOrderDueDate) {
+    const dueDate = new Date(props.workOrderDueDate)
+    dueDate.setHours(23, 59, 59, 999) // Allow end times up to end of due date
 
-    const compareDate = new Date( date )
-    compareDate.setHours( 0, 0, 0, 0 )
+    const compareDate = new Date(date)
+    compareDate.setHours(0, 0, 0, 0)
 
     return compareDate > dueDate
   }
@@ -446,16 +446,16 @@ const disabledEndDate = date => {
 }
 
 const disabledStartHours = () => {
-  if ( !props.workOrderStartDate || !startDate.value ) return []
+  if (!props.workOrderStartDate || !startDate.value) return []
 
-  const workOrderStart = new Date( props.workOrderStartDate )
-  const recurrenceStart = new Date( startDate.value )
+  const workOrderStart = new Date(props.workOrderStartDate)
+  const recurrenceStart = new Date(startDate.value)
 
   // If same day as work order start, disable hours before work order start hour
-  if ( workOrderStart.toDateString() === recurrenceStart.toDateString() ) {
+  if (workOrderStart.toDateString() === recurrenceStart.toDateString()) {
     const disabledHours = []
-    for ( let i = 0; i < workOrderStart.getHours(); i++ ) {
-      disabledHours.push( i )
+    for (let i = 0; i < workOrderStart.getHours(); i++) {
+      disabledHours.push(i)
     }
     return disabledHours
   }
@@ -464,16 +464,16 @@ const disabledStartHours = () => {
 }
 
 const disabledStartMinutes = hour => {
-  if ( !props.workOrderStartDate || !startDate.value ) return []
+  if (!props.workOrderStartDate || !startDate.value) return []
 
-  const workOrderStart = new Date( props.workOrderStartDate )
-  const recurrenceStart = new Date( startDate.value )
+  const workOrderStart = new Date(props.workOrderStartDate)
+  const recurrenceStart = new Date(startDate.value)
 
   // If same day and same hour as work order start, disable minutes before work order start minute
-  if ( workOrderStart.toDateString() === recurrenceStart.toDateString() && hour === workOrderStart.getHours() ) {
+  if (workOrderStart.toDateString() === recurrenceStart.toDateString() && hour === workOrderStart.getHours()) {
     const disabledMinutes = []
-    for ( let i = 0; i < workOrderStart.getMinutes(); i++ ) {
-      disabledMinutes.push( i )
+    for (let i = 0; i < workOrderStart.getMinutes(); i++) {
+      disabledMinutes.push(i)
     }
     return disabledMinutes
   }
@@ -482,25 +482,25 @@ const disabledStartMinutes = hour => {
 }
 
 const disabledEndHours = () => {
-  if ( !startDate.value || !endDate.value ) return []
+  if (!startDate.value || !endDate.value) return []
 
-  const start = new Date( startDate.value )
-  const end = new Date( endDate.value )
+  const start = new Date(startDate.value)
+  const end = new Date(endDate.value)
   const disabledHours = []
 
   // If same day as start, disable hours before start hour
-  if ( start.toDateString() === end.toDateString() ) {
-    for ( let i = 0; i < start.getHours(); i++ ) {
-      disabledHours.push( i )
+  if (start.toDateString() === end.toDateString()) {
+    for (let i = 0; i < start.getHours(); i++) {
+      disabledHours.push(i)
     }
   }
 
   // If same day as due date, disable hours after due date hour
-  if ( props.workOrderDueDate ) {
-    const dueDate = new Date( props.workOrderDueDate )
-    if ( dueDate.toDateString() === end.toDateString() ) {
-      for ( let i = dueDate.getHours() + 1; i <= 23; i++ ) {
-        disabledHours.push( i )
+  if (props.workOrderDueDate) {
+    const dueDate = new Date(props.workOrderDueDate)
+    if (dueDate.toDateString() === end.toDateString()) {
+      for (let i = dueDate.getHours() + 1; i <= 23; i++) {
+        disabledHours.push(i)
       }
     }
   }
@@ -509,25 +509,25 @@ const disabledEndHours = () => {
 }
 
 const disabledEndMinutes = hour => {
-  if ( !startDate.value || !endDate.value ) return []
+  if (!startDate.value || !endDate.value) return []
 
-  const start = new Date( startDate.value )
-  const end = new Date( endDate.value )
+  const start = new Date(startDate.value)
+  const end = new Date(endDate.value)
   const disabledMinutes = []
 
   // If same day and same hour as start, disable minutes before start minute
-  if ( start.toDateString() === end.toDateString() && hour === start.getHours() ) {
-    for ( let i = 0; i <= start.getMinutes(); i++ ) {
-      disabledMinutes.push( i )
+  if (start.toDateString() === end.toDateString() && hour === start.getHours()) {
+    for (let i = 0; i <= start.getMinutes(); i++) {
+      disabledMinutes.push(i)
     }
   }
 
   // If same day and same hour as due date, disable minutes after due date minute
-  if ( props.workOrderDueDate ) {
-    const dueDate = new Date( props.workOrderDueDate )
-    if ( dueDate.toDateString() === end.toDateString() && hour === dueDate.getHours() ) {
-      for ( let i = dueDate.getMinutes() + 1; i <= 59; i++ ) {
-        disabledMinutes.push( i )
+  if (props.workOrderDueDate) {
+    const dueDate = new Date(props.workOrderDueDate)
+    if (dueDate.toDateString() === end.toDateString() && hour === dueDate.getHours()) {
+      for (let i = dueDate.getMinutes() + 1; i <= 59; i++) {
+        disabledMinutes.push(i)
       }
     }
   }
@@ -537,46 +537,46 @@ const disabledEndMinutes = hour => {
 
 // Helper function to get work order start date part
 const getWorkOrderStartDate = () => {
-  if ( !props.workOrderStartDate ) return null
+  if (!props.workOrderStartDate) return null
 
   // Extract date part from work order start date (e.g., "2025-09-29T07:00:00.000Z" -> "2025-09-29")
-  const date = new Date( props.workOrderStartDate )
-  return date.toISOString().split( 'T' )[0]
+  const date = new Date(props.workOrderStartDate)
+  return date.toISOString().split('T')[0]
 }
 
 // Helper function to get work order due date part
 const getWorkOrderDueDate = () => {
-  if ( !props.workOrderDueDate ) return null
+  if (!props.workOrderDueDate) return null
 
   // Extract date part from work order due date (e.g., "2025-09-30T17:00:00.000Z" -> "2025-09-30")
-  const date = new Date( props.workOrderDueDate )
-  return date.toISOString().split( 'T' )[0]
+  const date = new Date(props.workOrderDueDate)
+  return date.toISOString().split('T')[0]
 }
 
 const disabledEndTimeHours = () => {
-  if ( !startTime.value ) return []
+  if (!startTime.value) return []
 
-  const [startHour] = startTime.value.split( ':' ).map( Number )
+  const [startHour] = startTime.value.split(':').map(Number)
   const disabledHours = []
 
   // Disable hours before start time hour
-  for ( let i = 0; i < startHour; i++ ) {
-    disabledHours.push( i )
+  for (let i = 0; i < startHour; i++) {
+    disabledHours.push(i)
   }
 
   return disabledHours
 }
 
 const disabledEndTimeMinutes = hour => {
-  if ( !startTime.value ) return []
+  if (!startTime.value) return []
 
-  const [startHour, startMinute] = startTime.value.split( ':' ).map( Number )
+  const [startHour, startMinute] = startTime.value.split(':').map(Number)
   const disabledMinutes = []
 
   // If same hour as start time, disable minutes before or equal to start minute
-  if ( hour === startHour ) {
-    for ( let i = 0; i <= startMinute; i++ ) {
-      disabledMinutes.push( i )
+  if (hour === startHour) {
+    for (let i = 0; i <= startMinute; i++) {
+      disabledMinutes.push(i)
     }
   }
 
@@ -585,109 +585,109 @@ const disabledEndTimeMinutes = hour => {
 
 // Duration helpers
 const calculateDuration = () => {
-  if ( !startDate.value || !endDate.value ) return 0
+  if (!startDate.value || !endDate.value) return 0
 
-  const start = new Date( startDate.value )
-  const end = new Date( endDate.value )
+  const start = new Date(startDate.value)
+  const end = new Date(endDate.value)
   const diffMs = end - start
 
-  return diffMs > 0 ? Math.ceil( diffMs / ( 1000 * 60 ) ) : 0
+  return diffMs > 0 ? Math.ceil(diffMs / (1000 * 60)) : 0
 }
 
 const formatDuration = minutes => {
-  if ( minutes < 60 ) return `${minutes} minutes`
+  if (minutes < 60) return `${minutes} minutes`
 
-  const hours = Math.floor( minutes / 60 )
+  const hours = Math.floor(minutes / 60)
   const remainingMinutes = minutes % 60
 
-  if ( remainingMinutes === 0 ) return `${hours} hour${hours !== 1 ? 's' : ''}`
+  if (remainingMinutes === 0) return `${hours} hour${hours !== 1 ? 's' : ''}`
 
   return `${hours}h ${remainingMinutes}m`
 }
 
 // New duration calculation for time-only fields
 const calculateTimeDuration = () => {
-  if ( !startTime.value || !endTime.value ) return 0
+  if (!startTime.value || !endTime.value) return 0
 
-  const [startHour, startMinute] = startTime.value.split( ':' ).map( Number )
-  const [endHour, endMinute] = endTime.value.split( ':' ).map( Number )
+  const [startHour, startMinute] = startTime.value.split(':').map(Number)
+  const [endHour, endMinute] = endTime.value.split(':').map(Number)
 
   const startTotalMinutes = startHour * 60 + startMinute
   const endTotalMinutes = endHour * 60 + endMinute
 
   // Handle case where end time is after start time (same day)
-  if ( endTotalMinutes > startTotalMinutes ) {
+  if (endTotalMinutes > startTotalMinutes) {
     return endTotalMinutes - startTotalMinutes
   }
 
   return 0
 }
 
-const showDurationWarning = computed( () => {
+const showDurationWarning = computed(() => {
   const duration = calculateDuration()
   return duration > 0 && duration <= 1440 // Show for any duration within one day (1440 minutes = 24 hours)
-} )
+})
 
-const showRecurrenceStartWarning = computed( () => {
+const showRecurrenceStartWarning = computed(() => {
   // For 'none' recurrence type, check startDate
-  if ( recurrence.value === 'none' ) {
-    if ( !props.workOrderStartDate || !startDate.value ) return false
+  if (recurrence.value === 'none') {
+    if (!props.workOrderStartDate || !startDate.value) return false
 
-    const workOrderStart = new Date( props.workOrderStartDate )
-    const recurrenceStart = new Date( startDate.value )
+    const workOrderStart = new Date(props.workOrderStartDate)
+    const recurrenceStart = new Date(startDate.value)
 
     return recurrenceStart < workOrderStart
   }
 
   // For recurring types, no warning needed since we use work order date
   return false
-} )
+})
 
 // New computed properties for time-based validation
-const showTimeDurationInfo = computed( () => {
+const showTimeDurationInfo = computed(() => {
   const duration = calculateTimeDuration()
   return duration > 0
-} )
+})
 
-const showTimeValidationError = computed( () => {
-  if ( !startTime.value || !endTime.value ) return false
+const showTimeValidationError = computed(() => {
+  if (!startTime.value || !endTime.value) return false
   return calculateTimeDuration() === 0
-} )
+})
 
 // eslint-disable-next-line vue/no-dupe-keys
-const recurrenceSetting = computed( () => {
+const recurrenceSetting = computed(() => {
   const setting = {}
 
   // Handle different recurrence types
-  if ( recurrence.value === 'none' ) {
+  if (recurrence.value === 'none') {
     // For 'none' recurrence, use the original date-time fields
-    if ( startDate.value ) {
-      setting.start_date_time = new Date( startDate.value ).toISOString()
+    if (startDate.value) {
+      setting.start_date_time = new Date(startDate.value).toISOString()
     }
-    if ( endDate.value ) {
-      setting.end_date_time = new Date( endDate.value ).toISOString()
+    if (endDate.value) {
+      setting.end_date_time = new Date(endDate.value).toISOString()
     }
     // Calculate duration_minutes based on date difference
-    if ( startDate.value && endDate.value ) {
-      const start = new Date( startDate.value )
-      const end = new Date( endDate.value )
+    if (startDate.value && endDate.value) {
+      const start = new Date(startDate.value)
+      const end = new Date(endDate.value)
       const diffMs = end - start
-      const minutes = Math.ceil( diffMs / ( 1000 * 60 ) )
+      const minutes = Math.ceil(diffMs / (1000 * 60))
       setting.duration_minutes = minutes > 0 ? minutes : 0
     } else {
       setting.duration_minutes = 0
     }
-  } else if ( ['daily', 'weekly', 'monthlyByDate', 'yearly'].includes( recurrence.value ) ) {
+  } else if (['daily', 'weekly', 'monthlyByDate', 'yearly'].includes(recurrence.value)) {
     // For recurring types, use work order start date with start time, and due date with end time
     const workOrderStartDate = getWorkOrderStartDate()
     const workOrderDueDate = getWorkOrderDueDate()
 
-    if ( workOrderStartDate && startTime.value ) {
-      const startDateTime = new Date( `${workOrderStartDate}T${startTime.value}` )
+    if (workOrderStartDate && startTime.value) {
+      const startDateTime = new Date(`${workOrderStartDate}T${startTime.value}`)
       setting.start_date_time = startDateTime.toISOString()
     }
-    if ( workOrderDueDate && endTime.value ) {
-      const endDateTime = new Date( `${workOrderDueDate}T${endTime.value}` )
+    if (workOrderDueDate && endTime.value) {
+      const endDateTime = new Date(`${workOrderDueDate}T${endTime.value}`)
       setting.end_date_time = endDateTime.toISOString()
     }
     // Also set individual time fields for validation
@@ -699,37 +699,37 @@ const recurrenceSetting = computed( () => {
 
   setting.recurrence_type = recurrenceTypeMap.value[recurrence.value] || 1
 
-  if ( recurrence.value === 'daily' ) {
+  if (recurrence.value === 'daily') {
     setting.interval = 1
-  } else if ( recurrence.value === 'weekly' ) {
+  } else if (recurrence.value === 'weekly') {
     setting.interval = repeatInterval.value
-    setting.days_of_week = selectedDays.value.filter( v => typeof v === 'number' )
-  } else if ( recurrence.value === 'monthlyByDate' ) {
+    setting.days_of_week = selectedDays.value.filter(v => typeof v === 'number')
+  } else if (recurrence.value === 'monthlyByDate') {
     setting.interval = monthlyRepeatInterval.value
     setting.day_of_month = monthlyDate.value
-  } else if ( recurrence.value === 'yearly' ) {
+  } else if (recurrence.value === 'yearly') {
     setting.interval = yearlyRepeatInterval.value
     setting.month_of_year = yearlyMonth.value
     setting.day_of_month = yearlyDay.value
   }
 
   return setting
-} )
+})
 
 // Sync recurrence_setting on internal changes
 let isUpdating = false
 watch(
   recurrenceSetting,
   newSetting => {
-    if ( isUpdating ) return
+    if (isUpdating) return
     isUpdating = true
-    emit( 'update:recurrenceSetting', newSetting )
+    emit('update:recurrenceSetting', newSetting)
     // Use nextTick to reset the flag after the update cycle completes
-    nextTick( () => {
+    nextTick(() => {
       isUpdating = false
-    } )
+    })
   },
-  { deep : true }
+  { deep: true }
 )
 </script>
 

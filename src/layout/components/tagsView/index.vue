@@ -45,7 +45,7 @@ import {
   onMounted,
   onBeforeUnmount,
   getCurrentInstance,
-  onBeforeUpdate
+  onBeforeUpdate,
 } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useTagsViewStore, usePermissionStore } from '@/store'
@@ -59,44 +59,44 @@ const route = useRoute()
 const { ctx } = getCurrentInstance()
 const tagAndTagSpacing = 4
 
-const scrollPaneEl = ref( null )
+const scrollPaneEl = ref(null)
 let tagRefList = []
-const setTagRef = ( index, el ) => {
+const setTagRef = (index, el) => {
   tagRefList[index] = el
 }
 
-const visible = ref( false )
-const top = ref( 0 )
-const left = ref( 0 )
-const selectedTag = ref( {} )
-const affixTags = ref( [] )
+const visible = ref(false)
+const top = ref(0)
+const left = ref(0)
+const selectedTag = ref({})
+const affixTags = ref([])
 
-const set = reactive( {
-  visitedViews : computed( () => {
+const set = reactive({
+  visitedViews: computed(() => {
     const result = tagsViewStore.visitedViews
     return result
-  } ),
-  routes : computed( () => {
+  }),
+  routes: computed(() => {
     return permissionStore.routes
-  } )
-} )
+  }),
+})
 
 watch(
   () => visible.value,
   value => {
-    if ( value ) {
-      document.body.addEventListener( 'click', closeMenu )
+    if (value) {
+      document.body.addEventListener('click', closeMenu)
     } else {
-      document.body.removeEventListener( 'click', closeMenu )
+      document.body.removeEventListener('click', closeMenu)
     }
   }
 )
 
-watch( route, () => {
+watch(route, () => {
   tagRefList = []
   addTags()
   moveToCurrentTag()
-} )
+})
 
 function closeMenu() {
   visible.value = false
@@ -104,26 +104,26 @@ function closeMenu() {
 
 function addTags() {
   const { name } = route
-  if ( name && name.toLowerCase() != 'redirect' ) {
-    tagsViewStore.ADD_VIEW( route )
+  if (name && name.toLowerCase() != 'redirect') {
+    tagsViewStore.ADD_VIEW(route)
   }
   return false
 }
 function moveToCurrentTag() {
-  nextTick( () => {
-    for ( const item of tagRefList ) {
-      if ( item.to.path === route.path ) {
-        moveToTarget( item )
-        if ( item.to.fullPath !== route.fullPath ) {
-          tagsViewStore.UPDATE_VISITED_VIEW( route )
+  nextTick(() => {
+    for (const item of tagRefList) {
+      if (item.to.path === route.path) {
+        moveToTarget(item)
+        if (item.to.fullPath !== route.fullPath) {
+          tagsViewStore.UPDATE_VISITED_VIEW(route)
         }
         break
       }
     }
-  } )
+  })
 }
 
-function moveToTarget( currentTag ) {
+function moveToTarget(currentTag) {
   const $container = scrollPaneEl.value.$el
   const $containerWidth = $container.offsetWidth
   const $scrollWrapper = scrollWrapper.value
@@ -132,17 +132,17 @@ function moveToTarget( currentTag ) {
   let firstTag = null
   let lastTag = null
 
-  if ( tagList.length > 0 ) {
+  if (tagList.length > 0) {
     firstTag = tagList[0]
     lastTag = tagList[tagList.length - 1]
   }
 
-  if ( firstTag === currentTag ) {
+  if (firstTag === currentTag) {
     $scrollWrapper.scrollLeft = 0
-  } else if ( lastTag === currentTag ) {
+  } else if (lastTag === currentTag) {
     $scrollWrapper.scrollLeft = $scrollWrapper.scrollWidth - $containerWidth
   } else {
-    const currentIndex = tagList.findIndex( item => item === currentTag )
+    const currentIndex = tagList.findIndex(item => item === currentTag)
     const prevTag = tagList[currentIndex - 1]
     const nextTag = tagList[currentIndex + 1]
 
@@ -152,106 +152,106 @@ function moveToTarget( currentTag ) {
     // the tag's offsetLeft before of prevTag
     const beforePrevTagOffsetLeft = prevTag.$el.offsetLeft - tagAndTagSpacing
 
-    if ( afterNextTagOffsetLeft > $scrollWrapper.scrollLeft + $containerWidth ) {
+    if (afterNextTagOffsetLeft > $scrollWrapper.scrollLeft + $containerWidth) {
       $scrollWrapper.scrollLeft = afterNextTagOffsetLeft - $containerWidth
-    } else if ( beforePrevTagOffsetLeft < $scrollWrapper.scrollLeft ) {
+    } else if (beforePrevTagOffsetLeft < $scrollWrapper.scrollLeft) {
       $scrollWrapper.scrollLeft = beforePrevTagOffsetLeft
     }
   }
 }
 
 function initTags() {
-  const affixs = ( affixTags.value = filterAffixTags( set.routes ) )
-  for ( const item of affixs ) {
-    if ( item.name ) {
-      tagsViewStore.ADD_VISITED_VIEW( item )
+  const affixs = (affixTags.value = filterAffixTags(set.routes))
+  for (const item of affixs) {
+    if (item.name) {
+      tagsViewStore.ADD_VISITED_VIEW(item)
     }
   }
 }
 
-function filterAffixTags( routes, basePath = '/' ) {
+function filterAffixTags(routes, basePath = '/') {
   let tags = []
-  routes.forEach( route => {
-    if ( route.meta && route.meta.affix ) {
-      const tagPath = path.resolve( basePath, route.path )
-      tags.push( {
-        fullPath : tagPath,
-        path : tagPath,
-        name : route.name,
-        meta : { ...route.meta }
-      } )
+  routes.forEach(route => {
+    if (route.meta && route.meta.affix) {
+      const tagPath = path.resolve(basePath, route.path)
+      tags.push({
+        fullPath: tagPath,
+        path: tagPath,
+        name: route.name,
+        meta: { ...route.meta },
+      })
     }
-    if ( route.children ) {
-      const tempTags = filterAffixTags( route.children, route.path )
-      if ( tempTags.length >= 1 ) {
+    if (route.children) {
+      const tempTags = filterAffixTags(route.children, route.path)
+      if (tempTags.length >= 1) {
         tags = [...tags, ...tempTags]
       }
     }
-  } )
+  })
   return tags
 }
 
-function isActive( currentRoute ) {
+function isActive(currentRoute) {
   return currentRoute.path === route.path
 }
 
-function isAffix( item ) {
+function isAffix(item) {
   return item && item.meta && item.meta.affix
 }
 
-async function refreshSelectedTag( view ) {
-  await tagsViewStore.DEL_CACHED_VIEW( view )
+async function refreshSelectedTag(view) {
+  await tagsViewStore.DEL_CACHED_VIEW(view)
   const { fullPath, query } = view
-  nextTick( () => {
-    router.replace( {
-      path : '/redirect' + fullPath,
-      query
-    } )
-  } )
+  nextTick(() => {
+    router.replace({
+      path: '/redirect' + fullPath,
+      query,
+    })
+  })
 }
 
-async function closeSelectedTag( view ) {
-  const { visitedViews } = await tagsViewStore.DEL_VIEW( view )
-  if ( isActive( view ) ) {
-    toLastView( visitedViews, view )
+async function closeSelectedTag(view) {
+  const { visitedViews } = await tagsViewStore.DEL_VIEW(view)
+  if (isActive(view)) {
+    toLastView(visitedViews, view)
   }
 }
 
 async function closeOthersTags() {
-  router.push( selectedTag.value )
-  await tagsViewStore.DEL_OTHERS_VIEWS( selectedTag.value )
+  router.push(selectedTag.value)
+  await tagsViewStore.DEL_OTHERS_VIEWS(selectedTag.value)
   moveToCurrentTag()
 }
 
-async function closeAllTags( view ) {
+async function closeAllTags(view) {
   const { visitedViews } = await tagsViewStore.DEL_ALL_VIEWS()
-  if ( affixTags.value.some( item => item.path === view.path ) ) {
+  if (affixTags.value.some(item => item.path === view.path)) {
     return
   }
-  toLastView( visitedViews, view )
+  toLastView(visitedViews, view)
 }
 
-function toLastView( visitedViews, view ) {
-  const latestView = visitedViews.slice( -1 )[0]
-  if ( latestView ) {
-    router.push( latestView.fullPath )
+function toLastView(visitedViews, view) {
+  const latestView = visitedViews.slice(-1)[0]
+  if (latestView) {
+    router.push(latestView.fullPath)
   } else {
-    if ( view.name === 'Dashboard' ) {
-      router.replace( { path : '/redirect' + view.fullPath } )
+    if (view.name === 'Dashboard') {
+      router.replace({ path: '/redirect' + view.fullPath })
     } else {
-      router.push( '/' )
+      router.push('/')
     }
   }
 }
 
-function openMenu( item, e ) {
+function openMenu(item, e) {
   const menuMinWidth = 105
   const offsetLeft = ctx.$el.getBoundingClientRect().left // container margin left
   const offsetWidth = ctx.$el.offsetWidth // container width
   const maxLeft = offsetWidth - menuMinWidth // left boundary
   const l = e.clientX - offsetLeft + 15 // 鼠标相对于父级的left 值
 
-  if ( l > maxLeft ) {
+  if (l > maxLeft) {
     left.value = maxLeft
   } else {
     left.value = l
@@ -266,34 +266,34 @@ function handleScroll() {
   closeMenu()
 }
 
-function scrollHandle( e ) {
+function scrollHandle(e) {
   const eventDelta = e.wheelDelta || -e.deltaY * 40
   const $scrollWrapper = scrollWrapper.value
   $scrollWrapper.scrollLeft = $scrollWrapper.scrollLeft + eventDelta / 4
 }
 
-const scrollWrapper = computed( () => {
+const scrollWrapper = computed(() => {
   // return scrollPaneEl.value.$refs.$wrap
   return scrollPaneEl.value.$refs.wrapRef
-} )
+})
 
-onMounted( () => {
+onMounted(() => {
   initTags()
   addTags()
-  scrollWrapper.value && scrollWrapper.value.addEventListener( 'scroll', handleScroll, true )
-} )
+  scrollWrapper.value && scrollWrapper.value.addEventListener('scroll', handleScroll, true)
+})
 
-onBeforeUpdate( () => {
+onBeforeUpdate(() => {
   tagRefList = []
-} )
+})
 
-onBeforeUnmount( () => {
-  scrollWrapper.value && scrollWrapper.value.removeEventListener( 'scroll', handleScroll, true )
-} )
+onBeforeUnmount(() => {
+  scrollWrapper.value && scrollWrapper.value.removeEventListener('scroll', handleScroll, true)
+})
 
-defineOptions( {
-  name : 'TagsView'
-} )
+defineOptions({
+  name: 'TagsView',
+})
 </script>
 
 <style lang="scss" scoped>

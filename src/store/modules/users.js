@@ -8,39 +8,39 @@ const TOKEN_KEYS = ['access_token', 'refresh_token', 'id_token']
 // const DEFAULT_AVATAR = DefaultAvatar
 
 function clearTokens() {
-  TOKEN_KEYS.forEach( key => localStorage.removeItem( key ) )
+  TOKEN_KEYS.forEach(key => localStorage.removeItem(key))
 }
 
-function extractPermissionsFromRoles( roles = [] ) {
+function extractPermissionsFromRoles(roles = []) {
   const permissionSet = new Set()
-  roles.forEach( role => {
-    role.permissions?.forEach( p => permissionSet.add( p.name ) )
-  } )
-  return Array.from( permissionSet )
+  roles.forEach(role => {
+    role.permissions?.forEach(p => permissionSet.add(p.name))
+  })
+  return Array.from(permissionSet)
 }
 
-const useUserStore = defineStore( {
-  id : 'users',
-  state : () => ( {
-    uid : '',
-    username : '',
-    firstName : '',
-    lastName : '',
-    avatar : '',
-    phone : '',
-    email : '',
-    title : '',
-    department_list : null,
-    isVerified : false,
-    enabled : true,
-    role_list : [],
-    permissions : []
-  } ),
+const useUserStore = defineStore({
+  id: 'users',
+  state: () => ({
+    uid: '',
+    username: '',
+    firstName: '',
+    lastName: '',
+    avatar: '',
+    phone: '',
+    email: '',
+    title: '',
+    department_list: null,
+    isVerified: false,
+    enabled: true,
+    role_list: [],
+    permissions: [],
+  }),
 
-  actions : {
+  actions: {
     async GET_USER_INFO() {
-      const { data : user } = await getCurrentUser()
-      console.log( '[Pinia User] getCurrentUser:', user )
+      const { data: user } = await getCurrentUser()
+      console.log('[Pinia User] getCurrentUser:', user)
 
       this.uid = user.id || ''
       this.username = user.username || ''
@@ -48,7 +48,7 @@ const useUserStore = defineStore( {
       this.lastName = user.last_name || ''
       this.avatar =
         user.image ||
-        'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent( user?.first_name + ' ' + user?.last_name )
+        'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent(user?.first_name + ' ' + user?.last_name)
       this.phone = user.phone_number || ''
       this.email = user.email || ''
       this.title = user.title || ''
@@ -56,56 +56,56 @@ const useUserStore = defineStore( {
       this.isVerified = user.is_verified ?? false
       this.enabled = user.enabled ?? true
       this.role_list = user.role_list || []
-      this.permissions = extractPermissionsFromRoles( this.roles )
+      this.permissions = extractPermissionsFromRoles(this.roles)
 
-      console.log( '[GET_USER_INFO] roles 已设置：', this.roles )
+      console.log('[GET_USER_INFO] roles 已设置：', this.roles)
 
       return {
-        uid : this.uid,
-        roles : this.roles,
-        permissions : this.permissions
+        uid: this.uid,
+        roles: this.roles,
+        permissions: this.permissions,
       }
     },
 
     // Cold start: If there is no user information yet, attempt to fetch it once (for use after a refresh)
     async HYDRATE_IF_NEEDED() {
       // Existing data no longer requested
-      if ( this.uid ) return { hydrate : false }
+      if (this.uid) return { hydrate: false }
       try {
         await this.GET_USER_INFO()
-        return { hydrate : true }
-      } catch ( e ) {
-        return { hydrated : false, error : e }
+        return { hydrate: true }
+      } catch (e) {
+        return { hydrated: false, error: e }
       }
     },
 
     async LOGIN_OUT() {
       try {
         await logout()
-      } catch ( error ) {
-        console.warn( 'Logout failed or skipped:', error )
+      } catch (error) {
+        console.warn('Logout failed or skipped:', error)
       } finally {
         await this.RESET_INFO()
       }
     },
 
     async RESET_INFO() {
-      return new Promise( resolve => {
+      return new Promise(resolve => {
         const tagsViewStore = useTagsViewStore()
         this.$reset()
         resetRouter()
         tagsViewStore.DEL_ALL_VIEWS()
         clearTokens()
         resolve()
-      } )
-    }
+      })
+    },
   },
 
   // Persisting User Information
-  persist : {
-    key : 'app:user',
-    storage : sessionStorage,
-    paths : [
+  persist: {
+    key: 'app:user',
+    storage: sessionStorage,
+    paths: [
       'uid',
       'username',
       'firstName',
@@ -118,10 +118,10 @@ const useUserStore = defineStore( {
       'isVerified',
       'enabled',
       'roles',
-      'permissions'
-    ]
-  }
-} )
+      'permissions',
+    ],
+  },
+})
 
 /*
 const useUserStore = defineStore( {

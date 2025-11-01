@@ -83,99 +83,99 @@ import { debounce } from 'lodash-unified'
 import { Search } from '@element-plus/icons-vue'
 import { searchTools } from '@/api/resources'
 
-const props = defineProps( {
-  visible : {
-    type : Boolean,
-    default : false
+const props = defineProps({
+  visible: {
+    type: Boolean,
+    default: false,
   },
-  stepId : {
-    type : String,
-    required : true
+  stepId: {
+    type: String,
+    required: true,
   },
-  selectedTools : {
-    type : Array,
-    default : () => []
+  selectedTools: {
+    type: Array,
+    default: () => [],
   },
-  loading : {
-    type : Boolean,
-    default : false
-  }
-} )
+  loading: {
+    type: Boolean,
+    default: false,
+  },
+})
 
-const emit = defineEmits( ['save', 'close'] )
+const emit = defineEmits(['save', 'close'])
 
-const searchQuery = ref( '' )
-const availableTools = ref( [] )
-const localSelectedTools = ref( [] )
+const searchQuery = ref('')
+const availableTools = ref([])
+const localSelectedTools = ref([])
 // Cache full metadata for selected tools so search does not hide them
-const selectedToolCache = ref( new Map() )
-const saveLoading = ref( false )
+const selectedToolCache = ref(new Map())
+const saveLoading = ref(false)
 // eslint-disable-next-line vue/no-dupe-keys
-const loading = ref( false )
+const loading = ref(false)
 
 // Watch for selected tools changes
 watch(
   () => props.selectedTools,
   newTools => {
     // Normalize to numeric IDs to avoid string/number mismatches
-    if ( newTools.length > 0 && typeof newTools[0] === 'object' ) {
-      localSelectedTools.value = newTools.map( tool => {
-        const id = Number( tool.tool_id )
+    if (newTools.length > 0 && typeof newTools[0] === 'object') {
+      localSelectedTools.value = newTools.map(tool => {
+        const id = Number(tool.tool_id)
         // Seed/refresh cache with provided metadata
-        selectedToolCache.value.set( id, {
-          tool_id : id,
-          name : tool.name,
-          spec : tool.spec || ''
-        } )
+        selectedToolCache.value.set(id, {
+          tool_id: id,
+          name: tool.name,
+          spec: tool.spec || '',
+        })
         return id
-      } )
+      })
     } else {
-      localSelectedTools.value = newTools.map( id => Number( id ) )
+      localSelectedTools.value = newTools.map(id => Number(id))
     }
   },
-  { immediate : true }
+  { immediate: true }
 )
 
-const filteredTools = computed( () => {
-  if ( !searchQuery.value ) {
+const filteredTools = computed(() => {
+  if (!searchQuery.value) {
     return availableTools.value
   }
 
   const query = searchQuery.value.toLowerCase()
   return availableTools.value.filter(
-    tool => tool.name.toLowerCase().includes( query ) || ( tool.spec && tool.spec.toLowerCase().includes( query ) )
+    tool => tool.name.toLowerCase().includes(query) || (tool.spec && tool.spec.toLowerCase().includes(query))
   )
-} )
+})
 
 const isToolSelected = toolId => {
-  return localSelectedTools.value.includes( toolId )
+  return localSelectedTools.value.includes(toolId)
 }
 
 const toggleTool = tool => {
-  const isSelected = isToolSelected( tool.tool_id )
+  const isSelected = isToolSelected(tool.tool_id)
 
-  if ( isSelected ) {
-    removeSelectedTool( tool.tool_id )
+  if (isSelected) {
+    removeSelectedTool(tool.tool_id)
   } else {
     // Cache metadata so selected list is not affected by search
-    selectedToolCache.value.set( Number( tool.tool_id ), {
-      tool_id : Number( tool.tool_id ),
-      name : tool.name,
-      spec : tool.spec || ''
-    } )
-    addSelectedTool( tool.tool_id )
+    selectedToolCache.value.set(Number(tool.tool_id), {
+      tool_id: Number(tool.tool_id),
+      name: tool.name,
+      spec: tool.spec || '',
+    })
+    addSelectedTool(tool.tool_id)
   }
 }
 
 const addSelectedTool = toolId => {
-  if ( !localSelectedTools.value.includes( toolId ) ) {
-    localSelectedTools.value.push( toolId )
+  if (!localSelectedTools.value.includes(toolId)) {
+    localSelectedTools.value.push(toolId)
   }
 }
 
 const removeSelectedTool = toolId => {
-  localSelectedTools.value = localSelectedTools.value.filter( id => id !== toolId )
-  selectedToolCache.value.delete( Number( toolId ) )
+  localSelectedTools.value = localSelectedTools.value.filter(id => id !== toolId)
+  selectedToolCache.value.delete(Number(toolId))
 }
 
 const clearAllTools = () => {
@@ -185,63 +185,63 @@ const clearAllTools = () => {
 
 const getSelectedToolObjects = () => {
   // Build selected list from cache to avoid coupling with availableTools filtering
-  return localSelectedTools.value.map( id => {
-    const cached = selectedToolCache.value.get( Number( id ) )
-    if ( cached ) return cached
+  return localSelectedTools.value.map(id => {
+    const cached = selectedToolCache.value.get(Number(id))
+    if (cached) return cached
     // Fallback: try to find in currently loaded available tools
-    const found = availableTools.value.find( t => Number( t.tool_id ) === Number( id ) )
-    if ( found ) {
-      const obj = { tool_id : Number( found.tool_id ), name : found.name, spec : found.spec || '' }
-      selectedToolCache.value.set( obj.tool_id, obj )
+    const found = availableTools.value.find(t => Number(t.tool_id) === Number(id))
+    if (found) {
+      const obj = { tool_id: Number(found.tool_id), name: found.name, spec: found.spec || '' }
+      selectedToolCache.value.set(obj.tool_id, obj)
       return obj
     }
     // Last resort: minimal object
-    return { tool_id : Number( id ), name : `Tool #${id}`, spec : '' }
-  } )
+    return { tool_id: Number(id), name: `Tool #${id}`, spec: '' }
+  })
 }
 
 const handleSave = () => {
   saveLoading.value = true
 
   // Convert tool IDs to tool objects for the save event
-  const selectedToolObjects = getSelectedToolObjects().map( tool => ( {
-    tool_id : tool.tool_id,
-    name : tool.name,
-    spec : tool.spec
-  } ) )
+  const selectedToolObjects = getSelectedToolObjects().map(tool => ({
+    tool_id: tool.tool_id,
+    name: tool.name,
+    spec: tool.spec,
+  }))
 
-  setTimeout( () => {
-    emit( 'save', props.stepId, selectedToolObjects )
+  setTimeout(() => {
+    emit('save', props.stepId, selectedToolObjects)
     saveLoading.value = false
-  }, 300 ) // Simulate save delay
+  }, 300) // Simulate save delay
 }
 
-const loadTools = async() => {
+const loadTools = async () => {
   loading.value = true
   try {
-    const response = await searchTools( 1, 20, 'name', 'ASC', {
-      keyword : searchQuery.value || null
-    } )
+    const response = await searchTools(1, 20, 'name', 'ASC', {
+      keyword: searchQuery.value || null,
+    })
     const list = response?.data?.content || []
     // Normalize backend payload to the panel's expected structure
-    availableTools.value = list.map( item => ( {
-      tool_id : Number( item.id ),
-      name : item.name,
+    availableTools.value = list.map(item => ({
+      tool_id: Number(item.id),
+      name: item.name,
       // Use code primarily; fallback to tool class name
-      spec : item.code || ( item.tool_class && item.tool_class.name ) || ''
-    } ) )
+      spec: item.code || (item.tool_class && item.tool_class.name) || '',
+    }))
     // Refresh cache entries for selected tools found in current page
-    availableTools.value.forEach( t => {
-      if ( localSelectedTools.value.includes( Number( t.tool_id ) ) ) {
-        selectedToolCache.value.set( Number( t.tool_id ), {
-          tool_id : Number( t.tool_id ),
-          name : t.name,
-          spec : t.spec || ''
-        } )
+    availableTools.value.forEach(t => {
+      if (localSelectedTools.value.includes(Number(t.tool_id))) {
+        selectedToolCache.value.set(Number(t.tool_id), {
+          tool_id: Number(t.tool_id),
+          name: t.name,
+          spec: t.spec || '',
+        })
       }
-    } )
-  } catch ( error ) {
-    console.error( 'Tool load failed:', error )
+    })
+  } catch (error) {
+    console.error('Tool load failed:', error)
     availableTools.value = []
   } finally {
     loading.value = false
@@ -249,12 +249,12 @@ const loadTools = async() => {
 }
 
 // Debounced server-side search when keyword changes
-const debouncedSearch = debounce( () => {
+const debouncedSearch = debounce(() => {
   // Only query when dialog is visible to avoid unnecessary calls
-  if ( props.visible ) {
+  if (props.visible) {
     loadTools()
   }
-}, 300 )
+}, 300)
 
 watch(
   () => searchQuery.value,
@@ -267,17 +267,17 @@ watch(
 watch(
   () => props.visible,
   isVisible => {
-    if ( isVisible && availableTools.value.length === 0 ) {
+    if (isVisible && availableTools.value.length === 0) {
       loadTools()
     }
   }
 )
 
-onMounted( () => {
-  if ( props.visible ) {
+onMounted(() => {
+  if (props.visible) {
     loadTools()
   }
-} )
+})
 </script>
 
 <style scoped>

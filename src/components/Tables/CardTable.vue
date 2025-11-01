@@ -87,62 +87,62 @@ import AddNewTaskCard from './Cards/AddNewTaskCard.vue'
 import MaintenanceSelectedStandardsCard from './Cards/MaintenanceSelectedStandardsCard.vue'
 import AddNewStandardCard from './Cards/AddNewStandardCard.vue'
 
-const props = defineProps( {
-  module : Number,
-  data : Object,
-  maxHeight : String,
-  totalItems : Number,
-  currentPage : Number,
-  selectedId : { type : [Number, String, null], default : null },
-  pageSize : { type : Number, default : 10 },
-  showBorder : { type : Boolean, default : false },
-  showPagination : { type : Boolean, default : true },
-  showSearch : { type : Boolean, default : true },
-  searchPlaceholder : { type : String, default : 'Search items...' },
-  searchFields : { type : Array, default : () => ['name', 'category', 'description'] },
-  focusedCardId : { type : [String, Number], default : null },
+const props = defineProps({
+  module: Number,
+  data: Object,
+  maxHeight: String,
+  totalItems: Number,
+  currentPage: Number,
+  selectedId: { type: [Number, String, null], default: null },
+  pageSize: { type: Number, default: 10 },
+  showBorder: { type: Boolean, default: false },
+  showPagination: { type: Boolean, default: true },
+  showSearch: { type: Boolean, default: true },
+  searchPlaceholder: { type: String, default: 'Search items...' },
+  searchFields: { type: Array, default: () => ['name', 'category', 'description'] },
+  focusedCardId: { type: [String, Number], default: null },
 
   // ✅ function props coming from parent
-  handleCurrentChange : { type : Function, default : null },
-  handleSizeChange : { type : Function, default : null }
-} )
+  handleCurrentChange: { type: Function, default: null },
+  handleSizeChange: { type: Function, default: null },
+})
 
-const emit = defineEmits( ['selection'] )
+const emit = defineEmits(['selection'])
 
-const searchQuery = ref( '' )
-const height = ref( props.maxHeight )
+const searchQuery = ref('')
+const height = ref(props.maxHeight)
 
 function updateHeight() {
   height.value = window.innerWidth <= 1600 ? '465px' : props.maxHeight
 }
-onMounted( () => {
+onMounted(() => {
   updateHeight()
-  window.addEventListener( 'resize', updateHeight )
-} )
-onBeforeUnmount( () => {
-  window.removeEventListener( 'resize', updateHeight )
-} )
+  window.addEventListener('resize', updateHeight)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', updateHeight)
+})
 
-const filteredData = computed( () => {
-  if ( !searchQuery.value || !props.data ) return props.data || []
+const filteredData = computed(() => {
+  if (!searchQuery.value || !props.data) return props.data || []
   const query = searchQuery.value.toLowerCase().trim()
-  return props.data.filter( item =>
-    props.searchFields.some( field => {
+  return props.data.filter(item =>
+    props.searchFields.some(field => {
       const value = item[field]
-      if ( typeof value === 'string' ) return value.toLowerCase().includes( query )
-      if ( typeof value === 'number' ) return value.toString().includes( query )
+      if (typeof value === 'string') return value.toLowerCase().includes(query)
+      if (typeof value === 'number') return value.toString().includes(query)
       return false
-    } )
+    })
   )
-} )
+})
 
-function emitSelection( sp, idx ) {
-  emit( 'selection', { ...sp, index : idx } )
+function emitSelection(sp, idx) {
+  emit('selection', { ...sp, index: idx })
 }
 
 // ✅ delegate pagination event to parent’s function prop
-function onCurrentChange( p ) {
-  props.handleCurrentChange && props.handleCurrentChange( p )
+function onCurrentChange(p) {
+  props.handleCurrentChange && props.handleCurrentChange(p)
 }
 // If you later add sizes:
 // function onSizeChange(s) {

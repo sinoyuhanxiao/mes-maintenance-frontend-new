@@ -24,17 +24,28 @@
       </GridItem>
     </GridLayout>
 
-    <!-- Replace your empty state div with this -->
+    <!-- Empty state -->
     <div v-else class="empty-wrap">No related work orders available</div>
 
-    <!-- Details table appears only when a state is selected AND we have data -->
+    <!-- Details table -->
     <el-divider v-if="selectedState && hasAnyData" />
     <div v-if="selectedState && hasAnyData" class="table-wrap">
       <div class="table-header">
         <div class="title">Related WO - {{ selectedState }}</div>
       </div>
 
-      <el-table :data="filteredRows" border stripe empty-text="No work orders found" max-height="280">
+      <!-- 🔍 Search bar right above table -->
+      <div class="search-bar">
+        <el-input
+          v-model="searchQuery"
+          placeholder="Search by name or code"
+          clearable
+          class="search-input"
+          @keyup.enter="onSearchEnter"
+        />
+      </div>
+
+      <el-table :data="searchedRows" border stripe empty-text="No match found" max-height="280">
         <el-table-column prop="name" label="WO Name" min-width="220" />
         <el-table-column prop="code" label="Code" min-width="140" />
         <el-table-column label="Start Time" min-width="180">
@@ -55,12 +66,9 @@ import { GridLayout, GridItem } from 'vue3-grid-layout'
 import WidgetPie from '../../../../components/Widgets/PieChart.vue'
 import { searchWorkOrders } from '@/api/work-order'
 
-const props = defineProps( {
-  equipmentId : {
-    type : [Number, String],
-    required : false
-  }
-} )
+const props = defineProps({
+  equipmentId: [Number, String],
+})
 
 const STATE_ORDER = [
   'Completed',
@@ -71,170 +79,173 @@ const STATE_ORDER = [
   'Pending',
   'Forecast',
   'Ready',
-  'Released'
+  'Released',
 ]
 
 const STATE_COLORS = {
-  Forecast : '#8D6E63',
-  Pending : '#9E9E9E',
-  Ready : '#2196F3',
-  'In progress' : '#FF9800',
-  Completed : '#4CAF50',
-  Failed : '#F44336',
-  Incomplete : '#AB47BC',
-  'Pending Approval' : '#607D8B',
-  Released : '#7E57C2'
+  Forecast: '#8D6E63',
+  Pending: '#9E9E9E',
+  Ready: '#2196F3',
+  'In progress': '#FF9800',
+  Completed: '#4CAF50',
+  Failed: '#F44336',
+  Incomplete: '#D81B60', // distinct pink
+  'Pending Approval': '#607D8B',
+  Released: '#00796B', // teal
 }
 
-const initialPieData = STATE_ORDER.map( name => ( { name, value : 0, color : STATE_COLORS[name] } ) )
+const initialPieData = STATE_ORDER.map(name => ({ name, value: 0, color: STATE_COLORS[name] }))
 
-const allRows = ref( [] )
-const selectedState = ref( '' )
-const hasAnyData = ref( true ) // toggles pie vs empty text
+const allRows = ref([])
+const selectedState = ref('')
+const hasAnyData = ref(true)
+const searchQuery = ref('')
 
-const layout = ref( [
+const layout = ref([
   {
-    x : 0,
-    y : 0,
-    w : 6,
-    h : 20,
-    i : '1',
-    component : markRaw( WidgetPie ),
-    props : { title : '', data : initialPieData, onSelect : name => onPieSelect( name ) }
-  }
-] )
+    x: 0,
+    y: 0,
+    w: 6,
+    h: 20,
+    i: '1',
+    component: markRaw(WidgetPie),
+    props: { title: '', data: initialPieData, onSelect: name => onPieSelect(name) },
+  },
+])
 
-function normalizeState( raw ) {
-  if ( !raw ) return ''
-  const s = String( raw ).trim()
-  const lower = s.toLowerCase()
-  if ( lower === 'in_progress' || lower === 'in progress' ) return 'In progress'
-  if ( lower === 'pending_approval' || lower === 'pending approval' ) return 'Pending Approval'
-  if ( lower === 'released' ) return 'Released'
-  return s
+function normalizeState(raw) {
+  if (!raw) return ''
+  const s = String(raw).trim().toLowerCase()
+  if (s === 'in_progress' || s === 'in progress') return 'In progress'
+  if (s === 'pending_approval' || s === 'pending approval') return 'Pending Approval'
+  if (s === 'released') return 'Released'
+  return s.charAt(0).toUpperCase() + s.slice(1)
 }
-function getStateName( row ) {
+
+function getStateName(row) {
   const raw = row?.state?.name ?? row?.state_name ?? row?.state ?? row?.status_name ?? row?.status
-  return normalizeState( raw )
+  return normalizeState(raw)
 }
+
 const getName = row => row?.name ?? row?.title ?? ''
 const getCode = row => row?.code ?? row?.wo_code ?? ''
 const getDesc = row => row?.description ?? row?.desc ?? ''
-function getStart( row ) {
-  return (
-    row?.start_date ?? row?.startTime ?? row?.start_time ?? row?.planned_start ?? row?.scheduledStart ?? row?.createdAt
-  )
-}
-function getEnd( row ) {
-  return row?.end_date ?? row?.endTime ?? row?.end_time ?? row?.planned_end ?? row?.scheduledEnd ?? row?.dueAt
-}
-function formatDate( val ) {
-  if ( !val ) return ''
-  const d = typeof val === 'number' ? new Date( val ) : new Date( String( val ) )
-  if ( isNaN( d.getTime() ) ) return ''
-  return d.toLocaleString()
+const getStart = row =>
+  row?.start_date ?? row?.startTime ?? row?.start_time ?? row?.planned_start ?? row?.scheduledStart ?? row?.createdAt
+const getEnd = row =>
+  row?.end_date ?? row?.endTime ?? row?.end_time ?? row?.planned_end ?? row?.scheduledEnd ?? row?.dueAt
+
+function formatDate(val) {
+  if (!val) return ''
+  const d = new Date(val)
+  return isNaN(d.getTime()) ? '' : d.toLocaleString()
 }
 
-function onPieSelect( payload ) {
+function onPieSelect(payload) {
   const name = typeof payload === 'string' ? payload : payload?.name
-  if ( !name ) return
-  const normalized = normalizeState( name )
-  if ( !STATE_ORDER.includes( normalized ) ) return
+  if (!name) return
+  const normalized = normalizeState(name)
+  if (!STATE_ORDER.includes(normalized)) return
   selectedState.value = normalized
 }
 
-const filteredRows = computed( () => {
-  if ( !selectedState.value ) return []
-  return allRows.value
-    .filter( r => getStateName( r ) === selectedState.value )
-    .map( r => ( {
-      name : getName( r ),
-      code : getCode( r ),
-      description : getDesc( r ),
-      _start : getStart( r ),
-      _end : getEnd( r ),
-      _raw : r
-    } ) )
-} )
+const filteredRows = computed(() =>
+  !selectedState.value
+    ? []
+    : allRows.value
+        .filter(r => getStateName(r) === selectedState.value)
+        .map(r => ({
+          name: getName(r),
+          code: getCode(r),
+          description: getDesc(r),
+          _start: getStart(r),
+          _end: getEnd(r),
+          _raw: r,
+        }))
+)
+
+const searchedRows = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) return filteredRows.value
+  return filteredRows.value.filter(
+    r =>
+      r.name.toLowerCase().includes(q) ||
+      String(r.code).toLowerCase().includes(q) ||
+      (r.description ?? '').toLowerCase().includes(q)
+  )
+})
+
+function onSearchEnter() {
+  // Optional: trigger any analytics or manual refresh here
+}
 
 async function loadPieData() {
   try {
     const page = 1
     const size = 100
-    const sortField = 'createdAt'
-    const direction = 'DESC'
-
-    const eq = props.equipmentId != null && props.equipmentId !== '' ? Number( props.equipmentId ) : null
-    const searchPayload = {
-      latest_per_recurrence : false,
-      ...( eq ? { equipment_node_ids : [eq] } : {} )
+    const eq = props.equipmentId ? Number(props.equipmentId) : null
+    const payload = {
+      latest_per_recurrence: false,
+      ...(eq ? { equipment_node_ids: [eq] } : {}),
     }
 
-    const res = await searchWorkOrders( page, size, sortField, direction, searchPayload )
-
+    const res = await searchWorkOrders(page, size, 'createdAt', 'DESC', payload)
     const root = res?.data
     const rawRows =
       root?.data?.content ?? root?.content ?? root?.records ?? root?.list ?? root?.items ?? root?.rows ?? []
 
     let rows = rawRows
-    if ( eq ) {
-      rows = rawRows.filter( r => {
-        const topHit = Array.isArray( r?.equipment_node_ids ) && r.equipment_node_ids.map( Number ).includes( eq )
-        const taskHit = Array.isArray( r?.task_list ) && r.task_list.some( t => Number( t?.equipment_node?.id ) === eq )
+    if (eq) {
+      rows = rawRows.filter(r => {
+        const topHit = Array.isArray(r?.equipment_node_ids) && r.equipment_node_ids.map(Number).includes(eq)
+        const taskHit = Array.isArray(r?.task_list) && r.task_list.some(t => Number(t?.equipment_node?.id) === eq)
         return topHit || taskHit
-      } )
+      })
     }
 
     allRows.value = rows
-
-    // Build counts for the pie
-    const counts = {}
-    for ( const name of STATE_ORDER ) counts[name] = 0
-    for ( const row of rows ) {
-      const s = getStateName( row )
-      if ( STATE_ORDER.includes( s ) ) counts[s]++
-      else counts.Incomplete++ // truly unknown states still bucketed here
+    const counts = Object.fromEntries(STATE_ORDER.map(k => [k, 0]))
+    for (const row of rows) {
+      const s = getStateName(row)
+      if (STATE_ORDER.includes(s)) counts[s]++
+      else counts.Incomplete++
     }
 
-    // Decide whether we have any data
-    const total = Object.values( counts ).reduce( ( a, b ) => a + b, 0 )
+    const total = Object.values(counts).reduce((a, b) => a + b, 0)
     hasAnyData.value = total > 0
+    if (!hasAnyData.value) selectedState.value = ''
 
-    // If no data, reset table selection and keep layout pie at zeros (unused)
-    if ( !hasAnyData.value ) {
-      selectedState.value = ''
-    }
-
-    const pieData = STATE_ORDER.map( name => ( {
+    const pieData = STATE_ORDER.map(name => ({
       name,
-      value : counts[name] ?? 0,
-      color : STATE_COLORS[name]
-    } ) )
+      value: counts[name] ?? 0,
+      color: STATE_COLORS[name],
+    }))
 
     layout.value = [
       {
         ...layout.value[0],
-        props : { ...layout.value[0].props, data : pieData }
-      }
+        props: { ...layout.value[0].props, data: pieData },
+      },
     ]
-  } catch ( err ) {
-    console.error( err )
-    ElMessage.error( 'Failed to load work orders' )
+  } catch (err) {
+    console.error(err)
+    ElMessage.error('Failed to load work orders')
     hasAnyData.value = false
     selectedState.value = ''
   }
 }
 
-onMounted( loadPieData )
+onMounted(loadPieData)
 watch(
   () => props.equipmentId,
   () => {
     selectedState.value = ''
+    searchQuery.value = ''
     loadPieData()
   }
 )
 
-defineExpose( { reload : loadPieData, formatDate } )
+defineExpose({ reload: loadPieData, formatDate })
 </script>
 
 <style scoped>
@@ -259,9 +270,8 @@ defineExpose( { reload : loadPieData, formatDate } )
   font-size: 14px;
   color: #999;
   text-align: left;
-  align-self: flex-start; /* keeps it top-left */
+  align-self: flex-start;
 }
-
 .table-wrap {
   margin-top: 12px;
   background: #fff;
@@ -276,5 +286,14 @@ defineExpose( { reload : loadPieData, formatDate } )
 }
 .table-header .title {
   font-weight: 600;
+}
+.search-bar {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 10px;
+}
+.search-input {
+  width: 300px;
+  max-width: 100%;
 }
 </style>

@@ -1,7 +1,7 @@
-export function decodeJwt( token ) {
+export function decodeJwt(token) {
   try {
-    const [, payload] = token.split( '.' )
-    return JSON.parse( atob( payload ) )
+    const [, payload] = token.split('.')
+    return JSON.parse(atob(payload))
   } catch {
     return null
   }
@@ -11,9 +11,9 @@ export function decodeJwt( token ) {
  * @param {string} token - JWT access_token
  * @param {number} skewSeconds - The number of seconds for early refreshing
  */
-export function willExpireSoon( token, skewSeconds = 120 ) {
-  const payload = decodeJwt( token )
-  if ( !payload || !payload.exp ) return true
-  const now = Math.floor( Date.now() / 1000 )
+export function willExpireSoon(token, skewSeconds = 120) {
+  const payload = decodeJwt(token)
+  if (!payload || !payload.exp) return true
+  const now = Math.floor(Date.now() / 1000)
   return payload.exp - now <= skewSeconds
 }

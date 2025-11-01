@@ -155,33 +155,33 @@ import MesLayout from 'src/components/MesLayout'
 const permissionStore = usePermissionStore()
 
 const clipboardSuccess = () => {
-  ElMessage.success( '复制成功' )
+  ElMessage.success('复制成功')
 }
 const clipboardError = () => {
-  ElMessage.error( '复制失败' )
+  ElMessage.error('复制失败')
 }
 const longPressClick = () => {
-  ElMessage.error( '你按疼我了...' )
+  ElMessage.error('你按疼我了...')
 }
 const debounceClick = () => {
-  ElMessage.warning( '嗯，你说的都对。。。' )
+  ElMessage.warning('嗯，你说的都对。。。')
 }
 
-const value = ref( '' )
-const currentRole = ref( [] )
-const currentRoleIndex = ref( 0 )
+const value = ref('')
+const currentRole = ref([])
+const currentRoleIndex = ref(0)
 
-const togglePermission = async() => {
+const togglePermission = async () => {
   const roleData = ['admin', 'editor', 'user']
   currentRoleIndex.value++
-  if ( currentRoleIndex.value > 2 ) currentRoleIndex.value = 0
-  currentRole.value = roleData.splice( currentRoleIndex.value, 1 )
-  await permissionStore.SET_DIRECTIVE_ROLE( unref( currentRole ) )
+  if (currentRoleIndex.value > 2) currentRoleIndex.value = 0
+  currentRole.value = roleData.splice(currentRoleIndex.value, 1)
+  await permissionStore.SET_DIRECTIVE_ROLE(unref(currentRole))
 }
 
-defineOptions( {
-  name : 'Directive'
-} )
+defineOptions({
+  name: 'Directive',
+})
 </script>
 
 <style lang="scss" scoped>

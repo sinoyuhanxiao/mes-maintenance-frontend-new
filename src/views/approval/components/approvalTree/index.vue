@@ -68,32 +68,32 @@ import AddApprovalType from '../approvalDesigner/components/addApprovalType.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 // Define emits
-const emit = defineEmits( ['node-selected'] )
+const emit = defineEmits(['node-selected'])
 
 const handleNodeClick = data => {
-  if ( !isEditMode.value ) {
-    console.log( 'Selected node:', data )
+  if (!isEditMode.value) {
+    console.log('Selected node:', data)
     // Only emit if it's an approval template (level 3)
-    if ( data.type === 'approval_template' ) {
-      emit( 'node-selected', data.originalId )
-      console.log( 'Emitted approval template ID:', data.originalId )
+    if (data.type === 'approval_template') {
+      emit('node-selected', data.originalId)
+      console.log('Emitted approval template ID:', data.originalId)
     }
   }
 }
 
-const filterText = ref( '' )
-const isEditMode = ref( false )
-const loading = ref( false )
-const treeData = ref( [] )
-const dialogVisible = ref( false )
-const selectedApprovalTypeId = ref( null )
-const selectedApprovalTypeInfo = ref( null )
+const filterText = ref('')
+const isEditMode = ref(false)
+const loading = ref(false)
+const treeData = ref([])
+const dialogVisible = ref(false)
+const selectedApprovalTypeId = ref(null)
+const selectedApprovalTypeInfo = ref(null)
 
 // let id = 1000
 
 const defaultProps = {
-  children : 'children',
-  label : 'label'
+  children: 'children',
+  label: 'label',
 }
 
 /**
@@ -101,12 +101,12 @@ const defaultProps = {
  */
 const append = data => {
   // Extract the approval type ID when adding to an approval type node
-  if ( data.type === 'approval_type' ) {
+  if (data.type === 'approval_type') {
     selectedApprovalTypeId.value = data.originalId
     selectedApprovalTypeInfo.value = {
-      approvalType : data.label,
-      departmentId : data.departmentId,
-      departmentName : getDepartmentName( data.departmentId )
+      approvalType: data.label,
+      departmentId: data.departmentId,
+      departmentName: getDepartmentName(data.departmentId),
     }
     dialogVisible.value = true
   }
@@ -116,17 +116,17 @@ const append = data => {
  * Get department name from tree data by ID
  */
 const getDepartmentName = departmentId => {
-  const dept = treeData.value.find( d => d.originalId === departmentId )
+  const dept = treeData.value.find(d => d.originalId === departmentId)
   return dept ? dept.name : 'Unknown Department'
 }
 
 /**
  * Remove a node
  */
-const remove = async( _node, data ) => {
+const remove = async (_node, data) => {
   // Only allow deleting approval templates (level 3)
-  if ( data.type !== 'approval_template' ) {
-    ElMessage.warning( 'Only approval templates can be deleted' )
+  if (data.type !== 'approval_template') {
+    ElMessage.warning('Only approval templates can be deleted')
     return
   }
 
@@ -135,24 +135,24 @@ const remove = async( _node, data ) => {
       `Are you sure you want to delete "${data.label}"? This action cannot be undone.`,
       'Confirm',
       {
-        confirmButtonText : 'Delete',
-        cancelButtonText : 'Cancel',
-        type : 'warning',
-        confirmButtonClass : 'el-button--danger'
+        confirmButtonText: 'Delete',
+        cancelButtonText: 'Cancel',
+        type: 'warning',
+        confirmButtonClass: 'el-button--danger',
       }
     )
 
     // Call API to delete the approval template
-    await deleteApprovalTemplate( data.originalId )
+    await deleteApprovalTemplate(data.originalId)
 
-    ElMessage.success( 'Approval template deleted successfully' )
+    ElMessage.success('Approval template deleted successfully')
 
     // Refresh the tree to reflect the deletion
     await fetchApprovalTree()
-  } catch ( error ) {
-    if ( error !== 'cancel' ) {
-      console.error( 'Failed to delete approval template:', error )
-      ElMessage.error( 'Failed to delete approval template' )
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('Failed to delete approval template:', error)
+      ElMessage.error('Failed to delete approval template')
     }
   }
 }
@@ -161,7 +161,7 @@ const remove = async( _node, data ) => {
  * Handle form submission
  */
 const handleFormSubmit = async formData => {
-  console.log( 'Form submitted:', formData )
+  console.log('Form submitted:', formData)
   // Close the dialog
   dialogVisible.value = false
   // Refresh the tree to show the new template
@@ -189,67 +189,67 @@ const handleDialogClose = () => {
  * Structure: Department > Approval Type > Approval Template
  */
 const buildTree = departments => {
-  return departments.map( dept => {
+  return departments.map(dept => {
     const deptNode = {
-      id : `dept-${dept.id}`,
-      label : dept.name,
-      name : dept.name,
-      code : dept.code,
-      type : 'department',
-      originalId : dept.id
+      id: `dept-${dept.id}`,
+      label: dept.name,
+      name: dept.name,
+      code: dept.code,
+      type: 'department',
+      originalId: dept.id,
     }
 
     // Add approval types as children
-    if ( dept.approval_types && dept.approval_types.length > 0 ) {
-      deptNode.children = dept.approval_types.map( approvalType => {
+    if (dept.approval_types && dept.approval_types.length > 0) {
+      deptNode.children = dept.approval_types.map(approvalType => {
         const typeNode = {
-          id : `type-${approvalType.id}`,
-          label : approvalType.approval_type,
-          type : 'approval_type',
-          originalId : approvalType.id,
-          departmentId : dept.id
+          id: `type-${approvalType.id}`,
+          label: approvalType.approval_type,
+          type: 'approval_type',
+          originalId: approvalType.id,
+          departmentId: dept.id,
         }
 
         // Add approval templates as children of approval type
-        if ( approvalType.approval_templates && approvalType.approval_templates.length > 0 ) {
-          typeNode.children = approvalType.approval_templates.map( template => ( {
-            id : `template-${template.id}`,
-            label : template.name,
-            type : 'approval_template',
-            originalId : template.id,
-            approvalTypeId : approvalType.id,
-            departmentId : dept.id,
-            ...template
-          } ) )
+        if (approvalType.approval_templates && approvalType.approval_templates.length > 0) {
+          typeNode.children = approvalType.approval_templates.map(template => ({
+            id: `template-${template.id}`,
+            label: template.name,
+            type: 'approval_template',
+            originalId: template.id,
+            approvalTypeId: approvalType.id,
+            departmentId: dept.id,
+            ...template,
+          }))
         }
 
         return typeNode
-      } )
+      })
     }
 
     return deptNode
-  } )
+  })
 }
 
 /**
  * Fetch approval tree from API
  */
-const fetchApprovalTree = async() => {
+const fetchApprovalTree = async () => {
   loading.value = true
   try {
     const response = await getApprovalTree()
 
     // Handle the response structure from the API
     let departments = []
-    if ( Array.isArray( response.data ) ) {
+    if (Array.isArray(response.data)) {
       departments = response.data
-    } else if ( response.data?.data && Array.isArray( response.data.data ) ) {
+    } else if (response.data?.data && Array.isArray(response.data.data)) {
       departments = response.data.data
     }
 
-    treeData.value = buildTree( departments )
-  } catch ( error ) {
-    console.error( 'Failed to fetch approval tree:', error )
+    treeData.value = buildTree(departments)
+  } catch (error) {
+    console.error('Failed to fetch approval tree:', error)
     treeData.value = []
   } finally {
     loading.value = false
@@ -258,17 +258,17 @@ const fetchApprovalTree = async() => {
 
 // Watch for filter text changes with debounce
 let searchTimeout
-watch( filterText, newVal => {
-  clearTimeout( searchTimeout )
-  searchTimeout = setTimeout( () => {
+watch(filterText, newVal => {
+  clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => {
     fetchApprovalTree()
-  }, 300 )
-} )
+  }, 300)
+})
 
 // Initial load
-onMounted( () => {
+onMounted(() => {
   fetchApprovalTree()
-} )
+})
 </script>
 
 <style scoped>

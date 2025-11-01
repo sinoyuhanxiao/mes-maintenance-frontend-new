@@ -369,408 +369,408 @@ import {
   Refresh,
   Grid,
   Filter,
-  CircleClose
+  CircleClose,
 } from '@element-plus/icons-vue'
 import { useCommonDataStore } from '@/store/modules/commonData'
 import { getEquipmentTree } from '@/api/equipment.js'
 import { searchUsers } from '@/api/user.js'
 
 // Props
-const props = defineProps( {
-  modelValue : {
-    type : Object,
-    default : () => ( {} )
+const props = defineProps({
+  modelValue: {
+    type: Object,
+    default: () => ({}),
   },
-  exportLoading : {
-    type : Boolean,
-    default : false
+  exportLoading: {
+    type: Boolean,
+    default: false,
   },
-  showTodoActions : {
-    type : Boolean,
-    default : false
+  showTodoActions: {
+    type: Boolean,
+    default: false,
   },
-  currentView : {
-    type : String,
-    default : 'table'
-  }
-} )
+  currentView: {
+    type: String,
+    default: 'table',
+  },
+})
 
 // Emits
-const emit = defineEmits( ['update:modelValue', 'filter-change', 'create', 'export', 'refresh'] )
+const emit = defineEmits(['update:modelValue', 'filter-change', 'create', 'export', 'refresh'])
 const { t } = useI18n()
 const commonDataStore = useCommonDataStore()
 
 // Search mode state
-const searchQuery = ref( '' )
-const searchByIdMode = ref( false )
+const searchQuery = ref('')
+const searchByIdMode = ref(false)
 let searchDebounceTimer = null
 
 // Equipment tree data
-const equipmentTreeData = ref( [] )
+const equipmentTreeData = ref([])
 
 // User options for Assigned To filter
-const userOptions = ref( [] )
+const userOptions = ref([])
 
 // Local filters state
-const localFilters = reactive( {
-  assignedTo : props.modelValue.assignedTo || null,
-  dueDate : props.modelValue.dueDate || null,
-  workType : props.modelValue.workType || null,
-  priority : props.modelValue.priority || null,
-  state : props.modelValue.state || null,
-  category : props.modelValue.category || null,
-  search : props.modelValue.search || '',
-  work_order_id : props.modelValue.work_order_id || null,
-  latest_per_recurrence : props.currentView !== 'calendar',
-  status : props.modelValue.status || null,
-  equipment : props.modelValue.equipment || null,
-  equipment_node_ids : props.modelValue.equipment_node_ids || null,
-  recurrence : props.modelValue.recurrence || null
-} )
+const localFilters = reactive({
+  assignedTo: props.modelValue.assignedTo || null,
+  dueDate: props.modelValue.dueDate || null,
+  workType: props.modelValue.workType || null,
+  priority: props.modelValue.priority || null,
+  state: props.modelValue.state || null,
+  category: props.modelValue.category || null,
+  search: props.modelValue.search || '',
+  work_order_id: props.modelValue.work_order_id || null,
+  latest_per_recurrence: props.currentView !== 'calendar',
+  status: props.modelValue.status || null,
+  equipment: props.modelValue.equipment || null,
+  equipment_node_ids: props.modelValue.equipment_node_ids || null,
+  recurrence: props.modelValue.recurrence || null,
+})
 
 // Filter drawer state
-const drawerVisible = ref( false )
+const drawerVisible = ref(false)
 
 // Screen width and filter limits
-const screenWidth = ref( window.innerWidth )
-const maxFilters = computed( () => ( screenWidth.value > 1800 ? 8 : 5 ) )
-const activeFilterCount = computed( () => {
-  return Object.values( availableFilters ).filter( f => f.visible ).length
-} )
-const isFilterLimitReached = computed( () => activeFilterCount.value >= maxFilters.value )
+const screenWidth = ref(window.innerWidth)
+const maxFilters = computed(() => (screenWidth.value > 1800 ? 8 : 5))
+const activeFilterCount = computed(() => {
+  return Object.values(availableFilters).filter(f => f.visible).length
+})
+const isFilterLimitReached = computed(() => activeFilterCount.value >= maxFilters.value)
 
 const updateScreenWidth = () => {
   screenWidth.value = window.innerWidth
 }
 
 // Fetch equipment tree data
-const fetchEquipmentTreeData = async() => {
+const fetchEquipmentTreeData = async () => {
   try {
     const response = await getEquipmentTree()
-    const transformNode = node => ( {
-      value : node.id,
-      label : node.name,
-      children : node.children ? node.children.map( transformNode ) : undefined
-    } )
-    const dataArray = Array.isArray( response.data ) ? response.data : [response.data]
-    equipmentTreeData.value = dataArray.map( node => transformNode( node ) )
-  } catch ( error ) {
-    console.error( 'Equipment tree load failed:', error )
-    ElMessage.error( 'Failed to load equipment filter data.' )
+    const transformNode = node => ({
+      value: node.id,
+      label: node.name,
+      children: node.children ? node.children.map(transformNode) : undefined,
+    })
+    const dataArray = Array.isArray(response.data) ? response.data : [response.data]
+    equipmentTreeData.value = dataArray.map(node => transformNode(node))
+  } catch (error) {
+    console.error('Equipment tree load failed:', error)
+    ElMessage.error('Failed to load equipment filter data.')
   }
 }
 
 // Fetch users for Assigned To filter
-const fetchUsers = async() => {
+const fetchUsers = async () => {
   try {
-    const response = await searchUsers( { status_ids : [1] }, 1, 1000 )
+    const response = await searchUsers({ status_ids: [1] }, 1, 1000)
     userOptions.value = response?.data?.content || []
-  } catch ( error ) {
-    console.error( 'Failed to load users:', error )
-    ElMessage.error( 'Failed to load user filter data.' )
+  } catch (error) {
+    console.error('Failed to load users:', error)
+    ElMessage.error('Failed to load user filter data.')
   }
 }
 
-onMounted( () => {
-  window.addEventListener( 'resize', updateScreenWidth )
+onMounted(() => {
+  window.addEventListener('resize', updateScreenWidth)
   fetchEquipmentTreeData()
   fetchUsers()
-} )
+})
 
-onUnmounted( () => {
-  window.removeEventListener( 'resize', updateScreenWidth )
+onUnmounted(() => {
+  window.removeEventListener('resize', updateScreenWidth)
   // Clear search debounce timer if exists
-  if ( searchDebounceTimer ) {
-    clearTimeout( searchDebounceTimer )
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer)
   }
-} )
+})
 
 // Watch for screen width changes to handle filter limits
-watch( screenWidth, ( newWidth, oldWidth ) => {
+watch(screenWidth, (newWidth, oldWidth) => {
   // Check if we crossed the breakpoint from large to small
-  if ( oldWidth > 1800 && newWidth <= 1800 ) {
+  if (oldWidth > 1800 && newWidth <= 1800) {
     const maxAllowed = 5
-    if ( activeFilterCount.value > maxAllowed ) {
+    if (activeFilterCount.value > maxAllowed) {
       const excessCount = activeFilterCount.value - maxAllowed
-      const visibleFilters = Object.keys( availableFilters ).filter( key => availableFilters[key].visible )
+      const visibleFilters = Object.keys(availableFilters).filter(key => availableFilters[key].visible)
 
       // Shuffle the array of visible filters
-      for ( let i = visibleFilters.length - 1; i > 0; i-- ) {
-        const j = Math.floor( Math.random() * ( i + 1 ) )
+      for (let i = visibleFilters.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1))
         ;[visibleFilters[i], visibleFilters[j]] = [visibleFilters[j], visibleFilters[i]]
       }
 
       // Deselect the required number of random filters
-      for ( let i = 0; i < excessCount; i++ ) {
+      for (let i = 0; i < excessCount; i++) {
         const filterToDisable = visibleFilters[i]
         availableFilters[filterToDisable].visible = false
       }
 
-      ElMessage.info( t( 'workOrder.filters.autoDeselected', { count : excessCount } ) )
+      ElMessage.info(t('workOrder.filters.autoDeselected', { count: excessCount }))
     }
   }
-} )
+})
 
 // Animation state for border highlight
-const animatingFilters = reactive( {
-  assignedTo : false,
-  dueDate : false,
-  workType : false,
-  priority : false,
-  search : false,
-  state : false,
-  status : false,
-  category : false,
-  equipment : false,
-  recurrence : false
-} )
+const animatingFilters = reactive({
+  assignedTo: false,
+  dueDate: false,
+  workType: false,
+  priority: false,
+  search: false,
+  state: false,
+  status: false,
+  category: false,
+  equipment: false,
+  recurrence: false,
+})
 
 // Available filters configuration
-const availableFilters = reactive( {
-  assignedTo : { visible : true, category : 'basic' },
-  dueDate : { visible : true, category : 'basic' },
-  workType : { visible : true, category : 'basic' },
-  priority : { visible : true, category : 'basic' },
-  search : { visible : true, category : 'basic' },
-  state : { visible : false, category : 'advanced' },
-  status : { visible : false, category : 'advanced' },
-  category : { visible : false, category : 'advanced' },
-  equipment : { visible : false, category : 'advanced' },
-  recurrence : { visible : false, category : 'advanced' }
-} )
+const availableFilters = reactive({
+  assignedTo: { visible: true, category: 'basic' },
+  dueDate: { visible: true, category: 'basic' },
+  workType: { visible: true, category: 'basic' },
+  priority: { visible: true, category: 'basic' },
+  search: { visible: true, category: 'basic' },
+  state: { visible: false, category: 'advanced' },
+  status: { visible: false, category: 'advanced' },
+  category: { visible: false, category: 'advanced' },
+  equipment: { visible: false, category: 'advanced' },
+  recurrence: { visible: false, category: 'advanced' },
+})
 
 // Filter options
-const assignedToOptions = computed( () => {
-  return userOptions.value.map( user => ( {
-    id : user.id,
-    name : `${user.first_name} ${user.last_name}`
-  } ) )
-} )
+const assignedToOptions = computed(() => {
+  return userOptions.value.map(user => ({
+    id: user.id,
+    name: `${user.first_name} ${user.last_name}`,
+  }))
+})
 
-const workTypeOptions = computed( () => commonDataStore.workTypes || [] )
-const priorityOptions = computed( () => commonDataStore.priorities || [] )
-const stateOptions = computed( () => commonDataStore.states || [] )
-const categoryOptions = computed( () => commonDataStore.categories || [] )
+const workTypeOptions = computed(() => commonDataStore.workTypes || [])
+const priorityOptions = computed(() => commonDataStore.priorities || [])
+const stateOptions = computed(() => commonDataStore.states || [])
+const categoryOptions = computed(() => commonDataStore.categories || [])
 
 // Additional filter options
-const statusOptions = computed( () => [
-  { id : 'pending', name : t( 'workOrder.status.pending' ) },
-  { id : 'in_progress', name : t( 'workOrder.status.inProgress' ) },
-  { id : 'completed', name : t( 'workOrder.status.completed' ) },
-  { id : 'cancelled', name : t( 'workOrder.status.cancelled' ) }
-] )
+const statusOptions = computed(() => [
+  { id: 'pending', name: t('workOrder.status.pending') },
+  { id: 'in_progress', name: t('workOrder.status.inProgress') },
+  { id: 'completed', name: t('workOrder.status.completed') },
+  { id: 'cancelled', name: t('workOrder.status.cancelled') },
+])
 
-const recurrenceOptions = computed( () => [
-  { id : 1, name : t( 'workOrder.recurrence.none' ) },
-  { id : 2, name : t( 'workOrder.recurrence.daily' ) },
-  { id : 3, name : t( 'workOrder.recurrence.weekly' ) },
-  { id : 4, name : t( 'workOrder.recurrence.monthlyByDate' ) },
-  { id : 5, name : t( 'workOrder.recurrence.yearly' ) }
-] )
+const recurrenceOptions = computed(() => [
+  { id: 1, name: t('workOrder.recurrence.none') },
+  { id: 2, name: t('workOrder.recurrence.daily') },
+  { id: 3, name: t('workOrder.recurrence.weekly') },
+  { id: 4, name: t('workOrder.recurrence.monthlyByDate') },
+  { id: 5, name: t('workOrder.recurrence.yearly') },
+])
 
 // Filter definitions for drawer
-const filterDefinitions = computed( () => ( {
-  assignedTo : {
-    key : 'assignedTo',
-    label : t( 'workOrder.filters.assignedTo' ),
-    icon : 'User',
-    category : 'basic'
+const filterDefinitions = computed(() => ({
+  assignedTo: {
+    key: 'assignedTo',
+    label: t('workOrder.filters.assignedTo'),
+    icon: 'User',
+    category: 'basic',
   },
-  dueDate : {
-    key : 'dueDate',
-    label : t( 'workOrder.filters.dueDate' ),
-    icon : 'Calendar',
-    category : 'basic'
+  dueDate: {
+    key: 'dueDate',
+    label: t('workOrder.filters.dueDate'),
+    icon: 'Calendar',
+    category: 'basic',
   },
-  workType : {
-    key : 'workType',
-    label : t( 'workOrder.table.workType' ),
-    icon : 'Tools',
-    category : 'basic'
+  workType: {
+    key: 'workType',
+    label: t('workOrder.table.workType'),
+    icon: 'Tools',
+    category: 'basic',
   },
-  priority : {
-    key : 'priority',
-    label : t( 'workOrder.table.priority' ),
-    icon : 'Flag',
-    category : 'basic'
+  priority: {
+    key: 'priority',
+    label: t('workOrder.table.priority'),
+    icon: 'Flag',
+    category: 'basic',
   },
-  search : {
-    key : 'search',
-    label : t( 'workOrder.filters.search' ),
-    icon : 'Search',
-    category : 'basic'
+  search: {
+    key: 'search',
+    label: t('workOrder.filters.search'),
+    icon: 'Search',
+    category: 'basic',
   },
-  state : {
-    key : 'state',
-    label : t( 'workOrder.filters.state' ),
-    icon : 'CircleCheck',
-    category : 'advanced'
+  state: {
+    key: 'state',
+    label: t('workOrder.filters.state'),
+    icon: 'CircleCheck',
+    category: 'advanced',
   },
-  status : {
-    key : 'status',
-    label : t( 'workOrder.filters.status' ),
-    icon : 'CircleCheck',
-    category : 'advanced'
+  status: {
+    key: 'status',
+    label: t('workOrder.filters.status'),
+    icon: 'CircleCheck',
+    category: 'advanced',
   },
-  category : {
-    key : 'category',
-    label : t( 'workOrder.filters.category' ),
-    icon : 'Collection',
-    category : 'advanced'
+  category: {
+    key: 'category',
+    label: t('workOrder.filters.category'),
+    icon: 'Collection',
+    category: 'advanced',
   },
-  equipment : {
-    key : 'equipment',
-    label : t( 'workOrder.filters.equipment' ),
-    icon : 'Setting',
-    category : 'advanced'
+  equipment: {
+    key: 'equipment',
+    label: t('workOrder.filters.equipment'),
+    icon: 'Setting',
+    category: 'advanced',
   },
-  recurrence : {
-    key : 'recurrence',
-    label : t( 'workOrder.filters.recurrence' ),
-    icon : 'Refresh',
-    category : 'advanced'
-  }
-} ) )
+  recurrence: {
+    key: 'recurrence',
+    label: t('workOrder.filters.recurrence'),
+    icon: 'Refresh',
+    category: 'advanced',
+  },
+}))
 
 // Computed filter categories
-const basicFilters = computed( () => Object.values( filterDefinitions.value ).filter( f => f.category === 'basic' ) )
-const advancedFilters = computed( () => Object.values( filterDefinitions.value ).filter( f => f.category === 'advanced' ) )
+const basicFilters = computed(() => Object.values(filterDefinitions.value).filter(f => f.category === 'basic'))
+const advancedFilters = computed(() => Object.values(filterDefinitions.value).filter(f => f.category === 'advanced'))
 
 // Search term for filtering the drawer lists
-const filterSearchTerm = ref( '' )
+const filterSearchTerm = ref('')
 
 // Case-insensitive, instant filtering of labels; auto-hide non-matches
-const filteredBasicFilters = computed( () => {
+const filteredBasicFilters = computed(() => {
   const q = filterSearchTerm.value.trim().toLowerCase()
-  if ( !q ) return basicFilters.value
-  return basicFilters.value.filter( f => ( f.label || '' ).toLowerCase().includes( q ) )
-} )
+  if (!q) return basicFilters.value
+  return basicFilters.value.filter(f => (f.label || '').toLowerCase().includes(q))
+})
 
-const filteredAdvancedFilters = computed( () => {
+const filteredAdvancedFilters = computed(() => {
   const q = filterSearchTerm.value.trim().toLowerCase()
-  if ( !q ) return advancedFilters.value
-  return advancedFilters.value.filter( f => ( f.label || '' ).toLowerCase().includes( q ) )
-} )
+  if (!q) return advancedFilters.value
+  return advancedFilters.value.filter(f => (f.label || '').toLowerCase().includes(q))
+})
 
 // Active filters
-const activeFilterTags = computed( () => {
+const activeFilterTags = computed(() => {
   const tags = []
 
-  if ( localFilters.assignedTo ) {
-    const user = assignedToOptions.value.find( u => u.id === localFilters.assignedTo )
-    tags.push( {
-      key : 'assignedTo',
-      label : `${t( 'workOrder.filters.assignedTo' )}: ${user?.name || localFilters.assignedTo}`
-    } )
+  if (localFilters.assignedTo) {
+    const user = assignedToOptions.value.find(u => u.id === localFilters.assignedTo)
+    tags.push({
+      key: 'assignedTo',
+      label: `${t('workOrder.filters.assignedTo')}: ${user?.name || localFilters.assignedTo}`,
+    })
   }
 
-  if ( localFilters.dueDate ) {
+  if (localFilters.dueDate) {
     const dueDateLabels = {
-      overdue : t( 'workOrder.filters.overdue' ),
-      today : t( 'workOrder.filters.today' ),
-      thisWeek : t( 'workOrder.filters.thisWeek' ),
-      thisMonth : t( 'workOrder.filters.thisMonth' )
+      overdue: t('workOrder.filters.overdue'),
+      today: t('workOrder.filters.today'),
+      thisWeek: t('workOrder.filters.thisWeek'),
+      thisMonth: t('workOrder.filters.thisMonth'),
     }
-    tags.push( {
-      key : 'dueDate',
-      label : `${t( 'workOrder.filters.dueDate' )}: ${dueDateLabels[localFilters.dueDate]}`
-    } )
+    tags.push({
+      key: 'dueDate',
+      label: `${t('workOrder.filters.dueDate')}: ${dueDateLabels[localFilters.dueDate]}`,
+    })
   }
 
-  if ( localFilters.workType ) {
-    const workType = workTypeOptions.value.find( wt => wt.id === localFilters.workType )
-    tags.push( {
-      key : 'workType',
-      label : `${t( 'workOrder.table.workType' )}: ${workType?.name || localFilters.workType}`
-    } )
+  if (localFilters.workType) {
+    const workType = workTypeOptions.value.find(wt => wt.id === localFilters.workType)
+    tags.push({
+      key: 'workType',
+      label: `${t('workOrder.table.workType')}: ${workType?.name || localFilters.workType}`,
+    })
   }
 
-  if ( localFilters.priority ) {
-    const priority = priorityOptions.value.find( p => p.id === localFilters.priority )
-    tags.push( {
-      key : 'priority',
-      label : `${t( 'workOrder.table.priority' )}: ${priority?.name || localFilters.priority}`
-    } )
+  if (localFilters.priority) {
+    const priority = priorityOptions.value.find(p => p.id === localFilters.priority)
+    tags.push({
+      key: 'priority',
+      label: `${t('workOrder.table.priority')}: ${priority?.name || localFilters.priority}`,
+    })
   }
 
-  if ( localFilters.state ) {
-    const state = stateOptions.value.find( s => s.id === localFilters.state )
-    tags.push( {
-      key : 'state',
-      label : `${t( 'workOrder.table.state' )}: ${state?.name || localFilters.state}`
-    } )
+  if (localFilters.state) {
+    const state = stateOptions.value.find(s => s.id === localFilters.state)
+    tags.push({
+      key: 'state',
+      label: `${t('workOrder.table.state')}: ${state?.name || localFilters.state}`,
+    })
   }
 
-  if ( localFilters.category ) {
-    const category = categoryOptions.value.find( c => c.id === localFilters.category )
-    tags.push( {
-      key : 'category',
-      label : `${t( 'workOrder.table.category' )}: ${category?.name || localFilters.category}`
-    } )
+  if (localFilters.category) {
+    const category = categoryOptions.value.find(c => c.id === localFilters.category)
+    tags.push({
+      key: 'category',
+      label: `${t('workOrder.table.category')}: ${category?.name || localFilters.category}`,
+    })
   }
 
-  if ( localFilters.search ) {
-    tags.push( {
-      key : 'search',
-      label : `${t( 'workOrder.placeholder.search' )}: ${localFilters.search}`
-    } )
+  if (localFilters.search) {
+    tags.push({
+      key: 'search',
+      label: `${t('workOrder.placeholder.search')}: ${localFilters.search}`,
+    })
   }
 
-  if ( localFilters.work_order_id ) {
-    tags.push( {
-      key : 'work_order_id',
-      label : `Work Order ID: ${localFilters.work_order_id}`
-    } )
+  if (localFilters.work_order_id) {
+    tags.push({
+      key: 'work_order_id',
+      label: `Work Order ID: ${localFilters.work_order_id}`,
+    })
   }
 
-  if ( localFilters.status ) {
-    const status = statusOptions.value.find( s => s.id === localFilters.status )
-    tags.push( {
-      key : 'status',
-      label : `${t( 'workOrder.filters.status' )}: ${status?.name || localFilters.status}`
-    } )
+  if (localFilters.status) {
+    const status = statusOptions.value.find(s => s.id === localFilters.status)
+    tags.push({
+      key: 'status',
+      label: `${t('workOrder.filters.status')}: ${status?.name || localFilters.status}`,
+    })
   }
 
-  if ( localFilters.equipment ) {
+  if (localFilters.equipment) {
     // Find the equipment node label from tree data
-    const findNodeLabel = ( nodes, targetValue ) => {
-      for ( const node of nodes ) {
-        if ( node.value === targetValue ) return node.label
-        if ( node.children ) {
-          const label = findNodeLabel( node.children, targetValue )
-          if ( label ) return label
+    const findNodeLabel = (nodes, targetValue) => {
+      for (const node of nodes) {
+        if (node.value === targetValue) return node.label
+        if (node.children) {
+          const label = findNodeLabel(node.children, targetValue)
+          if (label) return label
         }
       }
       return null
     }
-    const equipmentLabel = findNodeLabel( equipmentTreeData.value, localFilters.equipment )
-    tags.push( {
-      key : 'equipment',
-      label : `${t( 'workOrder.filters.equipment' )}: ${equipmentLabel || localFilters.equipment}`
-    } )
+    const equipmentLabel = findNodeLabel(equipmentTreeData.value, localFilters.equipment)
+    tags.push({
+      key: 'equipment',
+      label: `${t('workOrder.filters.equipment')}: ${equipmentLabel || localFilters.equipment}`,
+    })
   }
 
-  if ( localFilters.recurrence ) {
-    const recurrence = recurrenceOptions.value.find( r => r.id === localFilters.recurrence )
-    tags.push( {
-      key : 'recurrence',
-      label : `${t( 'workOrder.filters.recurrence' )}: ${recurrence?.name || localFilters.recurrence}`
-    } )
+  if (localFilters.recurrence) {
+    const recurrence = recurrenceOptions.value.find(r => r.id === localFilters.recurrence)
+    tags.push({
+      key: 'recurrence',
+      label: `${t('workOrder.filters.recurrence')}: ${recurrence?.name || localFilters.recurrence}`,
+    })
   }
 
   return tags
-} )
+})
 
 // Methods
 const handleSearchInput = () => {
   // Clear any existing debounce timer
-  if ( searchDebounceTimer ) {
-    clearTimeout( searchDebounceTimer )
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer)
   }
 
   // Update the appropriate filter based on search mode
-  if ( searchByIdMode.value ) {
-    localFilters.work_order_id = searchQuery.value ? parseInt( searchQuery.value, 10 ) : null
+  if (searchByIdMode.value) {
+    localFilters.work_order_id = searchQuery.value ? parseInt(searchQuery.value, 10) : null
     localFilters.search = null
   } else {
     localFilters.search = searchQuery.value
@@ -778,9 +778,9 @@ const handleSearchInput = () => {
   }
 
   // Debounce the filter change by 300ms
-  searchDebounceTimer = setTimeout( () => {
+  searchDebounceTimer = setTimeout(() => {
     handleFilterChange()
-  }, 300 )
+  }, 300)
 }
 
 const toggleSearchMode = () => {
@@ -788,11 +788,11 @@ const toggleSearchMode = () => {
 
   searchByIdMode.value = !searchByIdMode.value
 
-  if ( hasSearchContent ) {
+  if (hasSearchContent) {
     // If there's content, apply it as a filter using the new mode
-    if ( searchByIdMode.value ) {
+    if (searchByIdMode.value) {
       // Switched TO ID mode
-      localFilters.work_order_id = parseInt( searchQuery.value, 10 )
+      localFilters.work_order_id = parseInt(searchQuery.value, 10)
       localFilters.search = null
     } else {
       // Switched TO Name mode
@@ -802,7 +802,7 @@ const toggleSearchMode = () => {
     handleFilterChange()
   } else {
     // If no content, just clear the alternative filter
-    if ( searchByIdMode.value ) {
+    if (searchByIdMode.value) {
       localFilters.search = null
     } else {
       localFilters.work_order_id = null
@@ -810,15 +810,15 @@ const toggleSearchMode = () => {
   }
 }
 
-const handleFilterChange = async() => {
+const handleFilterChange = async () => {
   // Convert equipment to equipment_node_ids array format for API
-  if ( localFilters.equipment ) {
+  if (localFilters.equipment) {
     localFilters.equipment_node_ids = [localFilters.equipment]
   } else {
     localFilters.equipment_node_ids = null
   }
 
-  emit( 'update:modelValue', { ...localFilters } )
+  emit('update:modelValue', { ...localFilters })
 }
 
 const closeFilterDrawer = () => {
@@ -826,8 +826,8 @@ const closeFilterDrawer = () => {
 }
 
 const handleDisabledFilterClick = filterKey => {
-  if ( isFilterLimitReached.value && !isFilterVisible( filterKey ) ) {
-    ElMessage.warning( t( 'workOrder.filters.noSpace' ) )
+  if (isFilterLimitReached.value && !isFilterVisible(filterKey)) {
+    ElMessage.warning(t('workOrder.filters.noSpace'))
   }
 }
 
@@ -835,15 +835,15 @@ const toggleFilterVisibility = async filterKey => {
   const wasVisible = availableFilters[filterKey].visible
 
   // Prevent adding more filters if the limit is reached
-  if ( !wasVisible && isFilterLimitReached.value ) {
-    ElMessage.warning( t( 'workOrder.filters.limitReached', { max : maxFilters.value } ) )
+  if (!wasVisible && isFilterLimitReached.value) {
+    ElMessage.warning(t('workOrder.filters.limitReached', { max: maxFilters.value }))
     return
   }
 
   availableFilters[filterKey].visible = !wasVisible
 
   // Trigger animation for the toggled filter item in main filters row
-  await triggerFilterHighlightAnimation( filterKey )
+  await triggerFilterHighlightAnimation(filterKey)
 }
 
 // Animation method for border highlight
@@ -852,14 +852,14 @@ const triggerFilterHighlightAnimation = async filterKey => {
   await nextTick()
 
   // For hiding animation, the element will be removed by v-if, so we skip it
-  if ( availableFilters[filterKey].visible ) {
+  if (availableFilters[filterKey].visible) {
     // Start animation
     animatingFilters[filterKey] = true
 
     // Remove animation after 2 seconds
-    setTimeout( () => {
+    setTimeout(() => {
       animatingFilters[filterKey] = false
-    }, 2000 )
+    }, 2000)
   }
 }
 
@@ -872,7 +872,7 @@ const handleRemoveFilter = filterKey => {
   localFilters[filterKey] = null
 
   // If removing search or work_order_id, also clear the search query
-  if ( filterKey === 'search' || filterKey === 'work_order_id' ) {
+  if (filterKey === 'search' || filterKey === 'work_order_id') {
     searchQuery.value = ''
   }
 
@@ -882,11 +882,11 @@ const handleRemoveFilter = filterKey => {
 
 const handleClearAllFilters = () => {
   // Clear all filter values except latest_per_recurrence
-  Object.keys( localFilters ).forEach( key => {
-    if ( key !== 'latest_per_recurrence' ) {
+  Object.keys(localFilters).forEach(key => {
+    if (key !== 'latest_per_recurrence') {
       localFilters[key] = null
     }
-  } )
+  })
 
   // Clear search-related state
   searchQuery.value = ''
@@ -900,14 +900,14 @@ const handleClearAllFilters = () => {
 watch(
   () => props.modelValue,
   newValue => {
-    Object.assign( localFilters, newValue )
+    Object.assign(localFilters, newValue)
   },
-  { deep : true }
+  { deep: true }
 )
 
-defineOptions( {
-  name : 'UnifiedWorkOrderFilters'
-} )
+defineOptions({
+  name: 'UnifiedWorkOrderFilters',
+})
 </script>
 
 <style scoped lang="scss">

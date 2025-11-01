@@ -109,35 +109,35 @@ import TextStepPreview from '@/views/taskLibrary/components/Designer/StepCards/T
 import AttachmentStepPreview from '@/views/taskLibrary/components/Designer/StepCards/AttachmentStepPreview.vue'
 import ServiceStepPreview from '@/views/taskLibrary/components/Designer/StepCards/ServiceStepPreview.vue'
 
-const props = defineProps( {
-  templateId : {
-    type : [String, Number],
-    default : ''
+const props = defineProps({
+  templateId: {
+    type: [String, Number],
+    default: '',
   },
-  steps : {
-    type : Array,
-    default : () => []
+  steps: {
+    type: Array,
+    default: () => [],
   },
-  interactive : {
-    type : Boolean,
-    default : false
+  interactive: {
+    type: Boolean,
+    default: false,
   },
-  showModeSwitch : {
-    type : Boolean,
-    default : true
-  }
-} )
+  showModeSwitch: {
+    type: Boolean,
+    default: true,
+  },
+})
 
 // Composables
 const { loadTemplate } = useTaskLibrary()
 
 // Local state
-const loading = ref( false )
-const error = ref( false )
-const template = ref( null )
-const stepSearchQuery = ref( '' )
-const stepToolsVisible = reactive( {} )
-const isInteractive = ref( props.interactive )
+const loading = ref(false)
+const error = ref(false)
+const template = ref(null)
+const stepSearchQuery = ref('')
+const stepToolsVisible = reactive({})
+const isInteractive = ref(props.interactive)
 
 // Watch for prop changes
 watch(
@@ -149,29 +149,29 @@ watch(
 
 // Map backend step value types to preview component types
 const mapValueTypeToPreviewType = valueType => {
-  const normalized = ( valueType || '' ).toString().toLowerCase()
+  const normalized = (valueType || '').toString().toLowerCase()
 
-  if ( normalized.includes( 'numeric' ) || normalized === 'number' ) {
+  if (normalized.includes('numeric') || normalized === 'number') {
     return 'number'
   }
 
-  if ( normalized.includes( 'boolean' ) || normalized.includes( 'checkbox' ) ) {
+  if (normalized.includes('boolean') || normalized.includes('checkbox')) {
     return 'checkbox'
   }
 
-  if ( normalized.includes( 'inspection' ) ) {
+  if (normalized.includes('inspection')) {
     return 'inspection'
   }
 
-  if ( normalized.includes( 'file' ) || normalized.includes( 'attachment' ) ) {
+  if (normalized.includes('file') || normalized.includes('attachment')) {
     return 'attachments'
   }
 
-  if ( normalized.includes( 'service' ) ) {
+  if (normalized.includes('service')) {
     return 'service'
   }
 
-  if ( normalized.includes( 'text' ) ) {
+  if (normalized.includes('text')) {
     return 'text'
   }
 
@@ -181,34 +181,34 @@ const mapValueTypeToPreviewType = valueType => {
 // Enhanced step type detection for different data formats
 const detectStepType = step => {
   // Handle designer format (step.type directly)
-  if ( step.type ) {
-    return mapValueTypeToPreviewType( step.type )
+  if (step.type) {
+    return mapValueTypeToPreviewType(step.type)
   }
 
   // Handle backend format (step.value.type)
-  if ( step.value && step.value.type ) {
-    return mapValueTypeToPreviewType( step.value.type )
+  if (step.value && step.value.type) {
+    return mapValueTypeToPreviewType(step.value.type)
   }
 
   // Handle step config format (step.config.kind)
-  if ( step.config && step.config.kind ) {
-    return mapValueTypeToPreviewType( step.config.kind )
+  if (step.config && step.config.kind) {
+    return mapValueTypeToPreviewType(step.config.kind)
   }
 
   // Handle legacy format lookups by checking step structure patterns
-  if ( step.value ) {
+  if (step.value) {
     // Numeric field detection
-    if ( typeof step.value.value === 'number' || step.value.has_upper_limit || step.value.has_lower_limit ) {
+    if (typeof step.value.value === 'number' || step.value.has_upper_limit || step.value.has_lower_limit) {
       return 'number'
     }
 
     // Boolean field detection
-    if ( typeof step.value.value === 'boolean' ) {
+    if (typeof step.value.value === 'boolean') {
       return 'checkbox'
     }
 
     // File field detection
-    if ( step.value.files || step.value.file_attachments ) {
+    if (step.value.files || step.value.file_attachments) {
       return 'attachments'
     }
   }
@@ -218,204 +218,204 @@ const detectStepType = step => {
 }
 
 // Transform backend steps to preview-ready steps
-const sourceSteps = computed( () => {
-  if ( Array.isArray( props.steps ) && props.steps.length > 0 ) {
+const sourceSteps = computed(() => {
+  if (Array.isArray(props.steps) && props.steps.length > 0) {
     return props.steps
   }
 
   const tmpl = template.value
-  return Array.isArray( tmpl?.steps ) ? tmpl.steps : []
-} )
+  return Array.isArray(tmpl?.steps) ? tmpl.steps : []
+})
 
 // Process template-based steps (original logic preserved)
-const processTemplateStep = ( s, idx ) => {
-  if ( !s || typeof s !== 'object' ) {
+const processTemplateStep = (s, idx) => {
+  if (!s || typeof s !== 'object') {
     return {
-      step_id : `step-${idx}`,
-      order : idx + 1,
-      type : 'text',
-      label : `Step ${idx + 1}`,
-      description : '',
-      required : false,
-      required_image : false,
-      relevant_tools : [],
-      config : {}
+      step_id: `step-${idx}`,
+      order: idx + 1,
+      type: 'text',
+      label: `Step ${idx + 1}`,
+      description: '',
+      required: false,
+      required_image: false,
+      relevant_tools: [],
+      config: {},
     }
   }
 
   // Original template processing logic
   const v = s.value || {}
-  const type = mapValueTypeToPreviewType( v.type )
-  const tools = Array.isArray( s.tools ) && s.tools.length > 0 ? s.tools : s.relevant_tools || []
+  const type = mapValueTypeToPreviewType(v.type)
+  const tools = Array.isArray(s.tools) && s.tools.length > 0 ? s.tools : s.relevant_tools || []
   const numericBounds = v.numeric_limit_bounds || v.numericLimitBounds || {}
 
   const base = {
-    step_id : s.id || s.step_id || `step-${idx}`,
-    order : idx + 1,
+    step_id: s.id || s.step_id || `step-${idx}`,
+    order: idx + 1,
     type,
-    label : s.name || s.label || `Step ${idx + 1}`,
-    description : s.description || '',
-    required : Boolean( s.required ),
-    required_image : Boolean( v.require_image ),
-    relevant_tools : tools
-      .filter( t => t && ( t.id || t.tool_id ) )
-      .map( t => ( {
-        tool_id : t.id || t.tool_id,
-        name : t.name || t.tool_name || 'Unnamed Tool'
-      } ) ),
-    config : {}
+    label: s.name || s.label || `Step ${idx + 1}`,
+    description: s.description || '',
+    required: Boolean(s.required),
+    required_image: Boolean(v.require_image),
+    relevant_tools: tools
+      .filter(t => t && (t.id || t.tool_id))
+      .map(t => ({
+        tool_id: t.id || t.tool_id,
+        name: t.name || t.tool_name || 'Unnamed Tool',
+      })),
+    config: {},
   }
 
   // Original config building logic
-  if ( type === 'number' ) {
+  if (type === 'number') {
     base.config = {
-      default_value : typeof v.value === 'number' ? v.value : undefined,
-      limits : transformLimitsFromBackend( numericBounds ),
-      required_image : base.required_image
+      default_value: typeof v.value === 'number' ? v.value : undefined,
+      limits: transformLimitsFromBackend(numericBounds),
+      required_image: base.required_image,
     }
-  } else if ( type === 'checkbox' ) {
-    base.config = { default : Boolean( v.value ), required_image : base.required_image }
-  } else if ( type === 'text' ) {
-    base.config = { default_value : v.value ?? '', required_image : base.required_image }
-  } else if ( type === 'inspection' ) {
-    base.config = { default : 'pass', required_image : base.required_image }
-  } else if ( type === 'attachments' ) {
-    base.config = { upload_style : { list_type : 'picture-card' }, required_image : base.required_image }
+  } else if (type === 'checkbox') {
+    base.config = { default: Boolean(v.value), required_image: base.required_image }
+  } else if (type === 'text') {
+    base.config = { default_value: v.value ?? '', required_image: base.required_image }
+  } else if (type === 'inspection') {
+    base.config = { default: 'pass', required_image: base.required_image }
+  } else if (type === 'attachments') {
+    base.config = { upload_style: { list_type: 'picture-card' }, required_image: base.required_image }
   }
   return base
 }
 
 // Process standalone steps (enhanced logic for multiple formats)
-const processStandaloneStep = ( s, idx ) => {
-  if ( !s || typeof s !== 'object' ) {
+const processStandaloneStep = (s, idx) => {
+  if (!s || typeof s !== 'object') {
     return {
-      step_id : `step-${idx}`,
-      order : idx + 1,
-      type : 'text',
-      label : `Step ${idx + 1}`,
-      description : '',
-      required : false,
-      required_image : false,
-      relevant_tools : [],
-      config : {}
+      step_id: `step-${idx}`,
+      order: idx + 1,
+      type: 'text',
+      label: `Step ${idx + 1}`,
+      description: '',
+      required: false,
+      required_image: false,
+      relevant_tools: [],
+      config: {},
     }
   }
 
   // Enhanced type detection for different data formats
-  const type = detectStepType( s )
+  const type = detectStepType(s)
 
   // Extract value data from different possible structures
   const v = s.value || s.config || {}
-  const tools = Array.isArray( s.tools ) && s.tools.length > 0 ? s.tools : s.relevant_tools || []
+  const tools = Array.isArray(s.tools) && s.tools.length > 0 ? s.tools : s.relevant_tools || []
 
   // Handle numeric bounds from different structures
   const numericBounds = v.numeric_limit_bounds || v.numericLimitBounds || v.limits || {}
 
   // Determine required image from different structures
-  const requiredImage = Boolean( v.require_image || v.required_image || s.required_image )
+  const requiredImage = Boolean(v.require_image || v.required_image || s.required_image)
 
   const base = {
-    step_id : s.id || s.step_id || `step-${idx}`,
-    order : idx + 1,
+    step_id: s.id || s.step_id || `step-${idx}`,
+    order: idx + 1,
     type,
-    label : s.name || s.label || `Step ${idx + 1}`,
-    description : s.description || '',
-    required : Boolean( s.required ),
-    required_image : requiredImage,
-    relevant_tools : tools
-      .filter( t => t && ( t.id || t.tool_id ) )
-      .map( t => ( {
-        tool_id : t.id || t.tool_id,
-        name : t.name || t.tool_name || 'Unnamed Tool'
-      } ) ),
-    config : {}
+    label: s.name || s.label || `Step ${idx + 1}`,
+    description: s.description || '',
+    required: Boolean(s.required),
+    required_image: requiredImage,
+    relevant_tools: tools
+      .filter(t => t && (t.id || t.tool_id))
+      .map(t => ({
+        tool_id: t.id || t.tool_id,
+        name: t.name || t.tool_name || 'Unnamed Tool',
+      })),
+    config: {},
   }
 
   // Enhanced config building based on detected type
-  if ( type === 'number' ) {
+  if (type === 'number') {
     base.config = {
-      default_value :
+      default_value:
         typeof v.value === 'number' ? v.value : typeof v.default_value === 'number' ? v.default_value : undefined,
-      limits : transformLimitsFromBackend( numericBounds ),
-      required_image : base.required_image
+      limits: transformLimitsFromBackend(numericBounds),
+      required_image: base.required_image,
     }
-  } else if ( type === 'checkbox' ) {
-    const defaultVal = v.value !== undefined ? Boolean( v.value ) : v.default !== undefined ? Boolean( v.default ) : false
-    base.config = { default : defaultVal, required_image : base.required_image }
-  } else if ( type === 'text' ) {
+  } else if (type === 'checkbox') {
+    const defaultVal = v.value !== undefined ? Boolean(v.value) : v.default !== undefined ? Boolean(v.default) : false
+    base.config = { default: defaultVal, required_image: base.required_image }
+  } else if (type === 'text') {
     const defaultVal = v.value ?? v.default_value ?? ''
-    base.config = { default_value : defaultVal, required_image : base.required_image }
-  } else if ( type === 'inspection' ) {
+    base.config = { default_value: defaultVal, required_image: base.required_image }
+  } else if (type === 'inspection') {
     const defaultVal = v.value || v.default || 'pass'
-    base.config = { default : defaultVal, required_image : base.required_image }
-  } else if ( type === 'attachments' ) {
-    base.config = { upload_style : { list_type : 'picture-card' }, required_image : base.required_image }
+    base.config = { default: defaultVal, required_image: base.required_image }
+  } else if (type === 'attachments') {
+    base.config = { upload_style: { list_type: 'picture-card' }, required_image: base.required_image }
   }
   return base
 }
 
-const previewSteps = computed( () => {
-  return sourceSteps.value.map( ( s, idx ) => {
+const previewSteps = computed(() => {
+  return sourceSteps.value.map((s, idx) => {
     // Detect data format based on step structure, not prop source
     const hasBackendFormat = s && s.value && s.value.type
 
-    if ( hasBackendFormat ) {
+    if (hasBackendFormat) {
       // Use original logic for backend-formatted data (templates and transformed standalone tasks)
-      return processTemplateStep( s, idx )
+      return processTemplateStep(s, idx)
     } else {
       // Use enhanced logic for designer/raw format data
-      return processStandaloneStep( s, idx )
+      return processStandaloneStep(s, idx)
     }
-  } )
-} )
+  })
+})
 
-const filteredPreviewSteps = computed( () => {
-  if ( !stepSearchQuery.value ) {
+const filteredPreviewSteps = computed(() => {
+  if (!stepSearchQuery.value) {
     return previewSteps.value
   }
   const query = stepSearchQuery.value.toLowerCase()
-  return previewSteps.value.filter( step => step.label.toLowerCase().includes( query ) )
-} )
+  return previewSteps.value.filter(step => step.label.toLowerCase().includes(query))
+})
 
 // Desktop preview helpers
 const getStepComponent = stepType => {
   const components = {
-    inspection : InspectionStepPreview,
-    checkbox : CheckboxStepPreview,
-    number : NumberStepPreview,
-    text : TextStepPreview,
-    files : AttachmentStepPreview,
-    attachments : AttachmentStepPreview,
-    service : ServiceStepPreview
+    inspection: InspectionStepPreview,
+    checkbox: CheckboxStepPreview,
+    number: NumberStepPreview,
+    text: TextStepPreview,
+    files: AttachmentStepPreview,
+    attachments: AttachmentStepPreview,
+    service: ServiceStepPreview,
   }
   return components[stepType] || 'div'
 }
 
-const getStepWithNumber = ( step, index ) => {
-  if ( !step || typeof step !== 'object' ) {
+const getStepWithNumber = (step, index) => {
+  if (!step || typeof step !== 'object') {
     return {
-      step_id : `step-${index}`,
-      type : 'text',
-      label : `${index + 1}. Step`,
-      description : '',
-      required : false,
-      config : {}
+      step_id: `step-${index}`,
+      type: 'text',
+      label: `${index + 1}. Step`,
+      description: '',
+      required: false,
+      config: {},
     }
   }
   return {
     ...step,
-    label : `${index + 1}. ${step.label || 'Step'}`
+    label: `${index + 1}. ${step.label || 'Step'}`,
   }
 }
 
 const toggleStepTools = stepId => {
-  if ( !stepId ) return
+  if (!stepId) return
   stepToolsVisible[stepId] = !stepToolsVisible[stepId]
 }
 
 const getStepToolsVisible = stepId => {
-  if ( !stepId ) return false
-  return Boolean( stepToolsVisible[stepId] )
+  if (!stepId) return false
+  return Boolean(stepToolsVisible[stepId])
 }
 
 const handleStepSearch = () => {
@@ -427,29 +427,29 @@ const handleModeChange = value => {
   isInteractive.value = value
 }
 
-const hasExternalSteps = computed( () => Array.isArray( props.steps ) && props.steps.length > 0 )
+const hasExternalSteps = computed(() => Array.isArray(props.steps) && props.steps.length > 0)
 
 const resetStepToolsVisibility = () => {
-  Object.keys( stepToolsVisible ).forEach( key => {
+  Object.keys(stepToolsVisible).forEach(key => {
     delete stepToolsVisible[key]
-  } )
+  })
 }
 
 // Load template data
-const fetchTemplate = async() => {
-  if ( !props.templateId || hasExternalSteps.value ) return
+const fetchTemplate = async () => {
+  if (!props.templateId || hasExternalSteps.value) return
 
   resetStepToolsVisibility()
 
   loading.value = true
   error.value = false
   try {
-    const loadedTemplate = await loadTemplate( props.templateId )
+    const loadedTemplate = await loadTemplate(props.templateId)
     template.value = loadedTemplate
-  } catch ( err ) {
-    console.error( 'Failed to load template for preview:', err )
+  } catch (err) {
+    console.error('Failed to load template for preview:', err)
     error.value = true
-    ElMessage.error( 'Failed to load template steps' )
+    ElMessage.error('Failed to load template steps')
   } finally {
     loading.value = false
   }
@@ -458,14 +458,14 @@ const fetchTemplate = async() => {
 const refreshPreviewSource = () => {
   resetStepToolsVisibility()
 
-  if ( hasExternalSteps.value ) {
+  if (hasExternalSteps.value) {
     loading.value = false
     error.value = false
     template.value = null
     return
   }
 
-  if ( props.templateId ) {
+  if (props.templateId) {
     fetchTemplate()
   } else {
     template.value = null
@@ -478,11 +478,11 @@ const refreshPreviewSource = () => {
 watch(
   () => props.templateId,
   newId => {
-    if ( hasExternalSteps.value ) {
+    if (hasExternalSteps.value) {
       return
     }
 
-    if ( newId ) {
+    if (newId) {
       fetchTemplate()
     } else {
       template.value = null
@@ -490,7 +490,7 @@ watch(
       error.value = false
     }
   },
-  { immediate : true }
+  { immediate: true }
 )
 
 watch(
@@ -498,7 +498,7 @@ watch(
   () => {
     refreshPreviewSource()
   },
-  { deep : true, immediate : true }
+  { deep: true, immediate: true }
 )
 </script>
 

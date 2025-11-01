@@ -151,41 +151,41 @@ import TextStepPreview from '@/views/taskLibrary/components/Designer/StepCards/T
 import AttachmentStepPreview from '@/views/taskLibrary/components/Designer/StepCards/AttachmentStepPreview.vue'
 import ServiceStepPreview from '@/views/taskLibrary/components/Designer/StepCards/ServiceStepPreview.vue'
 
-const props = defineProps( {
-  templateId : {
-    type : [String, Number],
-    default : ''
+const props = defineProps({
+  templateId: {
+    type: [String, Number],
+    default: '',
   },
-  steps : {
-    type : Array,
-    default : () => []
-  }
-} )
+  steps: {
+    type: Array,
+    default: () => [],
+  },
+})
 
 // Emit event for parent to get step values
-const emit = defineEmits( ['values-updated'] )
+const emit = defineEmits(['values-updated'])
 
 // Composables
 const { loadTemplate } = useTaskLibrary()
 
 // Local state
-const loading = ref( false )
-const error = ref( false )
-const template = ref( null )
-const stepSearchQuery = ref( '' )
-const stepToolsVisible = reactive( {} )
-const stepValues = reactive( {} ) // Store step values by step_id
-const stepImages = reactive( {} ) // Store images by step_id
-const stepFiles = reactive( {} ) // Store attachments by step_id
-const stepInitialized = reactive( {} ) // Track which steps have been initialized
+const loading = ref(false)
+const error = ref(false)
+const template = ref(null)
+const stepSearchQuery = ref('')
+const stepToolsVisible = reactive({})
+const stepValues = reactive({}) // Store step values by step_id
+const stepImages = reactive({}) // Store images by step_id
+const stepFiles = reactive({}) // Store attachments by step_id
+const stepInitialized = reactive({}) // Track which steps have been initialized
 
 // Track upload loading states
-const imageUploadLoading = reactive( {} )
-const fileUploadLoading = reactive( {} )
+const imageUploadLoading = reactive({})
+const fileUploadLoading = reactive({})
 
 // Image preview dialog state
-const showImagePreview = ref( false )
-const previewImageUrl = ref( '' )
+const showImagePreview = ref(false)
+const previewImageUrl = ref('')
 
 // Get user store for completion metadata
 // eslint-disable-next-line no-unused-vars
@@ -193,29 +193,29 @@ const userStore = useUserStore()
 
 // Map backend step value types to preview component types
 const mapValueTypeToPreviewType = valueType => {
-  const normalized = ( valueType || '' ).toString().toLowerCase()
+  const normalized = (valueType || '').toString().toLowerCase()
 
-  if ( normalized.includes( 'numeric' ) || normalized === 'number' ) {
+  if (normalized.includes('numeric') || normalized === 'number') {
     return 'number'
   }
 
-  if ( normalized.includes( 'boolean' ) || normalized.includes( 'checkbox' ) ) {
+  if (normalized.includes('boolean') || normalized.includes('checkbox')) {
     return 'checkbox'
   }
 
-  if ( normalized.includes( 'inspection' ) ) {
+  if (normalized.includes('inspection')) {
     return 'inspection'
   }
 
-  if ( normalized.includes( 'file' ) || normalized.includes( 'attachment' ) ) {
+  if (normalized.includes('file') || normalized.includes('attachment')) {
     return 'attachments'
   }
 
-  if ( normalized.includes( 'service' ) ) {
+  if (normalized.includes('service')) {
     return 'service'
   }
 
-  if ( normalized.includes( 'text' ) ) {
+  if (normalized.includes('text')) {
     return 'text'
   }
 
@@ -225,34 +225,34 @@ const mapValueTypeToPreviewType = valueType => {
 // Enhanced step type detection for different data formats
 const detectStepType = step => {
   // Handle designer format (step.type directly)
-  if ( step.type ) {
-    return mapValueTypeToPreviewType( step.type )
+  if (step.type) {
+    return mapValueTypeToPreviewType(step.type)
   }
 
   // Handle backend format (step.value.type)
-  if ( step.value && step.value.type ) {
-    return mapValueTypeToPreviewType( step.value.type )
+  if (step.value && step.value.type) {
+    return mapValueTypeToPreviewType(step.value.type)
   }
 
   // Handle step config format (step.config.kind)
-  if ( step.config && step.config.kind ) {
-    return mapValueTypeToPreviewType( step.config.kind )
+  if (step.config && step.config.kind) {
+    return mapValueTypeToPreviewType(step.config.kind)
   }
 
   // Handle legacy format lookups by checking step structure patterns
-  if ( step.value ) {
+  if (step.value) {
     // Numeric field detection
-    if ( typeof step.value.value === 'number' || step.value.has_upper_limit || step.value.has_lower_limit ) {
+    if (typeof step.value.value === 'number' || step.value.has_upper_limit || step.value.has_lower_limit) {
       return 'number'
     }
 
     // Boolean field detection
-    if ( typeof step.value.value === 'boolean' ) {
+    if (typeof step.value.value === 'boolean') {
       return 'checkbox'
     }
 
     // File field detection
-    if ( step.value.files || step.value.file_attachments ) {
+    if (step.value.files || step.value.file_attachments) {
       return 'attachments'
     }
   }
@@ -262,237 +262,237 @@ const detectStepType = step => {
 }
 
 // Transform backend steps to execution-ready steps
-const sourceSteps = computed( () => {
-  if ( Array.isArray( props.steps ) && props.steps.length > 0 ) {
+const sourceSteps = computed(() => {
+  if (Array.isArray(props.steps) && props.steps.length > 0) {
     return props.steps
   }
 
   const tmpl = template.value
-  return Array.isArray( tmpl?.steps ) ? tmpl.steps : []
-} )
+  return Array.isArray(tmpl?.steps) ? tmpl.steps : []
+})
 
 // Process template-based steps
-const processTemplateStep = ( s, idx ) => {
-  if ( !s || typeof s !== 'object' ) {
+const processTemplateStep = (s, idx) => {
+  if (!s || typeof s !== 'object') {
     return {
-      step_id : `step-${idx}`,
-      order : idx + 1,
-      type : 'text',
-      label : `Step ${idx + 1}`,
-      description : '',
-      required : false,
-      required_image : false,
-      relevant_tools : [],
-      config : {},
-      originalStep : s
+      step_id: `step-${idx}`,
+      order: idx + 1,
+      type: 'text',
+      label: `Step ${idx + 1}`,
+      description: '',
+      required: false,
+      required_image: false,
+      relevant_tools: [],
+      config: {},
+      originalStep: s,
     }
   }
 
   const v = s.value || {}
-  const type = mapValueTypeToPreviewType( v.type )
-  const tools = Array.isArray( s.tools ) && s.tools.length > 0 ? s.tools : s.relevant_tools || []
+  const type = mapValueTypeToPreviewType(v.type)
+  const tools = Array.isArray(s.tools) && s.tools.length > 0 ? s.tools : s.relevant_tools || []
   const numericBounds = v.numeric_limit_bounds || v.numericLimitBounds || {}
 
   const base = {
-    step_id : s.id || s.step_id || `step-${idx}`,
-    order : idx + 1,
+    step_id: s.id || s.step_id || `step-${idx}`,
+    order: idx + 1,
     type,
-    label : s.name || s.label || `Step ${idx + 1}`,
-    description : s.description || '',
-    required : Boolean( s.required ),
-    required_image : Boolean( v.require_image ),
-    relevant_tools : tools
-      .filter( t => t && ( t.id || t.tool_id ) )
-      .map( t => ( {
-        tool_id : t.id || t.tool_id,
-        name : t.name || t.tool_name || 'Unnamed Tool',
-        code : t.code || '',
-        description : t.description || ''
-      } ) ),
-    config : {},
-    originalStep : s, // Keep original step data
-    value : v // Keep original value structure
+    label: s.name || s.label || `Step ${idx + 1}`,
+    description: s.description || '',
+    required: Boolean(s.required),
+    required_image: Boolean(v.require_image),
+    relevant_tools: tools
+      .filter(t => t && (t.id || t.tool_id))
+      .map(t => ({
+        tool_id: t.id || t.tool_id,
+        name: t.name || t.tool_name || 'Unnamed Tool',
+        code: t.code || '',
+        description: t.description || '',
+      })),
+    config: {},
+    originalStep: s, // Keep original step data
+    value: v, // Keep original value structure
   }
 
   // Config building logic
-  if ( type === 'number' ) {
+  if (type === 'number') {
     base.config = {
-      default_value : typeof v.value === 'number' ? v.value : undefined,
-      limits : transformLimitsFromBackend( numericBounds ),
-      required_image : base.required_image
+      default_value: typeof v.value === 'number' ? v.value : undefined,
+      limits: transformLimitsFromBackend(numericBounds),
+      required_image: base.required_image,
     }
-  } else if ( type === 'checkbox' ) {
-    base.config = { default : Boolean( v.value ), required_image : base.required_image }
-  } else if ( type === 'text' ) {
-    base.config = { default_value : v.value ?? '', required_image : base.required_image }
-  } else if ( type === 'inspection' ) {
+  } else if (type === 'checkbox') {
+    base.config = { default: Boolean(v.value), required_image: base.required_image }
+  } else if (type === 'text') {
+    base.config = { default_value: v.value ?? '', required_image: base.required_image }
+  } else if (type === 'inspection') {
     base.config = {
-      default : v.value !== undefined ? v.value : 'pass',
-      remarks : v.remarks || '',
-      required_image : base.required_image
+      default: v.value !== undefined ? v.value : 'pass',
+      remarks: v.remarks || '',
+      required_image: base.required_image,
     }
-  } else if ( type === 'attachments' ) {
-    base.config = { upload_style : { list_type : 'picture-card' }, required_image : base.required_image }
+  } else if (type === 'attachments') {
+    base.config = { upload_style: { list_type: 'picture-card' }, required_image: base.required_image }
   }
 
   // Initialize step values from existing data
-  initializeStepValue( base.step_id, base.type, v )
+  initializeStepValue(base.step_id, base.type, v)
 
   return base
 }
 
 // Process standalone steps
-const processStandaloneStep = ( s, idx ) => {
-  if ( !s || typeof s !== 'object' ) {
+const processStandaloneStep = (s, idx) => {
+  if (!s || typeof s !== 'object') {
     return {
-      step_id : `step-${idx}`,
-      order : idx + 1,
-      type : 'text',
-      label : `Step ${idx + 1}`,
-      description : '',
-      required : false,
-      required_image : false,
-      relevant_tools : [],
-      config : {},
-      originalStep : s
+      step_id: `step-${idx}`,
+      order: idx + 1,
+      type: 'text',
+      label: `Step ${idx + 1}`,
+      description: '',
+      required: false,
+      required_image: false,
+      relevant_tools: [],
+      config: {},
+      originalStep: s,
     }
   }
 
-  const type = detectStepType( s )
+  const type = detectStepType(s)
   const v = s.value || s.config || {}
-  const tools = Array.isArray( s.tools ) && s.tools.length > 0 ? s.tools : s.relevant_tools || []
+  const tools = Array.isArray(s.tools) && s.tools.length > 0 ? s.tools : s.relevant_tools || []
   const numericBounds = v.numeric_limit_bounds || v.numericLimitBounds || v.limits || {}
-  const requiredImage = Boolean( v.require_image || v.required_image || s.required_image )
+  const requiredImage = Boolean(v.require_image || v.required_image || s.required_image)
 
   const base = {
-    step_id : s.id || s.step_id || `step-${idx}`,
-    order : idx + 1,
+    step_id: s.id || s.step_id || `step-${idx}`,
+    order: idx + 1,
     type,
-    label : s.name || s.label || `Step ${idx + 1}`,
-    description : s.description || '',
-    required : Boolean( s.required ),
-    required_image : requiredImage,
-    relevant_tools : tools
-      .filter( t => t && ( t.id || t.tool_id ) )
-      .map( t => ( {
-        tool_id : t.id || t.tool_id,
-        name : t.name || t.tool_name || 'Unnamed Tool'
-      } ) ),
-    config : {},
-    originalStep : s,
-    value : v
+    label: s.name || s.label || `Step ${idx + 1}`,
+    description: s.description || '',
+    required: Boolean(s.required),
+    required_image: requiredImage,
+    relevant_tools: tools
+      .filter(t => t && (t.id || t.tool_id))
+      .map(t => ({
+        tool_id: t.id || t.tool_id,
+        name: t.name || t.tool_name || 'Unnamed Tool',
+      })),
+    config: {},
+    originalStep: s,
+    value: v,
   }
 
   // Config building
-  if ( type === 'number' ) {
+  if (type === 'number') {
     base.config = {
-      default_value :
+      default_value:
         typeof v.value === 'number' ? v.value : typeof v.default_value === 'number' ? v.default_value : undefined,
-      limits : transformLimitsFromBackend( numericBounds ),
-      required_image : base.required_image
+      limits: transformLimitsFromBackend(numericBounds),
+      required_image: base.required_image,
     }
-  } else if ( type === 'checkbox' ) {
-    const defaultVal = v.value !== undefined ? Boolean( v.value ) : v.default !== undefined ? Boolean( v.default ) : false
-    base.config = { default : defaultVal, required_image : base.required_image }
-  } else if ( type === 'text' ) {
+  } else if (type === 'checkbox') {
+    const defaultVal = v.value !== undefined ? Boolean(v.value) : v.default !== undefined ? Boolean(v.default) : false
+    base.config = { default: defaultVal, required_image: base.required_image }
+  } else if (type === 'text') {
     const defaultVal = v.value ?? v.default_value ?? ''
-    base.config = { default_value : defaultVal, required_image : base.required_image }
-  } else if ( type === 'inspection' ) {
+    base.config = { default_value: defaultVal, required_image: base.required_image }
+  } else if (type === 'inspection') {
     const defaultVal = v.value !== undefined ? v.value : v.default || 'pass'
     base.config = {
-      default : defaultVal,
-      remarks : v.remarks || '',
-      required_image : base.required_image
+      default: defaultVal,
+      remarks: v.remarks || '',
+      required_image: base.required_image,
     }
-  } else if ( type === 'attachments' ) {
-    base.config = { upload_style : { list_type : 'picture-card' }, required_image : base.required_image }
+  } else if (type === 'attachments') {
+    base.config = { upload_style: { list_type: 'picture-card' }, required_image: base.required_image }
   }
 
   // Initialize step values from existing data
-  initializeStepValue( base.step_id, base.type, v )
+  initializeStepValue(base.step_id, base.type, v)
 
   return base
 }
 
 // Initialize step value from existing data
 const toNumberOrNull = value => {
-  if ( value === null || value === undefined || value === '' ) return null
-  const parsed = Number( value )
-  return Number.isFinite( parsed ) ? parsed : null
+  if (value === null || value === undefined || value === '') return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
 }
 
 const toBooleanOrNull = value => {
-  if ( value === null || value === undefined ) return null
-  if ( typeof value === 'boolean' ) return value
-  if ( typeof value === 'string' ) {
+  if (value === null || value === undefined) return null
+  if (typeof value === 'boolean') return value
+  if (typeof value === 'string') {
     const normalized = value.trim().toLowerCase()
-    if ( ['true', 'pass', 'yes', '1'].includes( normalized ) ) return true
-    if ( ['false', 'fail', 'no', '0'].includes( normalized ) ) return false
+    if (['true', 'pass', 'yes', '1'].includes(normalized)) return true
+    if (['false', 'fail', 'no', '0'].includes(normalized)) return false
   }
-  return Boolean( value )
+  return Boolean(value)
 }
 
 const removeTimestampFromFilename = filename => {
-  if ( !filename || typeof filename !== 'string' ) return filename
+  if (!filename || typeof filename !== 'string') return filename
   // Remove timestamp suffix pattern: -20251021180840125 (dash followed by 17 digits)
   // Pattern matches: -YYYYMMDDHHMMSSMMM before the file extension
-  return filename.replace( /-\d{17}(\.[^.]+)$/, '$1' )
+  return filename.replace(/-\d{17}(\.[^.]+)$/, '$1')
 }
 
 const extractFilenameFromUrl = url => {
-  if ( !url || typeof url !== 'string' ) return 'file'
+  if (!url || typeof url !== 'string') return 'file'
   try {
     // Get the last part of the URL path
-    const parts = url.split( '/' )
+    const parts = url.split('/')
     const lastPart = parts[parts.length - 1]
     // Decode URL encoding
-    let filename = decodeURIComponent( lastPart )
+    let filename = decodeURIComponent(lastPart)
 
     // Remove timestamp suffix
-    filename = removeTimestampFromFilename( filename )
+    filename = removeTimestampFromFilename(filename)
 
     return filename
-  } catch ( error ) {
+  } catch (error) {
     return 'file'
   }
 }
 
 const normalizeFileList = files => {
-  if ( !Array.isArray( files ) ) return []
+  if (!Array.isArray(files)) return []
 
   return files
-    .map( ( file, index ) => {
-      if ( typeof file === 'string' ) {
+    .map((file, index) => {
+      if (typeof file === 'string') {
         return {
-          name : extractFilenameFromUrl( file ),
-          url : file,
-          uid : `existing-file-${index + 1}`
+          name: extractFilenameFromUrl(file),
+          url: file,
+          uid: `existing-file-${index + 1}`,
         }
       }
 
-      if ( file && typeof file === 'object' ) {
+      if (file && typeof file === 'object') {
         const url = file.url || file.path || file.file_url || file.download_url
         return {
-          name : file.name || file.file_name || file.original_name || extractFilenameFromUrl( url ),
+          name: file.name || file.file_name || file.original_name || extractFilenameFromUrl(url),
           url,
-          uid : file.uid || file.id || `existing-file-${index + 1}`
+          uid: file.uid || file.id || `existing-file-${index + 1}`,
         }
       }
 
       return null
-    } )
-    .filter( Boolean )
+    })
+    .filter(Boolean)
 }
 
-const initializeStepValue = ( stepId, type, valueData = {} ) => {
-  if ( !stepId ) return
+const initializeStepValue = (stepId, type, valueData = {}) => {
+  if (!stepId) return
 
   // Skip initialization if this step has already been initialized
-  if ( stepInitialized[stepId] ) {
+  if (stepInitialized[stepId]) {
     // Update images array reference to keep it in sync
-    if ( stepImages[stepId] && stepImages[stepId].length > 0 ) {
-      const urls = stepImages[stepId].map( file => file.url ).filter( Boolean )
-      if ( !stepValues[stepId] ) {
+    if (stepImages[stepId] && stepImages[stepId].length > 0) {
+      const urls = stepImages[stepId].map(file => file.url).filter(Boolean)
+      if (!stepValues[stepId]) {
         stepValues[stepId] = {}
       }
       stepValues[stepId].images = urls
@@ -500,51 +500,51 @@ const initializeStepValue = ( stepId, type, valueData = {} ) => {
     return
   }
 
-  const imageList = normalizeFileList( valueData.image )
-  const fileList = normalizeFileList( valueData.file )
+  const imageList = normalizeFileList(valueData.image)
+  const fileList = normalizeFileList(valueData.file)
 
   // Initialize images/files from backend data
   stepImages[stepId] = imageList
   stepFiles[stepId] = fileList
 
-  if ( !stepValues[stepId] ) {
+  if (!stepValues[stepId]) {
     stepValues[stepId] = {}
   }
 
   // Initialize step values
-  if ( type === 'number' ) {
+  if (type === 'number') {
     const numericValue = valueData.value !== undefined ? valueData.value : valueData.default_value
-    stepValues[stepId].value = toNumberOrNull( numericValue )
-  } else if ( type === 'checkbox' ) {
+    stepValues[stepId].value = toNumberOrNull(numericValue)
+  } else if (type === 'checkbox') {
     const checkboxValue = valueData.value !== undefined ? valueData.value : valueData.default
-    const normalized = toBooleanOrNull( checkboxValue )
+    const normalized = toBooleanOrNull(checkboxValue)
     // CRITICAL FIX: Don't pre-populate with false - leave as null/undefined for required validation
     stepValues[stepId].value = normalized
-    console.log( '[StepsExecution] initializeStepValue checkbox:', {
+    console.log('[StepsExecution] initializeStepValue checkbox:', {
       stepId,
       checkboxValue,
       normalized,
-      finalValue : stepValues[stepId].value
-    } )
-  } else if ( type === 'inspection' ) {
+      finalValue: stepValues[stepId].value,
+    })
+  } else if (type === 'inspection') {
     const inspectionValue = valueData.value !== undefined ? valueData.value : valueData.default
-    stepValues[stepId].value = toBooleanOrNull( inspectionValue )
+    stepValues[stepId].value = toBooleanOrNull(inspectionValue)
     // Initialize remarks for inspection steps
-    if ( valueData.remarks ) {
+    if (valueData.remarks) {
       stepValues[stepId].remarks = valueData.remarks
     }
-  } else if ( type === 'text' ) {
+  } else if (type === 'text') {
     const textValue = valueData.value !== undefined ? valueData.value : valueData.default_value
     stepValues[stepId].value = textValue ?? ''
-  } else if ( type === 'attachments' ) {
-    stepValues[stepId].value = fileList.map( file => file.url ).filter( Boolean )
+  } else if (type === 'attachments') {
+    stepValues[stepId].value = fileList.map(file => file.url).filter(Boolean)
   } else {
     stepValues[stepId].value = valueData.value ?? null
   }
 
   // Update images array reference if images exist
-  if ( imageList.length > 0 ) {
-    const urls = imageList.map( file => file.url ).filter( Boolean )
+  if (imageList.length > 0) {
+    const urls = imageList.map(file => file.url).filter(Boolean)
     stepValues[stepId].images = urls
   }
 
@@ -552,107 +552,107 @@ const initializeStepValue = ( stepId, type, valueData = {} ) => {
   stepInitialized[stepId] = true
 }
 
-const executionSteps = computed( () => {
-  return sourceSteps.value.map( ( s, idx ) => {
+const executionSteps = computed(() => {
+  return sourceSteps.value.map((s, idx) => {
     const hasBackendFormat = s && s.value && s.value.type
 
-    if ( hasBackendFormat ) {
-      return processTemplateStep( s, idx )
+    if (hasBackendFormat) {
+      return processTemplateStep(s, idx)
     } else {
-      return processStandaloneStep( s, idx )
+      return processStandaloneStep(s, idx)
     }
-  } )
-} )
+  })
+})
 
-const filteredExecutionSteps = computed( () => {
-  if ( !stepSearchQuery.value ) {
+const filteredExecutionSteps = computed(() => {
+  if (!stepSearchQuery.value) {
     return executionSteps.value
   }
   const query = stepSearchQuery.value.toLowerCase()
-  return executionSteps.value.filter( step => step.label.toLowerCase().includes( query ) )
-} )
+  return executionSteps.value.filter(step => step.label.toLowerCase().includes(query))
+})
 
 // Step component helpers
 const getStepComponent = stepType => {
   const components = {
-    inspection : InspectionStepPreview,
-    checkbox : CheckboxStepPreview,
-    number : NumberStepPreview,
-    text : TextStepPreview,
-    files : AttachmentStepPreview,
-    attachments : AttachmentStepPreview,
-    service : ServiceStepPreview
+    inspection: InspectionStepPreview,
+    checkbox: CheckboxStepPreview,
+    number: NumberStepPreview,
+    text: TextStepPreview,
+    files: AttachmentStepPreview,
+    attachments: AttachmentStepPreview,
+    service: ServiceStepPreview,
   }
   return components[stepType] || 'div'
 }
 
-const getStepWithNumber = ( step, index ) => {
-  if ( !step || typeof step !== 'object' ) {
+const getStepWithNumber = (step, index) => {
+  if (!step || typeof step !== 'object') {
     return {
-      step_id : `step-${index}`,
-      type : 'text',
-      label : `${index + 1}. Step`,
-      description : '',
-      required : false,
-      config : {}
+      step_id: `step-${index}`,
+      type: 'text',
+      label: `${index + 1}. Step`,
+      description: '',
+      required: false,
+      config: {},
     }
   }
   return {
     ...step,
-    label : `${index + 1}. ${step.label || 'Step'}`
+    label: `${index + 1}. ${step.label || 'Step'}`,
   }
 }
 
 // Tools visibility
 const toggleStepTools = stepId => {
-  if ( !stepId ) return
+  if (!stepId) return
   stepToolsVisible[stepId] = !stepToolsVisible[stepId]
 }
 
 const getStepToolsVisible = stepId => {
-  if ( !stepId ) return false
-  return Boolean( stepToolsVisible[stepId] )
+  if (!stepId) return false
+  return Boolean(stepToolsVisible[stepId])
 }
 
 const getStepModelValue = stepId => {
   const record = stepValues[stepId]
-  if ( record && 'value' in record ) {
+  if (record && 'value' in record) {
     return record.value
   }
   return null
 }
 
 const getStepComponentProps = step => {
-  if ( !step ) return {}
-  if ( step.type === 'text' ) {
+  if (!step) return {}
+  if (step.type === 'text') {
     return {
-      executionMode : true
+      executionMode: true,
     }
   }
   return {}
 }
 
-const findExecutionStep = stepId => executionSteps.value.find( step => step.step_id === stepId )
+const findExecutionStep = stepId => executionSteps.value.find(step => step.step_id === stepId)
 
 // Handle step value changes
-const handleStepValueChange = ( stepId, value ) => {
-  if ( !stepId ) return
+const handleStepValueChange = (stepId, value) => {
+  if (!stepId) return
 
-  console.log( '[StepsExecution] handleStepValueChange:', { stepId, value, valueType : typeof value } )
+  console.log('[StepsExecution] handleStepValueChange:', { stepId, value, valueType: typeof value })
 
-  if ( !stepValues[stepId] ) {
+  if (!stepValues[stepId]) {
     stepValues[stepId] = {}
   }
 
   // Handle inspection step value (which is an object with value and remarks)
-  if ( value && typeof value === 'object' && 'value' in value && 'remarks' in value ) {
+  if (value && typeof value === 'object' && 'value' in value && 'remarks' in value) {
     stepValues[stepId].value = value.value
     stepValues[stepId].remarks = value.remarks
   } else {
     stepValues[stepId].value = value
   }
 
-  console.log( '[StepsExecution] stepValues after update:', stepValues[stepId] )
+  console.log('[StepsExecution] stepValues after update:', stepValues[stepId])
 
   // Emit updated values to parent
   emitValuesUpdate()
@@ -662,94 +662,94 @@ const getStepImages = stepId => stepImages[stepId] || []
 const getStepFiles = stepId => stepFiles[stepId] || []
 
 const ensureStepImageBucket = stepId => {
-  if ( !stepImages[stepId] ) {
+  if (!stepImages[stepId]) {
     stepImages[stepId] = []
   }
 }
 
 const ensureStepFileBucket = stepId => {
-  if ( !stepFiles[stepId] ) {
+  if (!stepFiles[stepId]) {
     stepFiles[stepId] = []
   }
 }
 
 const uploadFileToMinio = async file => {
-  const response = await uploadToMinio( file )
+  const response = await uploadToMinio(file)
 
   // Handle response structure: { status, message, data: "url" }
-  if ( response?.data && typeof response.data === 'string' ) {
+  if (response?.data && typeof response.data === 'string') {
     return response.data
   }
 
   // Fallback to nested data structure
   const uploaded = response?.data || response
-  if ( uploaded?.url ) {
+  if (uploaded?.url) {
     return uploaded.url
   }
-  if ( Array.isArray( uploaded?.uploadedFiles ) && uploaded.uploadedFiles.length ) {
+  if (Array.isArray(uploaded?.uploadedFiles) && uploaded.uploadedFiles.length) {
     return uploaded.uploadedFiles[0]?.url
   }
-  if ( uploaded?.fileUrl ) {
+  if (uploaded?.fileUrl) {
     return uploaded.fileUrl
   }
 
-  throw new Error( 'Upload response missing URL' )
+  throw new Error('Upload response missing URL')
 }
 
 const isAttachmentStep = step => step?.type === 'attachments' || step?.value?.type === 'file'
 
-const handleImageSelected = async( stepId, uploadFile ) => {
-  if ( !uploadFile?.raw ) return
-  if ( !uploadFile.raw.type.startsWith( 'image/' ) ) {
-    ElMessage.error( 'Only image files are allowed.' )
+const handleImageSelected = async (stepId, uploadFile) => {
+  if (!uploadFile?.raw) return
+  if (!uploadFile.raw.type.startsWith('image/')) {
+    ElMessage.error('Only image files are allowed.')
     return
   }
 
   const uid = uploadFile.uid || `img-${Date.now()}`
-  const stepMeta = findExecutionStep( stepId )
+  const stepMeta = findExecutionStep(stepId)
 
   try {
     imageUploadLoading[stepId] = true
-    const url = await uploadFileToMinio( uploadFile.raw )
-    ensureStepImageBucket( stepId )
+    const url = await uploadFileToMinio(uploadFile.raw)
+    ensureStepImageBucket(stepId)
     const entry = {
       uid,
-      name : uploadFile.name,
+      name: uploadFile.name,
       url,
-      status : 'success'
+      status: 'success',
     }
-    stepImages[stepId].push( entry )
+    stepImages[stepId].push(entry)
 
-    if ( !stepValues[stepId] ) {
+    if (!stepValues[stepId]) {
       stepValues[stepId] = {}
     }
-    const imageUrls = stepImages[stepId].map( img => img.url ).filter( Boolean )
+    const imageUrls = stepImages[stepId].map(img => img.url).filter(Boolean)
     stepValues[stepId].images = imageUrls
-    if ( isAttachmentStep( stepMeta ) ) {
+    if (isAttachmentStep(stepMeta)) {
       stepValues[stepId].value = imageUrls
     }
 
     emitValuesUpdate()
-    ElMessage.success( 'Image uploaded successfully' )
-  } catch ( error ) {
-    console.error( 'Image upload failed:', error )
-    ElMessage.error( error?.message || 'Image upload failed' )
+    ElMessage.success('Image uploaded successfully')
+  } catch (error) {
+    console.error('Image upload failed:', error)
+    ElMessage.error(error?.message || 'Image upload failed')
   } finally {
     imageUploadLoading[stepId] = false
   }
 }
 
-const handleImageRemove = ( stepId, file ) => {
-  if ( !stepImages[stepId] ) return
+const handleImageRemove = (stepId, file) => {
+  if (!stepImages[stepId]) return
 
-  const stepMeta = findExecutionStep( stepId )
+  const stepMeta = findExecutionStep(stepId)
 
-  stepImages[stepId] = stepImages[stepId].filter( img => img.uid !== file.uid )
+  stepImages[stepId] = stepImages[stepId].filter(img => img.uid !== file.uid)
 
-  if ( stepValues[stepId] ) {
-    const imageUrls = stepImages[stepId].map( img => img.url ).filter( Boolean )
+  if (stepValues[stepId]) {
+    const imageUrls = stepImages[stepId].map(img => img.url).filter(Boolean)
     stepValues[stepId].images = imageUrls
-    if ( isAttachmentStep( stepMeta ) ) {
+    if (isAttachmentStep(stepMeta)) {
       stepValues[stepId].value = imageUrls
     }
   }
@@ -757,49 +757,49 @@ const handleImageRemove = ( stepId, file ) => {
   emitValuesUpdate()
 }
 
-const handleAttachmentSelected = async( stepId, uploadFile ) => {
-  if ( !uploadFile?.raw ) return
+const handleAttachmentSelected = async (stepId, uploadFile) => {
+  if (!uploadFile?.raw) return
 
   const uid = uploadFile.uid || `file-${Date.now()}`
 
   try {
     fileUploadLoading[stepId] = true
-    const url = await uploadFileToMinio( uploadFile.raw )
-    ensureStepFileBucket( stepId )
+    const url = await uploadFileToMinio(uploadFile.raw)
+    ensureStepFileBucket(stepId)
 
     // Extract clean filename from URL (backend returns URL with timestamp)
-    const cleanName = extractFilenameFromUrl( url )
+    const cleanName = extractFilenameFromUrl(url)
 
     const entry = {
       uid,
-      name : cleanName,
+      name: cleanName,
       url,
-      status : 'success'
+      status: 'success',
     }
-    stepFiles[stepId].push( entry )
+    stepFiles[stepId].push(entry)
 
-    if ( !stepValues[stepId] ) {
+    if (!stepValues[stepId]) {
       stepValues[stepId] = {}
     }
-    const fileUrls = stepFiles[stepId].map( fileEntry => fileEntry.url ).filter( Boolean )
+    const fileUrls = stepFiles[stepId].map(fileEntry => fileEntry.url).filter(Boolean)
     stepValues[stepId].value = fileUrls
 
     emitValuesUpdate()
-    ElMessage.success( 'File uploaded successfully' )
-  } catch ( error ) {
-    console.error( 'File upload failed:', error )
-    ElMessage.error( error?.message || 'File upload failed' )
+    ElMessage.success('File uploaded successfully')
+  } catch (error) {
+    console.error('File upload failed:', error)
+    ElMessage.error(error?.message || 'File upload failed')
   } finally {
     fileUploadLoading[stepId] = false
   }
 }
 
-const handleAttachmentRemove = ( stepId, file ) => {
-  if ( !stepFiles[stepId] ) return
-  stepFiles[stepId] = stepFiles[stepId].filter( entry => entry.uid !== file.uid )
+const handleAttachmentRemove = (stepId, file) => {
+  if (!stepFiles[stepId]) return
+  stepFiles[stepId] = stepFiles[stepId].filter(entry => entry.uid !== file.uid)
 
-  if ( stepValues[stepId] ) {
-    const fileUrls = stepFiles[stepId].map( entry => entry.url ).filter( Boolean )
+  if (stepValues[stepId]) {
+    const fileUrls = stepFiles[stepId].map(entry => entry.url).filter(Boolean)
     stepValues[stepId].value = fileUrls
   }
 
@@ -807,28 +807,28 @@ const handleAttachmentRemove = ( stepId, file ) => {
 }
 
 const handleFilePreview = file => {
-  console.log( 'Preview file:', file )
-  if ( file && file.url ) {
-    window.open( file.url, '_blank' )
-  } else if ( file && file.response?.url ) {
-    window.open( file.response.url, '_blank' )
+  console.log('Preview file:', file)
+  if (file && file.url) {
+    window.open(file.url, '_blank')
+  } else if (file && file.response?.url) {
+    window.open(file.response.url, '_blank')
   } else {
-    console.warn( 'File preview failed - no URL found:', file )
+    console.warn('File preview failed - no URL found:', file)
   }
 }
 
 const handleImagePreview = uploadFile => {
-  if ( uploadFile && uploadFile.url ) {
+  if (uploadFile && uploadFile.url) {
     previewImageUrl.value = uploadFile.url
     showImagePreview.value = true
   } else {
-    console.warn( 'Image preview failed - no URL found:', uploadFile )
+    console.warn('Image preview failed - no URL found:', uploadFile)
   }
 }
 
 const hasRequiredImages = step => {
-  if ( step.required_image || step.value?.require_image ) {
-    return Array.isArray( stepImages[step.step_id] ) && stepImages[step.step_id].length > 0
+  if (step.required_image || step.value?.require_image) {
+    return Array.isArray(stepImages[step.step_id]) && stepImages[step.step_id].length > 0
   }
   return true
 }
@@ -837,40 +837,40 @@ const isStepValueProvided = step => {
   const stepId = step.step_id
   const value = stepValues[stepId]?.value
 
-  if ( step.type === 'text' ) {
+  if (step.type === 'text') {
     return typeof value === 'string' && value.trim() !== ''
   }
 
-  if ( step.type === 'number' || step.type === 'numeric' ) {
+  if (step.type === 'number' || step.type === 'numeric') {
     return value !== null && value !== undefined && value !== ''
   }
 
-  if ( step.type === 'inspection' ) {
+  if (step.type === 'inspection') {
     return value === true || value === false
   }
 
-  if ( step.type === 'checkbox' ) {
+  if (step.type === 'checkbox') {
     // For required checkboxes, they must be checked (true)
     // null/undefined means not interacted with, false means explicitly unchecked
     // Both null/undefined and false should fail validation for required checkboxes
     const result = value === true
-    console.log( '[StepsExecution] isStepValueProvided checkbox:', {
+    console.log('[StepsExecution] isStepValueProvided checkbox:', {
       stepId,
       value,
-      valueType : typeof value,
-      isNull : value === null,
-      isUndefined : value === undefined,
-      isFalse : value === false,
-      result
-    } )
+      valueType: typeof value,
+      isNull: value === null,
+      isUndefined: value === undefined,
+      isFalse: value === false,
+      result,
+    })
     return result
   }
 
-  if ( isAttachmentStep( step ) ) {
-    return Array.isArray( stepFiles[stepId] ) && stepFiles[stepId].length > 0
+  if (isAttachmentStep(step)) {
+    return Array.isArray(stepFiles[stepId]) && stepFiles[stepId].length > 0
   }
 
-  if ( step.required ) {
+  if (step.required) {
     return value !== null && value !== undefined && value !== ''
   }
 
@@ -878,50 +878,50 @@ const isStepValueProvided = step => {
 }
 
 const isStepCompleted = step => {
-  return isStepValueProvided( step ) && hasRequiredImages( step )
+  return isStepValueProvided(step) && hasRequiredImages(step)
 }
 
 const getMissingRequiredSteps = () => {
   const missing = []
-  executionSteps.value.forEach( step => {
+  executionSteps.value.forEach(step => {
     // Debug logging for checkbox steps
-    if ( step.type === 'checkbox' ) {
+    if (step.type === 'checkbox') {
       const stepId = step.step_id
       const value = stepValues[stepId]?.value
-      console.log( '[StepsExecution] Checkbox validation:', {
+      console.log('[StepsExecution] Checkbox validation:', {
         stepId,
-        label : step.label,
-        required : step.required,
+        label: step.label,
+        required: step.required,
         value,
-        valueType : typeof value,
-        isProvided : isStepValueProvided( step )
-      } )
+        valueType: typeof value,
+        isProvided: isStepValueProvided(step),
+      })
     }
 
     // Only check if the step is explicitly marked as required
-    if ( step.required && !isStepValueProvided( step ) ) {
-      missing.push( step.label || step.name || `Step ${step.order}` )
+    if (step.required && !isStepValueProvided(step)) {
+      missing.push(step.label || step.name || `Step ${step.order}`)
       return
     }
     // Check for required images regardless of step.required flag
-    if ( !hasRequiredImages( step ) ) {
-      missing.push( ( step.label || step.name || `Step ${step.order}` ) + ' (image required)' )
+    if (!hasRequiredImages(step)) {
+      missing.push((step.label || step.name || `Step ${step.order}`) + ' (image required)')
     }
     // Check for remarks on failed inspection steps
-    if ( step.type === 'inspection' ) {
+    if (step.type === 'inspection') {
       const stepId = step.step_id
       const stepValue = stepValues[stepId]
       // Check if inspection failed (value is false or 'fail')
       const isFailed = stepValue?.value === false || stepValue?.value === 'fail'
-      if ( isFailed ) {
+      if (isFailed) {
         const remarks = stepValue?.remarks || ''
-        if ( !remarks || remarks.trim() === '' ) {
-          missing.push( ( step.label || step.name || `Step ${step.order}` ) + ' (remarks required for failed inspection)' )
+        if (!remarks || remarks.trim() === '') {
+          missing.push((step.label || step.name || `Step ${step.order}`) + ' (remarks required for failed inspection)')
         }
       }
     }
-  } )
-  console.log( '[StepsExecution] Missing required steps:', missing )
+  })
+  console.log('[StepsExecution] Missing required steps:', missing)
   return missing
 }
 
@@ -932,11 +932,11 @@ const handleStepSearch = () => {
 }
 
 const emitValuesUpdate = () => {
-  emit( 'values-updated', {
-    stepValues : { ...stepValues },
-    stepImages : { ...stepImages },
-    stepFiles : { ...stepFiles }
-  } )
+  emit('values-updated', {
+    stepValues: { ...stepValues },
+    stepImages: { ...stepImages },
+    stepFiles: { ...stepFiles },
+  })
 }
 
 watch(
@@ -944,17 +944,17 @@ watch(
   () => {
     emitValuesUpdate()
   },
-  { immediate : true, deep : true }
+  { immediate: true, deep: true }
 )
 
 // Get execution payload for submission
 const getExecutionPayload = () => {
   const toDeepClone = value => {
-    if ( value === null || value === undefined ) return {}
+    if (value === null || value === undefined) return {}
     try {
-      return JSON.parse( JSON.stringify( value ) )
-    } catch ( error ) {
-      if ( Array.isArray( value ) ) {
+      return JSON.parse(JSON.stringify(value))
+    } catch (error) {
+      if (Array.isArray(value)) {
         return value.slice()
       }
       return { ...value }
@@ -962,81 +962,81 @@ const getExecutionPayload = () => {
   }
 
   const normalizeInspectionValue = value => {
-    if ( typeof value === 'boolean' ) {
+    if (typeof value === 'boolean') {
       return value
     }
 
-    if ( typeof value === 'string' ) {
+    if (typeof value === 'string') {
       const normalized = value.trim().toLowerCase()
-      if ( normalized === 'pass' ) return true
-      if ( normalized === 'fail' ) return false
+      if (normalized === 'pass') return true
+      if (normalized === 'fail') return false
     }
 
-    if ( value === null || value === undefined ) {
+    if (value === null || value === undefined) {
       return value
     }
 
-    return Boolean( value )
+    return Boolean(value)
   }
 
   const normalizeTools = originalStep => {
-    const baseTools = Array.isArray( originalStep?.tools )
+    const baseTools = Array.isArray(originalStep?.tools)
       ? originalStep.tools
-      : Array.isArray( originalStep?.relevant_tools )
-        ? originalStep.relevant_tools
-        : []
+      : Array.isArray(originalStep?.relevant_tools)
+      ? originalStep.relevant_tools
+      : []
 
-    if ( !baseTools.length ) {
+    if (!baseTools.length) {
       return null
     }
 
     const normalized = baseTools
-      .map( tool => {
-        if ( typeof tool === 'number' ) {
+      .map(tool => {
+        if (typeof tool === 'number') {
           return tool
         }
-        if ( typeof tool === 'string' ) {
-          const parsed = Number( tool )
-          return Number.isFinite( parsed ) ? parsed : tool
+        if (typeof tool === 'string') {
+          const parsed = Number(tool)
+          return Number.isFinite(parsed) ? parsed : tool
         }
-        if ( tool && typeof tool === 'object' ) {
+        if (tool && typeof tool === 'object') {
           const extracted = tool.tool_id || tool.id
-          if ( extracted !== undefined ) {
-            const parsed = typeof extracted === 'string' ? Number( extracted ) : extracted
-            return Number.isFinite( parsed ) ? parsed : extracted
+          if (extracted !== undefined) {
+            const parsed = typeof extracted === 'string' ? Number(extracted) : extracted
+            return Number.isFinite(parsed) ? parsed : extracted
           }
         }
         return null
-      } )
-      .filter( toolId => toolId !== null && toolId !== undefined )
+      })
+      .filter(toolId => toolId !== null && toolId !== undefined)
 
     return normalized.length ? normalized : null
   }
 
-  const stepUpdateList = executionSteps.value.map( step => {
+  const stepUpdateList = executionSteps.value.map(step => {
     const stepId = step.step_id
     const originalStep = step.originalStep || {}
-    const originalValue = toDeepClone( originalStep.value || {} )
+    const originalValue = toDeepClone(originalStep.value || {})
     const currentValueRecord = stepValues[stepId]
     const currentValue = currentValueRecord ? currentValueRecord.value : undefined
-    const uploadedImages = Array.isArray( stepImages[stepId] )
-      ? stepImages[stepId].map( img => img?.url ).filter( Boolean )
+    const uploadedImages = Array.isArray(stepImages[stepId])
+      ? stepImages[stepId].map(img => img?.url).filter(Boolean)
       : []
-    const uploadedFiles = Array.isArray( stepFiles[stepId] )
-      ? stepFiles[stepId].map( file => file?.url ).filter( Boolean )
+    const uploadedFiles = Array.isArray(stepFiles[stepId])
+      ? stepFiles[stepId].map(file => file?.url).filter(Boolean)
       : []
 
     // Resolve base payload for step value using original data as foundation
-    const resolvedValue = toDeepClone( originalValue )
+    const resolvedValue = toDeepClone(originalValue)
 
     const ensureUploads = () => {
-      if ( isAttachmentStep( step ) || resolvedValue.type === 'file' ) {
-        if ( uploadedFiles.length ) {
+      if (isAttachmentStep(step) || resolvedValue.type === 'file') {
+        if (uploadedFiles.length) {
           resolvedValue.file = uploadedFiles
-        } else if ( Array.isArray( currentValue ) ) {
+        } else if (Array.isArray(currentValue)) {
           resolvedValue.file = currentValue
         } else {
-          resolvedValue.file = Array.isArray( originalValue.file ) ? originalValue.file : []
+          resolvedValue.file = Array.isArray(originalValue.file) ? originalValue.file : []
         }
         return
       }
@@ -1046,8 +1046,8 @@ const getExecutionPayload = () => {
     }
 
     // When step components emit a structured object, merge it directly to preserve metadata (remarks, etc.)
-    if ( currentValue && typeof currentValue === 'object' && !Array.isArray( currentValue ) ) {
-      Object.assign( resolvedValue, currentValue )
+    if (currentValue && typeof currentValue === 'object' && !Array.isArray(currentValue)) {
+      Object.assign(resolvedValue, currentValue)
       ensureUploads()
     } else {
       ensureUploads()
@@ -1055,53 +1055,53 @@ const getExecutionPayload = () => {
       const valueFromOriginal = originalValue.value
       const finalValue = currentValue !== undefined ? currentValue : valueFromOriginal
 
-      if ( step.type === 'number' || step.type === 'numeric' ) {
+      if (step.type === 'number' || step.type === 'numeric') {
         const numericValue =
-          finalValue === '' || finalValue === null || finalValue === undefined ? null : Number( finalValue )
-        resolvedValue.value = Number.isFinite( numericValue ) ? numericValue : null
+          finalValue === '' || finalValue === null || finalValue === undefined ? null : Number(finalValue)
+        resolvedValue.value = Number.isFinite(numericValue) ? numericValue : null
         resolvedValue.numeric_limit_bounds =
           originalValue.numeric_limit_bounds || originalValue.numericLimitBounds || {}
-      } else if ( step.type === 'checkbox' ) {
-        resolvedValue.value = Boolean( finalValue )
-      } else if ( step.type === 'inspection' ) {
+      } else if (step.type === 'checkbox') {
+        resolvedValue.value = Boolean(finalValue)
+      } else if (step.type === 'inspection') {
         resolvedValue.value = finalValue
-      } else if ( step.type === 'text' ) {
+      } else if (step.type === 'text') {
         resolvedValue.value = finalValue !== undefined && finalValue !== null ? finalValue : ''
-      } else if ( step.type === 'attachments' || step.type === 'file' ) {
+      } else if (step.type === 'attachments' || step.type === 'file') {
         resolvedValue.file = uploadedFiles.length
           ? uploadedFiles
-          : Array.isArray( finalValue )
-            ? finalValue
-            : Array.isArray( originalValue.file )
-              ? originalValue.file
-              : []
+          : Array.isArray(finalValue)
+          ? finalValue
+          : Array.isArray(originalValue.file)
+          ? originalValue.file
+          : []
       } else {
         resolvedValue.value = finalValue
       }
     }
 
-    if ( resolvedValue.require_image === undefined ) {
-      resolvedValue.require_image = Boolean( step.required_image || originalValue.require_image )
+    if (resolvedValue.require_image === undefined) {
+      resolvedValue.require_image = Boolean(step.required_image || originalValue.require_image)
     }
 
-    if ( step.type === 'inspection' || resolvedValue.type === 'inspection' ) {
-      resolvedValue.value = normalizeInspectionValue( resolvedValue.value )
+    if (step.type === 'inspection' || resolvedValue.type === 'inspection') {
+      resolvedValue.value = normalizeInspectionValue(resolvedValue.value)
       // Include remarks for inspection steps
-      if ( currentValueRecord && currentValueRecord.remarks ) {
+      if (currentValueRecord && currentValueRecord.remarks) {
         resolvedValue.remarks = currentValueRecord.remarks
       }
     }
 
-    const stepPayload = toDeepClone( originalStep )
+    const stepPayload = toDeepClone(originalStep)
     stepPayload.value = resolvedValue
 
-    const normalizedTools = normalizeTools( stepPayload )
-    if ( normalizedTools !== null ) {
+    const normalizedTools = normalizeTools(stepPayload)
+    if (normalizedTools !== null) {
       stepPayload.tools = normalizedTools
-    } else if ( 'tools' in stepPayload ) {
+    } else if ('tools' in stepPayload) {
       stepPayload.tools = []
     }
-    if ( 'relevant_tools' in stepPayload ) {
+    if ('relevant_tools' in stepPayload) {
       delete stepPayload.relevant_tools
     }
 
@@ -1110,37 +1110,37 @@ const getExecutionPayload = () => {
     stepPayload.completed_at = new Date().toISOString() // UTC timestamp in ISO 8601 format
 
     return stepPayload
-  } )
+  })
 
   return stepUpdateList
 }
 
 // Expose methods to parent
-defineExpose( {
+defineExpose({
   getExecutionPayload,
   stepValues,
   stepImages,
   stepFiles,
-  validateRequiredSteps
-} )
+  validateRequiredSteps,
+})
 
-const hasExternalSteps = computed( () => Array.isArray( props.steps ) && props.steps.length > 0 )
+const hasExternalSteps = computed(() => Array.isArray(props.steps) && props.steps.length > 0)
 
 const resetStepToolsVisibility = () => {
-  Object.keys( stepToolsVisible ).forEach( key => {
+  Object.keys(stepToolsVisible).forEach(key => {
     delete stepToolsVisible[key]
-  } )
+  })
 }
 
 const resetStepInitialization = () => {
-  Object.keys( stepInitialized ).forEach( key => {
+  Object.keys(stepInitialized).forEach(key => {
     delete stepInitialized[key]
-  } )
+  })
 }
 
 // Load template data
-const fetchTemplate = async() => {
-  if ( !props.templateId || hasExternalSteps.value ) return
+const fetchTemplate = async () => {
+  if (!props.templateId || hasExternalSteps.value) return
 
   resetStepToolsVisibility()
   resetStepInitialization()
@@ -1148,12 +1148,12 @@ const fetchTemplate = async() => {
   loading.value = true
   error.value = false
   try {
-    const loadedTemplate = await loadTemplate( props.templateId )
+    const loadedTemplate = await loadTemplate(props.templateId)
     template.value = loadedTemplate
-  } catch ( err ) {
-    console.error( 'Failed to load template for execution:', err )
+  } catch (err) {
+    console.error('Failed to load template for execution:', err)
     error.value = true
-    ElMessage.error( 'Failed to load task steps' )
+    ElMessage.error('Failed to load task steps')
   } finally {
     loading.value = false
   }
@@ -1163,14 +1163,14 @@ const refreshExecutionSource = () => {
   resetStepToolsVisibility()
   resetStepInitialization()
 
-  if ( hasExternalSteps.value ) {
+  if (hasExternalSteps.value) {
     loading.value = false
     error.value = false
     template.value = null
     return
   }
 
-  if ( props.templateId ) {
+  if (props.templateId) {
     fetchTemplate()
   } else {
     template.value = null
@@ -1183,11 +1183,11 @@ const refreshExecutionSource = () => {
 watch(
   () => props.templateId,
   newId => {
-    if ( hasExternalSteps.value ) {
+    if (hasExternalSteps.value) {
       return
     }
 
-    if ( newId ) {
+    if (newId) {
       fetchTemplate()
     } else {
       template.value = null
@@ -1195,7 +1195,7 @@ watch(
       error.value = false
     }
   },
-  { immediate : true }
+  { immediate: true }
 )
 
 watch(
@@ -1203,7 +1203,7 @@ watch(
   () => {
     refreshExecutionSource()
   },
-  { deep : true, immediate : true }
+  { deep: true, immediate: true }
 )
 </script>
 

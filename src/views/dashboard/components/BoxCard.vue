@@ -45,23 +45,23 @@ import { useUserStore } from '@/store'
 
 const userStore = useUserStore()
 
-const set = reactive( {
-  name : computed( () => {
+const set = reactive({
+  name: computed(() => {
     return userStore.name
-  } ),
+  }),
 
-  avatar : computed( () => {
+  avatar: computed(() => {
     return userStore.avatar
-  } ),
+  }),
 
-  roles : computed( () => {
+  roles: computed(() => {
     return userStore.roles
-  } )
-} )
+  }),
+})
 
-defineOptions( {
-  name : 'BoxCard'
-} )
+defineOptions({
+  name: 'BoxCard',
+})
 </script>
 
 <style lang="scss">

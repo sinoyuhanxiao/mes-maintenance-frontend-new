@@ -121,47 +121,47 @@ import { convertToLocalTime } from '@/utils/datetime'
 import { useSettingsStore } from '@/store'
 
 // Props
-const props = defineProps( {
-  workOrder : {
-    type : Object,
-    required : true
+const props = defineProps({
+  workOrder: {
+    type: Object,
+    required: true,
   },
-  isSelected : {
-    type : Boolean,
-    default : false
-  }
-} )
+  isSelected: {
+    type: Boolean,
+    default: false,
+  },
+})
 
 // Emits
-const emit = defineEmits( ['select', 'action'] )
+const emit = defineEmits(['select', 'action'])
 
 const { t } = useI18n()
 const settingsStore = useSettingsStore()
 
 // Computed
-const isIncomplete = computed( () => {
+const isIncomplete = computed(() => {
   return props.workOrder.state?.id === 13 || props.workOrder.state?.name === 'Incomplete'
-} )
+})
 
-const isFailed = computed( () => {
+const isFailed = computed(() => {
   return props.workOrder.state?.name === 'Failed'
-} )
+})
 
-const isHighPriority = computed( () => {
+const isHighPriority = computed(() => {
   return props.workOrder.priority?.name === 'High' || props.workOrder.priority?.name === 'Urgent'
-} )
+})
 
-const isPendingApproval = computed( () => {
+const isPendingApproval = computed(() => {
   return props.workOrder.state?.id === 14
-} )
+})
 
 // Methods
 const formatDate = dateString => {
-  return convertToLocalTime( dateString )
+  return convertToLocalTime(dateString)
 }
 
 const getStatusTagType = status => {
-  switch ( status ) {
+  switch (status) {
     case 'Failed':
       return 'danger'
     case 'Incomplete':
@@ -177,16 +177,16 @@ const getStatusTagType = status => {
 
 const getStatusName = status => {
   const statusMap = {
-    Failed : t( 'workOrder.status.failed' ),
-    Completed : t( 'workOrder.status.completed' ),
-    'In Progress' : t( 'workOrder.status.inProgress' ),
-    Pending : t( 'workOrder.status.pending' )
+    Failed: t('workOrder.status.failed'),
+    Completed: t('workOrder.status.completed'),
+    'In Progress': t('workOrder.status.inProgress'),
+    Pending: t('workOrder.status.pending'),
   }
   return statusMap[status] || status
 }
 
 const getPriorityTagType = priority => {
-  switch ( priority ) {
+  switch (priority) {
     case 'Urgent':
       return 'danger'
     case 'High':
@@ -202,21 +202,21 @@ const getPriorityTagType = priority => {
 
 const getPriorityName = priority => {
   const priorityMap = {
-    Urgent : t( 'workOrder.priority.urgent' ),
-    High : t( 'workOrder.priority.high' ),
-    Medium : t( 'workOrder.priority.medium' ),
-    Low : t( 'workOrder.priority.low' )
+    Urgent: t('workOrder.priority.urgent'),
+    High: t('workOrder.priority.high'),
+    Medium: t('workOrder.priority.medium'),
+    Low: t('workOrder.priority.low'),
   }
   return priorityMap[priority] || priority
 }
 
 const handleAction = command => {
-  emit( 'action', { action : command, workOrder : props.workOrder } )
+  emit('action', { action: command, workOrder: props.workOrder })
 }
 
-defineOptions( {
-  name : 'WorkOrderCard'
-} )
+defineOptions({
+  name: 'WorkOrderCard',
+})
 </script>
 
 <style scoped lang="scss">

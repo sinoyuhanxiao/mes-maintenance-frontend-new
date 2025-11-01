@@ -1,10 +1,6 @@
 <template>
-  <el-dialog v-model="viewDetails"
-title="Part Vendor Details"
-width="800"
-    ><DeleteSPVendor :spvData="spvData"
-:sparePart="props.data"
-@deletedVendor="handleDeleteVendor"
+  <el-dialog v-model="viewDetails" title="Part Vendor Details" width="800"
+    ><DeleteSPVendor :spvData="spvData" :sparePart="props.data" @deletedVendor="handleDeleteVendor"
   /></el-dialog>
   <div class="title">
     <el-text>Associated Vendors ({{ currentVendors.length }})</el-text>
@@ -28,40 +24,40 @@ import VendorList from './VendorList.vue'
 import VendorCard from './VendorCard.vue'
 import DeleteSPVendor from './DeleteSPVendor.vue'
 
-const props = defineProps( {
-  data : Object
-} )
+const props = defineProps({
+  data: Object,
+})
 
-const emit = defineEmits( ['refreshData'] )
-const dialogVisible = ref( false )
-const viewDetails = ref( false )
+const emit = defineEmits(['refreshData'])
+const dialogVisible = ref(false)
+const viewDetails = ref(false)
 
-const currentVendors = ref( [] )
+const currentVendors = ref([])
 
-const vendorsOnly = ref( null )
+const vendorsOnly = ref(null)
 
-const spvData = ref( null )
+const spvData = ref(null)
 
 watch(
   () => props.data,
   newVal => {
     currentVendors.value = newVal.spare_part_vendors
-    vendorsOnly.value = currentVendors.value.map( item => item.vendor )
+    vendorsOnly.value = currentVendors.value.map(item => item.vendor)
   },
-  { deep : true }
+  { deep: true }
 )
 
 function handleAddVendor() {
   dialogVisible.value = false
-  emit( 'refreshData' )
+  emit('refreshData')
 }
 
 function handleDeleteVendor() {
   viewDetails.value = false
-  emit( 'refreshData' )
+  emit('refreshData')
 }
 
-function handleEmit( data ) {
+function handleEmit(data) {
   spvData.value = data
   viewDetails.value = true
 }

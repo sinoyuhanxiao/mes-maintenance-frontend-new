@@ -38,62 +38,62 @@
 import { computed } from 'vue'
 import { Grid, Clock } from '@element-plus/icons-vue'
 
-const props = defineProps( {
-  request : {
-    type : Object,
-    required : true
+const props = defineProps({
+  request: {
+    type: Object,
+    required: true,
   },
-  isSelected : {
-    type : Boolean,
-    default : false
-  }
-} )
+  isSelected: {
+    type: Boolean,
+    default: false,
+  },
+})
 
 // eslint-disable-next-line no-unused-vars
-const emit = defineEmits( ['select'] )
+const emit = defineEmits(['select'])
 
-const statusLabel = computed( () => {
+const statusLabel = computed(() => {
   const statusMap = {
-    0 : 'Pending',
-    1 : 'Rejected',
-    2 : 'Approved'
+    0: 'Pending',
+    1: 'Rejected',
+    2: 'Approved',
   }
   return statusMap[props.request?.status] || 'Unknown'
-} )
+})
 
-const statusTagType = computed( () => {
+const statusTagType = computed(() => {
   const typeMap = {
-    0 : 'info',
-    1 : 'danger',
-    2 : 'success'
+    0: 'info',
+    1: 'danger',
+    2: 'success',
   }
   return typeMap[props.request?.status] || 'info'
-} )
+})
 
-const equipmentLabel = computed( () => {
+const equipmentLabel = computed(() => {
   return props.request?.equipment_node.name
-} )
+})
 
 const formatDate = dateString => {
-  if ( !dateString ) return 'N/A'
-  const date = new Date( dateString )
+  if (!dateString) return 'N/A'
+  const date = new Date(dateString)
   const now = new Date()
   const diffMs = now - date
-  const diffMins = Math.floor( diffMs / 60000 )
-  const diffHours = Math.floor( diffMs / 3600000 )
-  const diffDays = Math.floor( diffMs / 86400000 )
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  const diffDays = Math.floor(diffMs / 86400000)
 
-  if ( diffMins < 60 ) {
+  if (diffMins < 60) {
     return `${diffMins}m ago`
-  } else if ( diffHours < 24 ) {
+  } else if (diffHours < 24) {
     return `${diffHours}h ago`
-  } else if ( diffDays < 7 ) {
+  } else if (diffDays < 7) {
     return `${diffDays}d ago`
   } else {
     // Format as YYYY-MM-DD
     const year = date.getFullYear()
-    const month = String( date.getMonth() + 1 ).padStart( 2, '0' )
-    const day = String( date.getDate() ).padStart( 2, '0' )
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
     return `${year}-${month}-${day}`
   }
 }

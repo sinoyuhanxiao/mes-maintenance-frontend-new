@@ -34,43 +34,43 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const permissionStore = usePermissionStore()
-const show = ref( false )
-const search = ref( '' )
-const options = ref( [] )
-const searchPool = ref( [] )
-const fuse = ref( null )
-const headerSearchSelect = ref( null )
+const show = ref(false)
+const search = ref('')
+const options = ref([])
+const searchPool = ref([])
+const fuse = ref(null)
+const headerSearchSelect = ref(null)
 
-const routes = computed( () => permissionStore.routes )
+const routes = computed(() => permissionStore.routes)
 
-const generateRoutes = ( routerList, basePath = '/', prefixTitle = [] ) => {
+const generateRoutes = (routerList, basePath = '/', prefixTitle = []) => {
   let res = []
 
-  for ( const item of routerList ) {
+  for (const item of routerList) {
     // skip hidden item
-    if ( item.hidden ) {
+    if (item.hidden) {
       continue
     }
 
     const data = {
-      path : path.resolve( basePath, item.path ),
-      title : [...prefixTitle]
+      path: path.resolve(basePath, item.path),
+      title: [...prefixTitle],
     }
 
-    if ( item.meta && item.meta.title ) {
+    if (item.meta && item.meta.title) {
       data.title = [...data.title, item.meta.title]
 
-      if ( item.redirect !== 'noRedirect' ) {
+      if (item.redirect !== 'noRedirect') {
         // only push the routes with title
         // special case: need to exclude parent router without redirect
-        res.push( data )
+        res.push(data)
       }
     }
 
     // recursive child routerList
-    if ( item.children ) {
-      const tempRoutes = generateRoutes( item.children, data.path, data.title )
-      if ( tempRoutes.length >= 1 ) {
+    if (item.children) {
+      const tempRoutes = generateRoutes(item.children, data.path, data.title)
+      if (tempRoutes.length >= 1) {
         res = [...res, ...tempRoutes]
       }
     }
@@ -78,8 +78,8 @@ const generateRoutes = ( routerList, basePath = '/', prefixTitle = [] ) => {
   return res
 }
 const querySearch = query => {
-  if ( query !== '' ) {
-    options.value = fuse.value.search( query )
+  if (query !== '') {
+    options.value = fuse.value.search(query)
   } else {
     options.value = []
   }
@@ -87,7 +87,7 @@ const querySearch = query => {
 
 const click = () => {
   show.value = !show.value
-  if ( show.value ) {
+  if (show.value) {
     headerSearchSelect.value && headerSearchSelect.value.focus()
   }
 }
@@ -97,67 +97,67 @@ const close = () => {
   show.value = false
 }
 const change = val => {
-  router.push( val.path )
+  router.push(val.path)
   search.value = ''
   options.value = []
-  nextTick( () => {
+  nextTick(() => {
     show.value = false
-  } )
+  })
 }
 const initFuse = list => {
-  fuse.value = new Fuse( list, {
-    shouldSort : true,
-    threshold : 0.4,
-    location : 0,
-    distance : 100,
-    maxPatternLength : 32,
-    minMatchCharLength : 1,
-    keys : [
+  fuse.value = new Fuse(list, {
+    shouldSort: true,
+    threshold: 0.4,
+    location: 0,
+    distance: 100,
+    maxPatternLength: 32,
+    minMatchCharLength: 1,
+    keys: [
       {
-        name : 'title',
-        weight : 0.7
+        name: 'title',
+        weight: 0.7,
       },
       {
-        name : 'path',
-        weight : 0.3
-      }
-    ]
-  } )
+        name: 'path',
+        weight: 0.3,
+      },
+    ],
+  })
 }
 
 watch(
   routes,
-  async() => {
-    searchPool.value = generateRoutes( routes.value )
+  async () => {
+    searchPool.value = generateRoutes(routes.value)
   }
   // { immediate : true }
 )
 watch(
   searchPool,
   async list => {
-    initFuse( list )
+    initFuse(list)
   }
   // { immediate : true }
 )
 watch(
   show,
   async value => {
-    if ( value ) {
-      document.body.addEventListener( 'click', close )
+    if (value) {
+      document.body.addEventListener('click', close)
     } else {
-      document.body.removeEventListener( 'click', close )
+      document.body.removeEventListener('click', close)
     }
   }
   // { immediate : true }
 )
 
-onMounted( () => {
-  searchPool.value = generateRoutes( routes.value )
-} )
+onMounted(() => {
+  searchPool.value = generateRoutes(routes.value)
+})
 
-defineOptions( {
-  name : 'HeaderSearch'
-} )
+defineOptions({
+  name: 'HeaderSearch',
+})
 </script>
 
 <style lang="scss" scoped>

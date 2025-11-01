@@ -32,15 +32,15 @@ const route = useRoute()
 const router = useRouter()
 
 // Active tab reflects current child route under /maintenance-library
-const activeTab = ref( 'tasks' )
+const activeTab = ref('tasks')
 
 // Initialize and keep tab in sync with route
 const syncTabWithRoute = () => {
   // Derive current section from named routes or path
   const name = route.name
-  if ( name === 'TaskLibrary' ) {
+  if (name === 'TaskLibrary') {
     activeTab.value = 'tasks'
-  } else if ( name === 'StandardLibrary' ) {
+  } else if (name === 'StandardLibrary') {
     activeTab.value = 'standards'
   }
 }
@@ -54,22 +54,22 @@ watch(
   }
 )
 
-function handleTabClick( tab ) {
+function handleTabClick(tab) {
   const name = tab.paneName
-  if ( name === 'tasks' ) {
-    router.push( { name : 'TaskLibrary' } )
-  } else if ( name === 'standards' ) {
-    router.push( { name : 'StandardLibrary' } )
+  if (name === 'tasks') {
+    router.push({ name: 'TaskLibrary' })
+  } else if (name === 'standards') {
+    router.push({ name: 'StandardLibrary' })
   }
 }
 
 function goCreate() {
-  router.push( { name : 'TaskDesigner' } )
+  router.push({ name: 'TaskDesigner' })
 }
 
-defineOptions( {
-  name : 'TaskLibraryIndex'
-} )
+defineOptions({
+  name: 'TaskLibraryIndex',
+})
 </script>
 
 <style scoped>

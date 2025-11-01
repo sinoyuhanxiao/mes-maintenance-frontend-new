@@ -203,68 +203,68 @@ import { getTaskEntryById, updateTaskEntry } from '@/api/task-entry'
 import { JsonDebugDrawer, usePayloadLogger } from '@/utils/logs'
 import useUserStore from '@/store/modules/users'
 
-const props = defineProps( {
-  workOrder : {
-    type : Object,
-    required : true
-  }
-} )
+const props = defineProps({
+  workOrder: {
+    type: Object,
+    required: true,
+  },
+})
 
-const emit = defineEmits( ['close', 'update:progress', 'back-to-detail'] )
+const emit = defineEmits(['close', 'update:progress', 'back-to-detail'])
 
 // eslint-disable-next-line no-unused-vars
 const { t } = useI18n()
 const { currentPayload, showJsonDisplayer, logPayload } = usePayloadLogger()
 const userStore = useUserStore()
 
-const draftsLoaded = ref( false )
-const taskCards = reactive( [] )
-const drawerVisible = ref( false )
-const activeTask = ref( null )
-const drawerLoading = ref( false )
-const stepsExecutionRef = ref( null )
-const manualTimeMinutes = ref( null )
-const isSubmitting = ref( false )
-const showTaskLogDialog = ref( false )
-const selectedTaskForLog = ref( null )
-const activeLogTab = ref( 'logs' )
-const highlightedTaskId = ref( null )
+const draftsLoaded = ref(false)
+const taskCards = reactive([])
+const drawerVisible = ref(false)
+const activeTask = ref(null)
+const drawerLoading = ref(false)
+const stepsExecutionRef = ref(null)
+const manualTimeMinutes = ref(null)
+const isSubmitting = ref(false)
+const showTaskLogDialog = ref(false)
+const selectedTaskForLog = ref(null)
+const activeLogTab = ref('logs')
+const highlightedTaskId = ref(null)
 
 // Filter state
-const taskFilters = ref( {
-  search : '',
-  state : '',
-  assignee : '',
-  timeSpent : ''
-} )
+const taskFilters = ref({
+  search: '',
+  state: '',
+  assignee: '',
+  timeSpent: '',
+})
 
-const customTimeRange = ref( { start : null, end : null } ) // Custom time range in minutes
-const searchInput = ref( '' )
+const customTimeRange = ref({ start: null, end: null }) // Custom time range in minutes
+const searchInput = ref('')
 let searchDebounceTimer = null
 
-const handleBackToDetail = async() => {
+const handleBackToDetail = async () => {
   const shouldLeave = await confirmNavigation()
-  if ( shouldLeave ) {
-    emit( 'back-to-detail' )
+  if (shouldLeave) {
+    emit('back-to-detail')
   }
 }
 
 // Check if there's work in progress
 const hasWorkInProgress = () => {
   // Check if drawer is open
-  if ( drawerVisible.value ) {
+  if (drawerVisible.value) {
     return true
   }
   // Check if there are any drafts
-  if ( hasDrafts.value ) {
+  if (hasDrafts.value) {
     return true
   }
   return false
 }
 
 // Show confirmation dialog before navigation
-const confirmNavigation = async() => {
-  if ( !hasWorkInProgress() ) {
+const confirmNavigation = async () => {
+  if (!hasWorkInProgress()) {
     return true
   }
 
@@ -273,136 +273,136 @@ const confirmNavigation = async() => {
       'You have work in progress. Are you sure you want to leave the execution? Any unsaved changes will be lost.',
       'Confirm Navigation',
       {
-        confirmButtonText : 'Yes, Leave',
-        cancelButtonText : 'Stay',
-        type : 'warning',
-        distinguishCancelAndClose : true
+        confirmButtonText: 'Yes, Leave',
+        cancelButtonText: 'Stay',
+        type: 'warning',
+        distinguishCancelAndClose: true,
       }
     )
     return true
-  } catch ( error ) {
+  } catch (error) {
     // User clicked cancel or close
     return false
   }
 }
 
 const buildTaskList = () => {
-  taskCards.splice( 0, taskCards.length )
+  taskCards.splice(0, taskCards.length)
   const source =
-    Array.isArray( props.workOrder?.tasks ) && props.workOrder.tasks.length
+    Array.isArray(props.workOrder?.tasks) && props.workOrder.tasks.length
       ? props.workOrder.tasks
-      : Array.isArray( props.workOrder?.task_list )
-        ? props.workOrder.task_list
-        : []
+      : Array.isArray(props.workOrder?.task_list)
+      ? props.workOrder.task_list
+      : []
 
-  source.forEach( rawTask => {
+  source.forEach(rawTask => {
     const taskId =
       rawTask.id ||
       rawTask.task_id ||
       rawTask.template_id ||
-      ( typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `task-${Date.now()}-${Math.random()}` )
-    taskCards.push( {
-      id : taskId,
-      task : rawTask,
-      progress : {
-        status : 'not_started',
-        time_spent : { value : 0, unit : 'minutes' },
-        step_progress : {},
-        updated_at : ''
+      (typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `task-${Date.now()}-${Math.random()}`)
+    taskCards.push({
+      id: taskId,
+      task: rawTask,
+      progress: {
+        status: 'not_started',
+        time_spent: { value: 0, unit: 'minutes' },
+        step_progress: {},
+        updated_at: '',
       },
-      detailsLoaded : false
-    } )
-  } )
+      detailsLoaded: false,
+    })
+  })
 }
 
-const hasDrafts = computed( () =>
-  taskCards.some( card => card.progress.status === 'in_progress' && card.progress.updated_at )
+const hasDrafts = computed(() =>
+  taskCards.some(card => card.progress.status === 'in_progress' && card.progress.updated_at)
 )
 
-const drawerTitle = computed( () => activeTask.value?.name || 'Task Details' )
+const drawerTitle = computed(() => activeTask.value?.name || 'Task Details')
 
 // Unique assignees for filter dropdown
-const uniqueAssignees = computed( () => {
+const uniqueAssignees = computed(() => {
   const assigneesSet = new Set()
 
-  taskCards.forEach( card => {
+  taskCards.forEach(card => {
     const personnel = card.task?.personnel
-    if ( !personnel ) return
+    if (!personnel) return
 
-    if ( Array.isArray( personnel ) ) {
-      personnel.forEach( p => {
-        if ( typeof p === 'string' && p ) assigneesSet.add( p )
-        if ( typeof p === 'object' && p.name ) assigneesSet.add( p.name )
-      } )
-    } else if ( typeof personnel === 'object' && personnel.name ) {
-      assigneesSet.add( personnel.name )
-    } else if ( typeof personnel === 'string' && personnel ) {
-      assigneesSet.add( personnel )
+    if (Array.isArray(personnel)) {
+      personnel.forEach(p => {
+        if (typeof p === 'string' && p) assigneesSet.add(p)
+        if (typeof p === 'object' && p.name) assigneesSet.add(p.name)
+      })
+    } else if (typeof personnel === 'object' && personnel.name) {
+      assigneesSet.add(personnel.name)
+    } else if (typeof personnel === 'string' && personnel) {
+      assigneesSet.add(personnel)
     }
-  } )
+  })
 
-  return Array.from( assigneesSet ).sort()
-} )
+  return Array.from(assigneesSet).sort()
+})
 
 // Filtered task cards based on search and filters
-const filteredTaskCards = computed( () => {
+const filteredTaskCards = computed(() => {
   // Start with a copy of all task cards
   let filtered = [...taskCards]
 
   // Filter by search
-  if ( taskFilters.value.search ) {
+  if (taskFilters.value.search) {
     const searchLower = taskFilters.value.search.toLowerCase()
-    filtered = filtered.filter( card => {
+    filtered = filtered.filter(card => {
       const task = card.task
       const name = task?.name || task?.task_name || task?.label || task?.taskListText || ''
       const id = task?.id || ''
-      return name.toLowerCase().includes( searchLower ) || String( id ).toLowerCase().includes( searchLower )
-    } )
+      return name.toLowerCase().includes(searchLower) || String(id).toLowerCase().includes(searchLower)
+    })
   }
 
   // Filter by state
-  if ( taskFilters.value.state ) {
-    filtered = filtered.filter( card => {
+  if (taskFilters.value.state) {
+    filtered = filtered.filter(card => {
       const stateName = card.task?.state?.name || ''
       return stateName.toLowerCase() === taskFilters.value.state.toLowerCase()
-    } )
+    })
   }
 
   // Filter by assignee
-  if ( taskFilters.value.assignee ) {
-    filtered = filtered.filter( card => {
+  if (taskFilters.value.assignee) {
+    filtered = filtered.filter(card => {
       const personnel = card.task?.personnel
-      if ( !personnel ) return false
+      if (!personnel) return false
 
-      if ( Array.isArray( personnel ) ) {
-        return personnel.some( p => {
+      if (Array.isArray(personnel)) {
+        return personnel.some(p => {
           const name = typeof p === 'string' ? p : p?.name || ''
           return name === taskFilters.value.assignee
-        } )
-      } else if ( typeof personnel === 'object' && personnel.name ) {
+        })
+      } else if (typeof personnel === 'object' && personnel.name) {
         return personnel.name === taskFilters.value.assignee
-      } else if ( typeof personnel === 'string' ) {
+      } else if (typeof personnel === 'string') {
         return personnel === taskFilters.value.assignee
       }
 
       return false
-    } )
+    })
   }
 
   // Filter by time spent
-  if ( taskFilters.value.timeSpent ) {
-    filtered = filtered.filter( card => {
+  if (taskFilters.value.timeSpent) {
+    filtered = filtered.filter(card => {
       const timeTakenSec = card.task?.time_taken_sec || 0
-      const minutes = Math.round( timeTakenSec / 60 )
+      const minutes = Math.round(timeTakenSec / 60)
 
-      switch ( taskFilters.value.timeSpent ) {
+      switch (taskFilters.value.timeSpent) {
         case 'custom':
           // Custom range filter
-          if ( customTimeRange.value.start !== null && customTimeRange.value.end !== null ) {
+          if (customTimeRange.value.start !== null && customTimeRange.value.end !== null) {
             return minutes >= customTimeRange.value.start && minutes <= customTimeRange.value.end
-          } else if ( customTimeRange.value.start !== null ) {
+          } else if (customTimeRange.value.start !== null) {
             return minutes >= customTimeRange.value.start
-          } else if ( customTimeRange.value.end !== null ) {
+          } else if (customTimeRange.value.end !== null) {
             return minutes <= customTimeRange.value.end
           }
           return true
@@ -415,48 +415,48 @@ const filteredTaskCards = computed( () => {
         default:
           return true
       }
-    } )
+    })
   }
 
   return filtered
-} )
+})
 
-const loadDrafts = async() => {
+const loadDrafts = async () => {
   draftsLoaded.value = true
 }
 
 const extractTimeTakenMinutes = task => {
-  if ( !task ) return null
+  if (!task) return null
 
   const directSeconds = task.time_taken_sec ?? task.time_taken ?? task.timeTakenSec
-  if ( typeof directSeconds === 'number' && Number.isFinite( directSeconds ) && directSeconds > 0 ) {
+  if (typeof directSeconds === 'number' && Number.isFinite(directSeconds) && directSeconds > 0) {
     return directSeconds / 60
   }
 
   const progressSeconds = task.progress?.time_taken_sec ?? task.progress?.timeTakenSec
-  if ( typeof progressSeconds === 'number' && Number.isFinite( progressSeconds ) && progressSeconds > 0 ) {
+  if (typeof progressSeconds === 'number' && Number.isFinite(progressSeconds) && progressSeconds > 0) {
     return progressSeconds / 60
   }
 
   const timeSpent = task.progress?.time_spent || task.progress?.timeSpent
-  if ( timeSpent && typeof timeSpent === 'object' ) {
-    const value = Number( timeSpent.value )
-    if ( Number.isFinite( value ) ) {
-      const unit = ( timeSpent.unit || '' ).toString().toLowerCase()
-      if ( unit.startsWith( 'min' ) ) {
+  if (timeSpent && typeof timeSpent === 'object') {
+    const value = Number(timeSpent.value)
+    if (Number.isFinite(value)) {
+      const unit = (timeSpent.unit || '').toString().toLowerCase()
+      if (unit.startsWith('min')) {
         return value
       }
-      if ( unit.startsWith( 'sec' ) ) {
+      if (unit.startsWith('sec')) {
         return value / 60
       }
-      if ( unit.startsWith( 'hour' ) ) {
+      if (unit.startsWith('hour')) {
         return value * 60
       }
     }
   }
 
   const estimateSeconds = task.time_estimate_sec ?? task.timeEstimateSec
-  if ( typeof estimateSeconds === 'number' && Number.isFinite( estimateSeconds ) && estimateSeconds > 0 ) {
+  if (typeof estimateSeconds === 'number' && Number.isFinite(estimateSeconds) && estimateSeconds > 0) {
     return estimateSeconds / 60
   }
 
@@ -464,13 +464,13 @@ const extractTimeTakenMinutes = task => {
 }
 
 const prefillManualTime = () => {
-  const minutes = extractTimeTakenMinutes( activeTask.value )
-  if ( minutes === null ) {
+  const minutes = extractTimeTakenMinutes(activeTask.value)
+  if (minutes === null) {
     manualTimeMinutes.value = null
     return
   }
 
-  manualTimeMinutes.value = Math.max( 0, Math.round( minutes ) )
+  manualTimeMinutes.value = Math.max(0, Math.round(minutes))
 }
 
 const openTaskDrawer = async task => {
@@ -481,15 +481,15 @@ const openTaskDrawer = async task => {
   try {
     const taskEntryId = task.task_entry_id || task.taskEntryId || task.id || task.task_id
 
-    if ( taskEntryId ) {
-      const response = await getTaskEntryById( taskEntryId )
+    if (taskEntryId) {
+      const response = await getTaskEntryById(taskEntryId)
       const taskData = response?.data
 
-      if ( taskData ) {
+      if (taskData) {
         activeTask.value = {
           ...task,
           ...taskData,
-          steps : Array.isArray( taskData.steps ) && taskData.steps.length ? taskData.steps : task.steps || []
+          steps: Array.isArray(taskData.steps) && taskData.steps.length ? taskData.steps : task.steps || [],
         }
       } else {
         activeTask.value = task
@@ -499,8 +499,8 @@ const openTaskDrawer = async task => {
     }
 
     prefillManualTime()
-  } catch ( error ) {
-    console.warn( 'Failed to load task entry details:', error )
+  } catch (error) {
+    console.warn('Failed to load task entry details:', error)
     activeTask.value = task
     prefillManualTime()
   } finally {
@@ -513,9 +513,9 @@ const handleDrawerClose = async done => {
   try {
     await autoSaveDraft()
     done()
-  } catch ( error ) {
+  } catch (error) {
     // If auto-save fails, still allow closing
-    console.warn( 'Auto-save failed, but allowing drawer to close:', error )
+    console.warn('Auto-save failed, but allowing drawer to close:', error)
     done()
   }
 }
@@ -527,46 +527,46 @@ const closeDrawer = () => {
   manualTimeMinutes.value = null
 }
 
-const prepareTaskEntryPayload = ( saveAsDraft = false ) => {
+const prepareTaskEntryPayload = (saveAsDraft = false) => {
   const taskEntryId = activeTask.value?.id || activeTask.value?.task_id || activeTask.value?.task_entry_id
 
-  if ( !taskEntryId ) {
-    throw new Error( 'Task entry ID not found' )
+  if (!taskEntryId) {
+    throw new Error('Task entry ID not found')
   }
 
   const stepUpdateList = stepsExecutionRef.value?.getExecutionPayload()
 
-  if ( stepUpdateList === null || stepUpdateList === undefined ) {
-    throw new Error( 'Failed to collect step values' )
+  if (stepUpdateList === null || stepUpdateList === undefined) {
+    throw new Error('Failed to collect step values')
   }
 
-  if ( !saveAsDraft ) {
+  if (!saveAsDraft) {
     const missingSteps = stepsExecutionRef.value?.validateRequiredSteps?.() || []
-    if ( missingSteps.length ) {
-      throw new Error( `Please complete required steps: ${missingSteps.join( ', ' )}` )
+    if (missingSteps.length) {
+      throw new Error(`Please complete required steps: ${missingSteps.join(', ')}`)
     }
   }
 
-  let minutesValue = Number( manualTimeMinutes.value )
-  if ( manualTimeMinutes.value === null || manualTimeMinutes.value === undefined || Number.isNaN( minutesValue ) ) {
-    if ( saveAsDraft ) {
+  let minutesValue = Number(manualTimeMinutes.value)
+  if (manualTimeMinutes.value === null || manualTimeMinutes.value === undefined || Number.isNaN(minutesValue)) {
+    if (saveAsDraft) {
       minutesValue = 0
     } else {
-      throw new Error( 'Please enter the time spent in minutes.' )
+      throw new Error('Please enter the time spent in minutes.')
     }
   }
 
-  const timeTakenSec = Math.max( 0, Math.round( minutesValue * 60 ) )
+  const timeTakenSec = Math.max(0, Math.round(minutesValue * 60))
   const userId = userStore.uid || '999'
 
   return {
     taskEntryId,
-    payload : {
-      step_update_list : stepUpdateList,
-      time_taken_sec : timeTakenSec,
-      submit : !saveAsDraft,
-      updated_by : String( userId )
-    }
+    payload: {
+      step_update_list: stepUpdateList,
+      time_taken_sec: timeTakenSec,
+      submit: !saveAsDraft,
+      updated_by: String(userId),
+    },
   }
 }
 
@@ -574,151 +574,151 @@ const buildDebugPayload = () => {
   const taskEntryId = activeTask.value?.id || activeTask.value?.task_id || activeTask.value?.task_entry_id
   const stepUpdateList = stepsExecutionRef.value?.getExecutionPayload()
 
-  if ( !taskEntryId || !stepUpdateList ) {
+  if (!taskEntryId || !stepUpdateList) {
     return null
   }
 
-  const minutesValue = Number( manualTimeMinutes.value )
-  const timeTakenSec = Number.isNaN( minutesValue ) ? 0 : Math.max( 0, Math.round( minutesValue * 60 ) )
+  const minutesValue = Number(manualTimeMinutes.value)
+  const timeTakenSec = Number.isNaN(minutesValue) ? 0 : Math.max(0, Math.round(minutesValue * 60))
   const userId = userStore.uid || '999'
 
   return {
     taskEntryId,
-    payload : {
-      step_update_list : stepUpdateList,
-      time_taken_sec : timeTakenSec,
-      submit : false,
-      updated_by : String( userId )
-    }
+    payload: {
+      step_update_list: stepUpdateList,
+      time_taken_sec: timeTakenSec,
+      submit: false,
+      updated_by: String(userId),
+    },
   }
 }
 
 const handleLogStepValues = () => {
   const debugPayload = buildDebugPayload()
-  if ( !debugPayload ) {
-    ElMessage.error( 'Unable to prepare payload for logging.' )
+  if (!debugPayload) {
+    ElMessage.error('Unable to prepare payload for logging.')
     return
   }
 
   const { taskEntryId, payload } = debugPayload
 
-  console.groupCollapsed( '🧾 WorkOrderExecution: Task payload preview' )
-  console.log( 'Task Entry ID:', taskEntryId )
-  console.log( 'API Endpoint:', `/api/task/entry/${taskEntryId}` )
-  console.log( 'Preview Payload:', payload )
+  console.groupCollapsed('🧾 WorkOrderExecution: Task payload preview')
+  console.log('Task Entry ID:', taskEntryId)
+  console.log('API Endpoint:', `/api/task/entry/${taskEntryId}`)
+  console.log('Preview Payload:', payload)
   console.groupEnd()
 
-  logPayload( payload, 'taskEntry', { showMessage : false } )
+  logPayload(payload, 'taskEntry', { showMessage: false })
 }
 
-const handleSubmitTask = async( saveAsDraft = false ) => {
-  if ( isSubmitting.value ) return
+const handleSubmitTask = async (saveAsDraft = false) => {
+  if (isSubmitting.value) return
 
   try {
-    const { taskEntryId, payload } = prepareTaskEntryPayload( saveAsDraft )
+    const { taskEntryId, payload } = prepareTaskEntryPayload(saveAsDraft)
 
     const action = saveAsDraft ? 'save as draft' : 'submit'
 
-    console.groupCollapsed( '🧾 WorkOrderExecution: Prepared task entry payload' )
-    console.log( 'Task Entry ID:', taskEntryId )
-    console.log( 'API Endpoint:', `/api/task/entry/${taskEntryId}` )
-    console.log( 'Submit Action:', action )
-    console.log( 'Request Payload:', payload )
+    console.groupCollapsed('🧾 WorkOrderExecution: Prepared task entry payload')
+    console.log('Task Entry ID:', taskEntryId)
+    console.log('API Endpoint:', `/api/task/entry/${taskEntryId}`)
+    console.log('Submit Action:', action)
+    console.log('Request Payload:', payload)
     console.groupEnd()
 
-    await ElMessageBox.confirm( `Are you sure you want to ${action} this task?`, 'Confirmation', {
-      confirmButtonText : 'Yes',
-      cancelButtonText : 'Cancel',
-      type : 'warning'
-    } )
+    await ElMessageBox.confirm(`Are you sure you want to ${action} this task?`, 'Confirmation', {
+      confirmButtonText: 'Yes',
+      cancelButtonText: 'Cancel',
+      type: 'warning',
+    })
 
     isSubmitting.value = true
 
-    const response = await updateTaskEntry( taskEntryId, payload )
+    const response = await updateTaskEntry(taskEntryId, payload)
 
-    if ( response?.status === 'success' || response?.data ) {
-      ElMessage.success( `Task ${saveAsDraft ? 'saved as draft' : 'submitted'} successfully` )
+    if (response?.status === 'success' || response?.data) {
+      ElMessage.success(`Task ${saveAsDraft ? 'saved as draft' : 'submitted'} successfully`)
 
       // Highlight the updated task
       highlightedTaskId.value = taskEntryId
 
       // Remove highlight after 3 seconds
-      setTimeout( () => {
+      setTimeout(() => {
         highlightedTaskId.value = null
-      }, 3000 )
+      }, 3000)
 
       closeDrawer()
-      emit( 'update:progress' )
+      emit('update:progress')
     } else {
-      ElMessage.error( `Failed to ${action} task` )
+      ElMessage.error(`Failed to ${action} task`)
     }
-  } catch ( error ) {
-    if ( error !== 'cancel' ) {
-      console.error( 'Error submitting task:', error )
-      ElMessage.error( error?.message || 'Failed to submit task' )
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('Error submitting task:', error)
+      ElMessage.error(error?.message || 'Failed to submit task')
     }
   } finally {
     isSubmitting.value = false
   }
 }
 
-const autoSaveDraft = async() => {
-  if ( isSubmitting.value ) return
-  if ( !activeTask.value ) return
+const autoSaveDraft = async () => {
+  if (isSubmitting.value) return
+  if (!activeTask.value) return
 
   try {
-    const { taskEntryId, payload } = prepareTaskEntryPayload( true )
+    const { taskEntryId, payload } = prepareTaskEntryPayload(true)
 
-    console.groupCollapsed( '🧾 WorkOrderExecution: Auto-saving draft' )
-    console.log( 'Task Entry ID:', taskEntryId )
-    console.log( 'API Endpoint:', `/api/task/entry/${taskEntryId}` )
-    console.log( 'Request Payload:', payload )
+    console.groupCollapsed('🧾 WorkOrderExecution: Auto-saving draft')
+    console.log('Task Entry ID:', taskEntryId)
+    console.log('API Endpoint:', `/api/task/entry/${taskEntryId}`)
+    console.log('Request Payload:', payload)
     console.groupEnd()
 
     isSubmitting.value = true
 
-    const response = await updateTaskEntry( taskEntryId, payload )
+    const response = await updateTaskEntry(taskEntryId, payload)
 
-    if ( response?.status === 'success' || response?.data ) {
-      ElMessage.success( 'Draft saved automatically' )
+    if (response?.status === 'success' || response?.data) {
+      ElMessage.success('Draft saved automatically')
 
       // Highlight the updated task
       highlightedTaskId.value = taskEntryId
 
       // Remove highlight after 3 seconds
-      setTimeout( () => {
+      setTimeout(() => {
         highlightedTaskId.value = null
-      }, 3000 )
+      }, 3000)
 
-      emit( 'update:progress' )
+      emit('update:progress')
     } else {
-      console.warn( 'Auto-save draft response not successful:', response )
+      console.warn('Auto-save draft response not successful:', response)
     }
-  } catch ( error ) {
+  } catch (error) {
     // Only log errors, don't show to user (silent save)
-    console.warn( 'Auto-save draft error:', error )
+    console.warn('Auto-save draft error:', error)
   } finally {
     isSubmitting.value = false
   }
 }
 
 const handleFinalSubmit = () => {
-  handleSubmitTask( false )
+  handleSubmitTask(false)
 }
 
 const openTaskLogViewer = async task => {
   try {
     const taskEntryId = task.task_entry_id || task.taskEntryId || task.id || task.task_id
 
-    if ( taskEntryId ) {
-      const response = await getTaskEntryById( taskEntryId )
+    if (taskEntryId) {
+      const response = await getTaskEntryById(taskEntryId)
       const taskData = response?.data
 
-      if ( taskData ) {
+      if (taskData) {
         selectedTaskForLog.value = {
           ...task,
           ...taskData,
-          steps : Array.isArray( taskData.steps ) && taskData.steps.length ? taskData.steps : task.steps || []
+          steps: Array.isArray(taskData.steps) && taskData.steps.length ? taskData.steps : task.steps || [],
         }
       } else {
         selectedTaskForLog.value = task
@@ -729,8 +729,8 @@ const openTaskLogViewer = async task => {
 
     showTaskLogDialog.value = true
     activeLogTab.value = 'logs'
-  } catch ( error ) {
-    console.warn( 'Failed to load task entry details for log viewer:', error )
+  } catch (error) {
+    console.warn('Failed to load task entry details for log viewer:', error)
     selectedTaskForLog.value = task
     showTaskLogDialog.value = true
     activeLogTab.value = 'logs'
@@ -745,17 +745,17 @@ const closeTaskLogViewer = () => {
 
 // Handle search input with debounce (300ms)
 const handleSearchInput = value => {
-  if ( searchDebounceTimer ) {
-    clearTimeout( searchDebounceTimer )
+  if (searchDebounceTimer) {
+    clearTimeout(searchDebounceTimer)
   }
 
-  searchDebounceTimer = setTimeout( () => {
+  searchDebounceTimer = setTimeout(() => {
     taskFilters.value.search = value
-  }, 300 )
+  }, 300)
 }
 
 const isTaskHighlighted = task => {
-  if ( !highlightedTaskId.value ) return false
+  if (!highlightedTaskId.value) return false
   const taskId = task?.id || task?.task_id || task?.task_entry_id
   return taskId === highlightedTaskId.value
 }
@@ -773,22 +773,22 @@ const isTaskHighlighted = task => {
 // }
 
 // Expose method to parent for navigation guard
-defineExpose( {
-  confirmNavigation
-} )
+defineExpose({
+  confirmNavigation,
+})
 
-onMounted( async() => {
+onMounted(async () => {
   buildTaskList()
   await loadDrafts()
-} )
+})
 
 watch(
   () => props.workOrder,
-  async() => {
+  async () => {
     buildTaskList()
     await loadDrafts()
   },
-  { deep : true, immediate : true }
+  { deep: true, immediate: true }
 )
 </script>
 

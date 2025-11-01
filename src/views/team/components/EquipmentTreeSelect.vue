@@ -24,47 +24,47 @@ import { ref, onMounted, computed } from 'vue'
 import { ElTreeSelect } from 'element-plus'
 import { getEquipmentTree } from '@/api/equipment'
 
-const treeData = ref( [] )
+const treeData = ref([])
 
-const props = defineProps( {
-  modelValue : {
-    type : Array,
-    default : () => []
+const props = defineProps({
+  modelValue: {
+    type: Array,
+    default: () => [],
   },
-  maxCollapseTags : {
-    type : Number,
-    default : 2
+  maxCollapseTags: {
+    type: Number,
+    default: 2,
   },
-  width : {
-    type : String,
-    default : '100%'
+  width: {
+    type: String,
+    default: '100%',
   },
-  inputPlaceholder : {
-    type : String,
-    default : 'Filter by Equipment'
-  }
-} )
+  inputPlaceholder: {
+    type: String,
+    default: 'Filter by Equipment',
+  },
+})
 
 // Use computed binding to sync with parent
-const selectedIds = computed( {
-  get : () => props.modelValue,
-  set : val => emit( 'update:modelValue', val )
-} )
+const selectedIds = computed({
+  get: () => props.modelValue,
+  set: val => emit('update:modelValue', val),
+})
 
 const defaultProps = {
-  label : node => ( node.code ? `${node.name} (${node.code})` : node.name ),
-  value : 'id',
-  children : 'children'
+  label: node => (node.code ? `${node.name} (${node.code})` : node.name),
+  value: 'id',
+  children: 'children',
 }
 
-onMounted( async() => {
+onMounted(async () => {
   try {
     const res = await getEquipmentTree()
     treeData.value = res.data || []
-  } catch ( err ) {
-    console.error( 'Failed to fetch equipment tree:', err )
+  } catch (err) {
+    console.error('Failed to fetch equipment tree:', err)
   }
-} )
+})
 
-const emit = defineEmits( ['update:modelValue', 'change'] )
+const emit = defineEmits(['update:modelValue', 'change'])
 </script>

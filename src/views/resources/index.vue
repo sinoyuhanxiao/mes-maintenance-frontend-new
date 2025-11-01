@@ -188,64 +188,64 @@ import ToolsView from './components/Tools/ToolsView.vue'
 import { searchSpareParts, deleteSparePart, getAllSparePartClasses, getAllToolClasses } from '@/api/resources'
 
 // ===== States =====
-const activeName = ref( 'first' )
-const dialogVisible = ref( false )
-const editDialogVisible = ref( false )
-const newTool = ref( false )
-const currentView = ref( 1 )
-const keyword = ref( null )
+const activeName = ref('first')
+const dialogVisible = ref(false)
+const editDialogVisible = ref(false)
+const newTool = ref(false)
+const currentView = ref(1)
+const keyword = ref(null)
 
-const spareParts = ref( [] )
-const selectedData = ref( null )
-const selectedIndex = ref( 0 )
-const totalItems = ref( 0 )
+const spareParts = ref([])
+const selectedData = ref(null)
+const selectedIndex = ref(0)
+const totalItems = ref(0)
 
-const listQuery = reactive( { page : 1, limit : 10, sort : '-id' } )
-const filterVisible = ref( false )
+const listQuery = reactive({ page: 1, limit: 10, sort: '-id' })
+const filterVisible = ref(false)
 
 // ===== Spare Part filters =====
-const filterState = reactive( {
-  sortKey : 'createdAt_desc',
-  categories : [],
-  stockStatuses : []
-} )
-const categoryOptions = ref( [] )
+const filterState = reactive({
+  sortKey: 'createdAt_desc',
+  categories: [],
+  stockStatuses: [],
+})
+const categoryOptions = ref([])
 
 // ===== Tool filters =====
-const toolsRef = ref( null )
-const filterStateTool = reactive( { categories : [] } )
-const toolCategoryOptions = ref( [] )
+const toolsRef = ref(null)
+const filterStateTool = reactive({ categories: [] })
+const toolCategoryOptions = ref([])
 
 // ===== Fetching helpers =====
 const useServerFiltering = true
 const STATUS_ACTIVE = 1
 
-function resolveSort( sortKey ) {
-  switch ( sortKey ) {
+function resolveSort(sortKey) {
+  switch (sortKey) {
     case 'createdAt_asc':
-      return { sortField : 'createdAt', direction : 'ASC' }
+      return { sortField: 'createdAt', direction: 'ASC' }
     case 'createdAt_desc':
-      return { sortField : 'createdAt', direction : 'DESC' }
+      return { sortField: 'createdAt', direction: 'DESC' }
     case 'name_asc':
-      return { sortField : 'name', direction : 'ASC' }
+      return { sortField: 'name', direction: 'ASC' }
     case 'name_desc':
-      return { sortField : 'name', direction : 'DESC' }
+      return { sortField: 'name', direction: 'DESC' }
     default:
-      return { sortField : 'createdAt', direction : 'DESC' }
+      return { sortField: 'createdAt', direction: 'DESC' }
   }
 }
 
 function buildSearchPayload() {
   return {
-    keyword : keyword.value ?? '',
-    spare_part_class_ids : filterState.categories?.length ? filterState.categories : undefined,
-    status_ids : [STATUS_ACTIVE]
+    keyword: keyword.value ?? '',
+    spare_part_class_ids: filterState.categories?.length ? filterState.categories : undefined,
+    status_ids: [STATUS_ACTIVE],
   }
 }
 
 async function getAllSparePartsData() {
-  const { sortField, direction } = resolveSort( filterState.sortKey )
-  const response = await searchSpareParts( listQuery.page, listQuery.limit, sortField, direction, buildSearchPayload() )
+  const { sortField, direction } = resolveSort(filterState.sortKey)
+  const response = await searchSpareParts(listQuery.page, listQuery.limit, sortField, direction, buildSearchPayload())
   const page = response.data
   spareParts.value = page?.content ?? []
   totalItems.value = page?.totalElements ?? 0
@@ -257,18 +257,18 @@ async function getAllSparePartsData() {
 watch(
   () => keyword.value,
   () => {
-    if ( useServerFiltering && currentView.value === 1 ) {
+    if (useServerFiltering && currentView.value === 1) {
       listQuery.page = 1
       getAllSparePartsData()
-    } else if ( currentView.value === 2 ) {
-      toolsRef.value?.applyCategoryFilter?.( filterStateTool.categories )
+    } else if (currentView.value === 2) {
+      toolsRef.value?.applyCategoryFilter?.(filterStateTool.categories)
     }
   }
 )
 watch(
   () => filterState.sortKey,
   () => {
-    if ( useServerFiltering && currentView.value === 1 ) {
+    if (useServerFiltering && currentView.value === 1) {
       listQuery.page = 1
       getAllSparePartsData()
     }
@@ -277,33 +277,33 @@ watch(
 watch(
   () => filterState.categories,
   () => {
-    if ( useServerFiltering && currentView.value === 1 ) {
+    if (useServerFiltering && currentView.value === 1) {
       listQuery.page = 1
       getAllSparePartsData()
     }
   },
-  { deep : true }
+  { deep: true }
 )
 
 // ===== Apply/Clear filters =====
 async function applyFilters() {
-  if ( currentView.value === 1 ) {
-    if ( useServerFiltering ) {
+  if (currentView.value === 1) {
+    if (useServerFiltering) {
       listQuery.page = 1
       await getAllSparePartsData()
     }
   } else {
-    toolsRef.value?.applyCategoryFilter?.( filterStateTool.categories )
+    toolsRef.value?.applyCategoryFilter?.(filterStateTool.categories)
   }
   filterVisible.value = false
 }
 
 async function clearFilters() {
-  if ( currentView.value === 1 ) {
+  if (currentView.value === 1) {
     filterState.sortKey = 'createdAt_desc'
     filterState.categories = []
     filterState.stockStatuses = []
-    if ( useServerFiltering ) {
+    if (useServerFiltering) {
       listQuery.page = 1
       await getAllSparePartsData()
     }
@@ -315,60 +315,60 @@ async function clearFilters() {
 }
 
 // ===== Lifecycle =====
-const maxHeight = ref( '770px' )
+const maxHeight = ref('770px')
 function updateHeight() {
   maxHeight.value = window.innerWidth <= 1600 ? '521px' : '737px'
 }
-onMounted( async() => {
+onMounted(async () => {
   updateHeight()
-  window.addEventListener( 'resize', updateHeight )
+  window.addEventListener('resize', updateHeight)
 
   // Spare part categories
   const res = await getAllSparePartClasses()
-  categoryOptions.value = ( res.data || [] ).map( c => ( {
-    value : c.id,
-    label : c.name || `Class #${c.id}`
-  } ) )
+  categoryOptions.value = (res.data || []).map(c => ({
+    value: c.id,
+    label: c.name || `Class #${c.id}`,
+  }))
 
   // Tool categories
   const toolRes = await getAllToolClasses()
-  toolCategoryOptions.value = ( toolRes.data || [] ).map( c => ( {
-    value : c.id,
-    label : c.name || `Category #${c.id}`
-  } ) )
+  toolCategoryOptions.value = (toolRes.data || []).map(c => ({
+    value: c.id,
+    label: c.name || `Category #${c.id}`,
+  }))
 
   await getAllSparePartsData()
-} )
-onBeforeUnmount( () => window.removeEventListener( 'resize', updateHeight ) )
+})
+onBeforeUnmount(() => window.removeEventListener('resize', updateHeight))
 
 // ===== Spare Part helpers =====
-const tableData = computed( () => spareParts.value )
-const tableTotal = computed( () => totalItems.value )
+const tableData = computed(() => spareParts.value)
+const tableTotal = computed(() => totalItems.value)
 
-function getSelection( data ) {
+function getSelection(data) {
   selectedIndex.value = data.index
   selectedData.value = data
 }
 function openEditDialog() {
-  if ( !selectedData.value ) return
+  if (!selectedData.value) return
   editDialogVisible.value = true
 }
 async function confirmDelete() {
-  if ( !selectedData.value?.id ) return
+  if (!selectedData.value?.id) return
   try {
-    await ElMessageBox.confirm( `Delete spare part “${selectedData.value.name}”?`, 'Confirm Delete', {
-      confirmButtonText : 'Delete',
-      cancelButtonText : 'Cancel',
-      type : 'warning'
-    } )
-    await deleteSparePart( selectedData.value.id )
-    ElMessage.success( 'Deleted' )
+    await ElMessageBox.confirm(`Delete spare part “${selectedData.value.name}”?`, 'Confirm Delete', {
+      confirmButtonText: 'Delete',
+      cancelButtonText: 'Cancel',
+      type: 'warning',
+    })
+    await deleteSparePart(selectedData.value.id)
+    ElMessage.success('Deleted')
     await getAllSparePartsData()
-  } catch ( err ) {
-    if ( err !== 'cancel' ) ElMessage.error( 'Failed to delete' )
+  } catch (err) {
+    if (err !== 'cancel') ElMessage.error('Failed to delete')
   }
 }
-async function handleCreate( data ) {
+async function handleCreate(data) {
   dialogVisible.value = false
   editDialogVisible.value = false
   await getAllSparePartsData()
@@ -378,8 +378,8 @@ async function handleCreate( data ) {
 const handleCommand = command => {
   currentView.value = command === 'a' ? 1 : 2
 }
-const currentLabel = computed( () => ( currentView.value === 1 ? 'Spare Parts' : 'Tools' ) )
-const currentIcon = computed( () => ( currentView.value === 1 ? 'Magnet' : 'Tools' ) )
+const currentLabel = computed(() => (currentView.value === 1 ? 'Spare Parts' : 'Tools'))
+const currentIcon = computed(() => (currentView.value === 1 ? 'Magnet' : 'Tools'))
 const handleCurrentChange = val => {
   listQuery.page = val
   getAllSparePartsData()

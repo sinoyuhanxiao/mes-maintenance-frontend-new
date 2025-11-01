@@ -65,121 +65,121 @@ import svgs from './svg-icons.js'
 import { ElMessage } from 'element-plus'
 import * as ElementIcons from '@element-plus/icons-vue'
 
-const vxeIcons = ref( [
+const vxeIcons = ref([
   {
-    icon : 'caret-top'
+    icon: 'caret-top',
   },
   {
-    icon : 'caret-bottom'
+    icon: 'caret-bottom',
   },
   {
-    icon : 'caret-left'
+    icon: 'caret-left',
   },
   {
-    icon : 'caret-right'
+    icon: 'caret-right',
   },
   {
-    icon : 'arrow-top'
+    icon: 'arrow-top',
   },
   {
-    icon : 'arrow-bottom'
+    icon: 'arrow-bottom',
   },
   {
-    icon : 'arrow-left'
+    icon: 'arrow-left',
   },
   {
-    icon : 'arrow-right'
+    icon: 'arrow-right',
   },
   {
-    icon : 'd-arrow-left'
+    icon: 'd-arrow-left',
   },
   {
-    icon : 'd-arrow-right'
+    icon: 'd-arrow-right',
   },
   {
-    icon : 'menu'
+    icon: 'menu',
   },
   {
-    icon : 'edit-outline'
+    icon: 'edit-outline',
   },
   {
-    icon : 'more'
+    icon: 'more',
   },
   {
-    icon : 'check'
+    icon: 'check',
   },
   {
-    icon : 'close'
+    icon: 'close',
   },
   {
-    icon : 'plus'
+    icon: 'plus',
   },
   {
-    icon : 'minus'
+    icon: 'minus',
   },
   {
-    icon : 'refresh'
+    icon: 'refresh',
   },
   {
-    icon : 'refresh roll'
+    icon: 'refresh roll',
   },
   {
-    icon : 'funnel'
+    icon: 'funnel',
   },
   {
-    icon : 'question'
+    icon: 'question',
   },
   {
-    icon : 'info'
+    icon: 'info',
   },
   {
-    icon : 'warning'
+    icon: 'warning',
   },
   {
-    icon : 'success'
+    icon: 'success',
   },
   {
-    icon : 'error'
+    icon: 'error',
   },
   {
-    icon : 'remove'
+    icon: 'remove',
   },
   {
-    icon : 'circle-plus'
+    icon: 'circle-plus',
   },
   {
-    icon : 'zoomin'
+    icon: 'zoomin',
   },
   {
-    icon : 'zoomout'
+    icon: 'zoomout',
   },
   {
-    icon : 'upload'
+    icon: 'upload',
   },
   {
-    icon : 'download'
+    icon: 'download',
   },
   {
-    icon : 'eye'
+    icon: 'eye',
   },
   {
-    icon : 'eye-slash'
+    icon: 'eye-slash',
   },
   {
-    icon : 'calendar'
+    icon: 'calendar',
   },
   {
-    icon : 'dot'
+    icon: 'dot',
   },
   {
-    icon : 'print'
+    icon: 'print',
   },
   {
-    icon : 'search'
-  }
-] )
+    icon: 'search',
+  },
+])
 
-const svgIcons = ref( svgs )
+const svgIcons = ref(svgs)
 
 const handleClipboard = text => {
   return `<svg-icon icon-class="${text}" />`
@@ -190,13 +190,13 @@ const handleClipboardE = text => {
 const handleClipboardV = text => {
   return `<i class="vxe-icon--${text.icon}" />`
 }
-const clipboardSuccess = ( text, e ) => {
-  ElMessage.success( '复制成功' )
+const clipboardSuccess = (text, e) => {
+  ElMessage.success('复制成功')
 }
 
-defineOptions( {
-  name : 'Icons'
-} )
+defineOptions({
+  name: 'Icons',
+})
 </script>
 
 <style lang="scss" scoped>

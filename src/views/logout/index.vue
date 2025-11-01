@@ -28,27 +28,27 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 
 const route = useRoute()
-const logoutRes = ref( '' )
-const logoutUrl = ref( '' )
-const countdown = ref( 3 )
+const logoutRes = ref('')
+const logoutUrl = ref('')
+const countdown = ref(3)
 
-onMounted( () => {
+onMounted(() => {
   logoutUrl.value = route.query.logoutUrl
-  if ( route.query.result ) {
+  if (route.query.result) {
     logoutRes.value = route.query.result
   }
-  const interval = setInterval( () => {
+  const interval = setInterval(() => {
     countdown.value--
-    if ( countdown.value <= 0 ) {
-      clearInterval( interval )
-      if ( logoutUrl.value ) {
+    if (countdown.value <= 0) {
+      clearInterval(interval)
+      if (logoutUrl.value) {
         window.location.href = logoutUrl.value
       } else {
         window.location.href = '/'
       }
     }
-  }, 1000 )
-} )
+  }, 1000)
+})
 </script>
 
 <style scoped>

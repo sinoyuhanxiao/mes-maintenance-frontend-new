@@ -33,21 +33,21 @@
 <script setup>
 import { computed } from 'vue'
 
-const props = defineProps( {
-  standard : {
-    type : Object,
-    required : true
+const props = defineProps({
+  standard: {
+    type: Object,
+    required: true,
   },
-  isSelected : {
-    type : Boolean,
-    default : false
-  }
-} )
+  isSelected: {
+    type: Boolean,
+    default: false,
+  },
+})
 
 // eslint-disable-next-line no-unused-vars
-const emit = defineEmits( ['select', 'edit', 'duplicate', 'delete'] )
+const emit = defineEmits(['select', 'edit', 'duplicate', 'delete'])
 
-const rulesCount = computed( () => props.standard?.items?.length || 0 )
+const rulesCount = computed(() => props.standard?.items?.length || 0)
 </script>
 
 <style scoped>

@@ -233,99 +233,99 @@ import 'vue-tel-input/vue-tel-input.css'
 import { useUserStore } from '@/store'
 import { emitter } from '@/utils/mitt'
 
-defineExpose( {
-  handleResetForm
-} )
+defineExpose({
+  handleResetForm,
+})
 
-const prop = defineProps( {
-  user : {
-    type : Object,
-    default : null
+const prop = defineProps({
+  user: {
+    type: Object,
+    default: null,
   },
-  roleOptions : {
-    type : Array,
-    default : () => []
+  roleOptions: {
+    type: Array,
+    default: () => [],
   },
-  departmentOptions : {
-    type : Array,
-    default : () => []
-  }
-} )
+  departmentOptions: {
+    type: Array,
+    default: () => [],
+  },
+})
 const { t } = useI18n()
-const emit = defineEmits( ['confirm', 'cancel', 'update:loading'] )
+const emit = defineEmits(['confirm', 'cancel', 'update:loading'])
 const formRef = ref()
 const userFormImageUploadRef = ref()
-const showCertForm = ref( false )
-const selectedCertificate = ref( null )
-const selectedCertificateIndex = ref( null )
+const showCertForm = ref(false)
+const selectedCertificate = ref(null)
+const selectedCertificateIndex = ref(null)
 const toBeUploadImageList = ref()
 const toBeRemoveImageList = ref()
-const changePassword = ref( false )
-const submitting = ref( false )
-const internalUser = ref( createEmptyUser() )
-const originalUserSnapshot = ref( null ) // stores original userEntry on edit
-const useCustomUsername = ref( false )
+const changePassword = ref(false)
+const submitting = ref(false)
+const internalUser = ref(createEmptyUser())
+const originalUserSnapshot = ref(null) // stores original userEntry on edit
+const useCustomUsername = ref(false)
 
 watch(
   () => prop.user,
   async user => {
-    if ( user ) {
-      const clonedUser = transformIncomingUser( user )
+    if (user) {
+      const clonedUser = transformIncomingUser(user)
       internalUser.value = clonedUser
-      originalUserSnapshot.value = JSON.parse( JSON.stringify( clonedUser ) )
+      originalUserSnapshot.value = JSON.parse(JSON.stringify(clonedUser))
     } else {
       internalUser.value = createEmptyUser()
       originalUserSnapshot.value = null
     }
 
     await nextTick()
-    if ( formRef.value ) {
+    if (formRef.value) {
       formRef.value.clearValidate()
     }
 
     selectedModules.value = []
   },
-  { immediate : true }
+  { immediate: true }
 )
 
-watch( changePassword, async() => {
+watch(changePassword, async () => {
   await nextTick()
-  formRef.value?.clearValidate( ['newPassword', 'confirmPassword'] )
-} )
+  formRef.value?.clearValidate(['newPassword', 'confirmPassword'])
+})
 
 function createEmptyUser() {
   return {
-    id : null,
-    first_name : '',
-    last_name : '',
+    id: null,
+    first_name: '',
+    last_name: '',
     // department_list : [],
-    role_id : null,
-    email : '',
-    phone_number : '+1',
-    enabled : true,
-    employee_number : null,
-    image : null,
-    user_certificates : [],
-    teams : [],
-    newPassword : '',
-    confirmPassword : '',
-    username : null // Initialize as null, keep null for auto generation
+    role_id: null,
+    email: '',
+    phone_number: '+1',
+    enabled: true,
+    employee_number: null,
+    image: null,
+    user_certificates: [],
+    teams: [],
+    newPassword: '',
+    confirmPassword: '',
+    username: null, // Initialize as null, keep null for auto generation
   }
 }
 
-function transformIncomingUser( user ) {
-  function transformIncomingCertificate( cert ) {
+function transformIncomingUser(user) {
+  function transformIncomingCertificate(cert) {
     return {
-      id : cert.id,
-      name : cert.name,
-      certificate_number : cert.certificate_number,
-      issue_date : cert.issue_date,
-      expiration_date : cert.expiration_date,
-      review_date : cert.review_date,
-      external_reviewer_name : cert.external_reviewer_name,
-      reviewer_id : cert.reviewer_id,
-      note : cert.note,
-      file_list : cert.file_list ? [...cert.file_list] : []
+      id: cert.id,
+      name: cert.name,
+      certificate_number: cert.certificate_number,
+      issue_date: cert.issue_date,
+      expiration_date: cert.expiration_date,
+      review_date: cert.review_date,
+      external_reviewer_name: cert.external_reviewer_name,
+      reviewer_id: cert.reviewer_id,
+      note: cert.note,
+      file_list: cert.file_list ? [...cert.file_list] : [],
     }
   }
 
@@ -334,13 +334,13 @@ function transformIncomingUser( user ) {
   return {
     ...createEmptyUser(),
     ...user,
-    user_certificates : ( user.certificate_list || [] ).map( c => transformIncomingCertificate( c ) ),
+    user_certificates: (user.certificate_list || []).map(c => transformIncomingCertificate(c)),
     // department_list : user.department_ids || [],
-    role_id : user.role_list[0]?.id || null
+    role_id: user.role_list[0]?.id || null,
   }
 }
 
-const handleEditCertificate = ( cert, index ) => {
+const handleEditCertificate = (cert, index) => {
   selectedCertificateIndex.value = index
   selectedCertificate.value = { ...cert }
   showCertForm.value = true
@@ -353,16 +353,16 @@ const handleAddCertificate = () => {
   showCertForm.value = true
 }
 
-const handleDeleteCertificate = ( cert, index ) => {
-  console.log( 'delete certificate index', index )
+const handleDeleteCertificate = (cert, index) => {
+  console.log('delete certificate index', index)
 
-  if ( index !== null && index >= 0 && index < internalUser.value.user_certificates.length ) {
-    internalUser.value.user_certificates.splice( index, 1 )
+  if (index !== null && index >= 0 && index < internalUser.value.user_certificates.length) {
+    internalUser.value.user_certificates.splice(index, 1)
   }
 }
 
 const handleConfirmCertificateForm = updatedCertificate => {
-  console.log( 'updatedCertificate emit from certificate form:', updatedCertificate )
+  console.log('updatedCertificate emit from certificate form:', updatedCertificate)
   // Update certificate in internal_user.certificates using index if it exists
   if (
     selectedCertificateIndex.value !== null &&
@@ -373,7 +373,7 @@ const handleConfirmCertificateForm = updatedCertificate => {
     internalUser.value.user_certificates[selectedCertificateIndex.value] = updatedCertificate
   } else {
     // Add new certificate
-    internalUser.value.user_certificates.push( updatedCertificate )
+    internalUser.value.user_certificates.push(updatedCertificate)
   }
 
   showCertForm.value = false
@@ -383,203 +383,203 @@ const handleConfirmCertificateForm = updatedCertificate => {
   selectedCertificate.value = null
 }
 
-const userFormValidationRules = computed( () => {
+const userFormValidationRules = computed(() => {
   const rules = {
-    first_name : [
-      { required : true, message : t( 'user.validation.nameRequired' ), trigger : 'blur' },
+    first_name: [
+      { required: true, message: t('user.validation.nameRequired'), trigger: 'blur' },
       {
-        validator : ( rule, value, callback ) => {
+        validator: (rule, value, callback) => {
           const errors = []
-          if ( !/^[\p{Script=Han}A-Za-z]+$/u.test( value ) ) {
-            if ( /\d/.test( value ) ) {
-              errors.push( t( 'user.validation.nameNoNumbers' ) )
+          if (!/^[\p{Script=Han}A-Za-z]+$/u.test(value)) {
+            if (/\d/.test(value)) {
+              errors.push(t('user.validation.nameNoNumbers'))
             }
-            if ( /[^A-Za-z\d\u4e00-\u9fa5]/.test( value ) ) {
-              errors.push( t( 'user.validation.nameNoSpecialChars' ) )
+            if (/[^A-Za-z\d\u4e00-\u9fa5]/.test(value)) {
+              errors.push(t('user.validation.nameNoSpecialChars'))
             }
-            if ( /\s/.test( value ) ) {
-              errors.push( t( 'user.validation.nameNoSpaces' ) )
+            if (/\s/.test(value)) {
+              errors.push(t('user.validation.nameNoSpaces'))
             }
           }
-          if ( errors.length > 0 ) {
-            callback( new Error( errors.join( ' ' ) ) )
+          if (errors.length > 0) {
+            callback(new Error(errors.join(' ')))
           } else {
             callback()
           }
         },
-        trigger : 'blur'
-      }
+        trigger: 'blur',
+      },
     ],
-    last_name : [
-      { required : true, message : t( 'user.validation.nameRequired' ), trigger : 'blur' },
+    last_name: [
+      { required: true, message: t('user.validation.nameRequired'), trigger: 'blur' },
       {
-        validator : ( rule, value, callback ) => {
+        validator: (rule, value, callback) => {
           const errors = []
-          if ( !/^[\p{Script=Han}A-Za-z]+$/u.test( value ) ) {
-            if ( /\d/.test( value ) ) {
-              errors.push( t( 'user.validation.nameNoNumbers' ) )
+          if (!/^[\p{Script=Han}A-Za-z]+$/u.test(value)) {
+            if (/\d/.test(value)) {
+              errors.push(t('user.validation.nameNoNumbers'))
             }
-            if ( /[^A-Za-z\d\u4e00-\u9fa5]/.test( value ) ) {
-              errors.push( t( 'user.validation.nameNoSpecialChars' ) )
+            if (/[^A-Za-z\d\u4e00-\u9fa5]/.test(value)) {
+              errors.push(t('user.validation.nameNoSpecialChars'))
             }
-            if ( /\s/.test( value ) ) {
-              errors.push( t( 'user.validation.nameNoSpaces' ) )
+            if (/\s/.test(value)) {
+              errors.push(t('user.validation.nameNoSpaces'))
             }
           }
-          if ( errors.length > 0 ) {
-            callback( new Error( errors.join( ' ' ) ) )
+          if (errors.length > 0) {
+            callback(new Error(errors.join(' ')))
           } else {
             callback()
           }
         },
-        trigger : 'blur'
-      }
+        trigger: 'blur',
+      },
     ],
     // department_list : [{ required : false, message : t( 'user.validation.departmentRequired' ), trigger : 'blur' }],
-    role_id : [{ required : true, message : t( 'user.validation.roleRequired' ), trigger : 'blur' }],
-    phone_number : [
+    role_id: [{ required: true, message: t('user.validation.roleRequired'), trigger: 'blur' }],
+    phone_number: [
       {
-        required : true,
-        message : t( 'user.validation.phoneNumberRequired' ),
-        trigger : 'blur'
+        required: true,
+        message: t('user.validation.phoneNumberRequired'),
+        trigger: 'blur',
       },
       {
-        validator : ( rule, value, callback ) => {
-          if ( !value ) return callback()
+        validator: (rule, value, callback) => {
+          if (!value) return callback()
 
-          const e164 = toE164( value ) || ''
+          const e164 = toE164(value) || ''
 
           // Check for + prefix and 10–15 digits
-          if ( !/^\+\d{10,15}$/.test( e164 ) ) {
-            return callback( new Error( t( 'user.validation.phoneNumberFormat' ) ) )
+          if (!/^\+\d{10,15}$/.test(e164)) {
+            return callback(new Error(t('user.validation.phoneNumberFormat')))
           }
 
           return callback()
         },
-        trigger : 'blur'
-      }
+        trigger: 'blur',
+      },
     ],
-    email : [
-      { required : true, message : t( 'user.validation.emailRequired' ), trigger : 'blur' },
-      { type : 'email', message : t( 'user.validation.emailInvalid' ), trigger : 'blur' }
+    email: [
+      { required: true, message: t('user.validation.emailRequired'), trigger: 'blur' },
+      { type: 'email', message: t('user.validation.emailInvalid'), trigger: 'blur' },
     ],
-    employee_number : [
+    employee_number: [
       {
-        required : false,
-        validator : ( rule, value, callback ) => {
-          if ( value && !/^[A-Za-z0-9_-]+$/.test( value ) ) {
-            return callback( new Error( t( 'user.validation.employeeNumberFormat' ) ) )
+        required: false,
+        validator: (rule, value, callback) => {
+          if (value && !/^[A-Za-z0-9_-]+$/.test(value)) {
+            return callback(new Error(t('user.validation.employeeNumberFormat')))
           }
           callback()
         },
-        trigger : 'blur'
-      }
-    ]
+        trigger: 'blur',
+      },
+    ],
   }
 
   const passwordRules = [
-    { required : true, message : t( 'user.validation.passwordRequired' ), trigger : 'blur' },
+    { required: true, message: t('user.validation.passwordRequired'), trigger: 'blur' },
     {
-      validator : ( rule, value, callback ) => {
+      validator: (rule, value, callback) => {
         const errors = []
 
-        if ( value.length < 8 ) {
-          errors.push( t( 'user.validation.passwordMinLength' ) )
+        if (value.length < 8) {
+          errors.push(t('user.validation.passwordMinLength'))
         }
-        if ( !/[A-Z]/.test( value ) ) {
-          errors.push( t( 'user.validation.passwordUppercase' ) )
+        if (!/[A-Z]/.test(value)) {
+          errors.push(t('user.validation.passwordUppercase'))
         }
-        if ( !/[a-z]/.test( value ) ) {
-          errors.push( t( 'user.validation.passwordLowercase' ) )
+        if (!/[a-z]/.test(value)) {
+          errors.push(t('user.validation.passwordLowercase'))
         }
-        if ( !/[0-9]/.test( value ) ) {
-          errors.push( t( 'user.validation.passwordNumber' ) )
+        if (!/[0-9]/.test(value)) {
+          errors.push(t('user.validation.passwordNumber'))
         }
-        if ( !/[^A-Za-z0-9]/.test( value ) ) {
-          errors.push( t( 'user.validation.passwordSpecialChar' ) )
+        if (!/[^A-Za-z0-9]/.test(value)) {
+          errors.push(t('user.validation.passwordSpecialChar'))
         }
-        callback( errors.length > 0 ? new Error( errors.join( ' ' ) ) : undefined )
+        callback(errors.length > 0 ? new Error(errors.join(' ')) : undefined)
       },
-      trigger : 'blur'
-    }
+      trigger: 'blur',
+    },
   ]
 
   const confirmRules = [
-    { required : true, message : t( 'user.validation.confirmPasswordRequired' ), trigger : 'blur' },
+    { required: true, message: t('user.validation.confirmPasswordRequired'), trigger: 'blur' },
     {
-      validator : ( rule, value, callback ) => {
-        if ( value !== internalUser.value.newPassword ) {
-          callback( new Error( t( 'user.validation.passwordMismatch' ) ) )
+      validator: (rule, value, callback) => {
+        if (value !== internalUser.value.newPassword) {
+          callback(new Error(t('user.validation.passwordMismatch')))
         } else {
           callback()
         }
       },
-      trigger : 'blur'
-    }
+      trigger: 'blur',
+    },
   ]
 
   // New user
-  if ( !internalUser.value.id ) {
+  if (!internalUser.value.id) {
     rules.newPassword = passwordRules
     rules.confirmPassword = confirmRules
   }
 
   // Existing user changing password
-  if ( internalUser.value.id && changePassword.value ) {
+  if (internalUser.value.id && changePassword.value) {
     rules.newPassword = passwordRules
     rules.confirmPassword = confirmRules
   }
 
   // Rule when using custom username
-  if ( !internalUser.value.id && useCustomUsername.value ) {
+  if (!internalUser.value.id && useCustomUsername.value) {
     rules.username = [
       {
-        required : true,
-        message : t( 'user.validation.usernameRequired' ),
-        trigger : 'blur'
+        required: true,
+        message: t('user.validation.usernameRequired'),
+        trigger: 'blur',
       },
       {
-        min : 1,
-        max : 25,
-        message : t( 'user.validation.usernameMaxLength' ),
-        trigger : 'blur'
+        min: 1,
+        max: 25,
+        message: t('user.validation.usernameMaxLength'),
+        trigger: 'blur',
       },
       {
-        async validator( rule, value, callback ) {
-          if ( !value ) return callback()
+        async validator(rule, value, callback) {
+          if (!value) return callback()
 
-          if ( value.length > 25 ) {
-            return callback( new Error( t( 'user.validation.usernameMaxLength' ) ) )
+          if (value.length > 25) {
+            return callback(new Error(t('user.validation.usernameMaxLength')))
           }
 
           try {
-            const res = await isUsernameExist( value )
-            if ( res.data ) {
-              callback( new Error( t( 'user.validation.usernameExists' ) ) )
+            const res = await isUsernameExist(value)
+            if (res.data) {
+              callback(new Error(t('user.validation.usernameExists')))
             } else {
               callback()
             }
-          } catch ( e ) {
-            callback( new Error( t( 'user.validation.usernameCheckFailed' ) ) )
+          } catch (e) {
+            callback(new Error(t('user.validation.usernameCheckFailed')))
           }
         },
-        trigger : 'blur'
-      }
+        trigger: 'blur',
+      },
     ]
   }
 
   return rules
-} )
+})
 
 function handlePhoneBlur() {
   // Manually trigger validation of phone_number
-  if ( formRef.value ) {
-    formRef.value.validateField( 'phone_number' )
+  if (formRef.value) {
+    formRef.value.validateField('phone_number')
   }
 }
 
-function handleFileUpdate( type, data ) {
-  switch ( type ) {
+function handleFileUpdate(type, data) {
+  switch (type) {
     case 'toBeUploadImageList':
       toBeUploadImageList.value = [...data]
       break
@@ -595,54 +595,54 @@ function handleFileUpdate( type, data ) {
 
 // Convert phone number to E164
 const toE164 = value => {
-  if ( !value ) return value
-  const digits = String( value ).replace( /\D/g, '' ) // keep digits only
+  if (!value) return value
+  const digits = String(value).replace(/\D/g, '') // keep digits only
   return digits ? `+${digits}` : null // prefix a single +
 }
 
 const buildCreateUserPayload = entry => {
   return {
-    first_name : entry.first_name,
-    last_name : entry.last_name,
-    username : useCustomUsername.value ? entry.username : null,
-    email : entry.email,
-    phone_number : toE164( entry.phone_number ),
-    password : entry.confirmPassword,
-    employee_number : entry.employee_number,
+    first_name: entry.first_name,
+    last_name: entry.last_name,
+    username: useCustomUsername.value ? entry.username : null,
+    email: entry.email,
+    phone_number: toE164(entry.phone_number),
+    password: entry.confirmPassword,
+    employee_number: entry.employee_number,
     // department_list : entry.department_list,
-    role_list : [entry.role_id],
-    enabled : entry.enabled,
-    image : entry.image,
-    user_certificates : entry.user_certificates
+    role_list: [entry.role_id],
+    enabled: entry.enabled,
+    image: entry.image,
+    user_certificates: entry.user_certificates,
   }
 }
 
-const buildUpdateUserPayload = ( entry, original ) => {
+const buildUpdateUserPayload = (entry, original) => {
   const payload = {}
-  if ( entry.first_name !== original.first_name ) {
+  if (entry.first_name !== original.first_name) {
     payload.first_name = entry.first_name
   }
 
-  if ( entry.last_name !== original.last_name ) {
+  if (entry.last_name !== original.last_name) {
     payload.last_name = entry.last_name
   }
 
-  if ( entry.email !== original.email ) {
+  if (entry.email !== original.email) {
     payload.email = entry.email
   }
 
-  const curPhone = toE164( entry.phone_number ) || ''
-  const origPhone = toE164( original.phone_number ) || ''
+  const curPhone = toE164(entry.phone_number) || ''
+  const origPhone = toE164(original.phone_number) || ''
 
-  if ( curPhone !== origPhone ) {
+  if (curPhone !== origPhone) {
     payload.phone_number = curPhone
   }
 
-  if ( entry.confirmPassword ) {
+  if (entry.confirmPassword) {
     payload.password = entry.confirmPassword // Always include if changing password
   }
 
-  if ( entry.employee_number !== original.employee_number ) {
+  if (entry.employee_number !== original.employee_number) {
     payload.employee_number = entry.employee_number
   }
 
@@ -651,22 +651,22 @@ const buildUpdateUserPayload = ( entry, original ) => {
   //   payload.department_list = entry.department_list
   // }
 
-  const rolesChanged = JSON.stringify( entry.role_id ) !== JSON.stringify( original.role_id )
-  if ( rolesChanged ) {
+  const rolesChanged = JSON.stringify(entry.role_id) !== JSON.stringify(original.role_id)
+  if (rolesChanged) {
     payload.role_list = [entry.role_id]
   }
 
   const certificateChanged =
-    JSON.stringify( entry.user_certificates || [] ) !== JSON.stringify( original.user_certificates || [] )
-  if ( certificateChanged ) {
+    JSON.stringify(entry.user_certificates || []) !== JSON.stringify(original.user_certificates || [])
+  if (certificateChanged) {
     payload.user_certificates = entry.user_certificates
   }
 
-  if ( entry.enabled !== original.enabled ) {
+  if (entry.enabled !== original.enabled) {
     payload.enabled = entry.enabled
   }
 
-  if ( entry.image !== original.image ) {
+  if (entry.image !== original.image) {
     payload.image = entry.image
   }
 
@@ -676,76 +676,76 @@ const buildUpdateUserPayload = ( entry, original ) => {
 async function handleConfirm() {
   const isValid = await formRef.value.validate()
   let username = null
-  if ( !isValid ) {
-    return ElMessage.error( t( 'user.message.pleaseCorrectErrors' ) )
+  if (!isValid) {
+    return ElMessage.error(t('user.message.pleaseCorrectErrors'))
   }
 
   submitting.value = true
-  emit( 'update:loading', true )
+  emit('update:loading', true)
 
   // Create
   try {
     // Upload images to minio
     try {
-      if ( toBeUploadImageList.value.length > 0 ) {
-        const imageRes = await uploadMultipleToMinio( toBeUploadImageList.value )
-        const images = imageRes.data.uploadedFiles?.map( file => file.url ) || []
+      if (toBeUploadImageList.value.length > 0) {
+        const imageRes = await uploadMultipleToMinio(toBeUploadImageList.value)
+        const images = imageRes.data.uploadedFiles?.map(file => file.url) || []
 
         // Expects user can only upload one image so replace as first image
         internalUser.value.image = images[0]
       }
 
-      if ( toBeRemoveImageList.value.length > 0 && toBeUploadImageList.value.length === 0 ) {
+      if (toBeRemoveImageList.value.length > 0 && toBeUploadImageList.value.length === 0) {
         // Expects user removing the only image and did not upload new image
         internalUser.value.image = null
       }
-    } catch ( err ) {
+    } catch (err) {
       // TODO: replace with translated key
-      ElMessage.error( 'Image file upload failed' )
+      ElMessage.error('Image file upload failed')
     }
 
     // Build payload
     const payload =
       internalUser.value.id != null
-        ? buildUpdateUserPayload( internalUser.value, originalUserSnapshot.value )
-        : buildCreateUserPayload( internalUser.value )
+        ? buildUpdateUserPayload(internalUser.value, originalUserSnapshot.value)
+        : buildCreateUserPayload(internalUser.value)
 
     // Submit API
-    if ( internalUser.value.id != null ) {
-      await updateUserByAdmin( internalUser.value.id, payload )
+    if (internalUser.value.id != null) {
+      await updateUserByAdmin(internalUser.value.id, payload)
 
-      emitter.emit( 'user:updated', internalUser.value.id )
+      emitter.emit('user:updated', internalUser.value.id)
     } else {
-      const res = await createUser( payload )
+      const res = await createUser(payload)
       username = res?.data?.username
     }
 
     // Delete removed file in Minio
     try {
-      if ( toBeRemoveImageList.value?.length > 0 ) {
-        const deleteResponse = await deleteObjectList( {
-          bucketName : 'sv-file-bucket',
-          objectUrls : toBeRemoveImageList.value
-        } )
+      if (toBeRemoveImageList.value?.length > 0) {
+        const deleteResponse = await deleteObjectList({
+          bucketName: 'sv-file-bucket',
+          objectUrls: toBeRemoveImageList.value,
+        })
 
-        if ( deleteResponse.status === 0 ) {
-          ElMessage.success( 'Old files deleted successfully!' )
+        if (deleteResponse.status === 0) {
+          ElMessage.success('Old files deleted successfully!')
         }
       }
-    } catch ( err ) {
+    } catch (err) {
       // TODO: replace with translated key
-      console.log( err )
-      ElMessage.error( 'Image file delete failed' )
+      console.log(err)
+      ElMessage.error('Image file delete failed')
     }
 
     // If updated user is the logged-in user, refresh the store
-    if ( internalUser.value.id ) {
+    if (internalUser.value.id) {
       const userStore = useUserStore()
-      if ( internalUser.value.id === userStore.uid ) {
+      if (internalUser.value.id === userStore.uid) {
         try {
           await userStore.GET_USER_INFO()
-        } catch ( err ) {
-          console.error( '[UserForm] Failed to refresh self userStore:', err )
+        } catch (err) {
+          console.error('[UserForm] Failed to refresh self userStore:', err)
         }
       }
     }
@@ -756,36 +756,36 @@ async function handleConfirm() {
     clearFileUploadComponent()
     formRef.value.resetFields()
 
-    if ( username ) {
-      emit( 'confirm', username ) // Pass the username to parent
+    if (username) {
+      emit('confirm', username) // Pass the username to parent
     } else {
-      ElMessage.success( t( 'user.message.userUpdatedSuccess' ) )
-      emit( 'confirm' )
+      ElMessage.success(t('user.message.userUpdatedSuccess'))
+      emit('confirm')
     }
-  } catch ( err ) {
-    console.error( 'Error submitting user form:', err )
-    ElMessage.error( t( 'user.message.userUpdatedFailed' ) )
+  } catch (err) {
+    console.error('Error submitting user form:', err)
+    ElMessage.error(t('user.message.userUpdatedFailed'))
   } finally {
     submitting.value = false
-    emit( 'update:loading', false )
+    emit('update:loading', false)
   }
 }
 
-async function handleResetForm( skipConfirmation ) {
+async function handleResetForm(skipConfirmation) {
   try {
-    if ( !skipConfirmation ) {
-      await ElMessageBox.confirm( 'This will reset all fields to their original values. Continue?', 'Warning', {
-        type : 'warning',
-        confirmButtonText : t( 'common.confirm' ),
-        cancelButtonText : t( 'common.cancel' ),
-        distinguishCancelAndClose : true
-      } )
+    if (!skipConfirmation) {
+      await ElMessageBox.confirm('This will reset all fields to their original values. Continue?', 'Warning', {
+        type: 'warning',
+        confirmButtonText: t('common.confirm'),
+        cancelButtonText: t('common.cancel'),
+        distinguishCancelAndClose: true,
+      })
     }
 
-    if ( originalUserSnapshot.value === null ) {
+    if (originalUserSnapshot.value === null) {
       internalUser.value = createEmptyUser()
     } else {
-      internalUser.value = JSON.parse( JSON.stringify( originalUserSnapshot.value ) )
+      internalUser.value = JSON.parse(JSON.stringify(originalUserSnapshot.value))
       // internalUser.value = originalUserSnapshot.value
     }
 
@@ -805,26 +805,26 @@ function clearFileUploadComponent() {
   userFormImageUploadRef.value.resetNewFileLists()
 }
 
-const isUserEdited = computed( () => {
-  if ( !internalUser.value.id || !originalUserSnapshot.value ) return true
+const isUserEdited = computed(() => {
+  if (!internalUser.value.id || !originalUserSnapshot.value) return true
 
-  const payload = buildUpdateUserPayload( internalUser.value, originalUserSnapshot.value )
+  const payload = buildUpdateUserPayload(internalUser.value, originalUserSnapshot.value)
 
   // Also check if there are any update on file upload
-  if ( toBeUploadImageList.value?.length > 0 || toBeRemoveImageList.value?.length > 0 ) {
+  if (toBeUploadImageList.value?.length > 0 || toBeRemoveImageList.value?.length > 0) {
     return true
   }
 
-  return Object.keys( payload ).length > 0
-} )
+  return Object.keys(payload).length > 0
+})
 
 async function checkUsername() {
-  if ( !internalUser.value.username ) return
+  if (!internalUser.value.username) return
   try {
-    await isUsernameExist( internalUser.value.username )
-  } catch ( err ) {
-    console.error( err )
-    ElMessage.error( t( 'user.validation.usernameCheckFailed' ) )
+    await isUsernameExist(internalUser.value.username)
+  } catch (err) {
+    console.error(err)
+    ElMessage.error(t('user.validation.usernameCheckFailed'))
   }
 }
 
@@ -837,25 +837,25 @@ async function checkUsername() {
 //   return map
 // } )
 
-const selectedModules = ref( [] )
+const selectedModules = ref([])
 
 function filterRolesByModule() {
   // No explicit logic needed since computed handles it
 }
 
-const filteredRoleOptions = computed( () => {
-  if ( selectedModules.value.length === 0 ) return prop.roleOptions
-  return prop.roleOptions.filter( role => role.module && selectedModules.value.includes( role.module.toLowerCase() ) )
-} )
+const filteredRoleOptions = computed(() => {
+  if (selectedModules.value.length === 0) return prop.roleOptions
+  return prop.roleOptions.filter(role => role.module && selectedModules.value.includes(role.module.toLowerCase()))
+})
 
-function getRoleModule( id ) {
-  const role = prop.roleOptions.find( r => r.id === id )
-  return role?.module ? capitalize( role.module ) : '-'
+function getRoleModule(id) {
+  const role = prop.roleOptions.find(r => r.id === id)
+  return role?.module ? capitalize(role.module) : '-'
 }
 
-function capitalize( text ) {
-  if ( !text ) return ''
-  return text.charAt( 0 ).toUpperCase() + text.slice( 1 )
+function capitalize(text) {
+  if (!text) return ''
+  return text.charAt(0).toUpperCase() + text.slice(1)
 }
 
 // Watch department selection → clear invalid roles

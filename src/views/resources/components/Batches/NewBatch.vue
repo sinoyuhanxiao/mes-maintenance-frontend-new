@@ -25,37 +25,37 @@ import { ref, defineEmits, reactive, watch } from 'vue'
 import { getLocationTree, getLocationById } from '../../../../api/location'
 import { createInventory } from '../../../../api/resources'
 
-const props = defineProps( {
-  sparePart : Object
-} )
+const props = defineProps({
+  sparePart: Object,
+})
 
-const formRef = reactive( null )
+const formRef = reactive(null)
 
-const locations = ref( [] )
+const locations = ref([])
 
-const emit = defineEmits( ['newBatch'] )
+const emit = defineEmits(['newBatch'])
 
-const selectedLocation = ref( null )
+const selectedLocation = ref(null)
 
-const form = reactive( {
-  location_id : null,
-  unit_in_stock : 0,
-  material_id : props.sparePart.id,
-  inventory_type_id : 3,
-  batch_number : null
-} )
+const form = reactive({
+  location_id: null,
+  unit_in_stock: 0,
+  material_id: props.sparePart.id,
+  inventory_type_id: 3,
+  batch_number: null,
+})
 
 // Form rules
-const rules = reactive( {
-  location_id : [{ required : true, message : 'Please select location', trigger : 'blur' }],
-  batch_number : [{ required : true, message : 'Please enter batch number', trigger : 'blur' }]
-} )
+const rules = reactive({
+  location_id: [{ required: true, message: 'Please select location', trigger: 'blur' }],
+  batch_number: [{ required: true, message: 'Please enter batch number', trigger: 'blur' }],
+})
 
 async function getLocationData() {
   const response = await getLocationTree()
 
   locations.value = response.data
-  console.log( locations.value )
+  console.log(locations.value)
 }
 
 getLocationData()
@@ -63,30 +63,30 @@ getLocationData()
 watch(
   () => form.location_id,
   async newVal => {
-    const response = await getLocationById( newVal )
+    const response = await getLocationById(newVal)
     selectedLocation.value = response.data
   }
 )
 
 const defaultProps = {
-  children : 'children',
-  label : 'name'
+  children: 'children',
+  label: 'name',
 }
 
 const handleNodeClick = data => {
   form.location_id = data.id
-  console.log( form.location_id )
+  console.log(form.location_id)
 }
 
 async function createBatch() {
-  const response = await createInventory( form )
+  const response = await createInventory(form)
 
-  emit( 'newBatch', response )
+  emit('newBatch', response)
   resetForm()
 }
 
 const resetForm = () => {
-  if ( formRef ) {
+  if (formRef) {
     formRef.resetFields()
   }
 }

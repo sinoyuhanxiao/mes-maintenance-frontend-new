@@ -21,19 +21,19 @@
 <script setup>
 import { VERSION, RELEASE_DATE } from '@/utils/env'
 
-const props = defineProps( {
-  collapse : {
-    type : Boolean,
-    required : true
-  }
-} )
+const props = defineProps({
+  collapse: {
+    type: Boolean,
+    required: true,
+  },
+})
 
 const version = VERSION
 const releaseDate = RELEASE_DATE
 
-defineOptions( {
-  name : 'VersionInfo'
-} )
+defineOptions({
+  name: 'VersionInfo',
+})
 </script>
 
 <style lang="scss" scoped>

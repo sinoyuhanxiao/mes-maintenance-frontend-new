@@ -3,9 +3,12 @@
     <div class="t2-main-header">
       <el-breadcrumb separator="/">
         <el-breadcrumb-item v-for="(item, index) in breadcrumb" :key="index">
-          {{ item.label }}
+          <el-link class="crumb-link" :underline="true" @click="handleBreadcrumbClick(item, index)">
+            {{ item.label }}
+          </el-link>
         </el-breadcrumb-item>
       </el-breadcrumb>
+
       <div class="t2-sub-header">
         <h1>{{ props.node.label }}</h1>
         <el-dropdown class="kebab-dropdown">
@@ -28,7 +31,6 @@
         </el-tab-pane>
 
         <el-tab-pane label="Sub Items" name="subItems">
-          <!-- 🔑 listen and bubble up -->
           <SubItemsTab
             :equipmentId="props.node.id"
             :key="`subitems-${refreshKey}`"
@@ -102,37 +104,36 @@ import AddEquipmentGroup from './components/AddEquipmentGroup.vue'
 import EditEquipmentGroup from './components/EditEquipmentGroup.vue'
 import DeactivateNode from '../common/DeactivateNode.vue'
 
-const props = defineProps( {
-  node : { type : Object, required : true },
-  breadcrumb : { type : Array, default : () => [] }
-} )
+const props = defineProps({
+  node: { type: Object, required: true },
+  breadcrumb: { type: Array, default: () => [] },
+})
 
-/* 🔔 Also bubble the select event upward */
-const emit = defineEmits( ['refresh-tree', 'refresh-data', 'after-delete', 'request-select-node'] )
+const emit = defineEmits(['refresh-tree', 'refresh-data', 'after-delete', 'request-select-node'])
 
-const parentId = computed( () => {
-  const validBreadcrumbItems = props.breadcrumb.filter( ( item, index ) => {
-    return index > 0 && item && typeof item === 'object' && 'id' in item
-  } )
-  if ( validBreadcrumbItems.length >= 2 ) {
-    return validBreadcrumbItems[validBreadcrumbItems.length - 2].id
-  }
-  return null
-} )
+const parentId = computed(() => {
+  const valid = props.breadcrumb.filter((item, index) => index > 0 && item && typeof item === 'object' && 'id' in item)
+  return valid.length >= 2 ? valid[valid.length - 2].id : null
+})
 
-const activeTab = ref( 'details' )
-const showAddDialog = ref( false )
-const showEditDialog = ref( false )
-const showDeactivateDialog = ref( false )
-const refreshKey = ref( 0 )
-const editDialogKey = ref( 0 )
+const activeTab = ref('details')
+const showAddDialog = ref(false)
+const showEditDialog = ref(false)
+const showDeactivateDialog = ref(false)
+const refreshKey = ref(0)
+const editDialogKey = ref(0)
+
+/* ---- Breadcrumb click (same behavior as T3) ---- */
+function handleBreadcrumbClick(item, index) {
+  emit('request-select-node', Number(item.id))
+}
 
 const closeAddDialog = () => {
   showAddDialog.value = false
 }
 const handleAddSuccess = () => {
   closeAddDialog()
-  emit( 'refresh-tree' )
+  emit('refresh-tree')
 }
 
 /* ---- Edit ---- */
@@ -145,10 +146,10 @@ const closeEditDialog = () => {
 }
 const handleEditSuccess = () => {
   closeEditDialog()
-  emit( 'refresh-tree' )
-  setTimeout( () => {
+  emit('refresh-tree')
+  setTimeout(() => {
     refreshViewData()
-  }, 100 )
+  }, 100)
 }
 
 /* ---- Delete ---- */
@@ -160,8 +161,8 @@ const closeDeactivateDialog = () => {
 }
 const handleDeleteSuccess = () => {
   closeDeactivateDialog()
-  emit( 'refresh-tree' )
-  emit( 'after-delete', { parentId : parentId.value, deletedId : props.node.id } )
+  emit('refresh-tree')
+  emit('after-delete', { parentId: parentId.value, deletedId: props.node.id })
 }
 
 /* ---- Misc ---- */
@@ -170,19 +171,19 @@ const handleCloseDialog = done => {
 }
 const refreshViewData = () => {
   refreshKey.value += 1
-  emit( 'refresh-data', props.node.id )
+  emit('refresh-data', props.node.id)
 }
 const handleRefreshTree = () => {
-  emit( 'refresh-tree' )
+  emit('refresh-tree')
 }
 
-/* 🔑 Re-emit up to the container that owns <EquipmentTree> */
-function handleSelectFromCard( id ) {
-  emit( 'request-select-node', Number( id ) )
+/* Re-emit up to the container that owns <EquipmentTree> */
+function handleSelectFromCard(id) {
+  emit('request-select-node', Number(id))
 }
 
 /* Expose opener so parent can trigger Delete dialog */
-defineExpose( { openDeactivateDialog } )
+defineExpose({ openDeactivateDialog })
 </script>
 
 <style scoped>
@@ -222,5 +223,25 @@ defineExpose( { openDeactivateDialog } )
 }
 .kebab-icon:hover {
   background-color: var(--el-fill-color-light);
+}
+
+/* === Exact same breadcrumb link style as your T3 === */
+/* base: inherit normal breadcrumb color */
+.t2-main-header :deep(.crumb-link) {
+  color: var(--el-text-color-regular) !important; /* default gray */
+  font-weight: 400;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* on hover: turn primary blue */
+.t2-main-header :deep(.crumb-link:hover),
+.t2-main-header :deep(.el-breadcrumb__inner:hover .crumb-link) {
+  color: var(--el-color-primary) !important;
+}
+
+/* prevent wrapper hover color override */
+.t2-main-header :deep(.el-breadcrumb__inner:hover) {
+  color: inherit !important;
 }
 </style>

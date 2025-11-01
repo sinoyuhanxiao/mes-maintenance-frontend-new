@@ -8,26 +8,26 @@
 <script setup>
 import { VideoPlay } from '@element-plus/icons-vue'
 
-const props = defineProps( {
-  workOrder : {
-    type : Object,
-    required : true
+const props = defineProps({
+  workOrder: {
+    type: Object,
+    required: true,
   },
-  disabled : {
-    type : Boolean,
-    default : false
+  disabled: {
+    type: Boolean,
+    default: false,
   },
-  label : {
-    type : String,
-    default : 'Start Work Order'
-  }
-} )
+  label: {
+    type: String,
+    default: 'Start Work Order',
+  },
+})
 
-const emit = defineEmits( ['start'] )
+const emit = defineEmits(['start'])
 
 const handleClick = () => {
-  if ( props.disabled ) return
-  emit( 'start', props.workOrder )
+  if (props.disabled) return
+  emit('start', props.workOrder)
 }
 </script>
 

@@ -261,61 +261,61 @@ import RoleDetail from '@/views/rolesAndPermissions/components/RoleDetail.vue'
 import { formatAsLocalDateTimeString } from '@/utils/datetime'
 
 const { t } = useI18n()
-const loading = ref( false )
-const isFormProcessing = ref( false )
-const isDialogVisible = ref( false )
-const rolesTableData = ref( [] )
+const loading = ref(false)
+const isFormProcessing = ref(false)
+const isDialogVisible = ref(false)
+const rolesTableData = ref([])
 const roleFormRef = ref()
-const sortSettings = ref( { prop : 'id', order : 'ascending' } )
-const currentPage = ref( 1 )
-const pageSize = ref( 20 )
-const totalElements = ref( 0 )
-const totalPages = ref( 0 )
-const tableHeight = ref( window.innerHeight - 250 )
-const userOptions = ref( [] )
+const sortSettings = ref({ prop: 'id', order: 'ascending' })
+const currentPage = ref(1)
+const pageSize = ref(20)
+const totalElements = ref(0)
+const totalPages = ref(0)
+const tableHeight = ref(window.innerHeight - 250)
+const userOptions = ref([])
 // const permissionOptions = ref( [] )
-const currentEditingRole = ref( null )
+const currentEditingRole = ref(null)
 const initialFilters = {
-  keyword : '',
+  keyword: '',
   // assigned_user_ids : [],
-  permission_ids : [],
-  module : null
+  permission_ids: [],
+  module: null,
 }
 
-const localFilters = reactive( { ...initialFilters } )
+const localFilters = reactive({ ...initialFilters })
 
 const moduleOptions = [
   {
-    label : 'Maintenance',
-    value : 'Maintenance'
+    label: 'Maintenance',
+    value: 'Maintenance',
   },
   {
-    label : 'Quality Control',
-    value : 'Quality Control'
+    label: 'Quality Control',
+    value: 'Quality Control',
   },
   {
-    label : 'Production',
-    value : 'Production'
+    label: 'Production',
+    value: 'Production',
   },
   {
-    label : 'Inventory',
-    value : 'Inventory'
-  }
+    label: 'Inventory',
+    value: 'Inventory',
+  },
 ]
 // const userMap = computed( () => {
 //   return Object.fromEntries( userOptions.value.map( user => [user.id, user] ) )
 // } )
 
-const selectedRole = ref( null )
-const showRoleDetail = ref( false )
+const selectedRole = ref(null)
+const showRoleDetail = ref(false)
 
 function openCreateForm() {
   currentEditingRole.value = null
   isDialogVisible.value = true
 }
 
-function handleView( role ) {
-  if ( !role ) {
+function handleView(role) {
+  if (!role) {
     return
   }
 
@@ -323,7 +323,7 @@ function handleView( role ) {
   showRoleDetail.value = true
 }
 
-function handleEdit( role ) {
+function handleEdit(role) {
   currentEditingRole.value = role
   isDialogVisible.value = true
 }
@@ -332,11 +332,11 @@ async function handleRoleSubmitted() {
   isDialogVisible.value = false
   await loadRoles()
 
-  if ( showRoleDetail.value && selectedRole.value?.id ) {
-    const updated = rolesTableData.value.find( r => r.id === selectedRole.value.id )
-    if ( updated ) {
+  if (showRoleDetail.value && selectedRole.value?.id) {
+    const updated = rolesTableData.value.find(r => r.id === selectedRole.value.id)
+    if (updated) {
       // clone to force new reactive reference
-      console.log( 'found updated role in roles table' )
+      console.log('found updated role in roles table')
       selectedRole.value = { ...updated }
     }
   }
@@ -347,45 +347,45 @@ function handleFilterChange() {
     currentPage.value = 1
 
     loadRoles()
-  } catch ( e ) {
-    ElMessage.error( 'Error fetching roles data' )
+  } catch (e) {
+    ElMessage.error('Error fetching roles data')
   }
 }
 
 function clearLocalFilters() {
-  Object.assign( localFilters, initialFilters )
+  Object.assign(localFilters, initialFilters)
   handleFilterChange()
 }
 
-function handlePageChange( val ) {
+function handlePageChange(val) {
   currentPage.value = val
   loadRoles()
 }
 
-function handleSizeChange( val ) {
+function handleSizeChange(val) {
   pageSize.value = val
   currentPage.value = 1
   loadRoles()
 }
 
-function handleSortChange( { prop, order } ) {
+function handleSortChange({ prop, order }) {
   sortSettings.value = { prop, order }
   loadRoles()
 }
 
 function handleFormClosed() {
   isDialogVisible.value = false
-  roleFormRef.value?.handleResetForm( true )
+  roleFormRef.value?.handleResetForm(true)
 }
 
 async function loadRoles() {
-  function snakeToCamel( str ) {
-    return str.replace( /_([a-z])/g, ( _, char ) => char.toUpperCase() )
+  function snakeToCamel(str) {
+    return str.replace(/_([a-z])/g, (_, char) => char.toUpperCase())
   }
 
   loading.value = true
   try {
-    const sortKey = snakeToCamel( sortSettings.value.prop )
+    const sortKey = snakeToCamel(sortSettings.value.prop)
 
     const response = await searchRoles(
       localFilters,
@@ -398,52 +398,52 @@ async function loadRoles() {
     const data = response.data
     const rawRole = data.content || []
 
-    rolesTableData.value = rawRole.map( role => {
+    rolesTableData.value = rawRole.map(role => {
       return {
-        ...role
+        ...role,
       }
-    } )
+    })
 
     totalPages.value = data.totalPages
     totalElements.value = data.totalElements
-  } catch ( err ) {
-    console.error( 'Failed to load roles:', err )
-    ElMessage.error( 'Error fetching roles data' )
+  } catch (err) {
+    console.error('Failed to load roles:', err)
+    ElMessage.error('Error fetching roles data')
   } finally {
     loading.value = false
   }
 }
 
-async function handleDelete( id ) {
+async function handleDelete(id) {
   try {
-    await ElMessageBox.confirm( t( 'common.confirmMessage' ), t( 'common.warning' ), {
-      confirmButtonText : t( 'common.confirm' ),
-      cancelButtonText : t( 'common.cancel' ),
-      type : 'warning',
-      distinguishCancelAndClose : true
-    } )
+    await ElMessageBox.confirm(t('common.confirmMessage'), t('common.warning'), {
+      confirmButtonText: t('common.confirm'),
+      cancelButtonText: t('common.cancel'),
+      type: 'warning',
+      distinguishCancelAndClose: true,
+    })
 
-    await disableRoles( [id] )
+    await disableRoles([id])
     await loadRoles()
 
-    ElMessage.success( 'Role delete successfully' )
-  } catch ( err ) {
-    if ( err === 'cancel' || err === 'close' ) {
+    ElMessage.success('Role delete successfully')
+  } catch (err) {
+    if (err === 'cancel' || err === 'close') {
       // User canceled — do nothing
       return
     }
-    console.error( err )
-    ElMessage.error( 'Error deleting a role' )
+    console.error(err)
+    ElMessage.error('Error deleting a role')
   }
 }
 
 async function loadUsers() {
   try {
-    const response = await searchUsers( { status_ids : [1] }, 1, 1000 )
+    const response = await searchUsers({ status_ids: [1] }, 1, 1000)
     userOptions.value = response?.data?.content || []
-  } catch ( err ) {
-    console.error( 'Failed to load users:', err )
-    ElMessage.error( t( 'user.message.errorLoadingUsersData' ) )
+  } catch (err) {
+    console.error('Failed to load users:', err)
+    ElMessage.error(t('user.message.errorLoadingUsersData'))
   }
 }
 
@@ -463,7 +463,7 @@ async function refreshTable() {
 
     await loadUsers()
     await loadRoles()
-  } catch ( e ) {
+  } catch (e) {
   } finally {
     loading.value = false
   }
@@ -475,10 +475,10 @@ watch(
   () => {
     handleFilterChange()
   },
-  { deep : true }
+  { deep: true }
 )
 
-onMounted( async() => {
+onMounted(async () => {
   try {
     loading.value = true
     // await loadPermissions()
@@ -487,7 +487,7 @@ onMounted( async() => {
   } finally {
     loading.value = false
   }
-} )
+})
 </script>
 
 <style scoped>

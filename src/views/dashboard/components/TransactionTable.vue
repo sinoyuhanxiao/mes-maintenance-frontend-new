@@ -27,48 +27,48 @@ import { ref, reactive, computed, onBeforeMount } from 'vue'
 // import axios from 'axios'
 
 // eslint-disable-next-line prefer-const
-let list = ref( [] )
+let list = ref([])
 
-const set = reactive( {
-  newList : computed( () => {
+const set = reactive({
+  newList: computed(() => {
     const statusMap = {
-      准备就绪 : 'success',
-      进行中 : 'warning',
-      已完成 : 'info',
-      待审核 : 'danger'
+      准备就绪: 'success',
+      进行中: 'warning',
+      已完成: 'info',
+      待审核: 'danger',
     }
-    if ( list.value && list.value.length > 0 ) {
+    if (list.value && list.value.length > 0) {
       // eslint-disable-next-line vue/no-side-effects-in-computed-properties
-      list.value = list.value.map( item => {
+      list.value = list.value.map(item => {
         return {
           ...item,
-          statusStr : statusMap[item.status] || 'info'
+          statusStr: statusMap[item.status] || 'info',
         }
-      } )
+      })
     } else {
       // eslint-disable-next-line vue/no-side-effects-in-computed-properties
       list.value = []
     }
     return list.value
-  } )
-} )
+  }),
+})
 
-onBeforeMount( () => {
+onBeforeMount(() => {
   fetchData()
-} )
+})
 
-const fetchData = async() => {
+const fetchData = async () => {
   try {
     // TODO: change to new work order api
     // const response = await axios.get( '/api/workorders' )
     // list.value = response.data
     list.value = []
-  } catch ( error ) {
-    console.error( 'Failed to fetch work orders:', error )
+  } catch (error) {
+    console.error('Failed to fetch work orders:', error)
   }
 }
 
-defineOptions( {
-  name : 'TransactionTable'
-} )
+defineOptions({
+  name: 'TransactionTable',
+})
 </script>

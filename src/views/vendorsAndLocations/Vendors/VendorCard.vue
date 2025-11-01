@@ -22,19 +22,19 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 
-const props = defineProps( {
-  vendor : Object,
-  isSelected : Boolean
-} )
-defineEmits( ['select'] )
+const props = defineProps({
+  vendor: Object,
+  isSelected: Boolean,
+})
+defineEmits(['select'])
 
-const validImage = ref( false )
+const validImage = ref(false)
 
 // ✅ Safely get first image from image_list
-const firstImage = computed( () => {
+const firstImage = computed(() => {
   const list = props.vendor?.image_list
-  return Array.isArray( list ) && list.length > 0 ? list[0] : ''
-} )
+  return Array.isArray(list) && list.length > 0 ? list[0] : ''
+})
 
 // ✅ Watch for valid image
 watch(
@@ -42,7 +42,7 @@ watch(
   newVal => {
     validImage.value = !!newVal && typeof newVal === 'string' && newVal.trim() !== ''
   },
-  { immediate : true }
+  { immediate: true }
 )
 
 // ✅ Handle image error

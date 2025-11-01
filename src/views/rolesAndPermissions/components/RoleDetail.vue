@@ -134,90 +134,90 @@ import { useRouter } from 'vue-router'
 import { Edit } from '@element-plus/icons-vue'
 import CertificateHoverDetail from '@/views/user/components/CertificateHoverDetail.vue'
 
-const props = defineProps( {
-  role : { type : Object, default : null },
-  modelValue : { type : Boolean, default : false }
-} )
+const props = defineProps({
+  role: { type: Object, default: null },
+  modelValue: { type: Boolean, default: false },
+})
 
-const emit = defineEmits( ['update:modelValue', 'edit'] )
+const emit = defineEmits(['update:modelValue', 'edit'])
 const router = useRouter()
 
 // ===== Dialog visibility =====
-const visible = ref( props.modelValue )
+const visible = ref(props.modelValue)
 watch(
   () => props.modelValue,
-  v => ( visible.value = v )
+  v => (visible.value = v)
 )
-watch( visible, v => emit( 'update:modelValue', v ) )
+watch(visible, v => emit('update:modelValue', v))
 
 // ===== State =====
-const activeTab = ref( 'users' )
-const pageSize = ref( 10 )
+const activeTab = ref('users')
+const pageSize = ref(10)
 const pageSizeOptions = [5, 10, 20, 50]
-const search = ref( { users : '' } )
-const page = ref( 1 )
-const sort = ref( { prop : null, order : null } )
+const search = ref({ users: '' })
+const page = ref(1)
+const sort = ref({ prop: null, order: null })
 
 // ===== Derived lists =====
-const mappedUsers = computed( () => {
-  if ( !props.role?.user_list ) return []
+const mappedUsers = computed(() => {
+  if (!props.role?.user_list) return []
   return props.role.user_list
-} )
+})
 
 // ===== Filtering =====
-const filterData = ( list, q, fields ) => {
-  if ( !list ) {
+const filterData = (list, q, fields) => {
+  if (!list) {
     return []
   }
   const keyword = q.trim().toLowerCase()
-  if ( !keyword ) {
+  if (!keyword) {
     return list
   }
 
-  return list.filter( item =>
-    fields.some( f => {
-      if ( f === 'full_name' ) {
+  return list.filter(item =>
+    fields.some(f => {
+      if (f === 'full_name') {
         const fullName = `${item.first_name || ''} ${item.last_name || ''}`.toLowerCase().trim()
-        return fullName.includes( keyword )
+        return fullName.includes(keyword)
       }
 
-      return String( item[f] || '' )
+      return String(item[f] || '')
         .toLowerCase()
-        .includes( keyword )
-    } )
+        .includes(keyword)
+    })
   )
 }
 
 // ===== Sorting =====
-const sortData = ( list, { prop, order } ) => {
-  if ( !prop || !order ) return list
-  return [...list].sort( ( a, b ) => {
+const sortData = (list, { prop, order }) => {
+  if (!prop || !order) return list
+  return [...list].sort((a, b) => {
     const va = a[prop] ?? ''
     const vb = b[prop] ?? ''
-    return order === 'ascending' ? String( va ).localeCompare( String( vb ) ) : String( vb ).localeCompare( String( va ) )
-  } )
+    return order === 'ascending' ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va))
+  })
 }
 
-const handleSortChange = ( { prop, order } ) => {
+const handleSortChange = ({ prop, order }) => {
   sort.value = { prop, order }
 }
 
 // ===== Computed lists =====
-const filteredUsers = computed( () => {
-  const f = filterData( mappedUsers.value, search.value.users, ['id', 'full_name', 'username'] )
-  return sortData( f, sort.value )
-} )
+const filteredUsers = computed(() => {
+  const f = filterData(mappedUsers.value, search.value.users, ['id', 'full_name', 'username'])
+  return sortData(f, sort.value)
+})
 
 // ===== Pagination =====
-const paginate = ( list, p ) => {
-  const start = ( p - 1 ) * pageSize.value
-  return list.slice( start, start + pageSize.value )
+const paginate = (list, p) => {
+  const start = (p - 1) * pageSize.value
+  return list.slice(start, start + pageSize.value)
 }
-const paginatedUsers = computed( () => paginate( filteredUsers.value, page.value ) )
+const paginatedUsers = computed(() => paginate(filteredUsers.value, page.value))
 
 // ===== Navigation =====
-function goToUserDetail( id ) {
-  router.push( { name : 'UserDetail', params : { id }} )
+function goToUserDetail(id) {
+  router.push({ name: 'UserDetail', params: { id } })
 }
 </script>
 

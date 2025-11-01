@@ -104,50 +104,35 @@
         </div>
 
         <!-- Files -->
-        <el-divider v-if="parsedFiles.length" />
-        <div v-if="parsedFiles.length">
-          <el-descriptions :column="1" direction="horizontal" class="section">
-            <el-descriptions-item label="Files">
-              <div class="vd-file-list">
-                <div v-for="f in parsedFiles" :key="f.id || f.name" class="vd-file-item">
-                  <el-link
-                    :href="f.url"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    :icon="getFileIcon(f.type)"
-                    class="vd-file-link"
-                  >
-                    {{ f.name }}
-                  </el-link>
-                </div>
-              </div>
-            </el-descriptions-item>
-          </el-descriptions>
-        </div>
-
-        <!-- (Optional) Files empty-state if you want it shown even when 0 -->
-        <!--
-        <div v-else>
-          <el-descriptions :column="1" direction="horizontal" class="section">
-            <el-descriptions-item label="Files">
-              <el-text>No files available</el-text>
-            </el-descriptions-item>
-          </el-descriptions>
-        </div>
-        -->
+        <el-divider />
+        <el-descriptions :column="1" direction="horizontal" class="section">
+          <el-descriptions-item label="Files">
+            <FileDisplay
+              :files="parsedFiles"
+              empty-text="No files available"
+              :native-preview="true"
+              :native-download="true"
+              @download-error="onDownloadError"
+            />
+          </el-descriptions-item>
+        </el-descriptions>
 
         <!-- Related Equipment -->
-        <div v-if="showEquipSection" style="margin-bottom: 48px">
-          <el-divider />
-          <el-descriptions :column="1" direction="horizontal" class="section">
-            <el-descriptions-item label="Related Equipment">
+        <el-divider />
+        <el-descriptions :column="1" direction="horizontal" class="section">
+          <el-descriptions-item label="Related Equipment">
+            <div class="no-data-line" v-if="equipBaseChecked && equipmentBaseTotal === 0">
+              <el-text>No related equipment available</el-text>
+            </div>
+
+            <div v-else-if="equipmentBaseTotal > 0">
               <SearchTable
                 :key="`equip-${vendor?.id}`"
                 :data="equipmentList"
                 :columns="[
-                  { label: 'Name', prop: 'name' },
-                  { label: 'Code', prop: 'code' },
-                  { label: 'Group', prop: 'equipment_group' },
+                  { label: 'Equipment Name', prop: 'name' },
+                  { label: 'Equipment Code', prop: 'code' },
+                  { label: 'Equipment Group (T2)', prop: 'equipment_group' },
                 ]"
                 :total="equipmentTotal"
                 :page="equipmentPage"
@@ -157,21 +142,27 @@
                 empty-text="No match found"
                 @update:page="onEquipmentPageChange"
               />
-            </el-descriptions-item>
-          </el-descriptions>
-        </div>
+            </div>
+
+            <el-skeleton v-else :rows="1" animated />
+          </el-descriptions-item>
+        </el-descriptions>
 
         <!-- Related Parts Batches -->
-        <el-divider v-if="showSparePartsSection" />
-        <div v-if="showSparePartsSection" style="margin-bottom: 48px">
-          <el-descriptions :column="1" direction="horizontal" class="section">
-            <el-descriptions-item label="Related Parts Batches">
+        <el-divider />
+        <el-descriptions :column="1" direction="horizontal" class="section">
+          <el-descriptions-item label="Related Parts Batches">
+            <div class="no-data-line" v-if="sparePartsBaseChecked && sparePartsBaseTotal === 0">
+              <el-text>No related parts batches available</el-text>
+            </div>
+
+            <div v-else-if="sparePartsBaseTotal > 0">
               <SearchTable
                 :key="`sp-${vendor?.id}`"
                 :data="sparePartsBatchList"
                 :columns="[
-                  { label: 'Name', prop: 'name' },
-                  { label: 'Part Code', prop: 'code' },
+                  { label: 'Spare Parts Name', prop: 'name' },
+                  { label: 'Spare Parts Code', prop: 'code' },
                   { label: 'Current Stock', prop: 'current_stock' },
                 ]"
                 :total="sparePartsTotal"
@@ -182,9 +173,11 @@
                 empty-text="No match found"
                 @update:page="onSparePartsPageChange"
               />
-            </el-descriptions-item>
-          </el-descriptions>
-        </div>
+            </div>
+
+            <el-skeleton v-else :rows="1" animated />
+          </el-descriptions-item>
+        </el-descriptions>
       </div>
     </div>
   </div>
@@ -218,15 +211,17 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue'
+import axios from 'axios'
 import SearchTable from '@/views/vendorsAndLocations/Locations/SearchTable.vue'
 import VendorForm from './VendorForm.vue'
+import FileDisplay from '@/components/common/FileDisplay.vue'
 import { useErrorHandler } from '@/composables/useErrorHandler'
 import { ElMessage } from 'element-plus'
 import { deactivateVendor, updateVendor, getVendorById } from '@/api/vendor.js'
 import { searchSpareParts } from '@/api/resources.js'
 import { getEquipmentNodes } from '@/api/equipment.js'
 import { uploadMultipleToMinio, deleteObjectList } from '@/api/minio'
-import { Document, Picture, VideoCamera, Microphone, Download, MoreFilled } from '@element-plus/icons-vue'
+import { MoreFilled } from '@element-plus/icons-vue'
 
 const props = defineProps( { vendor : Object } )
 const emit = defineEmits( ['deleted', 'updated'] )
@@ -236,6 +231,7 @@ const editForm = ref( {} )
 const editFormRef = ref( null )
 const saving = ref( false )
 
+/* -------------------- Equipment state -------------------- */
 const equipmentList = ref( [] )
 const equipmentTotal = ref( 0 )
 const equipmentPage = ref( 1 )
@@ -245,8 +241,13 @@ const equipmentSearch = ref( '' )
 // Sticky visibility based on unfiltered total
 const equipmentBaseTotal = ref( 0 )
 const showEquipSection = ref( false )
+const equipBaseChecked = ref( false )
 
-// ----- Spare parts state (mirror equipment) -----
+// request sequence guards
+let equipBaseReqSeq = 0
+let equipDataReqSeq = 0
+
+/* -------------------- Spare parts state -------------------- */
 const sparePartsBatchList = ref( [] )
 const sparePartsTotal = ref( 0 )
 const sparePartsPage = ref( 1 )
@@ -256,6 +257,7 @@ const sparePartsSearch = ref( '' )
 // Sticky visibility based on unfiltered total
 const sparePartsBaseTotal = ref( 0 )
 const showSparePartsSection = ref( false )
+const sparePartsBaseChecked = ref( false )
 
 // request sequence guards
 let sparePartsBaseReqSeq = 0
@@ -263,55 +265,12 @@ let sparePartsDataReqSeq = 0
 
 const { confirmAction, showSuccess } = useErrorHandler()
 
-// --- Files: URLs from either files_list OR file_list ---
-const fileUrls = computed( () => {
-  const raw = props.vendor?.files_list ?? props.vendor?.file_list ?? []
-  return ( Array.isArray( raw ) ? raw : [] ).map( x => ( typeof x === 'string' ? x : x?.url ) ).filter( Boolean )
-} )
-
-// Keep only those that respond 2xx to HEAD (fallback: tiny GET if HEAD not allowed)
-const validFileUrls = ref( [] )
-
-const checkFileUrls = async() => {
-  const checks = await Promise.all(
-    fileUrls.value.map( async u => {
-      try {
-        // Try HEAD first
-        const head = await fetch( u, { method : 'HEAD' } )
-        if ( head.ok ) return u
-
-        // Some servers don’t allow HEAD (405). Fallback: Range GET (1 byte).
-        if ( head.status === 405 ) {
-          const tiny = await fetch( u, { method : 'GET', headers : { Range : 'bytes=0-0' }} )
-          return tiny.ok ? u : null
-        }
-
-        return null
-      } catch {
-        return null
-      }
-    } )
-  )
-  validFileUrls.value = checks.filter( Boolean )
-}
-
-// Run on mount & whenever vendor’s file list changes
-watch(
-  fileUrls,
-  () => {
-    if ( fileUrls.value.length ) checkFileUrls()
-    else validFileUrls.value = []
-  },
-  { immediate : true }
-)
-
+/* -------------------- Files helpers -------------------- */
 function fileNameFromUrl( u ) {
   try {
-    // Prefer URL parsing when possible
     const raw = new URL( String( u ) ).pathname.split( '/' ).pop() || ''
     return decodeURIComponent( raw ) || raw || 'file'
   } catch {
-    // Fallback if URL() fails (e.g., invalid or relative URLs)
     const raw = String( u ).split( '/' ).pop() || ''
     try {
       return decodeURIComponent( raw ) || raw || 'file'
@@ -320,29 +279,13 @@ function fileNameFromUrl( u ) {
     }
   }
 }
-
-// parsedFiles (keep the rest of your logic the same)
-const parsedFiles = computed( () => {
-  const raw = props.vendor?.files_list ?? props.vendor?.file_list ?? []
-  const urls = ( Array.isArray( raw ) ? raw : [] ).map( x => ( typeof x === 'string' ? x : x?.url ) ).filter( Boolean )
-
-  return urls.map( ( url, idx ) => ( {
-    id : idx,
-    url,
-    name : fileNameFromUrl( url ), // <-- use the new helper
-    type : getFileTypeFromName( fileNameFromUrl( url ) )
-  } ) )
-} )
-
 function getFileTypeFromName( fileName ) {
   if ( !fileName ) return 'document'
   const ext = String( fileName ).split( '.' ).pop()?.toLowerCase()
-
   const image = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg']
   const video = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv', 'webm']
   const audio = ['mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a']
   const archive = ['zip', 'rar', '7z', 'tar', 'gz']
-
   if ( image.includes( ext ) ) return 'image'
   if ( video.includes( ext ) ) return 'video'
   if ( audio.includes( ext ) ) return 'audio'
@@ -351,37 +294,29 @@ function getFileTypeFromName( fileName ) {
   if ( ['doc', 'docx', 'txt', 'rtf', 'md', 'ppt', 'pptx', 'xls', 'xlsx', 'csv'].includes( ext ) ) return 'document'
   return 'document'
 }
-
-function getFileIcon( fileType ) {
-  switch ( ( fileType || '' ).toLowerCase() ) {
-    case 'image':
-      return Picture
-    case 'video':
-      return VideoCamera
-    case 'audio':
-      return Microphone
-    case 'download':
-      return Download
-    case 'pdf':
-    case 'document':
-    default:
-      return Document
-  }
+const parsedFiles = computed( () => {
+  const raw = props.vendor?.files_list ?? props.vendor?.file_list ?? []
+  const urls = ( Array.isArray( raw ) ? raw : [] ).map( x => ( typeof x === 'string' ? x : x?.url ) ).filter( Boolean )
+  return urls.map( ( url, idx ) => ( {
+    id : idx,
+    url,
+    name : fileNameFromUrl( url ),
+    type : getFileTypeFromName( fileNameFromUrl( url ) )
+  } ) )
+} )
+function onDownloadError( err ) {
+  console.error( err )
+  ElMessage.error( 'Download failed' )
 }
 
-let equipBaseReqSeq = 0
-let equipDataReqSeq = 0
-
-/* -------- Images: normalize + HEAD check (same as LocationDetail) -------- */
+/* -------------------- Images (same as LocationDetail) -------------------- */
 const imageUrls = computed( () => {
   const list = props.vendor?.image_list || []
   return list.map( x => ( typeof x === 'string' ? x : x?.url ) ).filter( Boolean )
 } )
-
 const validImageUrls = ref( [] )
 const isImagesLoading = ref( false )
 let imgReqSeq = 0
-
 const checkImageUrls = async() => {
   const seq = ++imgReqSeq
   isImagesLoading.value = true
@@ -396,140 +331,101 @@ const checkImageUrls = async() => {
         }
       } )
     )
-    if ( seq !== imgReqSeq ) return // a newer run started; ignore this result
+    if ( seq !== imgReqSeq ) return
     validImageUrls.value = checks.filter( Boolean )
   } finally {
     if ( seq === imgReqSeq ) isImagesLoading.value = false
   }
 }
-
 watch(
   imageUrls,
   () => {
-    if ( imageUrls.value.length ) {
-      checkImageUrls()
-    } else {
-      imgReqSeq++ // cancel any in-flight check
+    if ( imageUrls.value.length ) checkImageUrls()
+    else {
+      imgReqSeq++
       validImageUrls.value = []
       isImagesLoading.value = false
     }
   },
   { immediate : true }
 )
-
 const preview = ref( { open : false, url : '' } )
 const openPreview = u => {
   preview.value.url = u
   preview.value.open = true
 }
 
-/* -------- Watch vendor change (reset + fetch sections) -------- */
-watch(
-  () => props.vendor?.id,
-  id => {
-    equipmentSearch.value = ''
-    equipmentPage.value = 1
-    equipmentList.value = []
-    equipmentTotal.value = 0
-    equipmentBaseTotal.value = 0
-    showEquipSection.value = false
-
-    if ( id ) {
-      fetchEquipmentBase( id )
-      fetchEquipmentData( id )
-      fetchSparePartsBase( id )
-      fetchSparePartsData( id )
-    }
-  },
-  { immediate : true }
-)
-
-watch(
-  () => props.vendor?.id,
-  id => {
-    // equipment reset...
-    equipmentSearch.value = ''
-    equipmentPage.value = 1
-    equipmentList.value = []
-    equipmentTotal.value = 0
-    equipmentBaseTotal.value = 0
-    showEquipSection.value = false
-
-    // spare parts reset...
-    sparePartsSearch.value = ''
-    sparePartsPage.value = 1
-    sparePartsBatchList.value = []
-    sparePartsTotal.value = 0
-    sparePartsBaseTotal.value = 0
-    showSparePartsSection.value = false
-
-    if ( id ) {
-      fetchEquipmentBase( id )
-      fetchEquipmentData( id )
-
-      fetchSparePartsBase( id )
-      fetchSparePartsData( id )
-    }
-  },
-  { immediate : true }
-)
-
-/* -------- Search (debounced) -------- */
-let searchTimer = null
-watch( equipmentSearch, val => {
-  equipmentPage.value = 1
-  clearTimeout( searchTimer )
-
-  if ( !val?.trim() ) {
-    fetchEquipmentBase()
-    fetchEquipmentData()
-  } else {
-    searchTimer = setTimeout( () => fetchEquipmentData(), 250 )
-  }
-} )
-
-const onEquipmentPageChange = p => {
-  equipmentPage.value = p
-  fetchEquipmentData()
+/* -------------------- Auth header for node-path -------------------- */
+const getAuthHeaders = () => {
+  const token =
+    localStorage.getItem( 'access_token' ) ||
+    localStorage.getItem( 'token' ) ||
+    sessionStorage.getItem( 'access_token' ) ||
+    ''
+  return token ? { Authorization : `Bearer ${token}` } : {}
 }
 
-let spareSearchTimer = null
-watch( sparePartsSearch, val => {
-  sparePartsPage.value = 1
-  clearTimeout( spareSearchTimer )
+/* -------------------- T2 resolution via node-path -------------------- */
+const nodePathCache = new Map() // nodeId -> T2 name
 
-  if ( !val?.trim() ) {
-    // recalc base + reload first page when clearing
-    fetchSparePartsBase()
-    fetchSparePartsData()
-  } else {
-    spareSearchTimer = setTimeout( () => fetchSparePartsData(), 250 )
-  }
-} )
-
-const onSparePartsPageChange = p => {
-  sparePartsPage.value = p
-  fetchSparePartsData()
+const pickT2Name = pathArr => {
+  if ( !Array.isArray( pathArr ) || !pathArr.length ) return ''
+  // canonical positions: [T0, T1, T2, ...]
+  if ( pathArr.length >= 3 ) return ( pathArr[2]?.name || '' ).trim()
+  if ( pathArr.length >= 2 ) return ( pathArr[pathArr.length - 2]?.name || '' ).trim()
+  return ( pathArr[0]?.name || '' ).trim()
 }
 
-/* -------- Equipment base (unfiltered) -> visibility -------- */
+const getT2FromNodePath = async nodeId => {
+  const id = Number( nodeId )
+  if ( !Number.isFinite( id ) ) return ''
+  if ( nodePathCache.has( id ) ) return nodePathCache.get( id )
+  try {
+    const resp = await axios.get( `http://10.10.12.12:8095/api/equipment/node-path/${id}`, {
+      headers : getAuthHeaders()
+    } )
+    const payload = resp?.data ?? resp
+    const path = Array.isArray( payload?.data ) ? payload.data : Array.isArray( payload ) ? payload : []
+    const t2 = pickT2Name( path )
+    nodePathCache.set( id, t2 )
+    return t2
+  } catch ( e ) {
+    console.error( `[node-path] failed for nodeId=${id}`, e?.response?.status, e?.response?.data || e )
+    nodePathCache.set( id, '' )
+    return ''
+  }
+}
+
+const enrichEquipmentWithGroup = async( rows, seqAtStart ) => {
+  const enriched = await Promise.all(
+    rows.map( async r => {
+      // IMPORTANT: use the equipment NODE id for node-path lookup
+      const nodeId = Number( r?.id )
+      const group = await getT2FromNodePath( nodeId )
+      return { ...r, equipment_group : group || '--' }
+    } )
+  )
+  if ( seqAtStart === equipDataReqSeq ) {
+    equipmentList.value = enriched
+  }
+}
+
+/* -------------------- Vendor-related equipment -------------------- */
 const fetchEquipmentBase = async( id = props.vendor?.id ) => {
   const vendorId = Number( id )
   if ( !Number.isFinite( vendorId ) ) {
     equipmentBaseTotal.value = 0
     showEquipSection.value = false
+    equipBaseChecked.value = true
     return
   }
-
   const seq = ++equipBaseReqSeq
   try {
     const res = await getEquipmentNodes( 1, 1, 'createdAt', 'DESC', { vendor_ids : [vendorId] } )
     if ( seq !== equipBaseReqSeq ) return
-
     const payload = res?.data ?? res
     const page = payload?.data ?? payload
     const total = Number( page?.totalElements ?? page?.total ?? ( Array.isArray( page?.content ) ? page.content.length : 0 ) )
-
     equipmentBaseTotal.value = total
     showEquipSection.value = total > 0
   } catch ( e ) {
@@ -537,10 +433,11 @@ const fetchEquipmentBase = async( id = props.vendor?.id ) => {
     console.error( 'fetchEquipmentBase failed:', e )
     equipmentBaseTotal.value = 0
     showEquipSection.value = false
+  } finally {
+    if ( seq === equipBaseReqSeq ) equipBaseChecked.value = true
   }
 }
 
-/* -------- Equipment data (filtered/paged table) -------- */
 const fetchEquipmentData = async( id = props.vendor?.id ) => {
   const vendorId = Number( id )
   if ( !Number.isFinite( vendorId ) ) {
@@ -548,7 +445,6 @@ const fetchEquipmentData = async( id = props.vendor?.id ) => {
     equipmentTotal.value = 0
     return
   }
-
   const seq = ++equipDataReqSeq
   try {
     const term = equipmentSearch.value?.trim()
@@ -562,8 +458,13 @@ const fetchEquipmentData = async( id = props.vendor?.id ) => {
     const page = payload?.data ?? payload
     const list = Array.isArray( page?.content ) ? page.content : Array.isArray( page ) ? page : []
 
-    equipmentList.value = list.map( e => ( { ...e, id : Number( e.id ) } ) )
+    // placeholder to avoid UI jitter; ensure id is numeric
+    const normalized = list.map( e => ( { ...e, id : Number( e.id ), equipment_group : '--' } ) )
+    equipmentList.value = normalized
     equipmentTotal.value = Number( page?.totalElements ?? page?.total ?? list.length )
+
+    // async enrich with T2 (guarded by seq)
+    await enrichEquipmentWithGroup( normalized, seq )
   } catch ( e ) {
     if ( seq !== equipDataReqSeq ) return
     console.error( 'fetchEquipmentData failed:', e )
@@ -572,25 +473,22 @@ const fetchEquipmentData = async( id = props.vendor?.id ) => {
   }
 }
 
-// Base total for visibility
+/* -------------------- Spare parts (base + data) -------------------- */
 const fetchSparePartsBase = async( id = props.vendor?.id ) => {
   const vendorId = Number( id )
   if ( !Number.isFinite( vendorId ) ) {
     sparePartsBaseTotal.value = 0
     showSparePartsSection.value = false
+    sparePartsBaseChecked.value = true
     return
   }
-
   const seq = ++sparePartsBaseReqSeq
   try {
-    // page=1 size=1 just to get totals quickly
     const res = await searchSpareParts( 1, 1, 'name', 'ASC', { vendor_ids : [vendorId] } )
     if ( seq !== sparePartsBaseReqSeq ) return
-
     const payload = res?.data ?? res
     const page = payload?.data ?? payload
     const total = Number( page?.totalElements ?? page?.total ?? ( Array.isArray( page?.content ) ? page.content.length : 0 ) )
-
     sparePartsBaseTotal.value = total
     showSparePartsSection.value = total > 0
   } catch ( e ) {
@@ -598,10 +496,11 @@ const fetchSparePartsBase = async( id = props.vendor?.id ) => {
     console.error( 'fetchSparePartsBase failed:', e )
     sparePartsBaseTotal.value = 0
     showSparePartsSection.value = false
+  } finally {
+    if ( seq === sparePartsBaseReqSeq ) sparePartsBaseChecked.value = true
   }
 }
 
-// Paged + searchable data loader
 const fetchSparePartsData = async( id = props.vendor?.id ) => {
   const vendorId = Number( id )
   if ( !Number.isFinite( vendorId ) ) {
@@ -609,12 +508,11 @@ const fetchSparePartsData = async( id = props.vendor?.id ) => {
     sparePartsTotal.value = 0
     return
   }
-
   const seq = ++sparePartsDataReqSeq
   try {
     const term = sparePartsSearch.value?.trim()
     const body = { vendor_ids : [vendorId] }
-    if ( term ) body.keyword = term // <= use search term when present
+    if ( term ) body.keyword = term
 
     const res = await searchSpareParts( sparePartsPage.value, sparePartsPageSize.value, 'name', 'ASC', body )
     if ( seq !== sparePartsDataReqSeq ) return
@@ -633,14 +531,76 @@ const fetchSparePartsData = async( id = props.vendor?.id ) => {
   }
 }
 
-/* =========================
-   Edit / Save / Delete
-   ========================= */
-const enterEditMode = () => {
-  // Normalize image URLs
-  const imageUrls = ( props.vendor?.image_list ?? [] ).map( x => ( typeof x === 'string' ? x : x?.url ) ).filter( Boolean )
+/* -------------------- Reactivity: vendor changes & searches -------------------- */
+watch(
+  () => props.vendor?.id,
+  id => {
+    // reset equipment
+    equipmentSearch.value = ''
+    equipmentPage.value = 1
+    equipmentList.value = []
+    equipmentTotal.value = 0
+    equipmentBaseTotal.value = 0
+    showEquipSection.value = false
+    equipBaseChecked.value = false
 
-  // Normalize file URLs (support both files_list and file_list on incoming vendor)
+    // reset spare parts
+    sparePartsSearch.value = ''
+    sparePartsPage.value = 1
+    sparePartsBatchList.value = []
+    sparePartsTotal.value = 0
+    sparePartsBaseTotal.value = 0
+    showSparePartsSection.value = false
+    sparePartsBaseChecked.value = false
+
+    if ( id ) {
+      fetchEquipmentBase( id )
+      fetchEquipmentData( id )
+      fetchSparePartsBase( id )
+      fetchSparePartsData( id )
+    } else {
+      equipBaseChecked.value = true
+      sparePartsBaseChecked.value = true
+    }
+  },
+  { immediate : true }
+)
+
+let equipSearchTimer = null
+watch( equipmentSearch, val => {
+  equipmentPage.value = 1
+  clearTimeout( equipSearchTimer )
+  if ( !val?.trim() ) {
+    fetchEquipmentBase()
+    fetchEquipmentData()
+  } else {
+    equipSearchTimer = setTimeout( () => fetchEquipmentData(), 250 )
+  }
+} )
+const onEquipmentPageChange = p => {
+  equipmentPage.value = p
+  fetchEquipmentData()
+}
+
+let spareSearchTimer = null
+watch( sparePartsSearch, val => {
+  sparePartsPage.value = 1
+  clearTimeout( spareSearchTimer )
+  if ( !val?.trim() ) {
+    fetchSparePartsBase()
+    fetchSparePartsData()
+  } else {
+    spareSearchTimer = setTimeout( () => fetchSparePartsData(), 250 )
+  }
+} )
+const onSparePartsPageChange = p => {
+  sparePartsPage.value = p
+  fetchSparePartsData()
+}
+
+/* -------------------- Edit / Save / Delete -------------------- */
+const enterEditMode = () => {
+  const imageUrls = ( props.vendor?.image_list ?? [] ).map( x => ( typeof x === 'string' ? x : x?.url ) ).filter( Boolean )
   const fileUrls = ( props.vendor?.files_list ?? props.vendor?.file_list ?? [] )
     .map( x => ( typeof x === 'string' ? x : x?.url ) )
     .filter( Boolean )
@@ -648,26 +608,19 @@ const enterEditMode = () => {
   editForm.value = {
     ...JSON.parse( JSON.stringify( props.vendor || {} ) ),
     id : props.vendor?.id,
-
-    // Images
-    image_list : imageUrls, // keep URLs
-    image_files : [], // new File[] (picked in form)
-    removed_existing_images : [], // URLs removed in this session
-
-    // Files
-    file_list : fileUrls, // keep URLs
-    file_files : [], // new File[] (picked in form)
-    removed_existing_files : [] // URLs removed in this session
+    image_list : imageUrls,
+    image_files : [],
+    removed_existing_images : [],
+    file_list : fileUrls,
+    file_files : [],
+    removed_existing_files : []
   }
-
   editVendor.value = true
 }
 
 const saveEdit = async() => {
-  // Validate child form
   if ( !( await editFormRef.value?.validate?.() ) ) return
 
-  // Deferred spinner
   let showed = false
   const showTimer = setTimeout( () => {
     saving.value = true
@@ -676,15 +629,17 @@ const saveEdit = async() => {
 
   const extractUploadedUrls = resp => {
     const list =
-      resp?.uploadedFiles ?? resp?.data?.uploadedFiles ?? resp?.data?.data?.uploadedFiles ?? resp?.files ?? []
-    return ( Array.isArray( list ) ? list : [] ).map( f => f?.url || f?.fileUrl || f?.location || f?.path ).filter( Boolean )
+        resp?.uploadedFiles ?? resp?.data?.uploadedFiles ?? resp?.data?.data?.uploadedFiles ?? resp?.files ?? []
+    return ( Array.isArray( list ) ? list : [] )
+      .map( f => f?.url || f?.fileUrl || f?.location || f?.path )
+      .filter( Boolean )
   }
 
   try {
     const id = Number( props.vendor?.id )
     if ( !Number.isFinite( id ) ) throw new Error( 'Invalid vendor id' )
 
-    /* ---------- IMAGES ---------- */
+    // images
     const originalImageUrls = ( props.vendor?.image_list ?? [] )
       .map( x => ( typeof x === 'string' ? x : x?.url ) )
       .filter( Boolean )
@@ -692,21 +647,16 @@ const saveEdit = async() => {
       ? editForm.value.removed_existing_images
       : []
     const keptExistingImages = originalImageUrls.filter( u => !removedImages.includes( u ) )
-
     const newImageFiles = Array.isArray( editForm.value?.image_files )
       ? editForm.value.image_files.filter( f => f instanceof File )
       : []
-
     let uploadedImageUrls = []
     if ( newImageFiles.length ) {
-      const uploadResp = await uploadMultipleToMinio( newImageFiles )
-      uploadedImageUrls = extractUploadedUrls( uploadResp )
+      uploadedImageUrls = extractUploadedUrls( await uploadMultipleToMinio( newImageFiles ) )
     }
-
     const finalImageList = Array.from( new Set( [...keptExistingImages, ...uploadedImageUrls] ) )
 
-    /* ---------- FILES ---------- */
-    // Support both incoming vendor.files_list and vendor.file_list; persist as file_list
+    // files
     const originalFileUrls = ( props.vendor?.files_list ?? props.vendor?.file_list ?? [] )
       .map( x => ( typeof x === 'string' ? x : x?.url ) )
       .filter( Boolean )
@@ -714,57 +664,35 @@ const saveEdit = async() => {
       ? editForm.value.removed_existing_files
       : []
     const keptExistingFiles = originalFileUrls.filter( u => !removedFiles.includes( u ) )
-
     const newFiles = Array.isArray( editForm.value?.file_files )
       ? editForm.value.file_files.filter( f => f instanceof File )
       : []
-
     let uploadedFileUrls = []
     if ( newFiles.length ) {
-      const uploadRespFiles = await uploadMultipleToMinio( newFiles )
-      uploadedFileUrls = extractUploadedUrls( uploadRespFiles )
+      uploadedFileUrls = extractUploadedUrls( await uploadMultipleToMinio( newFiles ) )
     }
-
     const finalFileList = Array.from( new Set( [...keptExistingFiles, ...uploadedFileUrls] ) )
 
-    /* ---------- PAYLOAD ---------- */
     const payload = {
       ...editForm.value,
-      image_list : finalImageList, // URLs only
-      file_list : finalFileList // URLs only (use singular going forward)
+      image_list : finalImageList,
+      file_list : finalFileList
     }
-    // strip helpers
     delete payload.image_files
     delete payload.removed_existing_images
     delete payload.file_files
     delete payload.removed_existing_files
 
-    // Update vendor
     await updateVendor( id, payload )
 
-    // Best-effort: delete removed objects after successful save
+    // best-effort deletes
     if ( removedImages.length ) {
-      try {
-        await deleteObjectList( {
-          bucketName : 'sv-file-bucket',
-          objectUrls : removedImages
-        } )
-      } catch ( e ) {
-        console.warn( 'deleteObjectList (images) failed (ignored):', e )
-      }
+      try { await deleteObjectList( { bucketName : 'sv-file-bucket', objectUrls : removedImages } ) } catch {}
     }
     if ( removedFiles.length ) {
-      try {
-        await deleteObjectList( {
-          bucketName : 'sv-file-bucket',
-          objectUrls : removedFiles
-        } )
-      } catch ( e ) {
-        console.warn( 'deleteObjectList (files) failed (ignored):', e )
-      }
+      try { await deleteObjectList( { bucketName : 'sv-file-bucket', objectUrls : removedFiles } ) } catch {}
     }
 
-    // Refresh and emit
     const res = await getVendorById( id )
     const refreshed = res?.data?.data ?? res?.data ?? res
     ElMessage.success( 'Vendor updated' )
@@ -776,15 +704,14 @@ const saveEdit = async() => {
     if ( s === 409 || /(duplicate|conflict)/i.test( msg ) || /code.*(already|in use)/i.test( msg ) ) {
       ElMessage.error( 'Update failed: vendor code already exists. Please use a different code.' )
     } else if ( /Cannot deserialize value of type `java\.lang\.String`/i.test( msg ) ) {
-      // This is the classic "server expected string URLs but got objects"
       ElMessage.error( 'Update failed: server expected file/image URLs, not objects. Check payload shaping.' )
     } else {
       ElMessage.error( 'Failed to update vendor' )
     }
     console.error( 'Update vendor failed:', e?.response?.data || e )
   } finally {
-    clearTimeout( showTimer )
-    if ( showed ) saving.value = false
+    clearTimeout( showTimer ) // <-- use the timer
+    if ( showed ) saving.value = false // <-- only toggle off if we showed the spinner
   }
 }
 
@@ -971,6 +898,8 @@ const handleDelete = async() => {
     opacity: 1;
   }
 }
+
+/* Old file list CSS can be removed, but harmless if left */
 .vd-file-list {
   display: flex;
   flex-direction: column;
@@ -995,8 +924,9 @@ const handleDelete = async() => {
   gap: 8px;
   font-weight: 500;
   white-space: normal;
-  word-break: break-all; /* ensures long names don’t get cut off */
+  word-break: break-all;
 }
+
 .kebab-icon {
   transform: rotate(90deg);
   cursor: pointer;
@@ -1008,7 +938,11 @@ const handleDelete = async() => {
 }
 :deep(.el-descriptions__label) {
   font-weight: 600;
-  text-transform: none; /* or uppercase if you want section headers */
+  text-transform: none;
   color: var(--el-text-color-primary);
+}
+.no-data-line {
+  margin-top: 6px;
+  display: block;
 }
 </style>

@@ -10,47 +10,47 @@ export function useEquipment() {
   const { handleAsync } = useErrorHandler()
 
   // State
-  const equipmentGroups = ref( [] )
-  const equipments = ref( [] )
-  const components = ref( [] )
-  const loading = reactive( {
-    equipmentGroups : false,
-    equipments : false,
-    components : false
-  } )
+  const equipmentGroups = ref([])
+  const equipments = ref([])
+  const components = ref([])
+  const loading = reactive({
+    equipmentGroups: false,
+    equipments: false,
+    components: false,
+  })
 
   // Selected values
-  const selectedValues = reactive( {
-    productionLineId : null,
-    equipmentGroupId : null,
-    equipmentId : null,
-    componentId : null
-  } )
+  const selectedValues = reactive({
+    productionLineId: null,
+    equipmentGroupId: null,
+    equipmentId: null,
+    componentId: null,
+  })
 
   // Computed properties
-  const hasEquipmentGroups = computed( () => equipmentGroups.value.length > 0 )
-  const hasEquipments = computed( () => equipments.value.length > 0 )
-  const hasComponents = computed( () => components.value.length > 0 )
+  const hasEquipmentGroups = computed(() => equipmentGroups.value.length > 0)
+  const hasEquipments = computed(() => equipments.value.length > 0)
+  const hasComponents = computed(() => components.value.length > 0)
 
   /**
    * Fetch equipment groups for a production line
    * @param {number} productionLineId - Production line ID
    */
   const fetchEquipmentGroups = async productionLineId => {
-    if ( !productionLineId ) {
+    if (!productionLineId) {
       equipmentGroups.value = []
       return
     }
 
     await handleAsync(
-      async() => {
-        const { data } = await getEquipmentGroups( productionLineId )
+      async () => {
+        const { data } = await getEquipmentGroups(productionLineId)
         equipmentGroups.value = data.data || []
       },
       {
-        loadingRef : loading.equipmentGroups,
-        context : 'fetchEquipmentGroups',
-        customMessage : 'Failed to load equipment groups'
+        loadingRef: loading.equipmentGroups,
+        context: 'fetchEquipmentGroups',
+        customMessage: 'Failed to load equipment groups',
       }
     )
   }
@@ -60,20 +60,20 @@ export function useEquipment() {
    * @param {number} equipmentGroupId - Equipment group ID
    */
   const fetchEquipments = async equipmentGroupId => {
-    if ( !equipmentGroupId ) {
+    if (!equipmentGroupId) {
       equipments.value = []
       return
     }
 
     await handleAsync(
-      async() => {
-        const { data } = await getEquipments( equipmentGroupId )
+      async () => {
+        const { data } = await getEquipments(equipmentGroupId)
         equipments.value = data.data || []
       },
       {
-        loadingRef : loading.equipments,
-        context : 'fetchEquipments',
-        customMessage : 'Failed to load equipments'
+        loadingRef: loading.equipments,
+        context: 'fetchEquipments',
+        customMessage: 'Failed to load equipments',
       }
     )
   }
@@ -83,20 +83,20 @@ export function useEquipment() {
    * @param {number} equipmentId - Equipment ID
    */
   const fetchComponents = async equipmentId => {
-    if ( !equipmentId ) {
+    if (!equipmentId) {
       components.value = []
       return
     }
 
     await handleAsync(
-      async() => {
-        const { data } = await getEquipmentComponents( equipmentId )
+      async () => {
+        const { data } = await getEquipmentComponents(equipmentId)
         components.value = data.data || []
       },
       {
-        loadingRef : loading.components,
-        context : 'fetchComponents',
-        customMessage : 'Failed to load components'
+        loadingRef: loading.components,
+        context: 'fetchComponents',
+        customMessage: 'Failed to load components',
       }
     )
   }
@@ -106,7 +106,7 @@ export function useEquipment() {
    * @param {string} level - The level that changed
    */
   const clearDownstreamSelections = level => {
-    switch ( level ) {
+    switch (level) {
       case 'productionLine':
         selectedValues.equipmentGroupId = null
         selectedValues.equipmentId = null
@@ -126,7 +126,7 @@ export function useEquipment() {
         components.value = []
         break
       default:
-        console.warn( `Invalid level provided to clearDownstreamSelections: ${level}` )
+        console.warn(`Invalid level provided to clearDownstreamSelections: ${level}`)
         break
     }
   }
@@ -137,10 +137,10 @@ export function useEquipment() {
    */
   const handleProductionLineChange = async productionLineId => {
     selectedValues.productionLineId = productionLineId
-    clearDownstreamSelections( 'productionLine' )
+    clearDownstreamSelections('productionLine')
 
-    if ( productionLineId ) {
-      await fetchEquipmentGroups( productionLineId )
+    if (productionLineId) {
+      await fetchEquipmentGroups(productionLineId)
     }
   }
 
@@ -150,10 +150,10 @@ export function useEquipment() {
    */
   const handleEquipmentGroupChange = async equipmentGroupId => {
     selectedValues.equipmentGroupId = equipmentGroupId
-    clearDownstreamSelections( 'equipmentGroup' )
+    clearDownstreamSelections('equipmentGroup')
 
-    if ( equipmentGroupId ) {
-      await fetchEquipments( equipmentGroupId )
+    if (equipmentGroupId) {
+      await fetchEquipments(equipmentGroupId)
     }
   }
 
@@ -163,10 +163,10 @@ export function useEquipment() {
    */
   const handleEquipmentChange = async equipmentId => {
     selectedValues.equipmentId = equipmentId
-    clearDownstreamSelections( 'equipment' )
+    clearDownstreamSelections('equipment')
 
-    if ( equipmentId ) {
-      await fetchComponents( equipmentId )
+    if (equipmentId) {
+      await fetchComponents(equipmentId)
     }
   }
 
@@ -200,22 +200,22 @@ export function useEquipment() {
     const { productionLineId, equipmentGroupId, equipmentId, componentId } = values
 
     // Set production line and fetch equipment groups
-    if ( productionLineId ) {
+    if (productionLineId) {
       selectedValues.productionLineId = productionLineId
-      await fetchEquipmentGroups( productionLineId )
+      await fetchEquipmentGroups(productionLineId)
 
       // Set equipment group and fetch equipments
-      if ( equipmentGroupId ) {
+      if (equipmentGroupId) {
         selectedValues.equipmentGroupId = equipmentGroupId
-        await fetchEquipments( equipmentGroupId )
+        await fetchEquipments(equipmentGroupId)
 
         // Set equipment and fetch components
-        if ( equipmentId ) {
+        if (equipmentId) {
           selectedValues.equipmentId = equipmentId
-          await fetchComponents( equipmentId )
+          await fetchComponents(equipmentId)
 
           // Set component
-          if ( componentId ) {
+          if (componentId) {
             selectedValues.componentId = componentId
           }
         }
@@ -229,27 +229,27 @@ export function useEquipment() {
   const getSelectionPath = commonDataStore => {
     const parts = []
 
-    if ( selectedValues.productionLineId ) {
-      const productionLine = commonDataStore.productionLines.find( pl => pl.id === selectedValues.productionLineId )
-      if ( productionLine ) parts.push( productionLine.name )
+    if (selectedValues.productionLineId) {
+      const productionLine = commonDataStore.productionLines.find(pl => pl.id === selectedValues.productionLineId)
+      if (productionLine) parts.push(productionLine.name)
     }
 
-    if ( selectedValues.equipmentGroupId ) {
-      const equipmentGroup = equipmentGroups.value.find( eg => eg.id === selectedValues.equipmentGroupId )
-      if ( equipmentGroup ) parts.push( equipmentGroup.name )
+    if (selectedValues.equipmentGroupId) {
+      const equipmentGroup = equipmentGroups.value.find(eg => eg.id === selectedValues.equipmentGroupId)
+      if (equipmentGroup) parts.push(equipmentGroup.name)
     }
 
-    if ( selectedValues.equipmentId ) {
-      const equipment = equipments.value.find( e => e.id === selectedValues.equipmentId )
-      if ( equipment ) parts.push( equipment.name )
+    if (selectedValues.equipmentId) {
+      const equipment = equipments.value.find(e => e.id === selectedValues.equipmentId)
+      if (equipment) parts.push(equipment.name)
     }
 
-    if ( selectedValues.componentId ) {
-      const component = components.value.find( c => c.id === selectedValues.componentId )
-      if ( component ) parts.push( component.name )
+    if (selectedValues.componentId) {
+      const component = components.value.find(c => c.id === selectedValues.componentId)
+      if (component) parts.push(component.name)
     }
 
-    return parts.join( ' > ' )
+    return parts.join(' > ')
   }
 
   return {
@@ -275,6 +275,6 @@ export function useEquipment() {
     handleComponentChange,
     resetAll,
     setInitialValues,
-    getSelectionPath
+    getSelectionPath,
   }
 }

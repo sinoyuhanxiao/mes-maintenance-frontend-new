@@ -313,170 +313,170 @@ import { useRouter } from 'vue-router'
 import { Edit } from '@element-plus/icons-vue'
 import CertificateHoverDetail from '@/views/user/components/CertificateHoverDetail.vue'
 
-const props = defineProps( {
-  team : { type : Object, default : null },
-  initialTab : { type : String, default : 'members' },
-  modelValue : { type : Boolean, default : false },
-  userMap : {
-    type : Object,
-    default : () => {}
+const props = defineProps({
+  team: { type: Object, default: null },
+  initialTab: { type: String, default: 'members' },
+  modelValue: { type: Boolean, default: false },
+  userMap: {
+    type: Object,
+    default: () => {},
   },
-  equipmentMap : {
-    type : Object,
-    default : () => {}
+  equipmentMap: {
+    type: Object,
+    default: () => {},
   },
-  locationMap : {
-    type : Object,
-    default : () => {}
+  locationMap: {
+    type: Object,
+    default: () => {},
   },
-  shiftMap : {
-    type : Object,
-    default : () => {}
+  shiftMap: {
+    type: Object,
+    default: () => {},
   },
-  teamMap : {
-    type : Object,
-    default : () => {}
-  }
-} )
+  teamMap: {
+    type: Object,
+    default: () => {},
+  },
+})
 
 const router = useRouter()
 
-const emit = defineEmits( ['update:modelValue', 'edit'] )
-const visible = ref( props.modelValue )
+const emit = defineEmits(['update:modelValue', 'edit'])
+const visible = ref(props.modelValue)
 watch(
   () => props.modelValue,
-  v => ( visible.value = v )
+  v => (visible.value = v)
 )
-watch( visible, v => emit( 'update:modelValue', v ) )
+watch(visible, v => emit('update:modelValue', v))
 
 // States
-const activeTab = ref( props.initialTab )
+const activeTab = ref(props.initialTab)
 
 watch(
   () => props.initialTab,
   newVal => {
-    if ( newVal && newVal !== activeTab.value ) {
+    if (newVal && newVal !== activeTab.value) {
       activeTab.value = newVal
     }
   }
 )
 
-const pageSize = ref( 10 )
+const pageSize = ref(10)
 const pageSizeOptions = [5, 10, 20, 50]
 
 // Search terms and pagination states
-const search = ref( { members : '', equipment : '', locations : '' } )
-const page = ref( { members : 1, equipment : 1, locations : 1 } )
-const sort = ref( {
-  members : { prop : null, order : null },
-  equipment : { prop : null, order : null },
-  locations : { prop : null, order : null }
-} )
+const search = ref({ members: '', equipment: '', locations: '' })
+const page = ref({ members: 1, equipment: 1, locations: 1 })
+const sort = ref({
+  members: { prop: null, order: null },
+  equipment: { prop: null, order: null },
+  locations: { prop: null, order: null },
+})
 
 // Map associated lists from team object =====
-const mappedMembers = computed( () => {
-  if ( !props.team ) return []
+const mappedMembers = computed(() => {
+  if (!props.team) return []
   const memberIds = props.team.team_members_id || []
   const leaderId = props.team.leader_id
 
   // Deduplicate IDs and ensure leader appears first
-  const orderedIds = [...( leaderId ? [leaderId] : [] ), ...memberIds.filter( id => id !== leaderId )]
+  const orderedIds = [...(leaderId ? [leaderId] : []), ...memberIds.filter(id => id !== leaderId)]
 
-  return orderedIds.map( id => props.userMap[id] || props.userMap[String( id )] ).filter( Boolean )
-} )
+  return orderedIds.map(id => props.userMap[id] || props.userMap[String(id)]).filter(Boolean)
+})
 
-const mappedEquipment = computed( () => {
-  if ( !props.team ) return []
+const mappedEquipment = computed(() => {
+  if (!props.team) return []
   const ids = props.team.team_equipment_nodes_id || []
-  return ids.map( id => props.equipmentMap[id] || props.equipmentMap[String( id )] ).filter( Boolean )
-} )
+  return ids.map(id => props.equipmentMap[id] || props.equipmentMap[String(id)]).filter(Boolean)
+})
 
-const mappedLocations = computed( () => {
-  if ( !props.team ) return []
+const mappedLocations = computed(() => {
+  if (!props.team) return []
   const ids = props.team.team_locations_id || []
-  return ids.map( id => props.locationMap[id] || props.locationMap[String( id )] ).filter( Boolean )
-} )
+  return ids.map(id => props.locationMap[id] || props.locationMap[String(id)]).filter(Boolean)
+})
 
 // Filtering
-const filterData = ( list, q, fields ) => {
-  if ( !list ) {
+const filterData = (list, q, fields) => {
+  if (!list) {
     return []
   }
   const keyword = q.trim().toLowerCase()
-  if ( !keyword ) {
+  if (!keyword) {
     return list
   }
 
-  return list.filter( item =>
-    fields.some( f => {
-      if ( f === 'full_name' ) {
+  return list.filter(item =>
+    fields.some(f => {
+      if (f === 'full_name') {
         const fullName = `${item.first_name || ''} ${item.last_name || ''}`.toLowerCase().trim()
-        return fullName.includes( keyword )
+        return fullName.includes(keyword)
       }
 
-      return String( item[f] || '' )
+      return String(item[f] || '')
         .toLowerCase()
-        .includes( keyword )
-    } )
+        .includes(keyword)
+    })
   )
 }
 
 // Sorting
-const sortData = ( list, { prop, order } ) => {
-  if ( !prop || !order ) return list
-  const sorted = [...list].sort( ( a, b ) => {
+const sortData = (list, { prop, order }) => {
+  if (!prop || !order) return list
+  const sorted = [...list].sort((a, b) => {
     const va = a[prop] ?? ''
     const vb = b[prop] ?? ''
-    return order === 'ascending' ? String( va ).localeCompare( String( vb ) ) : String( vb ).localeCompare( String( va ) )
-  } )
+    return order === 'ascending' ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va))
+  })
   return sorted
 }
 
 const handleSortChange =
   type =>
-    ( { prop, order } ) => {
-      sort.value[type] = { prop, order }
-    }
-
-// ===== Computed filtered lists =====
-const filteredMembers = computed( () => {
-  const f = filterData( mappedMembers.value, search.value.members, ['id', 'full_name', 'username', 'employee_number'] )
-  return sortData( f, sort.value.members )
-} )
-const filteredEquipment = computed( () => {
-  const f = filterData( mappedEquipment.value, search.value.equipment, ['id', 'name', 'code'] )
-  return sortData( f, sort.value.equipment )
-} )
-const filteredLocations = computed( () => {
-  const f = filterData( mappedLocations.value, search.value.locations, ['id', 'name', 'code'] )
-  return sortData( f, sort.value.locations )
-} )
-
-// ===== Pagination slices =====
-const paginate = ( list, p ) => {
-  const start = ( p - 1 ) * pageSize.value
-  return list.slice( start, start + pageSize.value )
-}
-const paginatedMembers = computed( () => paginate( filteredMembers.value, page.value.members ) )
-const paginatedEquipment = computed( () => paginate( filteredEquipment.value, page.value.equipment ) )
-const paginatedLocations = computed( () => paginate( filteredLocations.value, page.value.locations ) )
-
-function isLeader( userId ) {
-  if ( !props.team?.leader_id ) return false
-  return Number( userId ) === Number( props.team.leader_id )
-}
-
-function goToDetail( id, type ) {
-  if ( type === 'equipment' ) {
-    router.push( { path : '/maintenance/equipment', query : { equipmentId : id }} )
+  ({ prop, order }) => {
+    sort.value[type] = { prop, order }
   }
 
-  if ( type === 'location' ) {
+// ===== Computed filtered lists =====
+const filteredMembers = computed(() => {
+  const f = filterData(mappedMembers.value, search.value.members, ['id', 'full_name', 'username', 'employee_number'])
+  return sortData(f, sort.value.members)
+})
+const filteredEquipment = computed(() => {
+  const f = filterData(mappedEquipment.value, search.value.equipment, ['id', 'name', 'code'])
+  return sortData(f, sort.value.equipment)
+})
+const filteredLocations = computed(() => {
+  const f = filterData(mappedLocations.value, search.value.locations, ['id', 'name', 'code'])
+  return sortData(f, sort.value.locations)
+})
+
+// ===== Pagination slices =====
+const paginate = (list, p) => {
+  const start = (p - 1) * pageSize.value
+  return list.slice(start, start + pageSize.value)
+}
+const paginatedMembers = computed(() => paginate(filteredMembers.value, page.value.members))
+const paginatedEquipment = computed(() => paginate(filteredEquipment.value, page.value.equipment))
+const paginatedLocations = computed(() => paginate(filteredLocations.value, page.value.locations))
+
+function isLeader(userId) {
+  if (!props.team?.leader_id) return false
+  return Number(userId) === Number(props.team.leader_id)
+}
+
+function goToDetail(id, type) {
+  if (type === 'equipment') {
+    router.push({ path: '/maintenance/equipment', query: { equipmentId: id } })
+  }
+
+  if (type === 'location') {
     // router.push( { name : 'LocationDetail', params : { id : id }} )
   }
 
-  if ( type === 'user' ) {
-    router.push( { name : 'UserDetail', params : { id }} )
+  if (type === 'user') {
+    router.push({ name: 'UserDetail', params: { id } })
   }
 }
 </script>

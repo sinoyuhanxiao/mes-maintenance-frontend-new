@@ -19,78 +19,78 @@
  * @param {Object} originalTask - The task with original steps (before edits)
  * @returns {Object} Object with step_add_list, step_update_list, step_delete_list
  */
-export function calculateStepChangesForTask( currentTask, originalTask ) {
+export function calculateStepChangesForTask(currentTask, originalTask) {
   // 1. Extract step arrays from different possible locations
-  const currentSteps = Array.isArray( currentTask.steps )
+  const currentSteps = Array.isArray(currentTask.steps)
     ? currentTask.steps
-    : Array.isArray( currentTask.payload?.steps )
-      ? currentTask.payload.steps
-      : []
+    : Array.isArray(currentTask.payload?.steps)
+    ? currentTask.payload.steps
+    : []
 
-  const originalSteps = Array.isArray( originalTask.steps )
+  const originalSteps = Array.isArray(originalTask.steps)
     ? originalTask.steps
-    : Array.isArray( originalTask.payload?.steps )
-      ? originalTask.payload.steps
-      : []
+    : Array.isArray(originalTask.payload?.steps)
+    ? originalTask.payload.steps
+    : []
 
   // 2. Create comparison maps for efficient lookup
   // Map: stepId -> step object
   const originalStepsMap = new Map()
-  originalSteps.forEach( step => {
+  originalSteps.forEach(step => {
     const stepId = step.id || step._id || step.step_id
-    if ( stepId ) {
+    if (stepId) {
       // Normalize ID to string for consistent comparison
-      originalStepsMap.set( String( stepId ), step )
+      originalStepsMap.set(String(stepId), step)
     }
-  } )
+  })
 
   const currentStepsMap = new Map()
-  currentSteps.forEach( step => {
+  currentSteps.forEach(step => {
     const stepId = step.id || step._id || step.step_id
     // Only map steps with real backend IDs (not temporary frontend IDs)
-    if ( stepId && !isTemporaryId( stepId ) ) {
+    if (stepId && !isTemporaryId(stepId)) {
       // Normalize ID to string for consistent comparison
-      currentStepsMap.set( String( stepId ), step )
+      currentStepsMap.set(String(stepId), step)
     }
-  } )
+  })
 
   // 3. Initialize result object
   const stepChanges = {
-    step_add_list : [],
-    step_update_list : [],
-    step_delete_list : []
+    step_add_list: [],
+    step_update_list: [],
+    step_delete_list: [],
   }
 
   // 4. Process current steps to find adds and updates
-  currentSteps.forEach( step => {
+  currentSteps.forEach(step => {
     const stepId = step.id || step._id || step.step_id
 
-    if ( !stepId || isTemporaryId( stepId ) ) {
+    if (!stepId || isTemporaryId(stepId)) {
       // New step - has temporary frontend ID or no ID
-      const cleanStep = prepareStepForAdd( step )
+      const cleanStep = prepareStepForAdd(step)
       // Only add if not null (filters out auto-generated steps)
-      if ( cleanStep ) {
-        stepChanges.step_add_list.push( cleanStep )
+      if (cleanStep) {
+        stepChanges.step_add_list.push(cleanStep)
       }
-    } else if ( originalStepsMap.has( String( stepId ) ) ) {
+    } else if (originalStepsMap.has(String(stepId))) {
       // Existing step - check if it was actually modified
-      if ( isStepModified( step, originalStepsMap.get( String( stepId ) ) ) ) {
-        const updateStep = prepareStepForUpdate( step )
-        stepChanges.step_update_list.push( updateStep )
+      if (isStepModified(step, originalStepsMap.get(String(stepId)))) {
+        const updateStep = prepareStepForUpdate(step)
+        stepChanges.step_update_list.push(updateStep)
       }
     }
-  } )
+  })
 
   // 5. Find deleted steps (in original but not in current)
-  originalSteps.forEach( originalStep => {
+  originalSteps.forEach(originalStep => {
     const stepId = originalStep.id || originalStep._id || originalStep.step_id
-    if ( stepId && !currentStepsMap.has( String( stepId ) ) ) {
+    if (stepId && !currentStepsMap.has(String(stepId))) {
       // Step was deleted - validate ID before adding to delete list
-      if ( isValidStepId( stepId ) ) {
-        stepChanges.step_delete_list.push( stepId )
+      if (isValidStepId(stepId)) {
+        stepChanges.step_delete_list.push(stepId)
       }
     }
-  } )
+  })
 
   return stepChanges
 }
@@ -100,14 +100,14 @@ export function calculateStepChangesForTask( currentTask, originalTask ) {
  * @param {string|number} id - The step ID to check
  * @returns {boolean} True if the ID is temporary
  */
-function isTemporaryId( id ) {
-  if ( !id ) return true
+function isTemporaryId(id) {
+  if (!id) return true
 
-  const idStr = String( id )
+  const idStr = String(id)
 
   // Frontend-generated IDs typically start with these prefixes
   return (
-    idStr.startsWith( 'step-' ) || idStr.startsWith( 'new-' ) || idStr.startsWith( 'temp-' ) || idStr.startsWith( 'local-' )
+    idStr.startsWith('step-') || idStr.startsWith('new-') || idStr.startsWith('temp-') || idStr.startsWith('local-')
   )
 }
 
@@ -117,28 +117,28 @@ function isTemporaryId( id ) {
  * @param {Object} originalStep - The step before edits
  * @returns {boolean} True if the step was modified
  */
-function isStepModified( currentStep, originalStep ) {
+function isStepModified(currentStep, originalStep) {
   // Compare key step properties
   const propsToCompare = ['name', 'description', 'required', 'remarks', 'type']
 
-  for ( const prop of propsToCompare ) {
-    if ( currentStep[prop] !== originalStep[prop] ) {
+  for (const prop of propsToCompare) {
+    if (currentStep[prop] !== originalStep[prop]) {
       return true
     }
   }
 
   // Compare step value (the actual input configuration)
   // This includes the step type (checkbox, number, text, etc.) and its settings
-  const currentValue = JSON.stringify( currentStep.value || {} )
-  const originalValue = JSON.stringify( originalStep.value || {} )
-  if ( currentValue !== originalValue ) {
+  const currentValue = JSON.stringify(currentStep.value || {})
+  const originalValue = JSON.stringify(originalStep.value || {})
+  if (currentValue !== originalValue) {
     return true
   }
 
   // Compare tools (array of tool IDs or tool objects)
-  const currentTools = normalizeToolsForComparison( currentStep.tools )
-  const originalTools = normalizeToolsForComparison( originalStep.tools )
-  if ( currentTools !== originalTools ) {
+  const currentTools = normalizeToolsForComparison(currentStep.tools)
+  const originalTools = normalizeToolsForComparison(originalStep.tools)
+  if (currentTools !== originalTools) {
     return true
   }
 
@@ -150,22 +150,22 @@ function isStepModified( currentStep, originalStep ) {
  * @param {Array} tools - Array of tool IDs or tool objects
  * @returns {string} Stringified sorted array of tool IDs
  */
-function normalizeToolsForComparison( tools ) {
-  if ( !Array.isArray( tools ) ) return '[]'
+function normalizeToolsForComparison(tools) {
+  if (!Array.isArray(tools)) return '[]'
 
   // Extract IDs from tools (handles both number arrays and object arrays)
   const toolIds = tools
-    .map( tool => {
-      if ( typeof tool === 'number' ) return tool
-      if ( typeof tool === 'object' && tool !== null ) {
+    .map(tool => {
+      if (typeof tool === 'number') return tool
+      if (typeof tool === 'object' && tool !== null) {
         return tool.id || tool.tool_id || tool.toolId
       }
       return tool
-    } )
-    .filter( id => id != null )
+    })
+    .filter(id => id != null)
 
   // Sort for consistent comparison
-  return JSON.stringify( toolIds.sort( ( a, b ) => a - b ) )
+  return JSON.stringify(toolIds.sort((a, b) => a - b))
 }
 
 /**
@@ -173,23 +173,23 @@ function normalizeToolsForComparison( tools ) {
  * @param {Object} step - The step to prepare
  * @returns {Object} Clean step object ready for backend
  */
-function prepareStepForAdd( step ) {
+function prepareStepForAdd(step) {
   // Filter out auto-generated fallback steps - they shouldn't be sent as new steps
   const isAutoGeneratedStep =
     step.name === 'Checklist' && step.description === 'Auto-generated step' && step.type === 'template'
 
-  if ( isAutoGeneratedStep ) {
+  if (isAutoGeneratedStep) {
     return null
   }
 
   return {
-    name : step.name || 'Untitled Step',
-    description : step.description || '',
-    type : step.type || 'template',
-    required : step.required || false,
-    remarks : step.remarks || '',
-    value : step.value || {},
-    tools : extractToolIds( step.tools )
+    name: step.name || 'Untitled Step',
+    description: step.description || '',
+    type: step.type || 'template',
+    required: step.required || false,
+    remarks: step.remarks || '',
+    value: step.value || {},
+    tools: extractToolIds(step.tools),
   }
 }
 
@@ -198,18 +198,18 @@ function prepareStepForAdd( step ) {
  * @param {Object} step - The step to prepare
  * @returns {Object} Step object with ID ready for backend update
  */
-function prepareStepForUpdate( step ) {
+function prepareStepForUpdate(step) {
   const stepId = step.id || step._id || step.step_id
 
   return {
-    id : stepId, // Include ID for updates
-    name : step.name || 'Untitled Step',
-    description : step.description || '',
-    type : step.type || 'template',
-    required : step.required || false,
-    remarks : step.remarks || '',
-    value : step.value || {},
-    tools : extractToolIds( step.tools )
+    id: stepId, // Include ID for updates
+    name: step.name || 'Untitled Step',
+    description: step.description || '',
+    type: step.type || 'template',
+    required: step.required || false,
+    remarks: step.remarks || '',
+    value: step.value || {},
+    tools: extractToolIds(step.tools),
   }
 }
 
@@ -219,27 +219,27 @@ function prepareStepForUpdate( step ) {
  * @param {Array} tools - Array of tool IDs or tool objects
  * @returns {Array<number>} Array of tool IDs
  */
-function extractToolIds( tools ) {
-  if ( !Array.isArray( tools ) ) return []
+function extractToolIds(tools) {
+  if (!Array.isArray(tools)) return []
 
   return tools
-    .map( tool => {
+    .map(tool => {
       // If it's already a number, return it
-      if ( typeof tool === 'number' ) return tool
+      if (typeof tool === 'number') return tool
 
       // If it's an object, extract the ID
-      if ( typeof tool === 'object' && tool !== null ) {
+      if (typeof tool === 'object' && tool !== null) {
         return tool.id || tool.tool_id || tool.toolId
       }
 
       // If it's a string number, parse it
-      if ( typeof tool === 'string' && !isNaN( tool ) ) {
-        return parseInt( tool, 10 )
+      if (typeof tool === 'string' && !isNaN(tool)) {
+        return parseInt(tool, 10)
       }
 
       return null
-    } )
-    .filter( id => id != null && !isNaN( id ) )
+    })
+    .filter(id => id != null && !isNaN(id))
 }
 
 /**
@@ -247,13 +247,13 @@ function extractToolIds( tools ) {
  * @param {string|number} id - The step ID to validate
  * @returns {boolean} True if the ID is valid
  */
-function isValidStepId( id ) {
-  if ( !id ) return false
+function isValidStepId(id) {
+  if (!id) return false
 
-  const idStr = String( id )
+  const idStr = String(id)
 
   // Check for invalid placeholder values
-  return idStr !== 'null' && idStr !== 'undefined' && idStr.length > 0 && !isTemporaryId( id )
+  return idStr !== 'null' && idStr !== 'undefined' && idStr.length > 0 && !isTemporaryId(id)
 }
 
 /**
@@ -261,7 +261,7 @@ function isValidStepId( id ) {
  * @param {Object} step - The step to check
  * @returns {boolean} True if the step is auto-generated
  */
-function isAutoGeneratedStep( step ) {
+function isAutoGeneratedStep(step) {
   return step.name === 'Checklist' && step.description === 'Auto-generated step' && step.type === 'template'
 }
 
@@ -272,59 +272,59 @@ function isAutoGeneratedStep( step ) {
  * @param {Array} originalSteps - Original step array
  * @returns {boolean} True if any step changed
  */
-export function hasAnyStepChanged( currentSteps, originalSteps ) {
+export function hasAnyStepChanged(currentSteps, originalSteps) {
   // Filter out auto-generated steps from both arrays for comparison
-  const filteredCurrent = currentSteps.filter( step => !isAutoGeneratedStep( step ) )
-  const filteredOriginal = originalSteps.filter( step => !isAutoGeneratedStep( step ) )
+  const filteredCurrent = currentSteps.filter(step => !isAutoGeneratedStep(step))
+  const filteredOriginal = originalSteps.filter(step => !isAutoGeneratedStep(step))
 
   // Quick check: different number of steps (excluding auto-generated)
-  if ( filteredCurrent.length !== filteredOriginal.length ) return true
+  if (filteredCurrent.length !== filteredOriginal.length) return true
 
   // If both are empty (only had auto-generated steps), nothing changed
-  if ( filteredCurrent.length === 0 && filteredOriginal.length === 0 ) return false
+  if (filteredCurrent.length === 0 && filteredOriginal.length === 0) return false
 
   // Create a map of original steps by ID for quick lookup
   const originalMap = new Map()
-  filteredOriginal.forEach( step => {
+  filteredOriginal.forEach(step => {
     const id = step.id || step._id || step.step_id
     // Normalize ID to string for consistent comparison
-    if ( id ) originalMap.set( String( id ), step )
-  } )
+    if (id) originalMap.set(String(id), step)
+  })
 
   // Check each current step
-  for ( const currentStep of filteredCurrent ) {
+  for (const currentStep of filteredCurrent) {
     const stepId = currentStep.id || currentStep._id || currentStep.step_id
 
     // New step (temporary ID or no ID)
-    if ( !stepId || isTemporaryId( stepId ) ) {
+    if (!stepId || isTemporaryId(stepId)) {
       return true
     }
 
     // Check if this specific step was modified
-    const originalStep = originalMap.get( String( stepId ) )
-    if ( !originalStep ) {
+    const originalStep = originalMap.get(String(stepId))
+    if (!originalStep) {
       // Step exists in current but not in original
       return true
     }
 
-    if ( isStepModified( currentStep, originalStep ) ) {
+    if (isStepModified(currentStep, originalStep)) {
       return true
     }
   }
 
   // Check for deleted steps
   const currentMap = new Map()
-  filteredCurrent.forEach( step => {
+  filteredCurrent.forEach(step => {
     const id = step.id || step._id || step.step_id
-    if ( id && !isTemporaryId( id ) ) {
+    if (id && !isTemporaryId(id)) {
       // Normalize ID to string for consistent comparison
-      currentMap.set( String( id ), step )
+      currentMap.set(String(id), step)
     }
-  } )
+  })
 
-  for ( const originalStep of filteredOriginal ) {
+  for (const originalStep of filteredOriginal) {
     const stepId = originalStep.id || originalStep._id || originalStep.step_id
-    if ( stepId && !currentMap.has( String( stepId ) ) ) {
+    if (stepId && !currentMap.has(String(stepId))) {
       // Step was deleted
       return true
     }

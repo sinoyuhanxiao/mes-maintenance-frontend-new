@@ -12,18 +12,18 @@ const DEFAULT_BUCKET_NAME = ENV_CONFIG.DEFAULT_BUCKET_NAME
  * @param {File} file - The file to upload.
  * @returns {Promise} - Resolves with the response from the server.
  */
-export async function uploadToMinio( file ) {
+export async function uploadToMinio(file) {
   const formData = new FormData()
-  formData.append( 'file', file )
-  formData.append( 'bucketName', DEFAULT_BUCKET_NAME )
+  formData.append('file', file)
+  formData.append('bucketName', DEFAULT_BUCKET_NAME)
 
-  const response = await fetch( `${MINIO_URL}/files/upload-multipart`, {
-    method : 'POST',
-    body : formData
-  } )
+  const response = await fetch(`${MINIO_URL}/files/upload-multipart`, {
+    method: 'POST',
+    body: formData,
+  })
 
-  if ( !response.ok ) {
-    throw new Error( 'File upload failed' )
+  if (!response.ok) {
+    throw new Error('File upload failed')
   }
 
   return await response.json()
@@ -34,12 +34,12 @@ export async function uploadToMinio( file ) {
  * @param {Object} data - The data to send to MinIO API.
  * @returns {Promise} - API response.
  */
-export function minioApiRequest( data ) {
-  return http.request( {
-    method : 'post',
-    url : '/files/api-endpoint', // Adjust URL as needed
-    data
-  } )
+export function minioApiRequest(data) {
+  return http.request({
+    method: 'post',
+    url: '/files/api-endpoint', // Adjust URL as needed
+    data,
+  })
 }
 
 /**
@@ -48,16 +48,16 @@ export function minioApiRequest( data ) {
  * @param {File[]} files - An array of File objects.
  * @returns {Promise} - Resolves with the response from the server.
  */
-export async function uploadMultipleToMinio( files ) {
+export async function uploadMultipleToMinio(files) {
   const formData = new FormData()
-  files.forEach( file => {
-    formData.append( 'files', file )
-  } )
+  files.forEach(file => {
+    formData.append('files', file)
+  })
 
-  const response = await fetch( `${MINIO_URL}/files/upload-multipart-list?bucketName=${DEFAULT_BUCKET_NAME}`, {
-    method : 'POST',
-    body : formData
-  } )
+  const response = await fetch(`${MINIO_URL}/files/upload-multipart-list?bucketName=${DEFAULT_BUCKET_NAME}`, {
+    method: 'POST',
+    body: formData,
+  })
 
   // if ( !response.ok ) {
   //   throw new Error( 'Multi-file upload failed' )
@@ -71,15 +71,15 @@ export async function uploadMultipleToMinio( files ) {
  * @param {string} fileName - The name of the file.
  * @returns {Promise} - API response with file information.
  */
-export function getFileInfo( fileName ) {
-  return http.request( {
-    method : 'get',
-    url : '/files/info',
-    data : {
+export function getFileInfo(fileName) {
+  return http.request({
+    method: 'get',
+    url: '/files/info',
+    data: {
       fileName,
-      bucketName : DEFAULT_BUCKET_NAME
-    }
-  } )
+      bucketName: DEFAULT_BUCKET_NAME,
+    },
+  })
 }
 
 /**
@@ -87,15 +87,15 @@ export function getFileInfo( fileName ) {
  * @param {string} fileName - The name of the file to delete.
  * @returns {Promise} - API response.
  */
-export function deleteFile( fileName ) {
-  return http.request( {
-    method : 'delete',
-    url : '/files/delete',
-    data : {
+export function deleteFile(fileName) {
+  return http.request({
+    method: 'delete',
+    url: '/files/delete',
+    data: {
       fileName,
-      bucketName : DEFAULT_BUCKET_NAME
-    }
-  } )
+      bucketName: DEFAULT_BUCKET_NAME,
+    },
+  })
 }
 
 /**
@@ -103,13 +103,13 @@ export function deleteFile( fileName ) {
  * @param {Object} objectInfo - The data object with bucket name and object url list.
  * @returns {Promise} - API response.
  */
-export async function deleteObjectList( objectInfo ) {
-  const response = await fetch( `${MINIO_URL}/files/object-list`, {
-    method : 'DELETE',
-    headers : {
-      'Content-Type' : 'application/json'
+export async function deleteObjectList(objectInfo) {
+  const response = await fetch(`${MINIO_URL}/files/object-list`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
     },
-    body : JSON.stringify( objectInfo )
-  } )
+    body: JSON.stringify(objectInfo),
+  })
   return await response.json()
 }

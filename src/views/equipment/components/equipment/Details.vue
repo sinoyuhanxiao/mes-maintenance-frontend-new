@@ -1,24 +1,22 @@
 <template>
-  <div class="t3-details">
+  <div class="t4-details">
     <template v-if="equipmentData">
       <div class="general-information">
         <el-descriptions :column="3" direction="vertical">
           <el-descriptions-item label="Name">{{ equipmentData.name }}</el-descriptions-item>
           <el-descriptions-item label="Code">{{ equipmentData.code }}</el-descriptions-item>
-          <el-descriptions-item label="Model">{{ equipmentData.serial_number || '--' }}</el-descriptions-item>
-          <el-descriptions-item label="PLC">{{ equipmentData.plc || '--' }}</el-descriptions-item>
-          <el-descriptions-item label="Power">
-            {{ equipmentData.power ? Math.round(equipmentData.power) + 'V' : '--' }}
+          <el-descriptions-item label="Model">
+            {{ equipmentData.model || equipmentData.serial_number || '--' }}
           </el-descriptions-item>
-          <el-descriptions-item label="Install Date">{{
-            formatInstallDate(equipmentData.installation_date)
-          }}</el-descriptions-item>
           <el-descriptions-item label="Description" class="highlighted-item">
             {{ equipmentData.description || 'No description available' }}
           </el-descriptions-item>
         </el-descriptions>
       </div>
+
       <el-divider />
+
+      <!-- Location -->
       <div class="location">
         <el-descriptions :column="1" direction="vertical">
           <el-descriptions-item label="Location Path">
@@ -31,7 +29,10 @@
           </el-descriptions-item>
         </el-descriptions>
       </div>
+
       <el-divider />
+
+      <!-- Exploded View -->
       <div class="image">
         <el-descriptions :column="1" direction="vertical">
           <el-descriptions-item label="Exploded View">
@@ -39,7 +40,7 @@
               <el-image
                 :src="equipmentData.exploded_view_drawing"
                 :preview-src-list="[equipmentData.exploded_view_drawing]"
-                :close-on-click-modal="true"
+                :hide-on-click-modal="true"
                 fit="contain"
                 class="equipment-image"
               />
@@ -50,11 +51,14 @@
           </el-descriptions-item>
         </el-descriptions>
       </div>
+
       <el-divider />
+
+      <!-- Images -->
       <div class="image">
         <el-descriptions :column="1" direction="vertical">
           <el-descriptions-item label="Images">
-            <div v-if="equipmentData.image_list && equipmentData.image_list.length > 0" class="image-gallery">
+            <div v-if="equipmentData.image_list?.length" class="image-gallery">
               <el-image
                 v-for="(imagePath, index) in equipmentData.image_list"
                 :key="index"
@@ -71,20 +75,22 @@
           </el-descriptions-item>
         </el-descriptions>
       </div>
+
       <el-divider />
+
+      <!-- Files (reuse) -->
       <div class="files">
         <el-descriptions :column="1" direction="vertical">
           <el-descriptions-item label="Files">
-            <div class="file-list">
-              <div v-if="equipmentData.file_list && equipmentData.file_list.length > 0">
-                <div v-for="file in equipmentData.file_list" :key="file.id || file.name" class="file-item">
-                  <el-link :href="file.url" target="_blank" :icon="getFileIcon(file.type)" class="file-link">
-                    {{ file.name }}
-                  </el-link>
-                </div>
-              </div>
-              <div v-else class="no-files"><el-text> No files available </el-text></div>
-            </div>
+            <FileDisplay
+              :files="equipmentData.file_list || []"
+              empty-text="No files available"
+              :native-preview="true"
+              :native-download="true"
+              @preview="onPreview"
+              @download="onDownload"
+              @download-error="onDownloadError"
+            />
           </el-descriptions-item>
         </el-descriptions>
       </div>
@@ -106,169 +112,64 @@
 
 <script setup>
 import { ref, onMounted, watch } from 'vue'
-import { ArrowRight, Document, Picture, VideoCamera, Microphone, Download } from '@element-plus/icons-vue'
+import { ArrowRight } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import FileDisplay from '@/components/common/FileDisplay.vue'
 import { getEquipmentById } from '@/api/equipment.js'
 import { getLocationPathById } from '@/api/location.js'
 
-const props = defineProps( {
-  equipmentId : {
-    type : Number
-  }
-} )
+const props = defineProps({ equipmentId: Number })
 
-const equipmentData = ref( null )
-const locationPath = ref( [] )
-const loading = ref( false )
-const error = ref( null )
+const equipmentData = ref(null)
+const locationPath = ref([])
+const loading = ref(false)
+const error = ref(null)
 
-const parseFileList = fileArray => {
-  if ( !fileArray || !Array.isArray( fileArray ) ) return []
-
-  return fileArray.map( ( url, index ) => {
-    const urlParts = url.split( '/' )
-    const filename = urlParts[urlParts.length - 1] || `file_${index + 1}`
-
-    const cleanFilename = filename.replace( /\d{17}/, '' )
-
-    return {
-      id : index,
-      name : decodeURIComponent( cleanFilename ),
-      url,
-      type : getFileTypeFromName( cleanFilename )
-    }
-  } )
-}
-
-const fetchEquipmentData = async() => {
-  if ( !props.equipmentId ) return
-
+const fetchEquipmentData = async () => {
+  if (!props.equipmentId) return
   try {
     loading.value = true
     error.value = null
 
-    const response = await getEquipmentById( props.equipmentId )
+    const response = await getEquipmentById(props.equipmentId)
     equipmentData.value = response.data
 
-    if ( equipmentData.value.file_list && Array.isArray( equipmentData.value.file_list ) ) {
-      equipmentData.value.file_list = parseFileList( equipmentData.value.file_list )
-    }
-
-    if (
-      equipmentData.value.location?.id &&
-      typeof equipmentData.value.location.id !== 'object' &&
-      equipmentData.value.location.status !== 0
-    ) {
-      await fetchLocationPath( equipmentData.value.location.id )
+    // Location path
+    const loc = equipmentData.value?.location
+    if (loc?.id && loc?.status !== 0) {
+      const res = await getLocationPathById(loc.id)
+      locationPath.value = res.data || []
     } else {
       locationPath.value = []
     }
-  } catch ( err ) {
+  } catch (err) {
     error.value = err.message || 'Failed to fetch equipment data'
   } finally {
     loading.value = false
   }
 }
 
-const fetchLocationPath = async locationId => {
-  try {
-    const response = await getLocationPathById( locationId )
-    locationPath.value = response.data || []
-  } catch ( err ) {
-    locationPath.value = []
-  }
-}
-
-function getFileIcon( fileType ) {
-  switch ( fileType?.toLowerCase() ) {
-    case 'image':
-    case 'jpg':
-    case 'jpeg':
-    case 'png':
-    case 'gif':
-    case 'bmp':
-    case 'webp':
-      return Picture
-    case 'video':
-    case 'mp4':
-    case 'avi':
-    case 'mov':
-    case 'wmv':
-    case 'flv':
-      return VideoCamera
-    case 'audio':
-    case 'mp3':
-    case 'wav':
-    case 'flac':
-    case 'aac':
-      return Microphone
-    case 'pdf':
-    case 'document':
-    case 'doc':
-    case 'docx':
-    case 'txt':
-    case 'rtf':
-      return Document
-    case 'download':
-    case 'zip':
-    case 'rar':
-    case '7z':
-      return Download
-    default:
-      return Document
-  }
-}
-
-function getFileTypeFromName( fileName ) {
-  if ( !fileName ) return 'document'
-
-  const extension = fileName.split( '.' ).pop()?.toLowerCase()
-
-  const imageTypes = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg']
-  const videoTypes = ['mp4', 'avi', 'mov', 'wmv', 'flv', 'mkv']
-  const audioTypes = ['mp3', 'wav', 'flac', 'aac', 'ogg']
-  const archiveTypes = ['zip', 'rar', '7z', 'tar', 'gz']
-
-  if ( imageTypes.includes( extension ) ) return 'image'
-  if ( videoTypes.includes( extension ) ) return 'video'
-  if ( audioTypes.includes( extension ) ) return 'audio'
-  if ( archiveTypes.includes( extension ) ) return 'download'
-
-  return 'document'
-}
-
-function formatInstallDate( dateString ) {
-  if ( !dateString ) return '--'
-
-  try {
-    // Handle ISO datetime string (e.g., "2025-08-03T00:00:00Z")
-    const date = new Date( dateString )
-
-    // Check if date is valid
-    if ( isNaN( date.getTime() ) ) return '--'
-
-    // Format as YYYY-MM-DD
-    return date.toISOString().split( 'T' )[0]
-  } catch ( error ) {
-    return '--'
-  }
-}
-
-onMounted( () => {
-  fetchEquipmentData()
-} )
-
+onMounted(fetchEquipmentData)
 watch(
   () => props.equipmentId,
-  newId => {
-    if ( newId ) {
-      fetchEquipmentData()
-    }
-  }
+  id => id && fetchEquipmentData()
 )
+
+/* Optional hooks (analytics/custom behavior) */
+function onPreview(file) {
+  /* no-op by default */
+}
+function onDownload(file) {
+  /* no-op by default */
+}
+function onDownloadError(e) {
+  console.error(e)
+  ElMessage.error('Download failed')
+}
 </script>
 
 <style scoped>
-.t3-details {
+.t4-details {
   flex: 0;
   display: flex;
   flex-direction: column;
@@ -280,15 +181,9 @@ watch(
   flex-direction: column;
 }
 
-.location {
-  flex: 0;
-  display: flex;
-  flex-direction: column;
-  background-color: #0085a4;
-}
-
+.location,
 .image {
-  flex: 1;
+  flex: 0;
   display: flex;
   flex-direction: column;
   background-color: #0085a4;
@@ -310,48 +205,6 @@ watch(
 }
 
 .no-images {
-  text-align: left;
-}
-
-.files {
-  flex: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.file-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.file-item {
-  display: flex;
-  align-items: center;
-  padding: 8px 12px;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-  background-color: #fafafa;
-  transition: background-color 0.2s;
-}
-
-.file-item:hover {
-  background-color: #f0f9ff;
-}
-
-.file-link {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 500;
-}
-
-.file-size {
-  color: #909399;
-  font-size: 12px;
-}
-
-.no-files {
   text-align: left;
 }
 </style>

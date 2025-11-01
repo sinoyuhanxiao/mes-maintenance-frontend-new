@@ -13,12 +13,12 @@
 
 <script setup>
 // eslint-disable-next-line no-unused-vars
-const props = defineProps( {
-  disabled : {
-    type : Boolean,
-    default : false
-  }
-} )
+const props = defineProps({
+  disabled: {
+    type: Boolean,
+    default: false,
+  },
+})
 </script>
 
 <style scoped>

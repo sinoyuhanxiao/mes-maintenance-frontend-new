@@ -44,67 +44,67 @@ import { localStorageHandle } from '@/utils/storage'
 
 const TODO_LIST_KEY = 'todos'
 const defaultTodo = [
-  { text : 'star this repository', done : false },
-  { text : 'fork this repository', done : false },
-  { text : 'follow author', done : false },
-  { text : 'element-plus-vite-admin', done : true },
-  { text : 'vite', done : true },
-  { text : 'vue', done : true },
-  { text : 'Pinia', done : true },
-  { text : 'Vue Router', done : true },
-  { text : 'React', done : true },
-  { text : 'element-plus', done : true }
+  { text: 'star this repository', done: false },
+  { text: 'fork this repository', done: false },
+  { text: 'follow author', done: false },
+  { text: 'element-plus-vite-admin', done: true },
+  { text: 'vite', done: true },
+  { text: 'vue', done: true },
+  { text: 'Pinia', done: true },
+  { text: 'Vue Router', done: true },
+  { text: 'React', done: true },
+  { text: 'element-plus', done: true },
 ]
 
 export default {
-  components : { Todo },
+  components: { Todo },
   setup() {
-    const currentTodo = ref( '' )
-    const visibility = ref( 'all' )
-    const filters = ref( {
-      all : todos => todos,
-      active : todos => todos.filter( todo => !todo.done ),
-      completed : todos => todos.filter( todo => todo.done )
-    } )
-    const todos = ref( localStorageHandle.getItem( TODO_LIST_KEY ) || defaultTodo )
+    const currentTodo = ref('')
+    const visibility = ref('all')
+    const filters = ref({
+      all: todos => todos,
+      active: todos => todos.filter(todo => !todo.done),
+      completed: todos => todos.filter(todo => todo.done),
+    })
+    const todos = ref(localStorageHandle.getItem(TODO_LIST_KEY) || defaultTodo)
 
-    const set = reactive( {
-      newPluralize : computed( () => {
+    const set = reactive({
+      newPluralize: computed(() => {
         return set.remaining == 1 ? 'item' : 'items'
-      } ),
+      }),
 
-      newCapitalize : computed( () => {
-        for ( const key in filters.value ) {
+      newCapitalize: computed(() => {
+        for (const key in filters.value) {
           // eslint-disable-next-line vue/no-side-effects-in-computed-properties
-          filters.value[key].keys = key.charAt( 0 ).toUpperCase() + key.slice( 1 )
+          filters.value[key].keys = key.charAt(0).toUpperCase() + key.slice(1)
         }
         return filters.value
-      } ),
+      }),
 
-      allChecked : computed( () => {
-        return todos.value.every( todo => todo.done )
-      } ),
+      allChecked: computed(() => {
+        return todos.value.every(todo => todo.done)
+      }),
 
-      filteredTodos : computed( () => {
-        return filters.value[visibility.value]( todos.value )
-      } ),
+      filteredTodos: computed(() => {
+        return filters.value[visibility.value](todos.value)
+      }),
 
-      remaining : computed( () => {
-        return todos.value.filter( todo => !todo.done ).length
-      } )
-    } )
+      remaining: computed(() => {
+        return todos.value.filter(todo => !todo.done).length
+      }),
+    })
 
     const setLocalStorage = () => {
-      localStorageHandle.setItem( TODO_LIST_KEY, todos.value )
+      localStorageHandle.setItem(TODO_LIST_KEY, todos.value)
     }
 
     const addTodo = () => {
       const text = currentTodo.value
-      if ( text.trim() ) {
-        todos.value.push( {
+      if (text.trim()) {
+        todos.value.push({
           text,
-          done : false
-        } )
+          done: false,
+        })
         setLocalStorage()
       }
       currentTodo.value = ''
@@ -116,42 +116,42 @@ export default {
     }
 
     const deleteTodo = val => {
-      todos.value.splice( todos.value.indexOf( val ), 1 )
+      todos.value.splice(todos.value.indexOf(val), 1)
       setLocalStorage()
     }
 
-    const editTodo = ( { todo, value } ) => {
+    const editTodo = ({ todo, value }) => {
       todo.text = value
       setLocalStorage()
     }
 
     const clearCompleted = () => {
-      todos.value = todos.value.filter( todo => !todo.done )
+      todos.value = todos.value.filter(todo => !todo.done)
       setLocalStorage()
     }
 
-    const toggleAll = ( { done } ) => {
-      todos.value.forEach( todo => {
+    const toggleAll = ({ done }) => {
+      todos.value.forEach(todo => {
         todo.done = done
         setLocalStorage()
-      } )
+      })
     }
     return {
       currentTodo,
-      visibility : 'all',
+      visibility: 'all',
       filters,
       todos,
 
-      ...toRefs( set ),
+      ...toRefs(set),
       setLocalStorage,
       addTodo,
       toggleTodo,
       deleteTodo,
       editTodo,
       clearCompleted,
-      toggleAll
+      toggleAll,
     }
-  }
+  },
 }
 </script>
 

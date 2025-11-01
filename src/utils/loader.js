@@ -4,16 +4,16 @@ class Loader {
    * @param {*} url
    * @param {*} isCache
    */
-  loadCSS = ( url, isCache = false ) => {
-    const element = document.createElement( 'link' )
-    element.setAttribute( 'rel', 'stylesheet' )
-    element.setAttribute( 'type', 'text/css' )
-    if ( isCache ) {
-      element.setAttribute( 'href', url + '?t=' + new Date().getTime() )
+  loadCSS = (url, isCache = false) => {
+    const element = document.createElement('link')
+    element.setAttribute('rel', 'stylesheet')
+    element.setAttribute('type', 'text/css')
+    if (isCache) {
+      element.setAttribute('href', url + '?t=' + new Date().getTime())
     } else {
-      element.setAttribute( 'href', url )
+      element.setAttribute('href', url)
     }
-    document.body.appendChild( element )
+    document.body.appendChild(element)
   }
 
   /**
@@ -21,15 +21,15 @@ class Loader {
    * @param {*} src
    * @param {*} isCache
    */
-  loadJS = async( src, isCache = false ) => {
-    const script = document.createElement( 'script' )
+  loadJS = async (src, isCache = false) => {
+    const script = document.createElement('script')
     script.type = 'text/JavaScript'
-    if ( isCache ) {
+    if (isCache) {
       script.src = src + '?t=' + new Date().getTime()
     } else {
       script.src = src
     }
-    document.body.appendChild( script )
+    document.body.appendChild(script)
     script.onload = () => {
       return src
     }

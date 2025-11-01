@@ -36,33 +36,33 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 
-const props = defineProps( {
-  template : {
-    type : Object,
-    required : true
+const props = defineProps({
+  template: {
+    type: Object,
+    required: true,
   },
-  selected : {
-    type : Boolean,
-    default : false
+  selected: {
+    type: Boolean,
+    default: false,
   },
-  focused : {
-    type : Boolean,
-    default : false
-  }
-} )
+  focused: {
+    type: Boolean,
+    default: false,
+  },
+})
 
-const emit = defineEmits( ['selection'] )
+const emit = defineEmits(['selection'])
 
-const checked = ref( props.selected )
+const checked = ref(props.selected)
 
-const rulesCount = computed( () => props.template?.items?.length || 0 )
+const rulesCount = computed(() => props.template?.items?.length || 0)
 
-const categoryLabel = computed( () => {
+const categoryLabel = computed(() => {
   const category = props.template?.category
-  if ( !category ) return ''
+  if (!category) return ''
   // Handle both string and object formats
   return typeof category === 'object' ? category.name : category
-} )
+})
 
 // Watch for external changes to selected prop
 watch(
@@ -73,7 +73,7 @@ watch(
 )
 
 const handleCheckboxChange = value => {
-  if ( value ) {
+  if (value) {
     handleCheck()
   } else {
     handleUncheck()
@@ -81,27 +81,27 @@ const handleCheckboxChange = value => {
 }
 
 const handleCheck = () => {
-  emit( 'selection', {
-    id : props.template.id,
-    action : 'check',
-    data : props.template
-  } )
+  emit('selection', {
+    id: props.template.id,
+    action: 'check',
+    data: props.template,
+  })
 }
 
 const handleUncheck = () => {
-  emit( 'selection', {
-    id : props.template.id,
-    action : 'uncheck',
-    data : props.template
-  } )
+  emit('selection', {
+    id: props.template.id,
+    action: 'uncheck',
+    data: props.template,
+  })
 }
 
 const handleCardClick = () => {
-  emit( 'selection', {
-    id : props.template.id,
-    action : 'focus',
-    data : props.template
-  } )
+  emit('selection', {
+    id: props.template.id,
+    action: 'focus',
+    data: props.template,
+  })
 }
 </script>
 

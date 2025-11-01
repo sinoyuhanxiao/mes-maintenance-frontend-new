@@ -33,49 +33,49 @@ import StepPassFail from '@/components/TaskLibrary/components/preview/StepPassFa
 import StepFile from '@/components/TaskLibrary/components/preview/StepFile.vue'
 
 const componentMap = {
-  checklist : StepCheckbox,
-  checkbox : StepCheckbox,
-  boolean_field : StepBoolean,
-  text_field : StepText,
-  numeric_field : StepNumeric,
-  pass_fail : StepPassFail,
-  file_field : StepFile
+  checklist: StepCheckbox,
+  checkbox: StepCheckbox,
+  boolean_field: StepBoolean,
+  text_field: StepText,
+  numeric_field: StepNumeric,
+  pass_fail: StepPassFail,
+  file_field: StepFile,
 }
 
-const props = defineProps( {
-  steps : {
-    type : Array,
-    default : () => []
+const props = defineProps({
+  steps: {
+    type: Array,
+    default: () => [],
   },
-  modelValue : {
-    type : Object,
-    default : () => ( {} )
-  }
-} )
+  modelValue: {
+    type: Object,
+    default: () => ({}),
+  },
+})
 
-const emit = defineEmits( ['update:modelValue', 'step-change'] )
+const emit = defineEmits(['update:modelValue', 'step-change'])
 
-const modelValues = reactive( { ...props.modelValue } )
+const modelValues = reactive({ ...props.modelValue })
 
 watch(
   () => props.modelValue,
   value => {
-    Object.keys( modelValues ).forEach( key => delete modelValues[key] )
-    Object.assign( modelValues, value || {} )
+    Object.keys(modelValues).forEach(key => delete modelValues[key])
+    Object.assign(modelValues, value || {})
   }
 )
 
-const stepKey = step => step.id || step.name || JSON.stringify( step )
+const stepKey = step => step.id || step.name || JSON.stringify(step)
 
 const getComponent = step => {
   const type = step.type || step.value?.type
   return componentMap[type] || StepText
 }
 
-const updateValue = ( step, value ) => {
-  modelValues[stepKey( step )] = value
-  emit( 'update:modelValue', { ...modelValues } )
-  emit( 'step-change', { step, value } )
+const updateValue = (step, value) => {
+  modelValues[stepKey(step)] = value
+  emit('update:modelValue', { ...modelValues })
+  emit('step-change', { step, value })
 }
 </script>
 

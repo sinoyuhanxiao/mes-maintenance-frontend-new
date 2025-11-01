@@ -5,10 +5,10 @@ import http from '@/utils/request'
  * @returns {Promise} API response with approval tree.
  */
 export const getApprovalTree = () => {
-  return http.request( {
-    method : 'get',
-    url : '/approval/tree'
-  } )
+  return http.request({
+    method: 'get',
+    url: '/approval/tree',
+  })
 }
 
 /**
@@ -16,10 +16,10 @@ export const getApprovalTree = () => {
  * @returns {Promise} API response with approval types.
  */
 export const getAllApprovalTypes = () => {
-  return http.request( {
-    method : 'get',
-    url : '/approval/type'
-  } )
+  return http.request({
+    method: 'get',
+    url: '/approval/type',
+  })
 }
 
 /**
@@ -28,10 +28,10 @@ export const getAllApprovalTypes = () => {
  * @returns {Promise<any>} API response
  */
 export const getApprovalTemplateById = id => {
-  return http.request( {
-    method : 'get',
-    url : `/approval/template/${id}`
-  } )
+  return http.request({
+    method: 'get',
+    url: `/approval/template/${id}`,
+  })
 }
 
 /**
@@ -40,11 +40,11 @@ export const getApprovalTemplateById = id => {
  * @returns {Promise<any>} API response
  */
 export const createApprovalTemplate = data => {
-  return http.request( {
-    method : 'post',
-    url : '/approval/template',
-    data
-  } )
+  return http.request({
+    method: 'post',
+    url: '/approval/template',
+    data,
+  })
 }
 
 /**
@@ -53,8 +53,8 @@ export const createApprovalTemplate = data => {
  * @returns {Promise<any>} API response
  */
 export const deleteApprovalTemplate = id => {
-  return http.request( {
-    method : 'delete',
-    url : `/approval/template/${id}`
-  } )
+  return http.request({
+    method: 'delete',
+    url: `/approval/template/${id}`,
+  })
 }
