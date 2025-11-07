@@ -224,7 +224,7 @@ import CertificateFormDialog from '@/views/user/components/CertificateFormDialog
 import CertificateList from '@/views/user/components/CertificateList.vue'
 import FileUploadMultiple from '@/components/FileUpload/FileUploadMultiple.vue'
 import { VueTelInput } from 'vue-tel-input'
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { createUser, isUsernameExist, updateUserByAdmin } from '@/api/user'
 import { deleteObjectList, uploadMultipleToMinio } from '@/api/minio'
@@ -232,6 +232,7 @@ import { useI18n } from 'vue-i18n'
 import 'vue-tel-input/vue-tel-input.css'
 import { useUserStore } from '@/store'
 import { emitter } from '@/utils/mitt'
+import { searchRoles } from '@/api/rbac'
 
 defineExpose( {
   handleResetForm
@@ -241,14 +242,6 @@ const prop = defineProps( {
   user : {
     type : Object,
     default : null
-  },
-  roleOptions : {
-    type : Array,
-    default : () => []
-  },
-  departmentOptions : {
-    type : Array,
-    default : () => []
   }
 } )
 const { t } = useI18n()
@@ -265,6 +258,7 @@ const submitting = ref( false )
 const internalUser = ref( createEmptyUser() )
 const originalUserSnapshot = ref( null ) // stores original userEntry on edit
 const useCustomUsername = ref( false )
+const roleOptions = ref( [] )
 
 watch(
   () => prop.user,
@@ -336,7 +330,7 @@ function transformIncomingUser( user ) {
     ...user,
     user_certificates : ( user.certificate_list || [] ).map( c => transformIncomingCertificate( c ) ),
     // department_list : user.department_ids || [],
-    role_id : user.role_list[0]?.id || null
+    role_id : user.role_list[0]?.role.id || null
   }
 }
 
@@ -613,7 +607,8 @@ const buildCreateUserPayload = entry => {
     role_list : [entry.role_id],
     enabled : entry.enabled,
     image : entry.image,
-    user_certificates : entry.user_certificates
+    user_certificates : entry.user_certificates,
+    primary_role_id : entry.role_id
   }
 }
 
@@ -654,6 +649,7 @@ const buildUpdateUserPayload = ( entry, original ) => {
   const rolesChanged = JSON.stringify( entry.role_id ) !== JSON.stringify( original.role_id )
   if ( rolesChanged ) {
     payload.role_list = [entry.role_id]
+    payload.primary_role_id = entry.role_id
   }
 
   const certificateChanged =
@@ -844,12 +840,15 @@ function filterRolesByModule() {
 }
 
 const filteredRoleOptions = computed( () => {
-  if ( selectedModules.value.length === 0 ) return prop.roleOptions
-  return prop.roleOptions.filter( role => role.module && selectedModules.value.includes( role.module.toLowerCase() ) )
+  if ( selectedModules.value.length === 0 ) {
+    return roleOptions.value
+  }
+
+  return roleOptions.value.filter( role => role.module && selectedModules.value.includes( role.module.toLowerCase() ) )
 } )
 
 function getRoleModule( id ) {
-  const role = prop.roleOptions.find( r => r.id === id )
+  const role = roleOptions.value.find( r => r.id === id )
   return role?.module ? capitalize( role.module ) : '-'
 }
 
@@ -866,6 +865,19 @@ function capitalize( text ) {
 //     internalUser.value.role_list = internalUser.value.role_list.filter( rid => validRoleIds.includes( rid ) )
 //   }
 // )
+
+async function loadRoles() {
+  try {
+    const response = await searchRoles( {}, 1, 1000 )
+    roleOptions.value = response.data.content
+  } catch ( e ) {
+    ElMessage.error( e )
+  }
+}
+
+onMounted( async() => {
+  await loadRoles()
+} )
 </script>
 
 <style scoped lang="scss">

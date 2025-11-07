@@ -24,19 +24,13 @@
           </el-col>
         </el-row>
 
-        <!-- Row 2: Category + Manufacturer -->
+        <!-- Row 2: Category -->
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="Category" prop="tool_class_id">
               <el-select v-model="inputData.tool_class_id" filterable clearable style="width: 100%">
                 <el-option v-for="item in toolClasses" :key="item.id" :label="item.name" :value="item.id" />
               </el-select>
-            </el-form-item>
-          </el-col>
-
-          <el-col :span="12">
-            <el-form-item label="Manufacturer" prop="manufacturer">
-              <el-input v-model="inputData.manufacturer" clearable />
             </el-form-item>
           </el-col>
         </el-row>
@@ -54,10 +48,12 @@
       <!-- Upload Section -->
       <div class="file-upload">
         <FileUploadMultiple
-          image-label="Upload Image"
-          upload-type="images"
-          :max-images="1"
-          @update:imageList="handleImageListUpdate"
+            @update:imageList="handleImageListUpdate"
+            @update:removedExistingImages="handleRemovedExistingImages"
+            :existing-image-list="existingImages"
+            image-label="Images"
+            upload-type="images"
+            :max-images="1"
         />
       </div>
 
@@ -73,14 +69,20 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { getAllToolClasses } from '@/api/resources'
-import FileUploadMultiple from '../../../../components/FileUpload/FileUploadMultiple.vue'
+import FileUploadMultiple from '../../../../../components/FileUpload/FileUploadMultiple.vue'
 import { uploadMultipleToMinio } from '@/api/minio'
+import { ElMessage } from 'element-plus'
 
 const emit = defineEmits( ['createTool', 'cancel', 'close'] )
 const formRef = ref( null )
 const labelPosition = ref( 'top' )
 
 const toolClasses = ref( [] )
+// Images states
+const existingImages = ref( [] )
+const newImages = ref( [] )
+const newImageUrls = ref( [] )
+const removedImageUrls = ref( [] )
 
 const inputData = ref( {
   id : null,
@@ -88,7 +90,6 @@ const inputData = ref( {
   description : '',
   tool_class_id : null,
   code : '',
-  manufacturer : '',
   image_list : [] // can contain existing URLs or new UploadFile objects
 } )
 
@@ -108,53 +109,68 @@ const rules = reactive( {
   tool_class_id : [{ required : true, message : 'Please select Tool Class', trigger : 'change' }]
 } )
 
-/** Element Plus UploadFile -> real File[] */
-const toRealFiles = arr =>
-  Array.isArray( arr )
-    ? arr.map( x => ( x instanceof File ? x : x?.raw instanceof File ? x.raw : null ) ).filter( Boolean )
-    : []
-
-/** normalize various API response shapes to URLs */
-const extractUploadedUrls = resp => {
-  const list = resp?.uploadedFiles ?? resp?.data?.uploadedFiles ?? resp?.data?.data?.uploadedFiles ?? resp?.files ?? []
-  return ( Array.isArray( list ) ? list : [] ).map( f => f?.url || f?.fileUrl || f?.location || f?.path ).filter( Boolean )
-}
-
-const handleImageListUpdate = images => {
-  // Keep whatever the child gives (URLs or UploadFile objects)
-  inputData.value.image_list = Array.isArray( images ) ? images : []
-}
-
+// Upload files to MinIO server
 const uploadFilesToServer = async() => {
-  // Split into existing URLs + new Files
-  const urlsKept = ( inputData.value.image_list || [] ).filter( x => typeof x === 'string' )
-  const newFiles = toRealFiles( inputData.value.image_list )
+  try {
+    // Upload NEW images if they exist
+    if ( newImages.value.length > 0 ) {
+      const imageRes = await uploadMultipleToMinio( newImages.value )
+      const uploadedImages = imageRes.data.uploadedFiles || []
+      newImageUrls.value = uploadedImages.map( file => file.url )
+    }
 
-  if ( newFiles.length ) {
-    const imageRes = await uploadMultipleToMinio( newFiles )
-    const uploadedUrls = extractUploadedUrls( imageRes )
-    inputData.value.image_list = [...urlsKept, ...uploadedUrls]
-  } else {
-    // Only existing URLs; keep as is
-    inputData.value.image_list = urlsKept
+    return { newImageUrls : newImageUrls.value }
+  } catch ( error ) {
+    console.error( 'File upload failed:', error )
+    throw new Error( 'File upload failed' )
   }
 }
 
+const handleImageListUpdate = images => {
+  // Track NEW images separately (File objects from FileUploadMultiple component)
+  newImages.value = images
+}
+
+const handleRemovedExistingImages = removedUrls => {
+  removedImageUrls.value = removedUrls
+}
+
 const createTool = async() => {
-  if ( !formRef.value ) return
-  await formRef.value.validate( async valid => {
-    if ( !valid ) return
+  try {
+    if ( !formRef.value ) {
+      return
+    }
+    await formRef.value.validate( async valid => {
+      if ( !valid ) {
+        return
+      }
 
-    // 1) upload new files (if any) -> image_list becomes URLs
-    await uploadFilesToServer()
+      // Upload new files to MinIO
+      if ( newImages.value.length > 0 ) {
+        await uploadFilesToServer()
+      }
 
-    // 2) emit a clean payload (URLs only for images)
-    emit( 'createTool', { ...inputData.value } )
+      // Combine existing files with newly uploaded files
+      let finalImageList = [...( existingImages.value || [] ), ...( newImageUrls.value || [] )]
 
-    // 3) reset + close
-    resetForm()
-    emit( 'close' )
-  } )
+      // Filter out removed files
+      finalImageList = finalImageList.filter( url => !removedImageUrls.value.includes( url ) )
+
+      const payload = {
+        ...inputData.value,
+        image_list : finalImageList
+      }
+
+      // 2) emit a clean payload (URLs only for images)
+      emit( 'createTool', payload )
+
+      // 3) reset + close
+      resetForm()
+      emit( 'close' )
+    } )
+  } catch ( e ) {
+    ElMessage.error( `Failed to create tool: ${e?.message || 'Unknown error'}` )
+  }
 }
 
 const handleCancel = () => {
@@ -163,14 +179,18 @@ const handleCancel = () => {
 }
 
 const resetForm = () => {
-  if ( formRef.value ) formRef.value.resetFields()
+  if ( formRef.value ) {
+    formRef.value.resetFields()
+  }
+
+  existingImages.value = []
+
   inputData.value = {
     id : null,
     name : '',
     description : '',
     tool_class_id : null,
     code : '',
-    manufacturer : '',
     image_list : []
   }
 }

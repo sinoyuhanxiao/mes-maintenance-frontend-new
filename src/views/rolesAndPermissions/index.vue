@@ -171,7 +171,11 @@
           width="400"
           sortable="custom"
           align="center"
-        />
+        >
+          <template #default="scope">
+            <el-text>{{ scope.row.description || '-' }}</el-text>
+          </template>
+        </el-table-column>
 
         <el-table-column sortable prop="created_at" label="Created At" min-width="180" align="center">
           <template #default="scope">

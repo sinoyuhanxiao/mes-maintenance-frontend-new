@@ -24,7 +24,7 @@
           </el-col>
         </el-row>
 
-        <!-- Row 2: Category + Manufacturer -->
+        <!-- Row 2: Category -->
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="Category" prop="tool_class_id">
@@ -37,12 +37,6 @@
               >
                 <el-option v-for="item in toolClasses" :key="item.id" :label="item.name" :value="item.id" />
               </el-select>
-            </el-form-item>
-          </el-col>
-
-          <el-col :span="12">
-            <el-form-item label="Manufacturer" prop="manufacturer">
-              <el-input v-model="localForm.manufacturer" clearable placeholder="Enter Manufacturer" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -65,14 +59,12 @@
       <!-- Upload Section -->
       <div class="file-upload">
         <FileUploadMultiple
-          :key="`tool-up-${uploaderKey}`"
-          upload-type="images"
-          :max-images="1"
-          :existing-image-list="localForm.image_list"
-          image-label="Upload Image"
-          file-label=""
-          @update:imageList="onNewImages"
-          @update:removedExistingImages="onRemovedExistingImages"
+            @update:imageList="handleImageListUpdate"
+            @update:removedExistingImages="handleRemovedExistingImages"
+            :existing-image-list="existingImages"
+            image-label="Images"
+            upload-type="images"
+            :max-images="1"
         />
       </div>
 
@@ -87,6 +79,7 @@
           "
           >Cancel</el-button
         >
+
         <el-button type="primary" @click="onSubmit" :loading="submitLoading">Update</el-button>
       </div>
     </div>
@@ -94,11 +87,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, nextTick } from 'vue'
+import { ref, reactive, watch, nextTick, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getAllToolClasses } from '@/api/resources'
 import { uploadMultipleToMinio } from '@/api/minio'
-import FileUploadMultiple from '../../../../components/FileUpload/FileUploadMultiple.vue'
+import FileUploadMultiple from '../../../../../components/FileUpload/FileUploadMultiple.vue'
 
 const props = defineProps( { data : Object } )
 
@@ -110,93 +103,39 @@ const toolClasses = ref( [] )
 // inside <script setup>
 const emit = defineEmits( ['editTool', 'close', 'cancel'] )
 
-/**
- * LOCAL FORM (mirrors Location/Vendor pattern):
- * - image_list: string[] (existing URLs to preview/keep)
- * - image_files: File[]  (new picks this session)
- * - removed_existing_images: string[] (URLs the user deleted)
- */
+// Images states
+const existingImages = ref( [] )
+const newImages = ref( [] )
+const newImageUrls = ref( [] )
+const removedImageUrls = ref( [] )
+
 const localForm = reactive( {
   id : null,
   name : '',
   code : '',
   description : '',
   tool_class_id : null,
-  manufacturer : '',
-  image_list : [], // URLs from server (previewed)
-  image_files : [], // new Files selected this session
-  removed_existing_images : [] // URLs to remove
+  image_list : []
 } )
-
-/** Force a clean remount of uploader when switching records / fresh-create */
-const uploaderKey = ref( 0 )
-let lastSeedId = null
-
-/** Utilities */
-const mapToUrls = arr =>
-  Array.isArray( arr ) ? arr.map( x => ( typeof x === 'string' ? x : x?.url ?? '' ) ).filter( Boolean ) : []
-
-const toRealFiles = arr =>
-  Array.isArray( arr )
-    ? arr.map( x => ( x instanceof File ? x : x?.raw instanceof File ? x.raw : null ) ).filter( Boolean )
-    : []
-
-const extractUploadedUrls = resp => {
-  const list = resp?.uploadedFiles ?? resp?.data?.uploadedFiles ?? resp?.data?.data?.uploadedFiles ?? resp?.files ?? []
-  return ( Array.isArray( list ) ? list : [] ).map( f => f?.url || f?.fileUrl || f?.location || f?.path ).filter( Boolean )
-}
-
-// /** Existing URLs for preview (comes from localForm.image_list so we can mutate and see instant changes) */
-// const existingImageUrls = computed( () => mapToUrls( localForm.image_list ) )
-
-/** Child → track newly picked files (do NOT overwrite image_list) */
-const onNewImages = files => {
-  localForm.image_files = toRealFiles( files )
-}
-
-/** Child → when an existing URL is removed, hide it immediately + track it */
-// Child → when an existing URL is removed, hide it immediately + track it
-const onRemovedExistingImages = urls => {
-  const removed = Array.isArray( urls ) ? urls : []
-
-  // 1) Track for save
-  const set = new Set( [...( localForm.removed_existing_images || [] ), ...removed] )
-  localForm.removed_existing_images = Array.from( set )
-
-  // 2) Immediately mutate the live list bound to the uploader
-  const asSet = new Set( removed )
-  localForm.image_list = ( localForm.image_list || [] ).filter( u => !asSet.has( typeof u === 'string' ? u : u?.url ) )
-
-  // 3) Nudge a lightweight re-mount to guarantee the thumbnails refresh
-  uploaderKey.value += 1
-}
-
-// (optional) If you prefer not to bump the key inside the handler, you can instead do:
-// watch(() => localForm.image_list.length, () => { uploaderKey.value += 1 })
 
 /** Prefill from props.data (same style as Location/Vendor) */
 watch(
   () => props.data,
   async v => {
-    if ( !v ) return
+    if ( !v ) {
+      return
+    }
+
+    existingImages.value = v.image_list
 
     localForm.id = v.id ?? null
     localForm.name = v.name ?? ''
     localForm.code = v.code ?? ''
     localForm.description = v.description ?? ''
     localForm.tool_class_id = v.tool_class_id ?? v.tool_class?.id ?? null
-    localForm.manufacturer = v.manufacturer ?? ''
 
     // keep URLs; clear per-session state
-    localForm.image_list = mapToUrls( v.image_list )
-    localForm.image_files = []
-    localForm.removed_existing_images = []
-
-    const newId = v?.id ?? null
-    if ( newId !== lastSeedId ) {
-      uploaderKey.value += 1
-      lastSeedId = newId
-    }
+    localForm.image_list = v.image_list
 
     await nextTick()
   },
@@ -219,40 +158,66 @@ async function getToolClasses() {
     toolClasses.value = []
   }
 }
-getToolClasses()
 
-/** Build final image_list: kept existing + newly uploaded file URLs */
-const buildFinalImageList = async() => {
-  const originalUrls = mapToUrls( props.data?.image_list )
-  const removedSet = new Set( localForm.removed_existing_images || [] )
-  const keptExisting = originalUrls.filter( u => !removedSet.has( u ) )
+// Upload files to MinIO server
+const uploadFilesToServer = async() => {
+  try {
+    // Upload NEW images if they exist
+    if ( newImages.value.length > 0 ) {
+      const imageRes = await uploadMultipleToMinio( newImages.value )
+      const uploadedImages = imageRes.data.uploadedFiles || []
+      newImageUrls.value = uploadedImages.map( file => file.url )
+    }
 
-  const newFiles = toRealFiles( localForm.image_files )
-  let uploadedUrls = []
-  if ( newFiles.length ) {
-    const resp = await uploadMultipleToMinio( newFiles )
-    uploadedUrls = extractUploadedUrls( resp )
+    return { newImageUrls : newImageUrls.value }
+  } catch ( error ) {
+    console.error( 'File upload failed:', error )
+    throw new Error( 'File upload failed' )
   }
-  return Array.from( new Set( [...keptExisting, ...uploadedUrls] ) )
+}
+
+const handleImageListUpdate = images => {
+  // Track NEW images separately (File objects from FileUploadMultiple component)
+  newImages.value = images
+}
+
+const handleRemovedExistingImages = removedUrls => {
+  removedImageUrls.value = removedUrls
 }
 
 /** Submit */
 const onSubmit = async() => {
-  if ( !formRef.value ) return
-  const valid = await formRef.value.validate().catch( () => false )
-  if ( !valid ) return
-
   submitLoading.value = true
+
   try {
-    const finalImages = await buildFinalImageList()
+    if ( !formRef.value ) {
+      return
+    }
+
+    const valid = await formRef.value.validate().catch( () => false )
+
+    if ( !valid ) {
+      return
+    }
+
+    // Upload new files to MinIO
+    if ( newImages.value.length > 0 ) {
+      await uploadFilesToServer()
+    }
+
+    // Combine existing files with newly uploaded files
+    let finalImageList = [...( existingImages.value || [] ), ...( newImageUrls.value || [] )]
+
+    // Filter out removed files
+    finalImageList = finalImageList.filter( url => !removedImageUrls.value.includes( url ) )
+
     const payload = {
       id : localForm.id,
       name : localForm.name,
       code : localForm.code,
       description : localForm.description,
       tool_class_id : localForm.tool_class_id,
-      manufacturer : localForm.manufacturer,
-      image_list : finalImages
+      image_list : finalImageList
     }
     emit( 'editTool', payload )
   } catch ( e ) {
@@ -261,6 +226,11 @@ const onSubmit = async() => {
     submitLoading.value = false
   }
 }
+
+onMounted( async() => {
+  await getToolClasses()
+} )
+
 </script>
 
 <style scoped>

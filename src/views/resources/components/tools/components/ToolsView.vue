@@ -46,14 +46,17 @@
       </div>
       <template #footer>
         <el-button :disabled="deleting" @click="deactivateDialogVisible = false">Cancel</el-button>
+
         <el-button type="danger" :loading="deleting" @click="confirmDeactivate">Delete</el-button>
       </template>
     </el-dialog>
 
     <div class="table-body">
-      <el-table :data="tools" :style="{ width: '100%', height: maxHeight }" border>
+      <el-table v-loading="loading" :data="tools" :style="{ width: '100%', height: maxHeight }" border @sort-change="handleSortChange">
         <!-- IMAGE COLUMN (preview only if image valid) -->
-        <el-table-column width="100px" label="Image">
+        <el-table-column prop="name" label="Tool Name" sortable="custom" align="center" />
+        <el-table-column prop="id" label="ID" width="80px" align="center" sortable="custom" />
+        <el-table-column width="100px" label="Image" align="center">
           <template #default="{ row }">
             <div class="img-cell">
               <template v-if="firstImage(row)">
@@ -85,16 +88,19 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="name" label="Tool Name" sortable />
-        <el-table-column prop="code" label="Code" sortable />
-        <el-table-column prop="tool_class.name" label="Category" sortable />
-        <el-table-column prop="description" label="Description" min-width="250px" />
+        <el-table-column prop="code" label="Code" sortable="custom" align="center" />
+        <el-table-column prop="tool_class.name" label="Category" align="center" />
+        <el-table-column prop="description" label="Description" min-width="250px" align="center">
+          <template #default="{ row }">
+            {{ row.description || '-' }}
+          </template>
+        </el-table-column>
 
         <!-- Actions -->
         <el-table-column
           :label="$t('workOrder.table.actions')"
           align="center"
-          width="140"
+          width="160"
           class-name="small-padding fixed-width action-column"
           fixed="right"
         >
@@ -111,17 +117,31 @@ size="small"
           </template>
         </el-table-column>
       </el-table>
+    </div>
 
-      <el-pagination
-        layout="prev, pager, next"
+    <el-pagination
+        layout="total, sizes, prev, pager, next"
         :current-page="listQuery.page"
         :page-size="listQuery.size"
         :total="totalItems"
-        :pager-count="3"
         @current-change="handleCurrentChange"
+        @size-change="handleSizeChange"
+        :page-sizes="[10, 20, 50]"
         class="pagination"
-      />
-    </div>
+    >
+      <!-- page -->
+      <template #sizes>
+        <span>{{ t('pagination.perPage') }}</span>
+        <el-select v-model="listQuery.size" placeholder="Select">
+          <el-option
+              v-for="size in [10, 20, 50]"
+              :key="size"
+              :label="`${size} ${t('pagination.perPage')}`"
+              :value="size"
+          />
+        </el-select>
+      </template>
+    </el-pagination>
   </div>
 </template>
 
@@ -142,7 +162,11 @@ const props = defineProps( {
     default : () => []
   }
 } )
+
 const emit = defineEmits( ['close'] )
+defineExpose( {
+  getToolsData
+} )
 
 /** ----- Dialog state ----- */
 const newToolActive = ref( props.newTool )
@@ -156,19 +180,24 @@ watch(
   () => props.newTool,
   v => {
     newToolActive.value = v
-    if ( v ) newToolKey.value += 1
+
+    if ( v ) {
+      newToolKey.value += 1
+    }
   }
 )
 
 /** ----- Layout height ----- */
 const maxHeight = ref( '737px' )
 function updateHeight() {
-  maxHeight.value = window.innerWidth <= 1600 ? '521px' : '737px'
+  maxHeight.value = window.innerWidth <= 1600 ? '521px' : '687px'
 }
+
 onMounted( () => {
   updateHeight()
   window.addEventListener( 'resize', updateHeight )
 } )
+
 onBeforeUnmount( () => {
   window.removeEventListener( 'resize', updateHeight )
 } )
@@ -176,10 +205,22 @@ onBeforeUnmount( () => {
 /** ----- Table / paging / search state ----- */
 const listQuery = reactive( { page : 1, size : 20 } )
 const tools = ref( [] )
+const loading = ref( false )
 const totalItems = ref( 0 )
+const sortSettings = ref( { prop : 'id', order : 'descending' } )
+
+// Sorting
+async function handleSortChange( { prop, order } ) {
+  sortSettings.value = { prop, order }
+  await getToolsData()
+}
 
 /** ✅ Build payload exactly like your curl */
 async function getToolsData() {
+  function snakeToCamel( str ) {
+    return str.replace( /_([a-z])/g, ( _, char ) => char.toUpperCase() )
+  }
+
   const payload = {}
 
   // include keyword only if non-empty (ok if backend ignores this)
@@ -193,17 +234,28 @@ async function getToolsData() {
     payload.tool_class_ids = props.categoryIds.map( x => Number( x ) ).filter( n => !Number.isNaN( n ) )
   }
 
-  const res = await searchTools(
-    listQuery.page,
-    listQuery.size,
-    'name', // sort by name for category filtering UX
-    'ASC',
-    payload
-  )
+  const sortKey = snakeToCamel( sortSettings.value.prop )
 
-  const page = res?.data
-  tools.value = page?.content ?? []
-  totalItems.value = page?.totalElements ?? 0
+  loading.value = true
+
+  try {
+    const res = await searchTools(
+      listQuery.page,
+      listQuery.size,
+      sortKey,
+      sortSettings.value.order === 'ascending' ? 'ASC' : 'DESC',
+      payload
+    )
+
+    const page = res?.data
+    tools.value = page?.content ?? []
+    totalItems.value = page?.totalElements ?? 0
+  } catch ( err ) {
+    console.error( 'Failed to fetch tools:', err )
+    ElMessage.error( 'Error fetching tools data' )
+  } finally {
+    loading.value = false
+  }
 }
 
 /** React to keyword and category changes */
@@ -235,12 +287,13 @@ const apiSuccess = ( header, name ) => {
 async function handleCreate( data ) {
   try {
     const create = await createTool( data )
-    if ( create.status == 200 ) {
+
+    if ( create.status === 200 ) {
       apiSuccess( 'Tool Created: ', create.data.name )
       newToolActive.value = false
       emit( 'close' )
       newToolKey.value += 1
-      getToolsData()
+      await getToolsData()
     }
   } catch ( err ) {
     console.log( 'Failed to create tool', err )
@@ -250,10 +303,11 @@ async function handleCreate( data ) {
 async function handleEdit( data ) {
   try {
     const update = await updateTool( data )
-    if ( update.status == 200 ) {
+
+    if ( update.status === 200 ) {
       apiSuccess( 'Tool updated: ', data.name )
       editToolActive.value = false
-      getToolsData()
+      await getToolsData()
     }
   } catch ( err ) {
     console.log( 'Failed to update tool', err )
@@ -266,8 +320,12 @@ function openDeactivateDialog( row ) {
 }
 
 async function confirmDeactivate() {
-  if ( !selectedTool.value ) return
+  if ( !selectedTool.value ) {
+    return
+  }
+
   deleting.value = true
+
   try {
     await deleteTool( selectedTool.value.id )
     ElMessage.success( `Tool Deleted: ${selectedTool.value.name}` )
@@ -294,15 +352,23 @@ const handleCurrentChange = val => {
   getToolsData()
 }
 
+function handleSizeChange( val ) {
+  listQuery.size = val
+  getToolsData()
+}
+
 /** ----- IMAGE HELPERS ----- */
 const toArray = v => ( Array.isArray( v ) ? v : typeof v === 'string' && v ? [v] : [] )
+
 const firstImage = row => {
   const list = toArray( row?.image_list )
   return list.length ? list[0] : null
 }
+
 const previewList = row => {
   return toArray( row?.image_list ).filter( u => typeof u === 'string' && u.trim().length > 0 )
 }
+
 function handleImageError( row ) {
   if ( Array.isArray( row.image_list ) && row.image_list.length > 0 ) {
     row.image_list = []
@@ -315,6 +381,7 @@ function onAddDialogClose() {
   newToolKey.value += 1
   emit( 'close' )
 }
+
 function onChildRequestsClose() {
   newToolActive.value = false
   newToolKey.value += 1

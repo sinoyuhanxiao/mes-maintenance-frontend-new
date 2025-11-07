@@ -1,5 +1,6 @@
 <template>
   <el-tree-select
+    :teleported="false"
     v-model="selectedLocationIds"
     :data="locationTree"
     :props="locationNodeDefaultProps"

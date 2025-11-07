@@ -243,7 +243,7 @@
           <el-table-column :label="t('user.table.role')" prop="role_list" width="200" align="center">
             <template #default="scope">
               <template v-if="scope.row.role_list && scope.row.role_list.length > 0">
-                <RoleTag :role="scope.row.role_list[0]" />
+                <RoleTag :role="scope.row.role_list[0]?.role" />
               </template>
               <template v-else>
                 <span>-</span>
@@ -361,12 +361,12 @@
         top="10vh"
         width="50%"
         @close="handleFormClosed"
+        destroy-on-close
       >
         <div v-loading="isFormProcessing">
           <UserForm
             ref="userFormRef"
             :user="currentEditingUser"
-            :role-options="roleOptions"
             @confirm="handleUserSubmit"
             @cancel="handleFormClosed"
             @update:loading="isFormProcessing = $event"
@@ -616,7 +616,13 @@ async function loadUsers() {
       sortSettings.value.order === 'ascending' ? 'ASC' : 'DESC'
     )
     const dataObj = response.data
-    usersTableData.value = dataObj.content || []
+
+    // Filters out user's role list where the role's status is 0
+    usersTableData.value = ( dataObj.content || [] ).map( user => ( {
+      ...user,
+      role_list : ( user.role_list || [] ).filter( roleWrapper => roleWrapper.role?.status === 1 )
+    } ) )
+
     totalPages.value = dataObj.totalPages
     totalElements.value = dataObj.totalElements
   } catch ( err ) {

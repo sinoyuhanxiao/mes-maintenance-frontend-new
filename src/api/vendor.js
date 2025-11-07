@@ -2,16 +2,19 @@ import http from '@/utils/request'
 
 /**
  * Fetch all vendors.
+ * @param {Object} search - Search payload.
  * @param {number} page - The page number.
  * @param {number} size - Number of results per page.
  * @param {string} sortField - Field to sort by.
  * @param {string} direction - Sort direction ("ASC" or "DESC").
  * @returns {Promise} API response with vendors.
  */
-export const searchVendors = ( page = 1, size = 10, sortField = 'name', direction = 'ASC', search = {} ) => {
-  console.log( search )
+export const searchVendors = ( search = {}, page = 1, size = 10, sortField = 'name', direction = 'ASC' ) => {
   return http.request( {
-    method : 'post'
+    method : 'post',
+    url : '/vendor/search',
+    data : search,
+    params : { page, size, sortField, direction }
   } )
 }
 

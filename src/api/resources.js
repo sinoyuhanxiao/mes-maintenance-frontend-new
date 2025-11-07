@@ -10,13 +10,6 @@ import http from '@/utils/request'
  * @returns {Promise} API response with the list of all spare parts.
  */
 export const searchSpareParts = ( page = 1, size = 10, sortField = 'name', direction = 'ASC', search = {} ) => {
-  console.log(
-    http.request( {
-      method : 'post',
-      url : `/resource/spare-parts/search?page=${page}&size=${size}&sortField=${sortField}&direction=${direction}`,
-      data : search
-    } )
-  )
   return http.request( {
     method : 'post',
     url : `/resource/spare-parts/search?page=${page}&size=${size}&sortField=${sortField}&direction=${direction}`,
@@ -29,12 +22,6 @@ export const searchSpareParts = ( page = 1, size = 10, sortField = 'name', direc
  * @returns {Promise} API response with the list of all spare part classes.
  */
 export const getAllSparePartClasses = () => {
-  console.log(
-    http.request( {
-      method : 'get',
-      url : '/resource/spare-part-class'
-    } )
-  )
   return http.request( {
     method : 'get',
     url : '/resource/spare-part-class'
@@ -87,7 +74,6 @@ export const createSparePart = data => {
  * @returns {Promise} API response with edited spare part
  */
 export const updateSparePart = ( id, update ) => {
-  console.log( update )
   return http.request( {
     method : 'patch',
     url : `/resource/spare-part?id=${id}`,
@@ -102,12 +88,6 @@ export const updateSparePart = ( id, update ) => {
  * @returns {Promise} API response with the list of all tool classes
  */
 export const getAllToolClasses = () => {
-  console.log(
-    http.request( {
-      method : 'get',
-      url : '/resource/tools-class'
-    } )
-  )
   return http.request( {
     method : 'get',
     url : '/resource/tools-class'
@@ -124,13 +104,6 @@ export const getAllToolClasses = () => {
  * @returns {Promise} API response with the list of tools.
  */
 export const searchTools = ( page = 1, size = 20, sortField = 'name', direction = 'ASC', search = {} ) => {
-  console.log(
-    http.request( {
-      method : 'post',
-      url : `/resource/tool/search?page=${page}&size=${size}&sortField=${sortField}&direction=${direction}`,
-      data : search
-    } )
-  )
   return http.request( {
     method : 'post',
     url : `/resource/tool/search?page=${page}&size=${size}&sortField=${sortField}&direction=${direction}`,
@@ -176,34 +149,11 @@ export const deleteSparePart = id => {
   } )
 }
 
-// api/resources.js
-export const deleteTool = async id => {
-  // ✅ match your backend's URL (note the /api prefix!)
-  const url = `/api/resource/tool/delete/${encodeURIComponent( id )}`
-
-  try {
-    const res = await fetch( url, {
-      method : 'DELETE',
-      headers : { Accept : '*/*' }
-    } )
-
-    if ( res.status === 404 ) {
-      // Optional: treat already-deleted items as success
-      console.warn( `Tool ${id} not found (already deleted).` )
-      return null
-    }
-
-    if ( !res.ok ) {
-      const text = await res.text().catch( () => '' )
-      throw new Error( text || res.statusText || `HTTP ${res.status}` )
-    }
-
-    // 204 success → no content
-    return null
-  } catch ( err ) {
-    console.error( 'deleteTool error:', err )
-    throw err
-  }
+export const deleteTool = id => {
+  return http.request( {
+    method : 'delete',
+    url : `/resource/tool/delete/${id}`
+  } )
 }
 
 // Inventory APIs
@@ -256,7 +206,6 @@ export const searchInventory = ( page = 1, size = 20, sortField = 'id', directio
  * @returns {Promise} API response with transfer target Inventory
  */
 export const transferInventory = transfer => {
-  console.log( transfer )
   return http.request( {
     method : 'put',
     url : '/inventory/transfer',
@@ -281,10 +230,21 @@ export const searchInventoryTransactionLogs = (
   direction = 'DESC',
   search = {}
 ) => {
-  console.log( search )
   return http.request( {
     method : 'post',
     url : `/inventory/transaction-log?page=${page}&size=${size}&sortField=${sortField}&direction=${direction}`,
     data : search
+  } )
+}
+
+/**
+ * Delete inventory
+ * @param {number} id - Inventory ID
+ * @returns {Promise} Nothing
+ */
+export const deleteInventory = ( id ) => {
+  return http.request( {
+    method : 'delete',
+    url : `/inventory/${id}`
   } )
 }

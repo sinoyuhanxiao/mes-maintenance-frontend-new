@@ -112,7 +112,7 @@
           <el-table-column prop="role_list" label="Role" min-width="200px" align="center">
             <template #default="scope">
               <el-tag>
-                {{ scope.row.role_list[0].name || '-' }}
+                {{ scope.row.role_list[0]?.role?.name || '-' }}
               </el-tag>
             </template>
           </el-table-column>

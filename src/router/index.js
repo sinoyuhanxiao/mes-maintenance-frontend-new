@@ -215,16 +215,22 @@ export const asyncRoutes = [
   },
   {
     path : '/resources',
-    name : 'ResourcesLayout',
+    name : 'Resources',
     component : Layout,
-    redirect : '/resources',
-    meta : { title : 'router.resources', icon : 'animate', noCache : true },
+    redirect : '/resources/spare-parts',
+    meta : { title : 'Resources', icon : 'cpu', noCache : true },
     children : [
       {
-        path : '',
+        path : '/spare-parts',
         component : () => import( '@/views/resources/index.vue' ),
-        name : 'Resources',
-        meta : { title : 'router.resources', noCache : true }
+        name : 'SpareParts',
+        meta : { title : 'Spare Parts', noCache : false }
+      },
+      {
+        path : '/tools',
+        component : () => import( '@/views/resources/components/tools/index.vue' ),
+        name : 'Tools',
+        meta : { title : 'Tools', noCache : true }
       }
     ]
   },

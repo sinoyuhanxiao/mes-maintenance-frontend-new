@@ -36,8 +36,8 @@
             {{ rawUser?.first_name + ' ' + rawUser?.last_name }}
           </div>
 
-          <div v-for="role in rawUser?.role_list" :key="role.id" class="user-text">
-            {{ role.name || '-' }}
+          <div v-for="roleWrapper in rawUser?.role_list" :key="roleWrapper?.role.id" class="user-text">
+            {{ roleWrapper.role?.name || '-' }}
           </div>
 
           <!-- Not supported in backend for now -->
@@ -173,28 +173,28 @@
       <!-- Role cards -->
       <div class="certificate-info-list">
         <div v-if="rawUser?.role_list?.length > 0">
-          <div v-for="role in rawUser?.role_list || []" :key="role.id">
+          <div v-for="roleWrapper in rawUser?.role_list || []" :key="roleWrapper?.role.id">
             <div>
               <el-descriptions class="general-details-descriptions" :column="4">
                 <el-descriptions-item :label="'Role Name'">
-                  {{ role.name }}
+                  {{ roleWrapper.role.name }}
                 </el-descriptions-item>
 
                 <el-descriptions-item :label="'Role ID'">
-                  {{ role.id }}
+                  {{ roleWrapper.role.id }}
                 </el-descriptions-item>
 
                 <el-descriptions-item :label="'Code'">
-                  {{ role.code }}
+                  {{ roleWrapper.role.code }}
                 </el-descriptions-item>
 
                 <el-descriptions-item :label="'Module'">
-                  {{ role.module }}
+                  {{ roleWrapper.role.module || '-' }}
                 </el-descriptions-item>
 
-                <div v-if="role.description">
+                <div v-if="roleWrapper.role.description">
                   <el-descriptions-item :label="'Description'" :span="4">
-                    {{ role.description }}
+                    {{ roleWrapper.role.description }}
                   </el-descriptions-item>
                 </div>
               </el-descriptions>
@@ -279,7 +279,6 @@
       <div v-loading="isFormProcessing">
         <UserForm
           :user="rawUser"
-          :role-options="roleOptions"
           @confirm="handleUserSubmit"
           @cancel="() => (isUserFormDialogVisible = false)"
           @update:loading="isFormProcessing = $event"
@@ -356,8 +355,15 @@ const handleLogout = async() => {
 async function loadUser( id ) {
   try {
     const response = await getUserById( id )
-    rawUser.value = { ...response.data }
-  } catch ( e ) {}
+    const userData = response?.data || {}
+
+    rawUser.value = {
+      ...userData,
+      role_list : ( userData.role_list || [] ).filter( roleWrapper => roleWrapper.role?.status === 1 )
+    }
+  } catch ( e ) {
+    console.error( 'Failed to load user:', e )
+  }
 }
 
 async function loadRoles() {

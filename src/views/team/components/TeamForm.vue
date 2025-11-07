@@ -20,7 +20,10 @@
       <div class="form-row">
         <el-form-item :label="'Parent Group'" class="full-width">
           <div class="parent-team-row">
-            <el-switch v-model="isChildTeam" active-text="Assign under another group" />
+            <el-switch
+                v-model="isChildTeam"
+                active-text="Assign under another group"
+            />
             <div v-if="isChildTeam" style="width: 100%">
               <TeamTreeSelect v-model="internalTeam.parent_id" :disable-team-id="internalTeam.id" style="flex: 1" />
             </div>
@@ -255,7 +258,7 @@ const buildCreateTeamPayload = entry => ( {
   member_requests : entry.member_requests,
   location_ids : entry.location_ids,
   equipment_node_ids : entry.equipment_node_ids,
-  parent_id : entry.parent_id,
+  parent_id : isChildTeam.value === true ? entry.parent_id : null,
   shift_ids : entry.shift_id ? [entry.shift_id] : [],
   type : entry.type,
   cascade_add_to_parents : entry.cascade_add_to_parents
@@ -291,8 +294,11 @@ const buildUpdateTeamPayload = ( entry, original ) => {
     payload.equipment_node_ids = entry.equipment_node_ids
   }
 
-  if ( entry.parent_id !== original.parent_id ) {
+  if ( isChildTeam.value === true && entry.parent_id !== original.parent_id ) {
     payload.parent_id = entry.parent_id
+  } else if ( isChildTeam.value === false && original.parent_id !== null ) {
+    // when a team is changed and no longer a child team, its parent id will be removed
+    payload.parent_id = null
   }
 
   if ( entry.shift_id !== original.shift_id ) {

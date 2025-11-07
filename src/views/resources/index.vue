@@ -1,467 +1,581 @@
 <template>
-  <div class="outer-container">
-    <div class="header">
-      <div class="left-header">
-        <el-input
-          v-model="keyword"
-          :placeholder="currentView === 1 ? 'Search Spare Part' : 'Search Tool'"
-          style="width: 240px"
-          :prefix-icon="Search"
-          clearable
-        />
+  <div>
+    <div class="filters-container">
+      <!-- Filter button with popover onclick -->
+      <el-popover placement="bottom-start" trigger="click" width="500">
+        <template #reference>
+          <el-button icon="Filter" @click="() => (isFilterPopOverVisible = !isFilterPopOverVisible)">{{
+            'Filters'
+          }}</el-button>
+        </template>
 
-        <!-- 🔽 Filter popover -->
-        <el-popover placement="bottom-start" width="300" v-model:visible="filterVisible" trigger="click">
-          <template #reference>
-            <el-icon style="cursor: pointer" title="Filter"><Filter /></el-icon>
-          </template>
+        <div class="vertical-filter-list">
+          <el-text tag="b">Sort By</el-text>
 
-          <!-- ===== Spare Parts filter (unchanged) ===== -->
-          <div v-if="currentView === 1" class="filter-content">
-            <!-- Sort -->
-            <div class="filter-section">
-              <div class="filter-title">Sort</div>
-              <el-radio-group v-model="filterState.sortKey">
-                <el-radio-button label="createdAt_desc">Newest</el-radio-button>
-                <el-radio-button label="createdAt_asc">Oldest</el-radio-button>
-                <el-radio-button label="name_asc">A–Z</el-radio-button>
-                <el-radio-button label="name_desc">Z–A</el-radio-button>
-              </el-radio-group>
-            </div>
+          <el-select
+            :teleported="false"
+            v-model="listQuery.sort_by"
+            placeholder="Sort by"
+            clearable
+            filterable
+            @change="handleFilter"
+          >
+            <el-option label="Newest" value="newest" />
 
-            <!-- Category -->
-            <div class="filter-section">
-              <div class="filter-title">Category</div>
-              <el-select v-model="filterState.categories" placeholder="Select" multiple clearable style="width: 100%">
-                <el-option v-for="opt in categoryOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-              </el-select>
-            </div>
+            <el-option label="Oldest" value="oldest" />
 
-            <!-- Availability -->
-            <div class="filter-section">
-              <div class="filter-title">Availability</div>
-              <el-checkbox-group v-model="filterState.stockStatuses">
-                <el-checkbox label="inStock">In Stock</el-checkbox>
-                <el-checkbox label="lowStock">Below Min Stock</el-checkbox>
-                <el-checkbox label="outOfStock">Out of Stock</el-checkbox>
-              </el-checkbox-group>
-            </div>
+            <el-option label="A-Z (Name)" value="alphabetical-asc" />
 
-            <div class="filter-actions">
-              <el-button @click="clearFilters" text>Reset</el-button>
-              <el-button @click="applyFilters" type="primary">Apply</el-button>
-            </div>
+            <el-option label="Z-A (Name)" value="alphabetical-desc" />
+          </el-select>
+
+          <el-text tag="b">Category</el-text>
+
+          <el-select
+            :teleported="false"
+            v-model="listQuery.category_ids"
+            placeholder="Filter by category"
+            multiple
+            clearable
+            filterable
+            @change="handleFilter"
+          >
+            <el-option
+              v-for="category in sparePartClassesOptions"
+              :key="category.id"
+              :label="category.name"
+              :value="category.id"
+            />
+          </el-select>
+
+          <el-text tag="b">Stock Status</el-text>
+
+          <el-select
+            :teleported="false"
+            v-model="listQuery.stock"
+            placeholder="Filter by stock status"
+            clearable
+            filterable
+            @change="handleFilter"
+          >
+            <el-option label="In Stock" value="in_stock" />
+
+            <el-option label="Low Stock" value="low" />
+
+            <el-option label="Out Of Stock" value="out_of_stock" />
+          </el-select>
+
+          <el-text tag="b">Material Supplier</el-text>
+
+          <el-select
+            :teleported="false"
+            v-model="listQuery.vendor_ids"
+            placeholder="Filter by material supplier"
+            clearable
+            multiple
+            filterable
+            @change="handleFilter"
+          >
+            <el-option v-for="vendor in vendorOptions" :key="vendor.id" :label="vendor.name" :value="vendor.id" />
+          </el-select>
+
+          <el-text tag="b">Lot Location</el-text>
+
+          <LocationTreeSelect
+            v-model="listQuery.location_ids"
+            :max-collapse-tags="1"
+            @change="handleFilter"
+            :input-placeholder="'Filter by lot location'"
+          />
+
+          <!--            <el-row>-->
+          <!--              <el-text tag="b">Manufacturers</el-text>-->
+          <!--            </el-row>-->
+
+          <!--            <el-row>-->
+          <!--              <el-select-->
+          <!--                v-model="listQuery.manufacturer_ids"-->
+          <!--                placeholder="Filter by manufacturers"-->
+          <!--                clearable-->
+          <!--                multiple-->
+          <!--                @change="handleFilter"-->
+          <!--              >-->
+          <!--                <el-option-->
+          <!--                  v-for="manufacturer in manufacturerOptions"-->
+          <!--                  :key="manufacturer.id"-->
+          <!--                  :label="manufacturer.name"-->
+          <!--                  :value="manufacturer.id"-->
+          <!--                />-->
+          <!--              </el-select>-->
+          <!--            </el-row>-->
+
+          <el-text tag="b">Unit Price</el-text>
+
+          <div style="display: flex; justify-content: space-between">
+            <el-input-number v-model="listQuery.unit_cost_min" placeholder="Min Cost" min="0" @change="handleFilter" />
+
+            <el-input-number
+              v-model="listQuery.unit_cost_max"
+              placeholder="Max Cost"
+              :min="listQuery.unit_cost_min"
+              @change="handleFilter"
+            />
           </div>
 
-          <!-- ===== Tools filter (Category only) ===== -->
-          <div v-else class="filter-content">
-            <div class="filter-section">
-              <div class="filter-title">Tool Category</div>
-              <el-select
-                v-model="filterStateTool.categories"
-                placeholder="Select"
-                multiple
-                clearable
-                style="width: 100%"
-              >
-                <el-option v-for="opt in toolCategoryOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-              </el-select>
-            </div>
-
-            <div class="filter-actions">
-              <el-button @click="clearFilters" text>Reset</el-button>
-              <el-button @click="applyFilters" type="primary">Apply</el-button>
-            </div>
+          <div class="filter-footer">
+            <el-button :icon="Remove" type="warning" plain @click="handleResetFilters">{{ 'Clear Filters' }}</el-button>
           </div>
-        </el-popover>
-      </div>
-
-      <div class="right-header">
-        <el-dropdown @command="handleCommand">
-          <el-text class="el-dropdown-link" style="border: solid 1px #d5d5d5; padding: 5px">
-            <el-icon><component :is="currentIcon" /></el-icon>
-            {{ currentLabel }}
-            <el-icon class="el-icon--right"><arrow-down /></el-icon>
-          </el-text>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="a" :icon="Magnet">Spare Parts</el-dropdown-item>
-              <el-dropdown-item command="b" :icon="Tools">Tools</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
-
-        <el-button @click="() => (currentView === 1 ? (dialogVisible = true) : (newTool = true))" type="primary">
-          {{ currentView === 1 ? 'Create Spare Part' : 'Create Tool' }}
-        </el-button>
-      </div>
-    </div>
-
-    <!-- 🔽 Spare Parts section -->
-    <div class="main-container-sp" v-if="currentView === 1">
-      <el-dialog v-model="dialogVisible" title="Add New Spare Part" width="600px">
-        <SparePartForm
-          mode="create"
-          @success="handleCreate"
-          @close="dialogVisible = false"
-          @cancel="dialogVisible = false"
-        />
-      </el-dialog>
-
-      <el-dialog v-model="editDialogVisible" title="Edit Spare Part" width="600px" destroy-on-close>
-        <SparePartForm
-          :key="selectedData?.id"
-          mode="edit"
-          :initialData="selectedData"
-          @success="handleCreate"
-          @close="editDialogVisible = false"
-          @cancel="editDialogVisible = false"
-        />
-      </el-dialog>
-
-      <div class="table-container">
-        <CardTable
-          @selection="getSelection"
-          :module="1"
-          :data="tableData"
-          :maxHeight="maxHeight"
-          :totalItems="tableTotal"
-          :handleCurrentChange="handleCurrentChange"
-          :currentPage="listQuery.page"
-          :pageSize="listQuery.limit"
-          :selectedId="selectedData?.id"
-          :showSearch="false"
-        />
-      </div>
-
-      <div class="content-container">
-        <div class="tab-container">
-          <el-card>
-            <div style="display: flex; flex-direction: row; justify-content: space-between">
-              <el-text v-if="selectedData" tag="b" size="large">{{ selectedData?.name }}</el-text>
-              <el-dropdown class="kebab-dropdown" trigger="click" :disabled="!selectedData">
-                <el-icon class="kebab-icon"><MoreFilled /></el-icon>
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item @click="openEditDialog">Edit</el-dropdown-item>
-                    <el-dropdown-item divided class="danger-item" @click="confirmDelete">Delete</el-dropdown-item>
-                  </el-dropdown-menu>
-                </template>
-              </el-dropdown>
-            </div>
-
-            <el-tabs v-model="activeName" type="card" class="demo-tabs" style="margin-top: 10px">
-              <el-tab-pane label="Details" name="first"><ViewDetails v-model:data="selectedData" /></el-tab-pane>
-              <el-tab-pane label="Batches" name="second"><Batches :sparePart="selectedData" /></el-tab-pane>
-              <el-tab-pane label="Usage" name="third"><Usage /></el-tab-pane>
-              <el-tab-pane label="Transactions" name="fourth"><Transactions :sparePart="selectedData" /></el-tab-pane>
-              <el-tab-pane label="History" name="fifth"><History /></el-tab-pane>
-            </el-tabs>
-          </el-card>
+          <!--        <el-slider v-model="filter.price_range" range min="0" range-start-label="minimum price" range-end-label="maximum price"/>-->
         </div>
+      </el-popover>
+
+      <!-- Filter selected criteria tag list, horizontal, overflow gets scrollable, takes rest of the space in filter container-->
+      <div class="selected-filter-tag-list">
+        <template v-for="tag in activeFilterTags" :key="`${tag.key}-${tag.value || tag.label}`">
+          <el-tag type="info" closable @close="removeFilterTag(tag)" class="filter-tag">
+            {{ tag.label }}
+          </el-tag>
+        </template>
+      </div>
+
+      <!-- action group stays on right end -->
+      <div class="action-group">
+        <el-input
+          v-model="listQuery.keyword"
+          placeholder="Search by keyword"
+          clearable
+          @input="handleFilter"
+          style="width: 300px; height: 32px"
+        >
+          <template #prefix>
+            <el-icon>
+              <Search />
+            </el-icon>
+          </template>
+        </el-input>
+
+        <el-button :icon="EditPen" type="primary" style="margin-left: 12px" @click="openCreateForm">{{
+          'Create Spare Part'
+        }}</el-button>
+
+        <el-button :icon="Remove" type="warning" plain @click="handleResetFilters">{{ 'Clear Filters' }}</el-button>
+
+        <el-button :icon="RefreshIcon" @click="handleRefresh">{{ 'Refresh' }}</el-button>
       </div>
     </div>
 
-    <!-- 🔽 Tools section -->
-    <ToolsView
-      v-if="currentView === 2"
-      v-model:keyword="keyword"
-      :newTool="newTool"
-      :category-ids="filterStateTool.categories"
-      @close="() => (newTool = false)"
-    />
+    <div class="split-view">
+      <div class="left-pane">
+        <SparePartList
+          :list="list"
+          :loading="loading"
+          :total="total"
+          :page="page"
+          @page-change="handlePageChange"
+          @page-size-change="handlePageSizeChange"
+          @select="showDetail"
+        />
+      </div>
+
+      <div class="right-pane">
+        <SparePartForm
+          v-if="editing"
+          :data="selected"
+          :all_locations="locationOptions"
+          @cancel="cancelEdit"
+          @confirm="savePart"
+        />
+
+        <SparePartDetail
+          v-else-if="selected"
+          :data="selected"
+          :inventory_transaction_logs="selectedInventoryTransactionLogs"
+          :all_locations="locationOptions"
+          @edit="startEdit"
+          @delete="handleDelete"
+        />
+
+        <!--            @view-manufacturer-detail="showManufacturerDetailPopup"-->
+
+        <el-empty
+          v-else
+          style="display: flex; justify-content: center; align-items: center; height: 100%; min-height: 400px"
+          description="Select a spare part to view details"
+        />
+      </div>
+    </div>
+
+    <!--      <ManufacturerDetailPopup v-model="isManufacturerDialogVisible" :manufacturer-id="selectedManufacturerId" />-->
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onBeforeUnmount, watch, computed } from 'vue'
-import { ElMessageBox, ElMessage } from 'element-plus'
-import { Search, Filter, Tools, Magnet, MoreFilled } from '@element-plus/icons-vue'
-import CardTable from '../../components/Tables/CardTable.vue'
-import ViewDetails from './components/ViewDetails.vue'
-import Usage from './components/Usage.vue'
-import Transactions from './components/Transactions.vue'
-import History from './components/History.vue'
-import Batches from './components/Batches/Batches.vue'
-import SparePartForm from './components/SparePartForm.vue'
-import ToolsView from './components/Tools/ToolsView.vue'
-import { searchSpareParts, deleteSparePart, getAllSparePartClasses, getAllToolClasses } from '@/api/resources'
+import { computed, onMounted, ref } from 'vue'
+import { useSparePart } from '@/composables/useSparePart'
+import SparePartForm from '@/views/resources/components/SparePartForm.vue'
+import SparePartDetail from '@/views/resources/components/SparePartDetail.vue'
+import SparePartList from '@/views/resources/components/SparePartList.vue'
+import LocationTreeSelect from '@/views/team/components/LocationTreeSelect.vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { deleteSparePart, getAllSparePartClasses } from '@/api/resources'
+import { searchVendors } from '@/api/vendor'
+import { EditPen, Remove, Search, Refresh as RefreshIcon } from '@element-plus/icons-vue'
+// import ManufacturerDetailPopup from '@/views/resources/components/ManufacturerDetailPopup.vue'
+// import { searchManufacturers } from '@/api/manufacturer'
+import { searchLocations } from '@/api/location'
 
-// ===== States =====
-const activeName = ref( 'first' )
-const dialogVisible = ref( false )
-const editDialogVisible = ref( false )
-const newTool = ref( false )
-const currentView = ref( 1 )
-const keyword = ref( null )
-
-const spareParts = ref( [] )
-const selectedData = ref( null )
-const selectedIndex = ref( 0 )
-const totalItems = ref( 0 )
-
-const listQuery = reactive( { page : 1, limit : 10, sort : '-id' } )
-const filterVisible = ref( false )
-
-// ===== Spare Part filters =====
-const filterState = reactive( {
-  sortKey : 'createdAt_desc',
-  categories : [],
-  stockStatuses : []
+defineOptions( {
+  name : 'SpareParts'
 } )
-const categoryOptions = ref( [] )
 
-// ===== Tool filters =====
-const toolsRef = ref( null )
-const filterStateTool = reactive( { categories : [] } )
-const toolCategoryOptions = ref( [] )
+const {
+  list,
+  total,
+  loading,
+  fetchSpareParts,
+  resetFilters,
+  listQuery,
+  getMaterialInventoryTransactionLog,
+  fetchInventoryTransactionLogs
+} = useSparePart()
 
-// ===== Fetching helpers =====
-const useServerFiltering = true
-const STATUS_ACTIVE = 1
+const selected = ref( null )
+const selectedInventoryTransactionLogs = ref( [] )
+const editing = ref( false )
+const page = ref( 1 )
+const all_data_loading = ref( false )
+const sparePartClassesOptions = ref( [] )
+const vendorOptions = ref( [] )
+const locationOptions = ref( [] )
+// const manufacturerOptions = ref( [] )
+// const isManufacturerDialogVisible = ref( false )
+// const selectedManufacturerId = ref( null )
+const isFilterPopOverVisible = ref( false )
+const activeFilterTags = computed( () => {
+  const tags = []
 
-function resolveSort( sortKey ) {
-  switch ( sortKey ) {
-    case 'createdAt_asc':
-      return { sortField : 'createdAt', direction : 'ASC' }
-    case 'createdAt_desc':
-      return { sortField : 'createdAt', direction : 'DESC' }
-    case 'name_asc':
-      return { sortField : 'name', direction : 'ASC' }
-    case 'name_desc':
-      return { sortField : 'name', direction : 'DESC' }
-    default:
-      return { sortField : 'createdAt', direction : 'DESC' }
+  if ( listQuery.sort_by ) {
+    tags.push( { key : 'sort_by', label : `Sort By: ${formatNameSortLabel( listQuery.sort_by )}` } )
   }
-}
 
-function buildSearchPayload() {
-  return {
-    keyword : keyword.value ?? '',
-    spare_part_class_ids : filterState.categories?.length ? filterState.categories : undefined,
-    status_ids : [STATUS_ACTIVE]
-  }
-}
+  if ( listQuery.category_ids?.length ) {
+    listQuery.category_ids.forEach( id => {
+      const category = sparePartClassesOptions.value.find( c => c.id === id )
 
-async function getAllSparePartsData() {
-  const { sortField, direction } = resolveSort( filterState.sortKey )
-  const response = await searchSpareParts( listQuery.page, listQuery.limit, sortField, direction, buildSearchPayload() )
-  const page = response.data
-  spareParts.value = page?.content ?? []
-  totalItems.value = page?.totalElements ?? 0
-  selectedIndex.value = 0
-  selectedData.value = spareParts.value?.[0] ?? null
-}
-
-// ===== Watchers =====
-watch(
-  () => keyword.value,
-  () => {
-    if ( useServerFiltering && currentView.value === 1 ) {
-      listQuery.page = 1
-      getAllSparePartsData()
-    } else if ( currentView.value === 2 ) {
-      toolsRef.value?.applyCategoryFilter?.( filterStateTool.categories )
-    }
-  }
-)
-watch(
-  () => filterState.sortKey,
-  () => {
-    if ( useServerFiltering && currentView.value === 1 ) {
-      listQuery.page = 1
-      getAllSparePartsData()
-    }
-  }
-)
-watch(
-  () => filterState.categories,
-  () => {
-    if ( useServerFiltering && currentView.value === 1 ) {
-      listQuery.page = 1
-      getAllSparePartsData()
-    }
-  },
-  { deep : true }
-)
-
-// ===== Apply/Clear filters =====
-async function applyFilters() {
-  if ( currentView.value === 1 ) {
-    if ( useServerFiltering ) {
-      listQuery.page = 1
-      await getAllSparePartsData()
-    }
-  } else {
-    toolsRef.value?.applyCategoryFilter?.( filterStateTool.categories )
-  }
-  filterVisible.value = false
-}
-
-async function clearFilters() {
-  if ( currentView.value === 1 ) {
-    filterState.sortKey = 'createdAt_desc'
-    filterState.categories = []
-    filterState.stockStatuses = []
-    if ( useServerFiltering ) {
-      listQuery.page = 1
-      await getAllSparePartsData()
-    }
-  } else {
-    filterStateTool.categories = []
-    toolsRef.value?.clearCategoryFilter?.()
-  }
-  filterVisible.value = false
-}
-
-// ===== Lifecycle =====
-const maxHeight = ref( '770px' )
-function updateHeight() {
-  maxHeight.value = window.innerWidth <= 1600 ? '521px' : '737px'
-}
-onMounted( async() => {
-  updateHeight()
-  window.addEventListener( 'resize', updateHeight )
-
-  // Spare part categories
-  const res = await getAllSparePartClasses()
-  categoryOptions.value = ( res.data || [] ).map( c => ( {
-    value : c.id,
-    label : c.name || `Class #${c.id}`
-  } ) )
-
-  // Tool categories
-  const toolRes = await getAllToolClasses()
-  toolCategoryOptions.value = ( toolRes.data || [] ).map( c => ( {
-    value : c.id,
-    label : c.name || `Category #${c.id}`
-  } ) )
-
-  await getAllSparePartsData()
-} )
-onBeforeUnmount( () => window.removeEventListener( 'resize', updateHeight ) )
-
-// ===== Spare Part helpers =====
-const tableData = computed( () => spareParts.value )
-const tableTotal = computed( () => totalItems.value )
-
-function getSelection( data ) {
-  selectedIndex.value = data.index
-  selectedData.value = data
-}
-function openEditDialog() {
-  if ( !selectedData.value ) return
-  editDialogVisible.value = true
-}
-async function confirmDelete() {
-  if ( !selectedData.value?.id ) return
-  try {
-    await ElMessageBox.confirm( `Delete spare part “${selectedData.value.name}”?`, 'Confirm Delete', {
-      confirmButtonText : 'Delete',
-      cancelButtonText : 'Cancel',
-      type : 'warning'
+      if ( category ) {
+        tags.push( { key : 'category_ids', value : id, label : `Category: ${category.name}` } )
+      }
     } )
-    await deleteSparePart( selectedData.value.id )
-    ElMessage.success( 'Deleted' )
-    await getAllSparePartsData()
-  } catch ( err ) {
-    if ( err !== 'cancel' ) ElMessage.error( 'Failed to delete' )
   }
-}
-async function handleCreate( data ) {
-  dialogVisible.value = false
-  editDialogVisible.value = false
-  await getAllSparePartsData()
+
+  if ( listQuery.stock ) {
+    tags.push( { key : 'stock', label : `Stock Level: ${formatStockLabel( listQuery.stock )}` } )
+  }
+
+  if ( listQuery.vendor_ids?.length ) {
+    listQuery.vendor_ids.forEach( id => {
+      const v = vendorOptions.value.find( v => v.id === id )
+      if ( v ) tags.push( { key : 'vendor_ids', value : id, label : `Vendor: ${v.name}` } )
+    } )
+  }
+
+  if ( listQuery.location_ids?.length ) {
+    listQuery.location_ids.forEach( id => {
+      tags.push( { key : 'location_ids', value : id, label : `Location: ${id}` } )
+    } )
+  }
+
+  // if ( listQuery.manufacturer_ids?.length ) {
+  //   listQuery.manufacturer_ids.forEach( id => {
+  //     const m = manufacturerOptions.value.find( m => m.id === id )
+  //
+  //     if ( m ) {
+  //       tags.push( { key : 'manufacturer_ids', value : id, label : `Manufacturer: ${m.name}` } )
+  //     }
+  //   } )
+  // }
+
+  if ( listQuery.unit_cost_min != null ) {
+    tags.push( { key : 'unit_cost_min', label : `Min Cost: ${listQuery.unit_cost_min}` } )
+  }
+
+  if ( listQuery.unit_cost_max != null ) {
+    tags.push( { key : 'unit_cost_max', label : `Max Cost: ${listQuery.unit_cost_max}` } )
+  }
+
+  if ( listQuery.keyword ) {
+    tags.push( { key : 'keyword', label : `Keyword: ${listQuery.keyword}` } )
+  }
+
+  return tags
+} )
+
+function removeFilterTag( tag ) {
+  const { key, value } = tag
+
+  if ( Array.isArray( listQuery[key] ) ) {
+    listQuery[key] = listQuery[key].filter( v => v !== value )
+  } else {
+    listQuery[key] = key.includes( 'cost' ) ? null : ''
+  }
+
+  handleFilter()
 }
 
-// ===== View switching =====
-const handleCommand = command => {
-  currentView.value = command === 'a' ? 1 : 2
+function showDetail( item ) {
+  selected.value = item
+  selectedInventoryTransactionLogs.value = getMaterialInventoryTransactionLog( item.id )
+  editing.value = false
 }
-const currentLabel = computed( () => ( currentView.value === 1 ? 'Spare Parts' : 'Tools' ) )
-const currentIcon = computed( () => ( currentView.value === 1 ? 'Magnet' : 'Tools' ) )
-const handleCurrentChange = val => {
-  listQuery.page = val
-  getAllSparePartsData()
+
+function startEdit() {
+  editing.value = true
 }
+
+async function handleDelete() {
+  ElMessageBox.confirm( `Are you sure you want to delete this spare part?`, 'Confirm Spare Part Deletion', {
+    confirmButtonText : 'Confirm',
+    cancelButtonText : 'Cancel',
+    type : 'warning'
+  } )
+    .then( async() => {
+      const selectionId = selected.value?.id
+      selected.value = null
+      selectedInventoryTransactionLogs.value = []
+
+      try {
+        await deleteSparePart( selectionId )
+      } catch ( err ) {
+        console.error( 'Failed to delete spare part:', err )
+        ElMessage.error( 'Error deleting the spare part' )
+      }
+
+      ElMessage.success( 'Spare part deleted' )
+
+      await fetchSpareParts()
+    } )
+    .catch( () => {
+      // User cancelled - no action needed
+    } )
+}
+
+function cancelEdit() {
+  editing.value = false
+}
+
+function openCreateForm() {
+  selected.value = null
+  editing.value = true
+}
+
+async function savePart() {
+  const selectionId = selected.value?.id
+  selected.value = null
+  editing.value = false
+
+  await fetchSpareParts()
+
+  // Reselect the item that was just saved
+  if ( selectionId ) {
+    const updated = list.value.find( item => item.id === selectionId )
+
+    if ( updated ) {
+      selected.value = updated
+      selectedInventoryTransactionLogs.value = getMaterialInventoryTransactionLog( updated.id )
+    }
+  }
+}
+
+function handlePageChange( newPage ) {
+  listQuery.page = newPage
+  fetchSpareParts()
+}
+
+function handlePageSizeChange( newPageSize ) {
+  listQuery.limit = newPageSize
+  listQuery.page = 1
+  fetchSpareParts()
+}
+
+function handleFilter() {
+  fetchSpareParts()
+}
+
+function handleResetFilters() {
+  selected.value = null
+  editing.value = false
+  resetFilters()
+}
+
+function handleRefresh() {
+  selected.value = null
+  editing.value = false
+  fetchSpareParts()
+}
+
+// function showManufacturerDetailPopup( manufacturerId ) {
+//   selectedManufacturerId.value = manufacturerId
+//   isManufacturerDialogVisible.value = true
+// }
+
+function formatNameSortLabel( nameSort ) {
+  if ( !nameSort ) {
+    return ''
+  }
+
+  return nameSort
+    .split( '-' )
+    .map( word => word.charAt( 0 ).toUpperCase() + word.slice( 1 ) )
+    .join( ' ' )
+}
+
+function formatStockLabel( stock ) {
+  if ( !stock ) {
+    return ''
+  }
+
+  return stock
+    .split( '_' )
+    .map( word => word.charAt( 0 ).toUpperCase() + word.slice( 1 ) )
+    .join( ' ' )
+}
+
+async function loadSparePartClasses() {
+  try {
+    const response = await getAllSparePartClasses( { status_ids : [1] }, 1, 1000, 'id', 'ASC' )
+    sparePartClassesOptions.value = response?.data || []
+  } catch ( err ) {
+    console.error( 'Failed to load spare part classes:', err )
+    ElMessage.error( 'Error loading spare part classes data' )
+  }
+}
+
+async function loadVendor() {
+  try {
+    const response = await searchVendors( { status_ids : [1] }, 1, 1000, 'id', 'ASC' )
+    vendorOptions.value = response?.data?.content || []
+  } catch ( err ) {
+    console.error( 'Failed to load vendors:', err )
+    ElMessage.error( 'Error loading vendors data' )
+  }
+}
+
+async function loadLocation() {
+  try {
+    const response = await searchLocations( { status_ids : [1] }, 1, 1000, 'id', 'ASC' )
+    locationOptions.value = response?.data?.content || []
+  } catch ( err ) {
+    console.error( 'Failed to load vendors:', err )
+    ElMessage.error( 'Error loading vendors data' )
+  }
+}
+
+// async function loadManufacturer() {
+//   try {
+//     const response = await searchManufacturers( { status_ids : [1] }, 1, 1000, 'id', 'ASC' )
+//     manufacturerOptions.value = response?.data?.content || []
+//   } catch ( err ) {
+//     console.error( 'Failed to load manufacturers:', err )
+//     ElMessage.error( 'Error loading manufacturers data' )
+//   }
+// }
+
+async function refreshAllData() {
+  try {
+    all_data_loading.value = true
+    await fetchInventoryTransactionLogs()
+    await loadLocation()
+    await loadSparePartClasses()
+    await loadVendor()
+    // await loadManufacturer()
+    await fetchSpareParts()
+  } catch ( e ) {
+  } finally {
+    all_data_loading.value = false
+  }
+}
+
+onMounted( async() => {
+  await refreshAllData()
+} )
 </script>
 
-<style scoped>
-.outer-container {
-  padding: 10px;
+<style scoped lang="scss">
+.filters-container {
   display: flex;
-  flex-direction: column;
-}
-.header {
-  display: flex;
-  justify-content: space-between;
+  flex-direction: row;
   align-items: center;
-}
-.left-header,
-.right-header {
-  display: flex;
-  gap: 1rem;
-  align-items: center;
+  overflow: hidden;
+  padding: 15px;
 }
 
-.filter-content {
+.vertical-filter-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px; /* consistent spacing between rows */
+
+  .filter-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  :deep(.el-text) {
+    align-self: flex-start;
+  }
 }
-.filter-section {
+
+.selected-filter-tag-list {
   display: flex;
-  flex-direction: column;
   gap: 6px;
-}
-.filter-title {
-  font-weight: 600;
-  font-size: 14px;
-}
-.filter-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-/* parent .vue */
-.main-container-sp {
-  display: flex;
-  gap: 0.5rem;
-}
-
-/* left panel fixed as a percentage, not vw */
-.table-container {
-  flex: 0 0 32%;
-  max-width: 32%;
-  min-width: 320px; /* optional safety floor */
-  box-sizing: border-box;
-}
-
-/* right panel takes the rest */
-.content-container {
-  flex: 1 1 68%;
-  max-width: 68%;
-  box-sizing: border-box;
-}
-
-/* optional: avoid unexpected overflows in flex children */
-.tab-container {
+  align-items: center;
+  padding: 0 8px;
+  flex: 1 1 auto;
   min-width: 0;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+  scrollbar-width: thin;
+  min-height: 32px; /* keep visible height even if empty */
+
+  .filter-tag {
+    height: 30px;
+    flex-shrink: 0;
+  }
 }
 
-.kebab-icon {
-  transform: rotate(90deg);
-  cursor: pointer;
-  font-size: 24px;
-  color: #409eff;
+.split-view {
+  display: flex;
+  height: calc(100vh - 163px);
+  gap: 10px;
+  margin: 0 15px 0 15px;
 }
-.danger-item {
-  color: #f56c6c;
+
+.left-pane {
+  flex: 3;
+  overflow: hidden; /* prevent double scrollbars */
+  border-radius: 8px;
+  border: 1px solid var(--el-border-color-light);
 }
-.danger-item:hover {
-  color: #fff;
-  background: #f56c6c;
+
+.right-pane {
+  flex: 7;
+  padding: 0 15px 15px 0;
+  border-radius: 8px;
+  border: 1px solid var(--el-border-color-light);
+}
+
+.action-group {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.action-group :deep(.el-input) {
+  min-width: 0;
+  flex-shrink: 1; /* allow the input to shrink when space is tight */
 }
 </style>
