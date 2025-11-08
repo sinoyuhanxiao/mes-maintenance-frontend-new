@@ -108,6 +108,7 @@
         @start-work-order="handleStartWorkOrder"
         @refresh="handleRefresh"
         @recreate="handleRecreate"
+        @copy="handleCopy"
         @delete="handleDeleteFromDetail"
       />
 
@@ -516,7 +517,10 @@ const handleEditConfirmation = async editType => {
   }
 }
 
-const handleRecreate = async workOrder => {
+// Helper function to prepare work order for creation (used by both recreate and copy)
+const prepareWorkOrderForCreation = async( workOrder, options = {} ) => {
+  const { filterFailedOnly = false, isRecreation = false, isCopy = false } = options
+
   const canProceed = await checkUnsavedChanges()
   if ( !canProceed ) {
     return
@@ -529,21 +533,22 @@ const handleRecreate = async workOrder => {
     const response = await getWorkOrderById( workOrder.id )
     const workOrderData = response?.data || workOrder
 
-    // Filter to only include failed tasks for recreation (state.id === 12)
-    // API returns task_list, not tasks
+    // Get all tasks or filter to failed tasks based on options
     const allTasks = workOrderData.task_list || workOrderData.tasks || []
-    const failedTasks = Array.isArray( allTasks )
-      ? allTasks.filter( task => {
-        const stateId = task?.state?.id
-        return stateId === 12
-      } )
+    const tasksToInclude = Array.isArray( allTasks )
+      ? filterFailedOnly
+        ? allTasks.filter( task => {
+          const stateId = task?.state?.id
+          return stateId === 12
+        } )
+        : allTasks
       : []
 
-    // Fetch full details for each failed task including steps
+    // Fetch full details for each task including steps
     let tasksWithSteps = []
-    if ( failedTasks.length > 0 ) {
+    if ( tasksToInclude.length > 0 ) {
       tasksWithSteps = await Promise.all(
-        failedTasks.map( async task => {
+        tasksToInclude.map( async task => {
           try {
             const taskResponse = await getTaskEntryById( task.id )
             const fullTaskData = taskResponse?.data || task
@@ -577,27 +582,57 @@ const handleRecreate = async workOrder => {
       )
     }
 
-    // Prepare data for recreation with parent_work_order_id and full task data
-    requestDataForCreate.value = {
+    // Prepare data for creation
+    const preparedData = {
       ...workOrderData,
-      tasks : tasksWithSteps, // Override with tasks that include steps
-      parent_work_order_id : workOrder.id,
-      isRecreation : true // Flag to distinguish recreation from normal creation
+      tasks : tasksWithSteps // Override with tasks that include steps
     }
+
+    // Add recreation-specific fields
+    if ( isRecreation ) {
+      preparedData.parent_work_order_id = workOrder.id
+      preparedData.isRecreation = true
+    }
+
+    // Add copy-specific fields
+    if ( isCopy ) {
+      preparedData.isCopy = true
+    }
+
+    requestDataForCreate.value = preparedData
     currentRightPanelView.value = 'create'
   } catch ( error ) {
-    ElMessage.error( 'Failed to load work order details for recreation. Using cached data.' )
+    ElMessage.error( `Failed to load work order details. Using cached data.` )
 
     // Fallback to existing data on error
-    requestDataForCreate.value = {
-      ...workOrder,
-      parent_work_order_id : workOrder.id,
-      isRecreation : true
+    const fallbackData = { ...workOrder }
+    if ( isRecreation ) {
+      fallbackData.parent_work_order_id = workOrder.id
+      fallbackData.isRecreation = true
     }
+    if ( isCopy ) {
+      fallbackData.isCopy = true
+    }
+
+    requestDataForCreate.value = fallbackData
     currentRightPanelView.value = 'create'
   } finally {
     isLoadingWorkOrder.value = false
   }
+}
+
+const handleRecreate = async workOrder => {
+  await prepareWorkOrderForCreation( workOrder, {
+    filterFailedOnly : true,
+    isRecreation : true
+  } )
+}
+
+const handleCopy = async workOrder => {
+  await prepareWorkOrderForCreation( workOrder, {
+    filterFailedOnly : false,
+    isCopy : true
+  } )
 }
 
 const handleDelete = workOrder => {
@@ -669,7 +704,7 @@ const handleExecutionClose = () => {
   pendingExecutionWorkOrder.value = null
 }
 
-const handleExecutionProgressUpdate = async() => {
+const handleExecutionProgressUpdate = async eventData => {
   try {
     // Refresh the work order data to get updated task states
     const workOrderId = workOrderInExecution.value?.id
@@ -682,8 +717,10 @@ const handleExecutionProgressUpdate = async() => {
       selectedWorkOrder.value = response.data
     }
 
-    // Also emit refresh to parent to update the work order list
-    emit( 'refresh' )
+    // Only emit refresh to parent if this was a task submission (not a draft save)
+    if ( !eventData?.isDraft ) {
+      emit( 'refresh' )
+    }
   } catch ( error ) {
     console.error( 'Failed to refresh work order after task submission:', error )
   }

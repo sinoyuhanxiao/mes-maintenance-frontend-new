@@ -97,7 +97,8 @@ export default {
       update : '更新',
       approve : '批准',
       reject : '拒绝',
-      recreate : '重创工单'
+      recreate : '重创工单',
+      copy : '创建工单副本'
     },
 
     // Status values
@@ -213,11 +214,11 @@ export default {
       estimatedTime : '预估时间',
       hours : '小时',
       minutes : '分钟',
-      dueDate : '截止日',
+      dueDate : '范围结束日期',
       dueDateTime : '截止日期',
-      dueDatePlaceholder : '选择截止日期',
-      startDate : '开始日期',
-      startDatePlaceholder : '选择开始日期',
+      dueDatePlaceholder : '范围结束日期',
+      startDate : '范围开始日期',
+      startDatePlaceholder : '范围开始日期',
       recurrence : '重复',
       recurrencePlaceholder : '不重复',
       recurrenceSettings : '重复设置',
@@ -235,6 +236,14 @@ export default {
       categoriesPlaceholder : '开始输入…',
       vendors : '供应商',
       vendorsPlaceholder : '开始输入…'
+    },
+    tooltips : {
+      rangeStartDate : '重复范围从该日期开始。',
+      rangeEndDate : '重复范围在该日期结束。',
+      singleStartDateTime : '工单从此时间开始。',
+      singleEndDateTime : '工单应在此时间完成。',
+      startTime : '每天重复的开始时间。',
+      endTime : '每天重复的结束时间。'
     },
 
     // Validation messages

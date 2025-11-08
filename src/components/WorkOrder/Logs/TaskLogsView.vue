@@ -44,8 +44,8 @@
                 <span class="log-value">{{ formatChangeType(log.change) }}</span>
               </div>
               <div class="log-row">
-                <span class="log-label">Workers:</span>
-                <span class="log-value">{{ log.user || '-' }}</span>
+                <span class="log-label">Executor:</span>
+                <span class="log-value">{{ formatExecutor(log) }}</span>
               </div>
               <div class="log-row">
                 <span class="log-label">Time:</span>
@@ -176,6 +176,25 @@ const formatTaskTime = log => {
   if ( log.time ) {
     return formatTimestamp( log.time )
   }
+
+  return '-'
+}
+
+// Format executor from created_by
+const formatExecutor = log => {
+  if ( !log || !log.task || !log.task.created_by ) return '-'
+
+  const createdBy = log.task.created_by
+  const firstName = createdBy.first_name || ''
+  const lastName = createdBy.last_name || ''
+
+  if ( firstName && lastName ) {
+    return `${firstName} ${lastName}`
+  }
+
+  // Fallback to just first name or last name if only one is available
+  if ( firstName ) return firstName
+  if ( lastName ) return lastName
 
   return '-'
 }

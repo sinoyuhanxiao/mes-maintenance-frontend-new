@@ -520,12 +520,6 @@ const initializeStepValue = ( stepId, type, valueData = {} ) => {
     const normalized = toBooleanOrNull( checkboxValue )
     // CRITICAL FIX: Don't pre-populate with false - leave as null/undefined for required validation
     stepValues[stepId].value = normalized
-    console.log( '[StepsExecution] initializeStepValue checkbox:', {
-      stepId,
-      checkboxValue,
-      normalized,
-      finalValue : stepValues[stepId].value
-    } )
   } else if ( type === 'inspection' ) {
     const inspectionValue = valueData.value !== undefined ? valueData.value : valueData.default
     stepValues[stepId].value = toBooleanOrNull( inspectionValue )

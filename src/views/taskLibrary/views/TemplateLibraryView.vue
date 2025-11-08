@@ -261,7 +261,7 @@
               </div>
 
               <!-- Quick Stats -->
-              <div class="stats-card" style="margin-bottom: 100px">
+              <div class="stats-card" v-show="false" style="margin-bottom: 100px">
                 <div class="card-header">
                   <h3 class="card-title">Quick Statistics</h3>
                 </div>
@@ -1333,6 +1333,13 @@ watch(
 onBeforeUnmount( () => {
   // Remove resize listener
   window.removeEventListener( 'resize', handleResize )
+
+  // Clear search query and filters when navigating away
+  searchQuery.value = ''
+  searchByIdMode.value = false
+  categoryFilter.value = ''
+  assetFilter.value = []
+  clearFilters()
 } )
 
 defineOptions( {

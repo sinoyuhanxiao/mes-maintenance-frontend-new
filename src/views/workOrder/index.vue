@@ -217,12 +217,18 @@ const handleCreate = () => {
     todoViewRef.value?.showCreateForm()
   } else {
     // For table view, navigate to separate page
-    router.push( { name : 'NewWorkOrder' } )
+    router.push( { name : 'CreateWorkOrder' } )
   }
 }
 
 const handleUpdate = row => {
-  // Edit work order functionality
+  if ( currentView.value === 'todo' ) {
+    // For todo view, emit edit event to TodoView
+    todoViewRef.value?.showEditForm( row )
+  } else {
+    // For table view, navigate to edit page
+    router.push( { name : 'EditWorkOrder', params : { id : row.id }} )
+  }
 }
 
 const handleDelete = async( row, index ) => {

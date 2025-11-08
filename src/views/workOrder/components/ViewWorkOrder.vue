@@ -22,6 +22,7 @@
       @start-work-order="handleStartWorkOrder"
       @refresh="handleRefresh"
       @recreate="handleRecreate"
+      @copy="handleCopy"
       @delete="handleDelete"
     />
 
@@ -162,6 +163,11 @@ const handleRecreate = async workOrderToRecreate => {
       recreate : 'true'
     }
   } )
+}
+
+const handleCopy = async workOrderToCopy => {
+  // Placeholder for copy functionality
+  console.log( 'Copy work order:', workOrderToCopy )
 }
 
 const handleDelete = async( { workOrder : workOrderToDelete, type } ) => {

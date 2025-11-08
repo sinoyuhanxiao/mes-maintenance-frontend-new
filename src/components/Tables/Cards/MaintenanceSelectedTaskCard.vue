@@ -142,7 +142,11 @@ const hasAssignees = computed( () => {
 } )
 
 const isFailedTask = computed( () => {
-  return props.template?.state?.id === 12
+  // Show failed tag in two scenarios:
+  // 1. Task is actually in failed state (state === 12)
+  // 2. Task is being recreated from a failed work order (isRecreation === true)
+  //    In recreation, tasks are reset from state 12 to state 5, so we rely on isRecreation flag
+  return props.isRecreation || props.template?.state?.id === 12
 } )
 
 // eslint-disable-next-line no-unused-vars

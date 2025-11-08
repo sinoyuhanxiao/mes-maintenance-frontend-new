@@ -99,7 +99,8 @@ export default {
       update : 'Update',
       approve : 'Approve',
       reject : 'Reject',
-      recreate : 'Recreate Work Order'
+      recreate : 'Recreate Failed Work Order',
+      copy : 'Create Work Order Copy'
     },
 
     // Status values
@@ -444,11 +445,11 @@ export default {
       estimatedTime : 'Estimated Time',
       hours : 'Hours',
       minutes : 'Minutes',
-      dueDate : 'Due Date',
+      dueDate : 'Range End Date',
       dueDateTime : 'Due Date Time',
-      dueDatePlaceholder : 'Due Date Time',
-      startDate : 'Start Date',
-      startDatePlaceholder : 'Start Date Time',
+      dueDatePlaceholder : 'Range End Date',
+      startDate : 'Range Start Date',
+      startDatePlaceholder : 'Range Start Date',
       recurrence : 'Recurrence',
       recurrencePlaceholder : 'Does not repeat',
       recurrenceSettings : 'Recurrence Settings',
@@ -466,6 +467,14 @@ export default {
       categoriesPlaceholder : 'Start typing…',
       vendors : 'Vendors',
       vendorsPlaceholder : 'Start typing…'
+    },
+    tooltips : {
+      rangeStartDate : 'When the range of this recurrence starts.',
+      rangeEndDate : 'When the range of this recurrence ends.',
+      singleStartDateTime : 'When this work order starts.',
+      singleEndDateTime : 'When this work order should be done.',
+      startTime : 'Time each day’s occurrence starts.',
+      endTime : 'Time each day’s occurrence ends.'
     },
 
     // Additional messages

@@ -5,7 +5,9 @@
       <el-row justify="space-between" align="top" :gutter="16">
         <el-col :span="18">
           <div class="header-main">
-            <h2 class="create-title">{{ isRecreation ? 'Recreate Work Order' : $t('workOrder.newWorkOrder') }}</h2>
+            <h2 class="create-title">
+              {{ isRecreation ? 'Recreate Failed Work Order' : $t('workOrder.newWorkOrder') }}
+            </h2>
           </div>
         </el-col>
         <el-col :span="6">
@@ -215,37 +217,6 @@
         </el-form-item>
       </div>
 
-      <!-- Due Date -->
-      <div class="form-section">
-        <el-form-item :label="$t('workOrder.create.dueDate')" prop="due_date">
-          <el-date-picker
-            v-model="form.due_date"
-            type="datetime"
-            :placeholder="$t('workOrder.create.dueDatePlaceholder')"
-            style="width: 100%"
-            format="YYYY-MM-DD HH:mm"
-            value-format="YYYY-MM-DDTHH:mm:ss"
-          />
-          <div v-if="showWorkOrderDuration" class="work-order-duration">
-            <el-text type="info" size="small"> Work order duration: {{ formatWorkOrderDuration() }} </el-text>
-          </div>
-        </el-form-item>
-      </div>
-
-      <!-- Start Date -->
-      <div class="form-section">
-        <el-form-item :label="$t('workOrder.create.startDate')" prop="start_date">
-          <el-date-picker
-            v-model="form.start_date"
-            type="datetime"
-            :placeholder="$t('workOrder.create.startDatePlaceholder')"
-            style="width: 100%"
-            format="YYYY-MM-DD HH:mm"
-            value-format="YYYY-MM-DDTHH:mm:ss"
-          />
-        </el-form-item>
-      </div>
-
       <!-- Work Type, Priority, and State -->
       <div class="form-section">
         <el-row :gutter="16">
@@ -289,6 +260,8 @@
       <!-- Recurrence Settings -->
       <div class="form-section">
         <RecurrenceEditor
+          v-model:start-date="form.start_date"
+          v-model:due-date="form.due_date"
           v-model:recurrence-setting="form.recurrence_setting"
           :work-order-start-date="form.start_date"
           :work-order-due-date="form.due_date"
@@ -643,6 +616,13 @@ import { useTaskLibraryStore } from '@/store/modules/taskLibrary'
 import { useWorkOrderDraftStore } from '@/store/modules/workOrderDraft'
 import { createEmptyWorkOrderForm, cloneWorkOrderForm } from './workOrderFormDefaults'
 import { DEFAULT_TASK_STATE, buildDisplayTaskFromTemplate } from './taskPayloadHelpers'
+import {
+  formatDateTimeForPicker,
+  withDefaultTime,
+  toUtcIso,
+  normalizeDateFields,
+  extractWorkOrderDates
+} from '@/components/WorkOrder/utils/dateFormatter'
 
 // File tracking refs for recreation flow (matching WorkOrderEdit pattern)
 const existingImages = ref( [] )
@@ -675,7 +655,7 @@ const isTaskInteractive = ref( false )
 const standalonePreviewTab = ref( 'general' )
 
 // Centralized payload logging
-const { currentPayload, showJsonDisplayer, logPayload } = usePayloadLogger()
+const { currentPayload, showJsonDisplayer } = usePayloadLogger()
 
 const handleAddStandard = () => {
   showAddStandardDialog.value = true
@@ -1241,6 +1221,7 @@ const hydrateFormFromDraft = () => {
     ? cloneWorkOrderForm( workOrderDraftStore.draftForm )
     : createEmptyWorkOrderForm()
 
+  normalizeDateFields( source )
   Object.assign( form, source )
   decorateTasksCategories( form.tasks )
   syncTaskPayloads()
@@ -1327,6 +1308,49 @@ const buildPayloadFromExistingTask = ( task, workOrderId ) => {
   return payload
 }
 
+// Helper function: Reset step values for recreation
+const resetStepValues = step => {
+  if ( !step || !step.value ) return step
+
+  const resetStep = { ...step }
+  const stepType = step.value.type
+
+  // Reset remarks
+  resetStep.value.remarks = ''
+
+  // Reset Images
+  resetStep.value.image = []
+
+  // Reset value based on type
+  resetStep.value = { ...step.value }
+
+  switch ( stepType ) {
+    case 'inspection':
+      resetStep.value.value = true
+      break
+    case 'checkbox':
+    case 'boolean':
+      resetStep.value.value = false
+      break
+    case 'numeric':
+    case 'number':
+      resetStep.value.value = 0
+      break
+    case 'text':
+      resetStep.value.value = ''
+      break
+    case 'file':
+    case 'attachments':
+      resetStep.value.value = []
+      resetStep.value.file = []
+      break
+    default:
+      resetStep.value.value = ''
+  }
+
+  return resetStep
+}
+
 // Helper function: Normalize tasks for recreation (similar to WorkOrderEdit pattern)
 const normalizeTasksForRecreation = ( taskList, workOrderId ) => {
   if ( !Array.isArray( taskList ) ) return []
@@ -1339,6 +1363,12 @@ const normalizeTasksForRecreation = ( taskList, workOrderId ) => {
 
       // Build the payload ensuring steps are populated
       const payload = buildPayloadFromExistingTask( task, workOrderId )
+
+      // Reset step values and task state for recreation
+      payload.state = 5 // Reset state from 12 (Failed) to 5 (Ready)
+      if ( Array.isArray( payload.steps ) ) {
+        payload.steps = payload.steps.map( step => resetStepValues( step ) )
+      }
 
       const category = task.category
         ? clonePayload( task.category )
@@ -1363,7 +1393,7 @@ const normalizeTasksForRecreation = ( taskList, workOrderId ) => {
         template_id : payload.template_id,
         steps : payload.steps, // Use steps from payload which are guaranteed to exist
         source : task.source || ( payload.template_id ? 'template' : 'adhoc' ),
-        state : task.state || payload.state, // Preserve state from original task
+        state : payload.state, // Use reset state (5 - Ready)
         payload,
         rawTemplate : task.rawTemplate || task.template || null,
         total_steps : payload.steps?.length ?? 0,
@@ -1394,13 +1424,15 @@ const preFillFromRequestData = requestData => {
   if ( !requestData ) return
   isHydratingForm = true
 
-  // Pre-fill basic fields
-  if ( requestData.name ) {
-    form.name = requestData.name
-  }
+  // Pre-fill basic fields (only if not recreation/copy - those are handled below)
+  if ( !requestData.isRecreation && !requestData.isCopy ) {
+    if ( requestData.name ) {
+      form.name = requestData.name
+    }
 
-  if ( requestData.description ) {
-    form.description = requestData.description
+    if ( requestData.description ) {
+      form.description = requestData.description
+    }
   }
 
   // Pre-fill equipment (convert single ID to array for tree-select)
@@ -1419,14 +1451,14 @@ const preFillFromRequestData = requestData => {
   }
 
   // Pre-fill request_id to link work order with maintenance request
-  if ( requestData.id && !requestData.isRecreation ) {
+  if ( requestData.id && !requestData.isRecreation && !requestData.isCopy ) {
     form.request_id = requestData.id
   }
 
-  // Handle recreation scenario - prefill comprehensive work order data
-  if ( requestData.isRecreation ) {
-    // Set parent work order ID for linking
-    if ( requestData.parent_work_order_id ) {
+  // Handle recreation/copy scenario - prefill comprehensive work order data
+  if ( requestData.isRecreation || requestData.isCopy ) {
+    // Set parent work order ID for linking (only for recreation)
+    if ( requestData.isRecreation && requestData.parent_work_order_id ) {
       form.parent_work_order_id = requestData.parent_work_order_id
     }
 
@@ -1453,6 +1485,11 @@ const preFillFromRequestData = requestData => {
       form.approved_by_id = requestData.approved_by_id
     }
 
+    // Handle approval template (same logic as WorkOrderEdit)
+    // Check approval_entry.template_id first, then approval_id, convert to String
+    const approvalTemplateId = requestData.approval_entry?.template_id || requestData.approval_id
+    form.approval_id = approvalTemplateId ? String( approvalTemplateId ) : null
+
     if ( Array.isArray( requestData.categories ) && requestData.categories.length ) {
       form.category_ids = requestData.categories.map( c => ( typeof c === 'object' ? c.id : c ) )
     } else if ( Array.isArray( requestData.category_list ) && requestData.category_list.length ) {
@@ -1468,10 +1505,12 @@ const preFillFromRequestData = requestData => {
       form.equipment_node_ids = [...requestData.equipment_node_ids]
     }
 
-    // Handle assignees
-    if ( Array.isArray( requestData.assignees ) && requestData.assignees.length ) {
+    // Handle assignees - check user_list, assignees, and assignee_ids (same logic as WorkOrderEdit)
+    if ( Array.isArray( requestData.user_list ) && requestData.user_list.length > 0 ) {
+      form.assignee_ids = requestData.user_list.map( u => u.id )
+    } else if ( Array.isArray( requestData.assignees ) && requestData.assignees.length > 0 ) {
       form.assignee_ids = requestData.assignees.map( a => ( typeof a === 'object' ? a.id : a ) )
-    } else if ( requestData.assignee_ids && Array.isArray( requestData.assignee_ids ) ) {
+    } else if ( Array.isArray( requestData.assignee_ids ) && requestData.assignee_ids.length > 0 ) {
       form.assignee_ids = [...requestData.assignee_ids]
     }
 
@@ -1480,16 +1519,11 @@ const preFillFromRequestData = requestData => {
       form.vendor_ids = [...requestData.vendor_ids]
     }
 
-    // Prefill dates
-    if ( requestData.start_date ) {
-      form.start_date = requestData.start_date
-    }
-    if ( requestData.due_date ) {
-      form.due_date = requestData.due_date
-    }
-    if ( requestData.end_date ) {
-      form.end_date = requestData.end_date
-    }
+    // Prefill dates - use only start_date, due_date, end_date from backend
+    const dates = extractWorkOrderDates( requestData )
+    form.start_date = dates.start_date
+    form.due_date = dates.due_date
+    form.end_date = dates.end_date
 
     // Prefill recurrence settings
     if ( requestData.recurrence_type_id ) {
@@ -1497,13 +1531,51 @@ const preFillFromRequestData = requestData => {
       form.recurrence_type = requestData.recurrence_type_id
     }
 
-    if ( requestData.recurrence_setting && typeof requestData.recurrence_setting === 'object' ) {
-      form.recurrence_setting = { ...requestData.recurrence_setting }
+    const recurrenceSettingSource =
+      requestData.recurrence_setting && typeof requestData.recurrence_setting === 'object'
+        ? { ...requestData.recurrence_setting }
+        : {}
+
+    const recurrenceRequestSource =
+      requestData.recurrence_setting_request && typeof requestData.recurrence_setting_request === 'object'
+        ? { ...requestData.recurrence_setting_request }
+        : {}
+
+    // Extract recurrence datetime fields - use only recurrence_setting fields, no fallback to main fields
+    const rawStartDateTime =
+      requestData.recurrence_setting_request?.start_date_time ?? requestData.recurrence_setting?.start_date_time
+
+    const rawEndDateTime =
+      requestData.recurrence_setting_request?.end_date_time ?? requestData.recurrence_setting?.end_date_time
+
+    // Format for display (local time) and for request (UTC ISO)
+    const displayStartDateTime = formatDateTimeForPicker( rawStartDateTime )
+    const displayEndDateTime = formatDateTimeForPicker( rawEndDateTime )
+
+    const requestStartDateTime = rawStartDateTime ? withDefaultTime( rawStartDateTime, '00:00:00' ) : null
+    const requestEndDateTime = rawEndDateTime ? withDefaultTime( rawEndDateTime, '23:59:59' ) : null
+
+    if ( displayStartDateTime ) {
+      recurrenceSettingSource.start_date_time = displayStartDateTime
+    }
+    if ( displayEndDateTime ) {
+      recurrenceSettingSource.end_date_time = displayEndDateTime
     }
 
-    if ( requestData.recurrence_setting_request && typeof requestData.recurrence_setting_request === 'object' ) {
-      form.recurrence_setting_request = { ...requestData.recurrence_setting_request }
+    if ( requestStartDateTime ) {
+      recurrenceRequestSource.start_date_time = requestStartDateTime
+    } else {
+      delete recurrenceRequestSource.start_date_time
     }
+
+    if ( requestEndDateTime ) {
+      recurrenceRequestSource.end_date_time = requestEndDateTime
+    } else {
+      delete recurrenceRequestSource.end_date_time
+    }
+
+    form.recurrence_setting = recurrenceSettingSource
+    form.recurrence_setting_request = recurrenceRequestSource
 
     // Prefill tasks - support both tasks and task_list
     const sourceTasks =
@@ -1551,9 +1623,26 @@ const preFillFromRequestData = requestData => {
       existingFiles.value = [...requestData.file_list]
     }
 
-    // Append indicator to name for clarity
-    if ( requestData.name && !requestData.name.includes( '(Recreated)' ) ) {
-      form.name = requestData.name + ' (Recreated)'
+    // Apply name and description formatting based on operation type
+    if ( requestData.isRecreation ) {
+      // Recreate: Add "Work Order Failed:" prefix to name and description
+      if ( requestData.name ) {
+        const prefix = 'Work Order Failed: '
+        form.name = prefix + requestData.name
+      }
+      if ( requestData.description ) {
+        const prefix = 'Work Order Failed: '
+        form.description = prefix + requestData.description
+      }
+    } else if ( requestData.isCopy ) {
+      // Copy: Add " (Copy)" suffix to name only
+      if ( requestData.name ) {
+        const suffix = ' (Copy)'
+        form.name = requestData.name + suffix
+      }
+      if ( requestData.description ) {
+        form.description = requestData.description
+      }
     }
 
     syncTaskPayloads()
@@ -1606,6 +1695,13 @@ watch(
 
 // Custom validation functions
 const validateStartDate = ( rule, value, callback ) => {
+  // Only validate if recurrence type is not 'none' (i.e., field is visible)
+  const isNoneRecurrence = form.recurrence_type_id === 1 || form.recurrence_type === 1
+  if ( isNoneRecurrence ) {
+    callback()
+    return
+  }
+
   if ( !value ) {
     callback( new Error( 'Start date is required' ) )
     return
@@ -1614,13 +1710,20 @@ const validateStartDate = ( rule, value, callback ) => {
 }
 
 const validateDueDate = ( rule, value, callback ) => {
+  // Only validate if recurrence type is not 'none' (i.e., field is visible)
+  const isNoneRecurrence = form.recurrence_type_id === 1 || form.recurrence_type === 1
+  if ( isNoneRecurrence ) {
+    callback()
+    return
+  }
+
   if ( !value ) {
     callback( new Error( 'Due date is required' ) )
     return
   }
 
-  const dueDate = new Date( value )
-  const startDate = form.start_date ? new Date( form.start_date ) : null
+  const dueDate = new Date( withDefaultTime( value, '23:59:59' ) )
+  const startDate = form.start_date ? new Date( withDefaultTime( form.start_date, '00:00:00' ) ) : null
 
   if ( startDate && dueDate <= startDate ) {
     callback( new Error( 'Due date must be after start date' ) )
@@ -1639,55 +1742,59 @@ const validateDueDate = ( rule, value, callback ) => {
 }
 
 const validateRecurrenceStartTime = ( rule, value, callback ) => {
-  if ( !value ) {
-    callback()
-    return
-  }
+  // For 'none' recurrence type, just check if value exists
+  const isNoneRecurrence = form.recurrence_type_id === 1 || form.recurrence_type === 1
 
-  const recurrenceSetting = form.recurrence_setting
-  if ( !recurrenceSetting || !recurrenceSetting.start_date_time ) {
-    callback()
-    return
-  }
-
-  // Check if recurrence start time is before work order start date
-  if ( form.start_date ) {
-    const workOrderStart = new Date( form.start_date )
-    const recurrenceStart = new Date( recurrenceSetting.start_date_time )
-
-    if ( recurrenceStart < workOrderStart ) {
-      callback( new Error( 'Recurrence start time cannot be before work order start date' ) )
+  if ( isNoneRecurrence ) {
+    if ( !value ) {
+      callback( new Error( 'Start date time is required' ) )
       return
     }
+    callback()
+    return
   }
 
+  // For recurring types, skip validation (not used)
   callback()
 }
 
 const validateRecurrenceEndTime = ( rule, value, callback ) => {
-  if ( !value ) {
+  // For 'none' recurrence type, validate that end time is after start time
+  const isNoneRecurrence = form.recurrence_type_id === 1 || form.recurrence_type === 1
+
+  if ( isNoneRecurrence ) {
+    if ( !value ) {
+      callback( new Error( 'End date time is required' ) )
+      return
+    }
+
+    const recurrenceSetting = form.recurrence_setting
+    if ( recurrenceSetting && recurrenceSetting.start_date_time ) {
+      const startTime = new Date( recurrenceSetting.start_date_time )
+      const endTime = new Date( value )
+
+      if ( endTime <= startTime ) {
+        callback( new Error( 'End date time must be after start date time' ) )
+        return
+      }
+    }
+
     callback()
     return
   }
 
-  const recurrenceSetting = form.recurrence_setting
-  if ( !recurrenceSetting || !recurrenceSetting.start_date_time ) {
-    callback()
-    return
-  }
-
-  const startTime = new Date( recurrenceSetting.start_date_time )
-  const endTime = new Date( recurrenceSetting.end_date_time )
-
-  if ( endTime <= startTime ) {
-    callback( new Error( 'Recurrence end time must be after recurrence start time' ) )
-    return
-  }
-
+  // For recurring types, skip validation (not used)
   callback()
 }
 
 const validateRecurrenceStartTimeOnly = ( rule, value, callback ) => {
+  // Only validate for recurring types (not 'none')
+  const isNoneRecurrence = form.recurrence_type_id === 1 || form.recurrence_type === 1
+  if ( isNoneRecurrence ) {
+    callback()
+    return
+  }
+
   if ( !value ) {
     callback( new Error( 'Start time is required for recurring work orders' ) )
     return
@@ -1696,6 +1803,13 @@ const validateRecurrenceStartTimeOnly = ( rule, value, callback ) => {
 }
 
 const validateRecurrenceEndTimeOnly = ( rule, value, callback ) => {
+  // Only validate for recurring types (not 'none')
+  const isNoneRecurrence = form.recurrence_type_id === 1 || form.recurrence_type === 1
+  if ( isNoneRecurrence ) {
+    callback()
+    return
+  }
+
   if ( !value ) {
     callback( new Error( 'End time is required for recurring work orders' ) )
     return
@@ -1740,14 +1854,8 @@ const rules = reactive( {
   equipment_node_ids : [{ required : true, message : 'At least one equipment is required', trigger : 'change' }],
   work_type_id : [{ required : true, message : t( 'workOrder.validation.workTypeRequired' ), trigger : 'change' }],
   priority_id : [{ required : true, message : t( 'workOrder.validation.priorityRequired' ), trigger : 'change' }],
-  start_date : [
-    { required : true, message : 'Start date is required', trigger : 'change' },
-    { validator : validateStartDate, trigger : 'change' }
-  ],
-  due_date : [
-    { required : true, message : 'Due date is required', trigger : 'change' },
-    { validator : validateDueDate, trigger : 'change' }
-  ],
+  start_date : [{ validator : validateStartDate, trigger : 'change' }],
+  due_date : [{ validator : validateDueDate, trigger : 'change' }],
   'recurrence_setting.start_date_time' : [{ validator : validateRecurrenceStartTime, trigger : 'change' }],
   'recurrence_setting.end_date_time' : [{ validator : validateRecurrenceEndTime, trigger : 'change' }],
   'recurrence_setting.start_time' : [{ validator : validateRecurrenceStartTimeOnly, trigger : 'change' }],
@@ -1889,15 +1997,6 @@ const loadFormData = async() => {
   } finally {
     loading.value = false
   }
-}
-
-// Convert 'YYYY-MM-DDTHH:mm:ss' (local timezone semantics) to UTC ISO string (...Z)
-const toUtcIso = dateTimeString => {
-  if ( !dateTimeString ) return null
-  const normalized = dateTimeString.replace( ' ', 'T' ) // Fallback: in case it comes with space
-  const d = new Date( normalized ) // Parse as "local time"
-  if ( isNaN( d.getTime() ) ) return null
-  return d.toISOString() // e.g. 2025-08-12T17:15:15.425Z
 }
 
 // Upload handlers following equipment module pattern
@@ -2080,8 +2179,7 @@ const resetForm = () => {
     } )
 }
 
-// Debounce for logs button to prevent rapid clicking
-let logButtonTimeout = null
+// Logs button handler (following JsonDebugDrawer documentation pattern)
 const isLoggingInProgress = ref( false )
 
 const logCurrentPayload = () => {
@@ -2092,31 +2190,70 @@ const logCurrentPayload = () => {
 
   isLoggingInProgress.value = true
 
-  // Clear any existing timeout
-  if ( logButtonTimeout ) {
-    clearTimeout( logButtonTimeout )
+  try {
+    // Create a snapshot of the current payload (does not mutate form)
+    const payloadSnapshot = createWorkOrderPayload()
+
+    // Update the payload ref and show the drawer
+    currentPayload.value = payloadSnapshot
+    showJsonDisplayer.value = true
+
+    // Optional: Log to console for debugging
+    console.log( '[Work Order Payload]', payloadSnapshot )
+  } finally {
+    // Reset loading state
+    setTimeout( () => {
+      isLoggingInProgress.value = false
+    }, 300 )
   }
-
-  // Reset the flag after a delay
-  logButtonTimeout = setTimeout( () => {
-    isLoggingInProgress.value = false
-  }, 500 )
-
-  // Create payload using centralized payload manager
-  const rawPayload = createWorkOrderPayload()
-
-  // Use centralized logging
-  logPayload( rawPayload, 'workOrder', {
-    delay : 50,
-    showMessage : true
-  } )
 }
 
 // Create work order payload using centralized utilities
 const createWorkOrderPayload = () => {
-  // Format dates the same way as in the submit function
-  const formattedDueDate = toUtcIso( form.due_date )
-  const formattedStartDate = toUtcIso( form.start_date )
+  // For 'none' recurrence type, use start_date_time and end_date_time from recurrence_setting_request
+  // Otherwise, use start_date and due_date from form
+  const isNoneRecurrence = form.recurrence_type_id === 1 || form.recurrence_type === 1
+
+  let formattedStartDate, formattedDueDate
+
+  if ( isNoneRecurrence && form.recurrence_setting_request ) {
+    // Copy from recurrence_setting_request for 'none' type, but normalize to UTC
+    const startDateWithTime = withDefaultTime( form.recurrence_setting_request.start_date_time, '00:00:00' )
+    const endDateWithTime = withDefaultTime( form.recurrence_setting_request.end_date_time, '23:59:59' )
+    formattedStartDate = toUtcIso( startDateWithTime )
+    formattedDueDate = toUtcIso( endDateWithTime )
+  } else {
+    // Use form fields for recurring types with default times
+    // Start date defaults to 00:00:00, due date defaults to 23:59:59
+    const startDateWithTime = withDefaultTime( form.start_date, '00:00:00' )
+    const dueDateWithTime = withDefaultTime( form.due_date, '23:59:59' )
+    formattedStartDate = toUtcIso( startDateWithTime )
+    formattedDueDate = toUtcIso( dueDateWithTime )
+  }
+
+  // Create a clean copy of recurrence_setting_request without mutating the original form
+  const recurrenceSettingPayload = clonePayload( form.recurrence_setting_request ?? {} )
+
+  if ( isNoneRecurrence ) {
+    if ( formattedStartDate ) {
+      recurrenceSettingPayload.start_date_time = formattedStartDate
+    }
+    if ( formattedDueDate ) {
+      recurrenceSettingPayload.end_date_time = formattedDueDate
+    }
+  } else {
+    // For recurring types, ensure recurrence_setting_request datetimes are converted to UTC
+    if ( recurrenceSettingPayload.start_date_time ) {
+      recurrenceSettingPayload.start_date_time = toUtcIso(
+        withDefaultTime( recurrenceSettingPayload.start_date_time, '00:00:00' )
+      )
+    }
+    if ( recurrenceSettingPayload.end_date_time ) {
+      recurrenceSettingPayload.end_date_time = toUtcIso(
+        withDefaultTime( recurrenceSettingPayload.end_date_time, '23:59:59' )
+      )
+    }
+  }
 
   // Create base payload
   const basePayload = {
@@ -2128,7 +2265,7 @@ const createWorkOrderPayload = () => {
     work_type_id : form.work_type_id,
     start_date : formattedStartDate,
     due_date : formattedDueDate,
-    recurrence_setting_request : form.recurrence_setting_request,
+    recurrence_setting_request : recurrenceSettingPayload,
     task_list : form.task_list,
     time_zone : form.time_zone,
     equipment_node_ids : form.equipment_node_ids,
@@ -2156,35 +2293,9 @@ const createWorkOrderPayload = () => {
   return transformed
 }
 
-const showWorkOrderDuration = computed( () => {
-  return form.start_date && form.due_date
-} )
-
 const isRecreation = computed( () => {
   return !!form.parent_work_order_id
 } )
-
-const formatWorkOrderDuration = () => {
-  if ( !form.start_date || !form.due_date ) return ''
-
-  const start = new Date( form.start_date )
-  const due = new Date( form.due_date )
-  const diffMs = due - start
-
-  if ( diffMs <= 0 ) return 'Invalid duration'
-
-  const diffDays = Math.floor( diffMs / ( 1000 * 60 * 60 * 24 ) )
-  const diffHours = Math.floor( ( diffMs % ( 1000 * 60 * 60 * 24 ) ) / ( 1000 * 60 * 60 ) )
-  const diffMinutes = Math.floor( ( diffMs % ( 1000 * 60 * 60 ) ) / ( 1000 * 60 ) )
-
-  if ( diffDays > 0 ) {
-    return `${diffDays} day${diffDays !== 1 ? 's' : ''} ${diffHours}h ${diffMinutes}m`
-  } else if ( diffHours > 0 ) {
-    return `${diffHours}h ${diffMinutes}m`
-  } else {
-    return `${diffMinutes} minute${diffMinutes !== 1 ? 's' : ''}`
-  }
-}
 
 // Watcher to sync recurrence_type from recurrence_setting
 watch(
@@ -2199,9 +2310,16 @@ watch(
       form.recurrence_type_id = newVal.recurrence_type
 
       // Update the recurrence_setting_request
+      // RecurrenceEditor emits start_date_time and end_date_time as already-UTC ISO strings
+      // Use them directly without re-conversion to avoid double timezone conversion
+      const startDateTime =
+        newVal.start_date_time || ( form.start_date ? toUtcIso( withDefaultTime( form.start_date, '00:00:00' ) ) : null )
+      const endDateTime =
+        newVal.end_date_time || ( form.due_date ? toUtcIso( withDefaultTime( form.due_date, '23:59:59' ) ) : null )
+
       form.recurrence_setting_request = {
-        start_date_time : newVal.start_date_time || form.start_date,
-        end_date_time : newVal.end_date_time,
+        start_date_time : startDateTime,
+        end_date_time : endDateTime,
         month_of_year : newVal.month_of_year,
         day_of_month : newVal.day_of_month,
         days_of_week : newVal.days_of_week,
@@ -2297,13 +2415,20 @@ const submitForm = async() => {
     form.image_list = finalImageList
     form.file_list = finalFileList
 
-    // Prepare properly formatted dates for backend (convert to UTC Z)
-    toUtcIso( form.due_date )
-    const formattedStartDate = toUtcIso( form.start_date )
+    // Prepare properly formatted local datetime strings for backend
+    const formattedStartDate = toUtcIso( withDefaultTime( form.start_date, '00:00:00' ) )
+    const formattedDueDate = toUtcIso( withDefaultTime( form.due_date, '23:59:59' ) )
 
-    // Ensure start_date_time is set for recurrence
-    if ( !form.recurrence_setting_request.start_date_time && formattedStartDate ) {
+    // Ensure recurrence setting defaults exist
+    if ( !form.recurrence_setting_request ) {
+      form.recurrence_setting_request = {}
+    }
+
+    if ( formattedStartDate ) {
       form.recurrence_setting_request.start_date_time = formattedStartDate
+    }
+    if ( formattedDueDate ) {
+      form.recurrence_setting_request.end_date_time = formattedDueDate
     }
 
     // Ensure we have a valid recurrence_type (default to 1 if not set)

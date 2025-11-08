@@ -160,7 +160,7 @@ function getSelection( data ) {
 }
 
 function handleCreateWorkOrder() {
-  router.push( { name : 'NewWorkOrder' } )
+  router.push( { name : 'CreateWorkOrder' } )
 }
 
 const handleCurrentChange = val => {

@@ -82,11 +82,11 @@
         </div>
       </div>
 
-      <!-- Row 3: Personnel -->
+      <!-- Row 3: Executors -->
       <div class="row-3">
         <div class="detail-item">
-          <span class="detail-label">Personnel:</span>
-          <span class="detail-value">{{ assignedPersonnel }}</span>
+          <span class="detail-label">Executors:</span>
+          <span class="detail-value">{{ executorsList }}</span>
         </div>
       </div>
     </div>
@@ -181,30 +181,21 @@ const taskState = computed( () => {
   return props.task?.state?.name || '-'
 } )
 
-const assignedPersonnel = computed( () => {
-  const personnel = props.task?.personnel
-  if ( !personnel ) return '-'
+const executorsList = computed( () => {
+  const executors = props.task?.executor_list
+  if ( !executors ) return '-'
 
-  // Handle array of personnel
-  if ( Array.isArray( personnel ) ) {
-    const names = personnel
-      .map( p => {
-        if ( typeof p === 'string' ) return p
-        if ( typeof p === 'object' && p.name ) return p.name
+  // Handle array of executors
+  if ( Array.isArray( executors ) ) {
+    const names = executors
+      .map( executor => {
+        if ( typeof executor === 'object' && executor.first_name && executor.last_name ) {
+          return `${executor.first_name} ${executor.last_name}`
+        }
         return ''
       } )
       .filter( Boolean )
     return names.length > 0 ? names.join( ', ' ) : '-'
-  }
-
-  // Handle single personnel object
-  if ( typeof personnel === 'object' && personnel.name ) {
-    return personnel.name
-  }
-
-  // Handle string
-  if ( typeof personnel === 'string' ) {
-    return personnel
   }
 
   return '-'

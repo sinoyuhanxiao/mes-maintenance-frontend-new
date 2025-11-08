@@ -52,10 +52,10 @@
         </h4>
 
         <!-- Due Date -->
-        <div class="card-meta" v-if="workOrder.due_date">
+        <div class="card-meta" v-if="displayDueDate !== '-'">
           <span class="meta-label">{{ $t('workOrder.table.dueDate') }}:</span>
           <span class="meta-value" :class="{ 'incomplete-text': isIncomplete }">
-            {{ formatDate(workOrder.due_date) }}
+            {{ displayDueDate }}
           </span>
         </div>
 
@@ -89,10 +89,7 @@
 
         <!-- Status and Priority Badges -->
         <div class="card-badges">
-          <el-tag
-            :type="isPendingApproval ? 'success' : getStatusTagType(workOrder.state?.name)"
-            :effect="workOrder.state?.name === 'Incomplete' || isPendingApproval ? 'dark' : 'plain'"
-          >
+          <el-tag :type="getStateTagType(workOrder.state?.name)" :effect="getStateTagEffect(workOrder.state?.name)">
             {{ getStatusName(workOrder.state?.name) }}
           </el-tag>
           <el-tag :type="getPriorityTagType(workOrder.priority?.name)" effect="plain">
@@ -139,8 +136,9 @@ import { useI18n } from 'vue-i18n'
 import { MoreFilled, Edit, View, Delete, Flag, Picture } from '@element-plus/icons-vue'
 import StartWorkOrderAction from '@/components/WorkOrder/Actions/StartWorkOrderAction.vue'
 import RecurrenceTag from '@/components/WorkOrder/Display/RecurrenceTag.vue'
-import { convertToLocalTime } from '@/utils/datetime'
 import { useSettingsStore } from '@/store'
+import { formatWorkOrderDate } from '@/components/WorkOrder/utils/dateFormatter'
+import { getStateTagType, getStateTagEffect } from '@/components/WorkOrder/utils/stateUtils'
 
 // Props
 const props = defineProps( {
@@ -195,25 +193,7 @@ const progressPercentage = computed( () => {
   return Math.round( ( completedTasks.value / totalTasks.value ) * 100 )
 } )
 
-// Methods
-const formatDate = dateString => {
-  return convertToLocalTime( dateString )
-}
-
-const getStatusTagType = status => {
-  switch ( status ) {
-    case 'Failed':
-      return 'danger'
-    case 'Incomplete':
-      return 'danger'
-    case 'Completed':
-      return 'success'
-    case 'In Progress':
-      return 'warning'
-    default:
-      return 'info'
-  }
-}
+const displayDueDate = computed( () => formatWorkOrderDate( props.workOrder, 'due_date' ) )
 
 const getStatusName = status => {
   const statusMap = {

@@ -110,6 +110,10 @@
                     <el-icon><DocumentCopy /></el-icon>
                     {{ $t('workOrder.actions.recreate') }}
                   </el-dropdown-item>
+                  <el-dropdown-item command="copy" :disabled="disableActions">
+                    <el-icon><CopyDocument /></el-icon>
+                    {{ $t('workOrder.actions.copy') }}
+                  </el-dropdown-item>
                   <el-dropdown-item command="delete" :disabled="disableActions" divided class="delete-item">
                     <el-icon><Delete /></el-icon>
                     {{ $t('workOrder.actions.delete') }}
@@ -126,7 +130,14 @@
     <div class="detail-section">
       <el-descriptions :column="4" class="general-details-descriptions">
         <el-descriptions-item :label="$t('workOrder.table.state')">
-          <span class="detail-value">{{ workOrder.state?.name || '-' }}</span>
+          <el-tag
+            v-if="workOrder.state?.name"
+            :type="getStateTagType(workOrder.state?.name)"
+            :effect="getStateTagEffect(workOrder.state?.name)"
+          >
+            {{ workOrder.state.name }}
+          </el-tag>
+          <span v-else class="detail-value">-</span>
         </el-descriptions-item>
         <el-descriptions-item v-if="workOrder.code" label="Work Order Code">
           <span class="detail-value work-order-code">{{ workOrder.code }}</span>
@@ -189,17 +200,17 @@
       <el-descriptions :column="4" class="dates-descriptions">
         <el-descriptions-item label="Start Date Time">
           <span class="detail-value">
-            {{ workOrder.start_date ? formatDate(workOrder.start_date) : '-' }}
+            {{ displayStartDate }}
           </span>
         </el-descriptions-item>
         <el-descriptions-item v-if="false" label="End Date Time">
           <span class="detail-value">
-            {{ workOrder.end_date ? formatDate(workOrder.end_date) : '-' }}
+            {{ displayEndDate }}
           </span>
         </el-descriptions-item>
         <el-descriptions-item :label="$t('workOrder.table.dueDate')">
           <span class="detail-value" :class="{ incomplete: isIncomplete }">
-            {{ workOrder.due_date ? formatDate(workOrder.due_date) : '-' }}
+            {{ displayDueDate }}
           </span>
         </el-descriptions-item>
         <el-descriptions-item label="Approval Template">
@@ -350,6 +361,64 @@
       </div>
       <div v-else class="no-equipment">
         <el-empty description="No equipment details available" :image-size="60" />
+      </div>
+    </div>
+
+    <!-- Parent Work Order Section -->
+    <div class="detail-section" v-if="workOrder.parent_work_order">
+      <el-divider />
+      <h3 class="section-title">Parent Work Order</h3>
+      <div class="request-grid">
+        <el-tooltip effect="light" placement="top" popper-class="request-tooltip-popper">
+          <template #content>
+            <div class="request-tooltip">
+              <div>
+                <strong>Name:</strong>
+                {{ workOrder.parent_work_order.name || `Work Order ${workOrder.parent_work_order.id}` }}
+              </div>
+              <div v-if="workOrder.parent_work_order.priority">
+                <strong>Priority:</strong>
+                {{ workOrder.parent_work_order.priority.name || workOrder.parent_work_order.priority }}
+              </div>
+              <div v-if="workOrder.parent_work_order.status !== undefined">
+                <strong>Status:</strong> {{ getWorkOrderStatusLabel(workOrder.parent_work_order.status) }}
+              </div>
+              <div v-if="workOrder.parent_work_order.created_by">
+                <strong>Created By:</strong>
+                {{
+                  typeof workOrder.parent_work_order.created_by === 'object'
+                    ? `${workOrder.parent_work_order.created_by.first_name} ${workOrder.parent_work_order.created_by.last_name}`
+                    : workOrder.parent_work_order.created_by
+                }}
+              </div>
+            </div>
+          </template>
+          <div class="request-card" @click="handleParentWorkOrderClick(workOrder.parent_work_order)">
+            <div class="request-image">
+              <el-image
+                v-if="workOrder.parent_work_order.image_list && workOrder.parent_work_order.image_list.length"
+                :src="getFirstWorkOrderImage(workOrder.parent_work_order.image_list)"
+                fit="cover"
+                class="request-thumbnail"
+              >
+                <template #error>
+                  <div class="request-icon workorder-icon">
+                    <el-icon><Document /></el-icon>
+                  </div>
+                </template>
+              </el-image>
+              <div v-else class="request-icon workorder-icon">
+                <el-icon><Document /></el-icon>
+              </div>
+            </div>
+            <div class="request-info">
+              <div class="request-name">
+                {{ workOrder.parent_work_order.name || `Work Order ${workOrder.parent_work_order.id}` }}
+              </div>
+              <div class="request-code">ID: #{{ workOrder.parent_work_order.id }}</div>
+            </div>
+          </div>
+        </el-tooltip>
       </div>
     </div>
 
@@ -572,7 +641,7 @@
                 </el-select>
                 <el-select
                   v-model="taskFilters.assignee"
-                  placeholder="Personnel"
+                  placeholder="Executors"
                   clearable
                   class="filter-select"
                   size="default"
@@ -958,10 +1027,10 @@
         </template>
       </el-table-column>
 
-      <el-table-column prop="role_list" label="Role" min-width="200px" align="center">
+      <el-table-column prop="role_list" label="Primary Role" min-width="200px" align="center">
         <template #default="scope">
           <el-tag v-if="scope.row.role_list && scope.row.role_list.length > 0">
-            {{ scope.row.role_list[0].name || '-' }}
+            {{ getPrimaryRole(scope.row.role_list) }}
           </el-tag>
           <span v-else>-</span>
         </template>
@@ -1008,6 +1077,7 @@ import {
   Microphone,
   ArrowDown,
   DocumentCopy,
+  CopyDocument,
   Search,
   Select,
   CloseBold,
@@ -1016,6 +1086,8 @@ import {
 } from '@element-plus/icons-vue'
 import { convertToLocalTime } from '@/utils/datetime'
 import { exportTimeline as exportTimelineData, generateTimestampedFilename } from '@/utils/timelineExport'
+import { formatWorkOrderDate } from '@/components/WorkOrder/utils/dateFormatter'
+import { getStateTagType, getStateTagEffect } from '@/components/WorkOrder/utils/stateUtils'
 import { getEquipmentById } from '@/api/equipment'
 import {
   deleteIndividualWorkOrder,
@@ -1062,7 +1134,8 @@ const emit = defineEmits( [
   'delete',
   'start-work-order',
   'refresh',
-  'recreate'
+  'recreate',
+  'copy'
 ] )
 
 // State
@@ -1260,27 +1333,21 @@ const hasValidEquipment = computed( () => {
   return validEquipmentList.value.length > 0
 } )
 
+const displayStartDate = computed( () => formatWorkOrderDate( props.workOrder, 'start_date' ) )
+const displayEndDate = computed( () => formatWorkOrderDate( props.workOrder, 'end_date' ) )
+const displayDueDate = computed( () => formatWorkOrderDate( props.workOrder, 'due_date' ) )
+
 // Unique assignees for filter dropdown
 const uniqueAssignees = computed( () => {
-  const assigneesSet = new Set()
+  const userList = props.workOrder?.user_list
+  if ( !userList || !Array.isArray( userList ) || userList.length === 0 ) {
+    return []
+  }
 
-  taskEntries.value.forEach( task => {
-    const personnel = task?.personnel
-    if ( !personnel ) return
-
-    if ( Array.isArray( personnel ) ) {
-      personnel.forEach( p => {
-        if ( typeof p === 'string' && p ) assigneesSet.add( p )
-        if ( typeof p === 'object' && p.name ) assigneesSet.add( p.name )
-      } )
-    } else if ( typeof personnel === 'object' && personnel.name ) {
-      assigneesSet.add( personnel.name )
-    } else if ( typeof personnel === 'string' && personnel ) {
-      assigneesSet.add( personnel )
-    }
-  } )
-
-  return Array.from( assigneesSet ).sort()
+  return userList
+    .filter( user => user && user.first_name && user.last_name )
+    .map( user => `${user.first_name} ${user.last_name}` )
+    .sort()
 } )
 
 // Filtered task entries
@@ -1308,18 +1375,17 @@ const filteredTaskEntries = computed( () => {
   // Filter by assignee
   if ( taskFilters.value.assignee ) {
     filtered = filtered.filter( task => {
-      const personnel = task?.personnel
-      if ( !personnel ) return false
+      const executors = task?.executor_list
+      if ( !executors ) return false
 
-      if ( Array.isArray( personnel ) ) {
-        return personnel.some( p => {
-          const name = typeof p === 'string' ? p : p?.name || ''
-          return name === taskFilters.value.assignee
+      if ( Array.isArray( executors ) ) {
+        return executors.some( executor => {
+          if ( typeof executor === 'object' && executor.first_name && executor.last_name ) {
+            const name = `${executor.first_name} ${executor.last_name}`
+            return name === taskFilters.value.assignee
+          }
+          return false
         } )
-      } else if ( typeof personnel === 'object' && personnel.name ) {
-        return personnel.name === taskFilters.value.assignee
-      } else if ( typeof personnel === 'string' ) {
-        return personnel === taskFilters.value.assignee
       }
 
       return false
@@ -1727,6 +1793,9 @@ const handleHeaderAction = action => {
       break
     case 'recreate':
       emit( 'recreate', props.workOrder )
+      break
+    case 'copy':
+      emit( 'copy', props.workOrder )
       break
     case 'delete':
       handleDeleteWorkOrder()
@@ -2137,6 +2206,41 @@ const getFirstRequestImage = imageList => {
   return null
 }
 
+const getFirstWorkOrderImage = imageList => {
+  if ( !imageList ) return null
+  if ( Array.isArray( imageList ) && imageList.length > 0 ) {
+    return imageList[0]
+  }
+  if ( typeof imageList === 'string' ) {
+    const images = imageList.split( ',' ).filter( Boolean )
+    return images.length > 0 ? images[0] : null
+  }
+  return null
+}
+
+const getWorkOrderStatusLabel = status => {
+  const statusMap = {
+    0 : 'Pending',
+    1 : 'In Progress',
+    2 : 'Completed',
+    3 : 'Cancelled'
+  }
+  return statusMap[status] || 'Unknown'
+}
+
+const handleParentWorkOrderClick = workOrder => {
+  if ( !workOrder?.id ) {
+    ElMessage.warning( 'Parent work order information is not available' )
+    return
+  }
+
+  // Navigate to work order view page in a new tab
+  const route = router.resolve( {
+    path : `/work-order/view/${workOrder.id}`
+  } )
+  window.open( route.href, '_blank' )
+}
+
 const handleEquipmentClick = equipment => {
   if ( !equipment?.id ) {
     ElMessage.warning( 'Equipment information is not available' )
@@ -2186,6 +2290,27 @@ onUnmounted( () => {
   // Clean up resize listener
   window.removeEventListener( 'resize', calculateListsMinHeight )
 } )
+
+// Helper function to get primary role from role_list
+const getPrimaryRole = roleList => {
+  if ( !roleList || !Array.isArray( roleList ) || roleList.length === 0 ) {
+    return '-'
+  }
+
+  // Find the primary role
+  const primaryRole = roleList.find( r => r.is_primary === true )
+
+  if ( primaryRole && primaryRole.role && primaryRole.role.name ) {
+    return primaryRole.role.name
+  }
+
+  // Fallback to first role if no primary role found
+  if ( roleList[0] && roleList[0].role && roleList[0].role.name ) {
+    return roleList[0].role.name
+  }
+
+  return '-'
+}
 
 defineOptions( {
   name : 'WorkOrderDetail'
@@ -2843,6 +2968,14 @@ defineOptions( {
       .el-icon {
         font-size: 20px;
         color: var(--el-color-primary);
+      }
+
+      &.workorder-icon {
+        background: var(--el-color-primary-light-9);
+
+        .el-icon {
+          color: var(--el-color-primary);
+        }
       }
 
       &.workorder-request-icon {

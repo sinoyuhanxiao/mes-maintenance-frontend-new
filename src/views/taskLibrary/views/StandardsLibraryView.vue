@@ -207,41 +207,57 @@
                     + Rule
                   </el-button>
                 </div>
-                <div class="rules-container">
-                  <div v-for="(rule, index) in selectedstandard.items" :key="index" class="rule-item">
-                    <div class="rule-number">{{ index + 1 }}</div>
-                    <div class="rule-content">
-                      <div class="rule-text" v-if="editingRuleIndex === null || editingRuleIndex !== index">
-                        {{ rule }}
+                <VueDraggable
+                  v-model="selectedstandard.items"
+                  class="rules-container"
+                  item-key="index"
+                  :animation="200"
+                  :disabled="editingRuleIndex !== null"
+                  handle=".drag-handle"
+                  ghost-class="rule-ghost"
+                  chosen-class="rule-chosen"
+                  drag-class="rule-drag"
+                  @end="handleRuleReorder"
+                >
+                  <template #item="{ element: rule, index }">
+                    <div class="rule-item" :key="index">
+                      <div class="rule-number">{{ index + 1 }}</div>
+                      <div class="rule-content">
+                        <div class="rule-text" v-if="editingRuleIndex === null || editingRuleIndex !== index">
+                          {{ rule }}
+                        </div>
+                        <el-input v-else v-model="editingRuleText" @keyup.enter="saveRule(index)" ref="ruleInput" />
                       </div>
-                      <el-input v-else v-model="editingRuleText" @keyup.enter="saveRule(index)" ref="ruleInput" />
+                      <div class="rule-actions">
+                        <template v-if="editingRuleIndex === index">
+                          <el-button type="text" size="default" @click="saveRule(index)" title="Save">
+                            <el-icon><Check /></el-icon>
+                          </el-button>
+                          <el-button type="text" size="default" @click="cancelEdit" title="Cancel">
+                            <el-icon><Close /></el-icon>
+                          </el-button>
+                        </template>
+                        <template v-else>
+                          <el-button type="text" size="default" @click="editRule(index, rule)" title="Edit">
+                            <el-icon><Edit /></el-icon>
+                          </el-button>
+                          <el-button
+                            type="text"
+                            size="default"
+                            @click="deleteRule(index)"
+                            title="Delete"
+                            class="delete-btn"
+                          >
+                            <el-icon><Delete /></el-icon>
+                          </el-button>
+                        </template>
+                      </div>
+                      <div class="drag-handle" v-if="editingRuleIndex !== index">
+                        <el-icon><Rank /></el-icon>
+                      </div>
                     </div>
-                    <div class="rule-actions">
-                      <template v-if="editingRuleIndex === index">
-                        <el-button type="text" size="default" @click="saveRule(index)" title="Save">
-                          <el-icon><Check /></el-icon>
-                        </el-button>
-                        <el-button type="text" size="default" @click="cancelEdit" title="Cancel">
-                          <el-icon><Close /></el-icon>
-                        </el-button>
-                      </template>
-                      <template v-else>
-                        <el-button type="text" size="default" @click="editRule(index, rule)" title="Edit">
-                          <el-icon><Edit /></el-icon>
-                        </el-button>
-                        <el-button
-                          type="text"
-                          size="default"
-                          @click="deleteRule(index)"
-                          title="Delete"
-                          class="delete-btn"
-                        >
-                          <el-icon><Delete /></el-icon>
-                        </el-button>
-                      </template>
-                    </div>
-                  </div>
-                </div>
+                  </template>
+                </VueDraggable>
               </div>
               <div v-else class="empty-rules">
                 <el-empty description="No standard rules defined yet" :image-size="60">
@@ -322,12 +338,14 @@ import {
   MoreFilled,
   Warning,
   Check,
-  Close
+  Close,
+  Rank
 } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useStandards } from '@/composables/designer/useStandards'
 import standardCard from '../components/Library/StandardCard.vue'
 import CreateStandardDialog from '@/components/TaskLibrary/CreateStandardDialog.vue'
+import VueDraggable from 'vuedraggable'
 
 const settingsStore = useSettingsStore()
 const {
@@ -713,6 +731,31 @@ const deleteRule = async index => {
   }
 }
 
+const handleRuleReorder = async() => {
+  if ( !selectedstandard.value ) return
+
+  try {
+    const payload = { ...selectedstandard.value, module : 200 }
+
+    // Validate ID before update
+    const currentId = selectedstandardId.value
+    if ( !currentId ) {
+      ElMessage.error( 'Standard ID is missing. Please refresh and try again.' )
+      return
+    }
+
+    await updateStandard( currentId, payload )
+
+    // Preserve selection after reload
+    await loadstandards()
+    selectedstandardId.value = currentId
+
+    ElMessage.success( 'Rules reordered successfully' )
+  } catch ( error ) {
+    ElMessage.error( 'Failed to reorder rules' )
+  }
+}
+
 // Dynamic height calculation functions
 const calculateDynamicHeights = () => {
   nextTick( () => {
@@ -1056,61 +1099,102 @@ defineOptions( {
 .rules-container {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 12px 24px 24px 24px;
+  gap: 16px;
+  padding: 16px 24px 28px 24px;
+  background: #fafbfc;
+  border-radius: 8px;
+  margin: 0 24px 24px 24px;
 }
 
 .rule-item {
   display: flex;
   align-items: center;
-  padding: 12px;
-  border: 1px solid #e4e7ed;
-  border-radius: 8px;
-  background: #fafafa;
-  transition: all 0.3s ease;
-  justify-content: space-evenly;
+  padding: 16px;
+  border: 1px solid #e8eaed;
+  border-radius: 10px;
+  background: #ffffff;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  position: relative;
 }
 
 .rule-item:hover {
-  border-color: #409eff;
-  background: #f0f7ff;
+  border-color: #a0cfff;
+  background: #f8fbff;
+  box-shadow: 0 2px 8px rgba(64, 158, 255, 0.08);
+  transform: translateY(-1px);
 }
 
 .rule-number {
-  width: 23px;
-  height: 23px;
-  background: #409eff;
+  min-width: 26px;
+  height: 26px;
+  background: linear-gradient(135deg, #409eff 0%, #66b1ff 100%);
   color: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  margin-right: 16px;
+  margin-right: 18px;
   flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(64, 158, 255, 0.2);
 }
 
 .rule-content {
   flex: 1;
-  margin-right: 12px;
+  margin-right: 14px;
 }
 
 .rule-text {
-  color: #303133;
-  line-height: 1.6;
+  color: #3c4043;
+  line-height: 1.7;
   font-size: 14px;
+  word-break: break-word;
+}
+
+.rule-content :deep(.el-input__wrapper) {
+  box-shadow: none;
+  border: 1px solid #d0d7de;
+  padding: 0;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.rule-content :deep(.el-input__wrapper:hover) {
+  border-color: #a0cfff;
+}
+
+.rule-content :deep(.el-input__wrapper.is-focus) {
+  border-color: #409eff;
+  box-shadow: 0 0 0 3px rgba(64, 158, 255, 0.1);
 }
 
 .rule-content :deep(.el-input__inner) {
   font-size: 14px;
-  line-height: 1.6;
-  color: #303133;
+  line-height: 1.7;
+  color: #3c4043;
+  border: none;
+  box-shadow: none;
+  padding: 0 0 0 6px;
 }
 
 .rule-actions {
   display: flex;
-  gap: 2px;
+  transition: opacity 0.2s ease;
+}
+
+.rule-item:hover .rule-actions {
+  opacity: 1;
+}
+
+.rule-actions .el-button {
+  border-radius: 6px;
+  font-size: 16px;
+}
+
+.rule-actions .el-button .el-icon {
+  font-size: 16px;
 }
 
 .delete-btn {
@@ -1119,6 +1203,7 @@ defineOptions( {
 
 .delete-btn:hover {
   color: #f78989;
+  background: #fef0f0;
 }
 
 .empty-rules {
@@ -1186,5 +1271,54 @@ defineOptions( {
 .validation-error .el-icon {
   font-size: 14px;
   margin-right: 0;
+}
+
+/* Drag Handle */
+.drag-handle {
+  position: absolute;
+  right: -25px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #c0c4cc;
+  cursor: grab;
+  padding: 6px;
+  font-size: 18px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.rule-item:hover .drag-handle {
+  opacity: 1;
+}
+
+.drag-handle:hover {
+  color: #409eff;
+}
+
+.drag-handle:active {
+  cursor: grabbing;
+  color: #409eff;
+}
+
+/* Drag States */
+.rule-ghost {
+  opacity: 0.5;
+  background: #e8f4ff;
+  border: 2px dashed #409eff;
+}
+
+.rule-chosen {
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.25);
+  border-color: #409eff;
+}
+
+.rule-drag {
+  opacity: 0.9;
+  transform: rotate(2deg);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
 }
 </style>

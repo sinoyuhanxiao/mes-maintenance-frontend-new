@@ -600,13 +600,8 @@ const handleLogStepValues = () => {
     return
   }
 
+  // eslint-disable-next-line no-unused-vars
   const { taskEntryId, payload } = debugPayload
-
-  console.groupCollapsed( '🧾 WorkOrderExecution: Task payload preview' )
-  console.log( 'Task Entry ID:', taskEntryId )
-  console.log( 'API Endpoint:', `/api/task/entry/${taskEntryId}` )
-  console.log( 'Preview Payload:', payload )
-  console.groupEnd()
 
   logPayload( payload, 'taskEntry', { showMessage : false } )
 }
@@ -620,10 +615,6 @@ const handleSubmitTask = async( saveAsDraft = false ) => {
     const action = saveAsDraft ? 'save as draft' : 'submit'
 
     console.groupCollapsed( '🧾 WorkOrderExecution: Prepared task entry payload' )
-    console.log( 'Task Entry ID:', taskEntryId )
-    console.log( 'API Endpoint:', `/api/task/entry/${taskEntryId}` )
-    console.log( 'Submit Action:', action )
-    console.log( 'Request Payload:', payload )
     console.groupEnd()
 
     await ElMessageBox.confirm( `Are you sure you want to ${action} this task?`, 'Confirmation', {
@@ -648,7 +639,7 @@ const handleSubmitTask = async( saveAsDraft = false ) => {
       }, 3000 )
 
       closeDrawer()
-      emit( 'update:progress' )
+      emit( 'update:progress', { isDraft : saveAsDraft } )
     } else {
       ElMessage.error( `Failed to ${action} task` )
     }
@@ -669,12 +660,6 @@ const autoSaveDraft = async() => {
   try {
     const { taskEntryId, payload } = prepareTaskEntryPayload( true )
 
-    console.groupCollapsed( '🧾 WorkOrderExecution: Auto-saving draft' )
-    console.log( 'Task Entry ID:', taskEntryId )
-    console.log( 'API Endpoint:', `/api/task/entry/${taskEntryId}` )
-    console.log( 'Request Payload:', payload )
-    console.groupEnd()
-
     isSubmitting.value = true
 
     const response = await updateTaskEntry( taskEntryId, payload )
@@ -690,7 +675,7 @@ const autoSaveDraft = async() => {
         highlightedTaskId.value = null
       }, 3000 )
 
-      emit( 'update:progress' )
+      emit( 'update:progress', { isDraft : true } )
     } else {
       console.warn( 'Auto-save draft response not successful:', response )
     }

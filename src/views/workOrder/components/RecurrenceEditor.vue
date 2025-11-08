@@ -1,16 +1,19 @@
 <template>
   <div class="recurrence-editor">
     <el-form-item
+      v-if="!isSingleInstanceMode"
       :label="$t('workOrder.create.recurrenceSettings')"
       prop="recurrence_type"
       :show-message="false"
       required
+      :class="{ 'is-disabled': isDisabled }"
     >
       <el-select
         v-model="recurrence"
         :placeholder="$t('workOrder.placeholder.selectRecurrence')"
-        style="width: 500px"
+        style="width: 100%"
         clearable
+        :disabled="isDisabled"
       >
         <el-option :label="$t('workOrder.recurrence.none')" value="none"></el-option>
         <el-option :label="$t('workOrder.recurrence.daily')" value="daily"></el-option>
@@ -18,6 +21,48 @@
         <el-option :label="$t('workOrder.recurrence.monthlyByDate')" value="monthlyByDate"></el-option>
         <el-option :label="$t('workOrder.recurrence.yearly')" value="yearly"></el-option>
       </el-select>
+    </el-form-item>
+
+    <!-- Work Order Start Date (hidden for 'none' recurrence) -->
+    <el-form-item v-if="recurrence !== 'none'" :label="$t('workOrder.create.startDate')" prop="start_date">
+      <template #label>
+        <span>{{ $t('workOrder.create.startDate') }}</span>
+        <el-tooltip :content="$t('workOrder.tooltips.rangeStartDate')" placement="top">
+          <el-icon style="margin-left: 4px; cursor: help; color: var(--el-color-info)">
+            <QuestionFilled />
+          </el-icon>
+        </el-tooltip>
+      </template>
+      <el-date-picker
+        :model-value="startDateModel"
+        type="date"
+        :placeholder="$t('workOrder.create.startDatePlaceholder')"
+        style="width: 100%"
+        format="YYYY-MM-DD"
+        value-format="YYYY-MM-DD"
+        @update:model-value="updateStartDate"
+      />
+    </el-form-item>
+
+    <!-- Work Order Due Date (hidden for 'none' recurrence) -->
+    <el-form-item v-if="recurrence !== 'none'" :label="$t('workOrder.create.dueDate')" prop="due_date">
+      <template #label>
+        <span>{{ $t('workOrder.create.dueDate') }}</span>
+        <el-tooltip :content="$t('workOrder.tooltips.rangeEndDate')" placement="top">
+          <el-icon style="margin-left: 4px; cursor: help; color: var(--el-color-info)">
+            <QuestionFilled />
+          </el-icon>
+        </el-tooltip>
+      </template>
+      <el-date-picker
+        :model-value="dueDateModel"
+        type="date"
+        :placeholder="$t('workOrder.create.dueDatePlaceholder')"
+        style="width: 100%"
+        format="YYYY-MM-DD"
+        value-format="YYYY-MM-DD"
+        @update:model-value="updateDueDate"
+      />
     </el-form-item>
 
     <!-- Weekly Interval Selection -->
@@ -121,7 +166,7 @@
   </div>
 
   <!-- For 'none' recurrence, use date-time fields -->
-  <template v-if="recurrence === 'none'">
+  <template v-if="isSingleInstanceMode || recurrence === 'none'">
     <!-- Start Date Time Selection -->
     <el-form-item
       :label="$t('workOrder.recurrence.startDateTime')"
@@ -129,23 +174,22 @@
       required
       :show-message="false"
     >
+      <template #label>
+        <span>{{ $t('workOrder.recurrence.startDateTime') }}</span>
+        <el-tooltip :content="$t('workOrder.tooltips.singleStartDateTime')" placement="top">
+          <el-icon style="margin-left: 4px; cursor: help; color: var(--el-color-info)">
+            <QuestionFilled />
+          </el-icon>
+        </el-tooltip>
+      </template>
       <el-date-picker
         v-model="startDate"
         type="datetime"
         :placeholder="$t('workOrder.recurrence.selectStartTime')"
         format="YYYY-MM-DD HH:mm"
         value-format="YYYY-MM-DD HH:mm:ss"
-        style="width: 500px"
-        :disabled-date="disabledStartDate"
-        :disabled-hours="disabledStartHours"
-        :disabled-minutes="disabledStartMinutes"
+        style="width: 100%"
       />
-      <div v-if="showRecurrenceStartWarning" class="recurrence-warning">
-        <el-text type="warning" size="small">
-          <el-icon><Warning /></el-icon>
-          Recurrence start time should not be before work order start time
-        </el-text>
-      </div>
     </el-form-item>
 
     <!-- End Date Time Selection -->
@@ -155,33 +199,32 @@
       required
       :show-message="false"
     >
+      <template #label>
+        <span>{{ $t('workOrder.recurrence.endDateTime') }}</span>
+        <el-tooltip :content="$t('workOrder.tooltips.singleEndDateTime')" placement="top">
+          <el-icon style="margin-left: 4px; cursor: help; color: var(--el-color-info)">
+            <QuestionFilled />
+          </el-icon>
+        </el-tooltip>
+      </template>
       <el-date-picker
         v-model="endDate"
         type="datetime"
         :placeholder="$t('workOrder.recurrence.selectEndTime')"
         format="YYYY-MM-DD HH:mm"
         value-format="YYYY-MM-DD HH:mm:ss"
-        style="width: 500px"
-        :disabled-date="disabledEndDate"
-        :disabled-hours="disabledEndHours"
-        :disabled-minutes="disabledEndMinutes"
+        style="width: 100%"
       />
-      <div v-if="showDurationWarning" class="duration-warning">
-        <el-text type="warning" size="small">
-          <el-icon><Warning /></el-icon>
-          Duration: {{ formatDuration(calculateDuration()) }}
-        </el-text>
-      </div>
     </el-form-item>
   </template>
 
   <!-- For recurring types, use only time fields -->
-  <template v-else-if="['daily', 'weekly', 'monthlyByDate', 'yearly'].includes(recurrence)">
+  <template v-else-if="!isSingleInstanceMode && ['daily', 'weekly', 'monthlyByDate', 'yearly'].includes(recurrence)">
     <!-- Start Time Selection -->
     <el-form-item prop="recurrence_setting.start_time" required :show-message="false">
       <template #label>
         <span>{{ $t('workOrder.recurrence.startTime') }}</span>
-        <el-tooltip :content="$t('workOrder.recurrence.timeRangeTooltip')" placement="top">
+        <el-tooltip :content="$t('workOrder.tooltips.startTime')" placement="top">
           <el-icon style="margin-left: 4px; cursor: help; color: var(--el-color-info)">
             <QuestionFilled />
           </el-icon>
@@ -192,7 +235,7 @@
         :placeholder="$t('workOrder.recurrence.selectStartTime')"
         format="HH:mm"
         value-format="HH:mm:ss"
-        style="width: 500px"
+        style="width: 100%"
       />
     </el-form-item>
 
@@ -200,7 +243,7 @@
     <el-form-item prop="recurrence_setting.end_time" required :show-message="false">
       <template #label>
         <span>{{ $t('workOrder.recurrence.endTime') }}</span>
-        <el-tooltip :content="$t('workOrder.recurrence.timeRangeTooltip')" placement="top">
+        <el-tooltip :content="$t('workOrder.tooltips.endTime')" placement="top">
           <el-icon style="margin-left: 4px; cursor: help; color: var(--el-color-info)">
             <QuestionFilled />
           </el-icon>
@@ -211,9 +254,7 @@
         :placeholder="$t('workOrder.recurrence.selectEndTime')"
         format="HH:mm"
         value-format="HH:mm:ss"
-        style="width: 500px"
-        :disabled-hours="disabledEndTimeHours"
-        :disabled-minutes="disabledEndTimeMinutes"
+        style="width: 100%"
       />
       <div v-if="showTimeDurationInfo" class="duration-info">
         <el-text type="info" size="small">
@@ -236,6 +277,7 @@ import { ref, watch, computed, onMounted, nextTick } from 'vue'
 import { Warning, Clock, QuestionFilled } from '@element-plus/icons-vue'
 import { getAllRecurrenceTypes } from '@/api/work-order'
 
+// eslint-disable-next-line vue/no-dupe-keys
 const startDate = ref( null )
 const endDate = ref( null )
 const recurrence = ref( 'none' ) // Initialize with 'none' instead of empty string
@@ -262,10 +304,50 @@ const props = defineProps( {
   recurrenceSetting : {
     type : Object,
     default : () => ( {} )
+  },
+  startDate : {
+    type : String,
+    default : null
+  },
+  dueDate : {
+    type : String,
+    default : null
+  },
+  disabled : {
+    type : Boolean,
+    default : false
+  },
+  singleInstanceMode : {
+    type : Boolean,
+    default : false
   }
 } )
 
-const emit = defineEmits( ['update:recurrenceSetting'] )
+const emit = defineEmits( ['update:recurrenceSetting', 'update:startDate', 'update:dueDate'] )
+
+const isDisabled = computed( () => !!props.disabled )
+const isSingleInstanceMode = computed( () => !!props.singleInstanceMode )
+const forcedRecurrenceTypeId = ref( null )
+
+// Computed properties for v-model binding
+const startDateModel = computed( {
+  get : () => props.startDate,
+  set : value => emit( 'update:startDate', value )
+} )
+
+const dueDateModel = computed( {
+  get : () => props.dueDate,
+  set : value => emit( 'update:dueDate', value )
+} )
+
+// Update methods
+const updateStartDate = value => {
+  emit( 'update:startDate', value )
+}
+
+const updateDueDate = value => {
+  emit( 'update:dueDate', value )
+}
 
 // Dynamic recurrence types from backend
 const recurrenceTypes = ref( [] )
@@ -344,18 +426,27 @@ const initializeFromRecurrenceSetting = () => {
     }
   }
 
-  recurrence.value = recurrenceTypeString
+  if ( isSingleInstanceMode.value ) {
+    forcedRecurrenceTypeId.value = setting.recurrence_type || recurrenceTypeMap.value[recurrenceTypeString] || null
+    recurrence.value = 'none'
+  } else {
+    forcedRecurrenceTypeId.value = null
+    recurrence.value = recurrenceTypeString
+  }
 
-  // Initialize date/time fields based on type
-  if ( recurrenceTypeString === 'none' ) {
+  if ( recurrenceTypeString === 'none' || isSingleInstanceMode.value ) {
     if ( setting.start_date_time ) {
       startDate.value = setting.start_date_time
+    } else if ( props.workOrderStartDate ) {
+      startDate.value = props.workOrderStartDate
     }
+
     if ( setting.end_date_time ) {
       endDate.value = setting.end_date_time
+    } else if ( props.workOrderDueDate ) {
+      endDate.value = props.workOrderDueDate
     }
   } else {
-    // For recurring types, initialize time fields
     if ( setting.start_time ) {
       startTime.value = setting.start_time
     }
@@ -363,7 +454,6 @@ const initializeFromRecurrenceSetting = () => {
       endTime.value = setting.end_time
     }
 
-    // Initialize type-specific fields
     if ( recurrenceTypeString === 'weekly' ) {
       if ( setting.interval ) repeatInterval.value = setting.interval
       if ( setting.days_of_week ) selectedDays.value = setting.days_of_week
@@ -395,151 +485,25 @@ watch(
   { deep : true }
 )
 
-// Date validation functions
-const disabledStartDate = date => {
-  // Allow dates from 30 days ago to 2 years in the future
-  const thirtyDaysAgo = new Date()
-  thirtyDaysAgo.setDate( thirtyDaysAgo.getDate() - 30 )
-
-  const twoYearsFromNow = new Date()
-  twoYearsFromNow.setFullYear( twoYearsFromNow.getFullYear() + 2 )
-
-  // Check if date is outside the general allowed range
-  if ( date < thirtyDaysAgo || date > twoYearsFromNow ) {
-    return true
-  }
-
-  // If work order start date is provided, recurrence start cannot be before it
-  if ( props.workOrderStartDate ) {
-    const workOrderStart = new Date( props.workOrderStartDate )
-    workOrderStart.setHours( 0, 0, 0, 0 ) // Reset time for date-only comparison
-
-    const compareDate = new Date( date )
-    compareDate.setHours( 0, 0, 0, 0 )
-
-    return compareDate < workOrderStart
-  }
-
-  return false
-}
-
-const disabledEndDate = date => {
-  if ( !startDate.value ) return false
-
-  const start = new Date( startDate.value )
-  start.setHours( 0, 0, 0, 0 )
-
-  const twoYearsFromNow = new Date()
-  twoYearsFromNow.setFullYear( twoYearsFromNow.getFullYear() + 2 )
-
-  // Check if date is before start date or beyond 2 years
-  if ( date < start || date > twoYearsFromNow ) {
-    return true
-  }
-
-  // Check if date exceeds the work order due date
-  if ( props.workOrderDueDate ) {
-    const dueDate = new Date( props.workOrderDueDate )
-    dueDate.setHours( 23, 59, 59, 999 ) // Allow end times up to end of due date
-
-    const compareDate = new Date( date )
-    compareDate.setHours( 0, 0, 0, 0 )
-
-    return compareDate > dueDate
-  }
-
-  return false
-}
-
-const disabledStartHours = () => {
-  if ( !props.workOrderStartDate || !startDate.value ) return []
-
-  const workOrderStart = new Date( props.workOrderStartDate )
-  const recurrenceStart = new Date( startDate.value )
-
-  // If same day as work order start, disable hours before work order start hour
-  if ( workOrderStart.toDateString() === recurrenceStart.toDateString() ) {
-    const disabledHours = []
-    for ( let i = 0; i < workOrderStart.getHours(); i++ ) {
-      disabledHours.push( i )
-    }
-    return disabledHours
-  }
-
-  return []
-}
-
-const disabledStartMinutes = hour => {
-  if ( !props.workOrderStartDate || !startDate.value ) return []
-
-  const workOrderStart = new Date( props.workOrderStartDate )
-  const recurrenceStart = new Date( startDate.value )
-
-  // If same day and same hour as work order start, disable minutes before work order start minute
-  if ( workOrderStart.toDateString() === recurrenceStart.toDateString() && hour === workOrderStart.getHours() ) {
-    const disabledMinutes = []
-    for ( let i = 0; i < workOrderStart.getMinutes(); i++ ) {
-      disabledMinutes.push( i )
-    }
-    return disabledMinutes
-  }
-
-  return []
-}
-
-const disabledEndHours = () => {
-  if ( !startDate.value || !endDate.value ) return []
-
-  const start = new Date( startDate.value )
-  const end = new Date( endDate.value )
-  const disabledHours = []
-
-  // If same day as start, disable hours before start hour
-  if ( start.toDateString() === end.toDateString() ) {
-    for ( let i = 0; i < start.getHours(); i++ ) {
-      disabledHours.push( i )
+watch(
+  () => props.singleInstanceMode,
+  () => {
+    if ( Object.keys( recurrenceTypeMap.value ).length > 0 ) {
+      initializeFromRecurrenceSetting()
     }
   }
+)
 
-  // If same day as due date, disable hours after due date hour
-  if ( props.workOrderDueDate ) {
-    const dueDate = new Date( props.workOrderDueDate )
-    if ( dueDate.toDateString() === end.toDateString() ) {
-      for ( let i = dueDate.getHours() + 1; i <= 23; i++ ) {
-        disabledHours.push( i )
-      }
-    }
-  }
+// Sync standalone datetime pickers back to parent for 'none' recurrence
+watch( startDate, value => {
+  if ( !isSingleInstanceMode.value && recurrence.value !== 'none' ) return
+  emit( 'update:startDate', value || null )
+} )
 
-  return disabledHours
-}
-
-const disabledEndMinutes = hour => {
-  if ( !startDate.value || !endDate.value ) return []
-
-  const start = new Date( startDate.value )
-  const end = new Date( endDate.value )
-  const disabledMinutes = []
-
-  // If same day and same hour as start, disable minutes before start minute
-  if ( start.toDateString() === end.toDateString() && hour === start.getHours() ) {
-    for ( let i = 0; i <= start.getMinutes(); i++ ) {
-      disabledMinutes.push( i )
-    }
-  }
-
-  // If same day and same hour as due date, disable minutes after due date minute
-  if ( props.workOrderDueDate ) {
-    const dueDate = new Date( props.workOrderDueDate )
-    if ( dueDate.toDateString() === end.toDateString() && hour === dueDate.getHours() ) {
-      for ( let i = dueDate.getMinutes() + 1; i <= 59; i++ ) {
-        disabledMinutes.push( i )
-      }
-    }
-  }
-
-  return disabledMinutes
-}
+watch( endDate, value => {
+  if ( !isSingleInstanceMode.value && recurrence.value !== 'none' ) return
+  emit( 'update:dueDate', value || null )
+} )
 
 // Helper function to get work order start date part
 const getWorkOrderStartDate = () => {
@@ -559,59 +523,7 @@ const getWorkOrderDueDate = () => {
   return date.toISOString().split( 'T' )[0]
 }
 
-const disabledEndTimeHours = () => {
-  if ( !startTime.value ) return []
-
-  const [startHour] = startTime.value.split( ':' ).map( Number )
-  const disabledHours = []
-
-  // Disable hours before start time hour
-  for ( let i = 0; i < startHour; i++ ) {
-    disabledHours.push( i )
-  }
-
-  return disabledHours
-}
-
-const disabledEndTimeMinutes = hour => {
-  if ( !startTime.value ) return []
-
-  const [startHour, startMinute] = startTime.value.split( ':' ).map( Number )
-  const disabledMinutes = []
-
-  // If same hour as start time, disable minutes before or equal to start minute
-  if ( hour === startHour ) {
-    for ( let i = 0; i <= startMinute; i++ ) {
-      disabledMinutes.push( i )
-    }
-  }
-
-  return disabledMinutes
-}
-
 // Duration helpers
-const calculateDuration = () => {
-  if ( !startDate.value || !endDate.value ) return 0
-
-  const start = new Date( startDate.value )
-  const end = new Date( endDate.value )
-  const diffMs = end - start
-
-  return diffMs > 0 ? Math.ceil( diffMs / ( 1000 * 60 ) ) : 0
-}
-
-const formatDuration = minutes => {
-  if ( minutes < 60 ) return `${minutes} minutes`
-
-  const hours = Math.floor( minutes / 60 )
-  const remainingMinutes = minutes % 60
-
-  if ( remainingMinutes === 0 ) return `${hours} hour${hours !== 1 ? 's' : ''}`
-
-  return `${hours}h ${remainingMinutes}m`
-}
-
-// New duration calculation for time-only fields
 const calculateTimeDuration = () => {
   if ( !startTime.value || !endTime.value ) return 0
 
@@ -629,25 +541,21 @@ const calculateTimeDuration = () => {
   return 0
 }
 
-const showDurationWarning = computed( () => {
-  const duration = calculateDuration()
-  return duration > 0 && duration <= 1440 // Show for any duration within one day (1440 minutes = 24 hours)
-} )
+const formatDuration = minutes => {
+  if ( minutes <= 0 ) return ''
+  const hours = Math.floor( minutes / 60 )
+  const remainingMinutes = minutes % 60
 
-const showRecurrenceStartWarning = computed( () => {
-  // For 'none' recurrence type, check startDate
-  if ( recurrence.value === 'none' ) {
-    if ( !props.workOrderStartDate || !startDate.value ) return false
-
-    const workOrderStart = new Date( props.workOrderStartDate )
-    const recurrenceStart = new Date( startDate.value )
-
-    return recurrenceStart < workOrderStart
+  if ( hours === 0 ) {
+    return `${remainingMinutes} minute${remainingMinutes === 1 ? '' : 's'}`
   }
 
-  // For recurring types, no warning needed since we use work order date
-  return false
-} )
+  if ( remainingMinutes === 0 ) {
+    return `${hours} hour${hours === 1 ? '' : 's'}`
+  }
+
+  return `${hours}h ${remainingMinutes}m`
+}
 
 // New computed properties for time-based validation
 const showTimeDurationInfo = computed( () => {
@@ -665,7 +573,7 @@ const recurrenceSetting = computed( () => {
   const setting = {}
 
   // Handle different recurrence types
-  if ( recurrence.value === 'none' ) {
+  if ( recurrence.value === 'none' || isSingleInstanceMode.value ) {
     // For 'none' recurrence, use the original date-time fields
     if ( startDate.value ) {
       setting.start_date_time = new Date( startDate.value ).toISOString()
@@ -703,17 +611,18 @@ const recurrenceSetting = computed( () => {
     setting.duration_minutes = calculateTimeDuration()
   }
 
-  setting.recurrence_type = recurrenceTypeMap.value[recurrence.value] || 1
+  const recurrenceId = forcedRecurrenceTypeId.value ?? recurrenceTypeMap.value[recurrence.value] ?? 1
+  setting.recurrence_type = recurrenceId
 
-  if ( recurrence.value === 'daily' ) {
+  if ( !isSingleInstanceMode.value && recurrence.value === 'daily' ) {
     setting.interval = 1
-  } else if ( recurrence.value === 'weekly' ) {
+  } else if ( !isSingleInstanceMode.value && recurrence.value === 'weekly' ) {
     setting.interval = repeatInterval.value
     setting.days_of_week = selectedDays.value.filter( v => typeof v === 'number' )
-  } else if ( recurrence.value === 'monthlyByDate' ) {
+  } else if ( !isSingleInstanceMode.value && recurrence.value === 'monthlyByDate' ) {
     setting.interval = monthlyRepeatInterval.value
     setting.day_of_month = monthlyDate.value
-  } else if ( recurrence.value === 'yearly' ) {
+  } else if ( !isSingleInstanceMode.value && recurrence.value === 'yearly' ) {
     setting.interval = yearlyRepeatInterval.value
     setting.month_of_year = yearlyMonth.value
     setting.day_of_month = yearlyDay.value
@@ -782,26 +691,6 @@ watch(
   margin-top: 15px;
 }
 
-.duration-warning {
-  margin-top: 8px;
-
-  .el-text {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-}
-
-.recurrence-warning {
-  margin-top: 8px;
-
-  .el-text {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-}
-
 .duration-info {
   margin-top: 8px;
 
@@ -810,6 +699,10 @@ watch(
     align-items: center;
     gap: 4px;
   }
+}
+
+.recurrence-editor .is-disabled {
+  opacity: 0.6;
 }
 
 .time-validation-error {

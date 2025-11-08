@@ -168,8 +168,8 @@ export const asyncRoutes = [
       },
       {
         path : 'new',
-        component : () => import( '@/views/workOrder/components/NewWorkOrder.vue' ),
-        name : 'NewWorkOrder',
+        component : () => import( '@/views/workOrder/components/CreateWorkOrder.vue' ),
+        name : 'CreateWorkOrder',
         meta : { title : 'router.newWorkOrder', noCache : true, hidden : true }
       },
       {
@@ -178,6 +178,13 @@ export const asyncRoutes = [
         name : 'ViewWorkOrder',
         props : true,
         meta : { title : 'router.viewWorkOrder', noCache : true, hidden : true }
+      },
+      {
+        path : 'edit/:id',
+        component : () => import( '@/views/workOrder/components/EditWorkOrder.vue' ),
+        name : 'EditWorkOrder',
+        props : true,
+        meta : { title : 'router.editWorkOrder', noCache : true, hidden : true }
       }
     ]
   },
