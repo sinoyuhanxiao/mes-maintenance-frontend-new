@@ -1,0 +1,92 @@
+import Layout from '@/layout/index.vue'
+import { PRODUCTION_IFRAME_BASE_URL } from '@/utils/env'
+
+const productionRoutes = {
+  path : '/production',
+  name : 'Production',
+  component : Layout,
+  meta : {
+    title : 'Production',
+    icon : 'folder'
+  },
+  children : [
+    {
+      path : '',
+      redirect : 'overview'
+    },
+    {
+      path : 'overview',
+      name : 'ProductionOverview',
+      component : () => import( '@/views/shared/IframeView.vue' ),
+      meta : {
+        title : 'Overview',
+        icon : 'dashboard',
+        iframeUrl : `http://10.10.12.168:8088/data/perspective/client/ignition-mqtt-connector/test`,
+        hidden : false,
+        noCache : false
+      }
+    },
+    {
+      path : 'library',
+      name : 'ProductionLibrary',
+      component : () => import( '@/views/shared/IframeView.vue' ),
+      meta : {
+        title : 'Library',
+        icon : 'folder',
+        iframeUrl : `${PRODUCTION_IFRAME_BASE_URL}/production_library`,
+        hidden : false,
+        noCache : false
+      }
+    },
+    {
+      path : 'resources',
+      name : 'ProductionResources',
+      component : () => import( '@/views/shared/IframeView.vue' ),
+      meta : {
+        title : 'Resources',
+        icon : 'cpu',
+        iframeUrl : `${PRODUCTION_IFRAME_BASE_URL}/production_resources`,
+        hidden : false,
+        noCache : false
+      }
+    },
+    {
+      path : 'work-orders',
+      name : 'ProductionWorkOrders',
+      component : () => import( '@/views/shared/IframeView.vue' ),
+      meta : {
+        title : 'Work Orders',
+        icon : 'table',
+        iframeUrl : `${PRODUCTION_IFRAME_BASE_URL}/production_work_orders`,
+        hidden : false,
+        noCache : false
+      }
+    },
+    {
+      path : 'schedule',
+      name : 'ProductionSchedule',
+      component : () => import( '@/views/shared/IframeView.vue' ),
+      meta : {
+        title : 'Schedule',
+        icon : 'table',
+        iframeUrl : `${PRODUCTION_IFRAME_BASE_URL}/production_scheduling`,
+        hidden : false,
+        noCache : false
+      }
+    },
+    {
+      path : 'tasks',
+      name : 'ProductionTasks',
+      component : () => import( '@/views/shared/IframeView.vue' ),
+      meta : {
+        title : 'Tasks',
+        icon : 'list',
+        iframeUrl : `${PRODUCTION_IFRAME_BASE_URL}/production_tasks/`,
+        hidden : false,
+        noCache : false
+      }
+    }
+  ]
+}
+
+export default productionRoutes

@@ -1,5 +1,5 @@
 export default {
-  title : 'FPS CMMS',
+  title : '',
   header : {
     home : 'Home'
   },

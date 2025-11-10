@@ -6,8 +6,10 @@
   "scripts": {
     "dev": "cross-env --max_old_space_size=4096 vite",
     "dev:debug": "cross-env --max_old_space_size=4096 vite --debug",
+    "demo": "cross-env --max_old_space_size=4096 vite --mode demo",
     "build": "rimraf dist && cross-env vite build",
     "build:staging": "rimraf dist && cross-env vite build --mode staging",
+    "build:demo": "rimraf dist && cross-env vite build --mode demo",
     "report": "rimraf dist && cross-env vite build",
     "vis": "set vis=true && vite build",
     "lint-fix": "eslint --fix --ext .js,.ts,.jsx,.tsx,.vue src",

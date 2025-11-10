@@ -7,6 +7,8 @@ import {
 import Layout from '@/layout/index.vue'
 // import nested from './modules/nested'
 import taskLibraryRoutes from './modules/taskLibrary'
+import qcRoutes from './modules/qc'
+import productionRoutes from './modules/production'
 
 const isAllowAll = import.meta.env.VITE_ALL_PERMISSION === 'true'
 
@@ -79,11 +81,20 @@ export const constantRoutes = [
 export const asyncRoutes = [
   {
     path : '/',
-    name : 'DashboardLayout',
-    component : Layout,
-    redirect : '/dashboard',
+    redirect : '/maintenance/dashboard',
     meta : {
-      title : 'router.dashboard'
+      hidden : true
+    }
+  },
+  {
+    path : '/maintenance',
+    name : 'Maintenance',
+    component : Layout,
+    redirect : '/maintenance/dashboard',
+    meta : {
+      title : 'Maintenance',
+      icon : 'setting',
+      alwaysShow : true
     },
     children : [
       {
@@ -95,6 +106,147 @@ export const asyncRoutes = [
           icon : 'dashboard',
           noCache : true,
           affix : true
+        }
+      },
+      {
+        path : 'equipment',
+        name : 'Equipment',
+        component : () => import( '@/views/equipment/index.vue' ),
+        meta : {
+          title : 'router.maintenanceEquipment',
+          icon : 'setting',
+          noCache : true
+        }
+      },
+      {
+        path : 'work-orders',
+        name : 'WorkOrdersMenu',
+        redirect : 'work-orders/table',
+        meta : { title : 'router.workOrderCenter', icon : 'table', noCache : true },
+        children : [
+          {
+            path : 'table',
+            component : () => import( '@/views/workOrder/index.vue' ),
+            name : 'WorkOrderManagement',
+            meta : { title : 'router.workOrderManagement', noCache : false }
+          },
+          {
+            path : 'dashboard',
+            component : () => import( '@/views/workOrder/components/WorkOrderDashboard.vue' ),
+            name : 'WorkOrderDashboard',
+            meta : { title : 'router.workOrderDashboard', noCache : true, hidden : true }
+          },
+          {
+            path : 'new',
+            component : () => import( '@/views/workOrder/components/CreateWorkOrder.vue' ),
+            name : 'CreateWorkOrder',
+            meta : { title : 'router.newWorkOrder', noCache : true, hidden : true }
+          },
+          {
+            path : 'view/:id',
+            component : () => import( '@/views/workOrder/components/ViewWorkOrder.vue' ),
+            name : 'ViewWorkOrder',
+            props : true,
+            meta : { title : 'router.viewWorkOrder', noCache : true, hidden : true }
+          },
+          {
+            path : 'edit/:id',
+            component : () => import( '@/views/workOrder/components/EditWorkOrder.vue' ),
+            name : 'EditWorkOrder',
+            props : true,
+            meta : { title : 'router.editWorkOrder', noCache : true, hidden : true }
+          }
+        ]
+      },
+      {
+        path : 'task-library',
+        name : 'TaskLibraryMenu',
+        redirect : 'task-library/tasks',
+        meta : {
+          title : 'Task Library',
+          icon : 'setting',
+          alwaysShow : true
+        },
+        children : [
+          {
+            path : 'tasks',
+            name : 'TaskLibrary',
+            component : () => import( '@/views/taskLibrary/views/TemplateLibraryView.vue' ),
+            meta : {
+              title : 'Tasks',
+              hidden : false,
+              noCache : false
+            }
+          },
+          {
+            path : 'standards',
+            name : 'StandardLibrary',
+            component : () => import( '@/views/taskLibrary/views/StandardsLibraryView.vue' ),
+            meta : {
+              title : 'Standards',
+              hidden : false,
+              noCache : false
+            }
+          },
+          {
+            path : 'designer',
+            name : 'TaskDesigner',
+            component : () => import( '@/views/taskLibrary/views/TaskDesignerCreateView.vue' ),
+            meta : {
+              title : 'Designer',
+              hidden : false,
+              noCache : false
+            }
+          },
+          {
+            path : 'designer/:id',
+            name : 'TaskDesignerEdit',
+            component : () => import( '@/views/taskLibrary/views/TaskDesignerEditView.vue' ),
+            meta : {
+              title : 'Edit Task',
+              hidden : true,
+              noCache : false
+            }
+          }
+        ]
+      },
+      {
+        path : 'requests',
+        name : 'MaintenanceRequests',
+        component : () => import( '@/views/maintenanceRequests/index.vue' ),
+        meta : {
+          title : 'router.request',
+          icon : 'message',
+          noCache : false
+        }
+      },
+      {
+        path : 'resources',
+        name : 'ResourcesMenu',
+        redirect : 'resources/spare-parts',
+        meta : { title : 'Resources', icon : 'cpu', noCache : true, alwaysShow : true },
+        children : [
+          {
+            path : 'spare-parts',
+            component : () => import( '@/views/resources/index.vue' ),
+            name : 'SpareParts',
+            meta : { title : 'Spare Parts', noCache : false }
+          },
+          {
+            path : 'tools',
+            component : () => import( '@/views/resources/components/tools/index.vue' ),
+            name : 'Tools',
+            meta : { title : 'Tools', noCache : true }
+          }
+        ]
+      },
+      {
+        path : 'vendors-locations',
+        name : 'VendorsLocationsMain',
+        component : () => import( '@/views/vendorsAndLocations/index.vue' ),
+        meta : {
+          title : 'router.vendorsAndLocations',
+          icon : 'map'
         }
       }
     ]
@@ -133,129 +285,11 @@ export const asyncRoutes = [
   //   ]
   // },
   // nested,
-  {
-    path : '/maintenance',
-    name : 'Equipment',
-    component : Layout,
-    meta : { title : 'router.maintenanceEquipment', icon : 'setting', noCache : true },
-    children : [
-      {
-        path : 'equipment',
-        component : () => import( '@/views/equipment/index.vue' ),
-        name : 'Maintenance Test',
-        meta : { title : 'router.maintenanceEquipment', noCache : true }
-      }
-    ]
-  },
-  {
-    path : '/work-order',
-    name : 'Table',
-    component : Layout,
-    redirect : '/work-order/table',
-    meta : { title : 'router.workOrderCenter', icon : 'table', noCache : true },
-    children : [
-      {
-        path : 'table',
-        component : () => import( '@/views/workOrder/index.vue' ),
-        name : 'WorkOrderManagement',
-        meta : { title : 'router.workOrderManagement', noCache : false }
-      },
-      {
-        path : 'dashboard',
-        component : () => import( '@/views/workOrder/components/WorkOrderDashboard.vue' ),
-        name : 'WorkOrderDashboard',
-        meta : { title : 'router.workOrderDashboard', noCache : true, hidden : true }
-      },
-      {
-        path : 'new',
-        component : () => import( '@/views/workOrder/components/CreateWorkOrder.vue' ),
-        name : 'CreateWorkOrder',
-        meta : { title : 'router.newWorkOrder', noCache : true, hidden : true }
-      },
-      {
-        path : 'view/:id',
-        component : () => import( '@/views/workOrder/components/ViewWorkOrder.vue' ),
-        name : 'ViewWorkOrder',
-        props : true,
-        meta : { title : 'router.viewWorkOrder', noCache : true, hidden : true }
-      },
-      {
-        path : 'edit/:id',
-        component : () => import( '@/views/workOrder/components/EditWorkOrder.vue' ),
-        name : 'EditWorkOrder',
-        props : true,
-        meta : { title : 'router.editWorkOrder', noCache : true, hidden : true }
-      }
-    ]
-  },
-  // Maintenance Library Routes
-  taskLibraryRoutes,
-  // {
-  //   path : '/task',
-  //   name : 'Task',
-  //   component : Layout,
-  //   redirect : '/task',
-  //   meta : { title : 'router.task', icon : 'list', noCache : true },
-  //   children : [
-  //     {
-  //       path : '',
-  //       component : () => import( '@/views/task/index.vue' ),
-  //       name : 'Task Management',
-  //       meta : { title : 'router.taskManagement', noCache : true }
-  //     }
-  //   ]
-  // },
-  {
-    path : '/maintenance-requests',
-    name : 'MaintenanceRequestsLayout',
-    component : Layout,
-    redirect : '/maintenance-requests',
-    meta : { title : 'router.request', icon : 'message', noCache : false },
-    children : [
-      {
-        path : '',
-        component : () => import( '@/views/maintenanceRequests/index.vue' ),
-        name : 'MaintenanceRequests',
-        meta : { title : 'router.request', noCache : false }
-      }
-    ]
-  },
-  {
-    path : '/resources',
-    name : 'Resources',
-    component : Layout,
-    redirect : '/resources/spare-parts',
-    meta : { title : 'Resources', icon : 'cpu', noCache : true },
-    children : [
-      {
-        path : '/spare-parts',
-        component : () => import( '@/views/resources/index.vue' ),
-        name : 'SpareParts',
-        meta : { title : 'Spare Parts', noCache : false }
-      },
-      {
-        path : '/tools',
-        component : () => import( '@/views/resources/components/tools/index.vue' ),
-        name : 'Tools',
-        meta : { title : 'Tools', noCache : true }
-      }
-    ]
-  },
-  {
-    path : '/vendors-locations',
-    name : 'VendorsAndLocations',
-    component : Layout,
-    meta : { title : 'router.vendorsAndLocations', icon : 'map', breadcrumb : false }, // hide parent crumb
-    children : [
-      {
-        path : '',
-        name : 'VendorsLocationsMain',
-        component : () => import( '@/views/vendorsAndLocations/index.vue' ),
-        meta : { title : 'router.vendorsAndLocations' }
-      }
-    ]
-  },
-
+  // Production Routes
+  productionRoutes,
+  // QC Routes
+  qcRoutes,
+  // Administration Routes
   {
     path : '/administration',
     name : 'Administration',

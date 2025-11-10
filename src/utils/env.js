@@ -35,6 +35,10 @@ export const ENV_CONFIG = {
   // Chatbot Client Configuration
   CHATBOT_URL : env.VITE_CHATBOT_BASE_URL,
 
+  // Iframe Module Configuration
+  QC_IFRAME_BASE_URL : env.VITE_QC_IFRAME_BASE_URL || 'http://10.10.12.12:3001',
+  PRODUCTION_IFRAME_BASE_URL : env.VITE_PRODUCTION_IFRAME_BASE_URL || 'http://10.10.12.12:8088/data/perspective/client/MES_Baseline',
+
   // Build Configuration
   LEGACY : env.VITE_LEGACY === 'true' || env.VITE_LEGACY === true,
   DEBUG : env.VITE_DEBUG === 'true' || env.VITE_DEBUG === true,
@@ -59,6 +63,11 @@ export const ENV_UTILS = {
    * Check if running in production mode
    */
   isProd : () => ENV_CONFIG.MODE === 'production',
+
+  /**
+   * Check if running in demo mode
+   */
+  isDemo : () => ENV_CONFIG.MODE === 'demo',
 
   /**
    * Check if debug mode is enabled
@@ -165,6 +174,8 @@ export const {
   MINIO_URL,
   DEFAULT_BUCKET_NAME,
   CHATBOT_URL,
+  QC_IFRAME_BASE_URL,
+  PRODUCTION_IFRAME_BASE_URL,
   LEGACY,
   DEBUG,
   MODE,

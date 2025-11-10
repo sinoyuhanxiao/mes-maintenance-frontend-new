@@ -1,16 +1,17 @@
 <template>
-  <div :class="{ 'has-logo': set.showLogo, 'has-version': true }" class="sidebar-wrapper">
+  <div :class="{ 'has-logo': set.showLogo, 'has-version': set.showVersion }" class="sidebar-wrapper">
     <Logo :class="set.layoutMod + '-logo'" v-if="set.showLogo" :collapse="set.isCollapse" />
     <el-scrollbar wrap-class="scrollbar-wrapper">
       <Menu />
     </el-scrollbar>
-    <VersionInfo :collapse="set.isCollapse" />
+    <VersionInfo v-if="set.showVersion" :collapse="set.isCollapse" />
   </div>
 </template>
 
 <script setup>
 import { computed, reactive } from 'vue'
 import { useAppStore, useSettingsStore } from '@/store'
+import { ENV_UTILS } from '@/utils/env'
 import Logo from './Logo'
 import Menu from './Menu'
 import VersionInfo from './VersionInfo'
@@ -27,6 +28,9 @@ const set = reactive( {
   } ),
   isCollapse : computed( () => {
     return !appStore.sidebar.opened
+  } ),
+  showVersion : computed( () => {
+    return !ENV_UTILS.isDemo()
   } )
 } )
 </script>

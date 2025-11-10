@@ -15,7 +15,7 @@
 </template>
 
 <script setup>
-import logo from '@/assets/imgs/logo2.png'
+import logo from '@/assets/fps_logo_medium_white.png'
 import defaultSettings from '@/settings'
 const { title } = defaultSettings
 
@@ -44,7 +44,7 @@ defineOptions( {
 .sidebar-logo-container {
   position: relative;
   width: 100%;
-  height: 50px;
+  height: 100px;
   line-height: 50px;
   background: #2b2f3a;
   text-align: center;
@@ -54,11 +54,12 @@ defineOptions( {
     width: 100%;
 
     .sidebar-logo {
-      width: 26px;
-      height: 26px;
+      height: 200px;
+      width: 240px;
       vertical-align: middle;
-      margin-right: 12px;
+      margin-top: -40px;
       display: inline-block;
+      object-fit: contain;
     }
 
     .sidebar-title {
