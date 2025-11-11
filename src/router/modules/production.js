@@ -21,7 +21,7 @@ const productionRoutes = {
       meta : {
         title : 'Overview',
         icon : 'dashboard',
-        iframeUrl : `http://10.10.12.168:8088/data/perspective/client/ignition-mqtt-connector/test`,
+        iframeUrl : `${PRODUCTION_IFRAME_BASE_URL}/production_overview`,
         hidden : false,
         noCache : false
       }
