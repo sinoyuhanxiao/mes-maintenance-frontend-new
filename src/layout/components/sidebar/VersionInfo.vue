@@ -48,7 +48,7 @@ defineOptions( {
 
 .version-info-container {
   position: relative;
-  width: 85%;
+  width: 88%;
   min-height: 45px;
   padding: 12px 16px;
   background: #1f2329;
