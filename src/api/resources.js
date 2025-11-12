@@ -213,6 +213,32 @@ export const transferInventory = transfer => {
   } )
 }
 
+/**
+ * Receive Inventory
+ * @param {object} receivingData - Inventory Receive data
+ * @returns {Promise} API response with transfer target Inventory
+ */
+export const receivedInventory = receivingData => {
+  return http.request( {
+    method : 'put',
+    url : '/inventory/receive',
+    data : receivingData
+  } )
+}
+
+/**
+ * Consume Inventory
+ * @param {object} consumeData - Inventory Consume data
+ * @returns {Promise} API response with transfer target Inventory
+ */
+export const consumeInventory = consumeData => {
+  return http.request( {
+    method : 'put',
+    url : '/inventory/consume',
+    data : consumeData
+  } )
+}
+
 // Inventory Transaction Logs
 /**
  * Search inventory transaction logs.
@@ -242,9 +268,16 @@ export const searchInventoryTransactionLogs = (
  * @param {number} id - Inventory ID
  * @returns {Promise} Nothing
  */
-export const deleteInventory = ( id ) => {
+export const deleteInventory = id => {
   return http.request( {
     method : 'delete',
     url : `/inventory/${id}`
+  } )
+}
+
+export const getAllTransactionTypes = () => {
+  return http.request( {
+    method : 'get',
+    url : '/inventory/transaction-type'
   } )
 }

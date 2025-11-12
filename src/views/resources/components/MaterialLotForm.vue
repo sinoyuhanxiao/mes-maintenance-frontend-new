@@ -12,7 +12,7 @@
       </el-form-item>
 
       <el-form-item :label="'Units in lot'" prop="unit_in_stock">
-        <el-input-number v-model="form.unit_in_stock" :min="0" value-on-clear="min" />
+        <el-input-number v-model="form.unit_in_stock" :min="0" :max="9999" value-on-clear="min" />
       </el-form-item>
     </el-form>
 

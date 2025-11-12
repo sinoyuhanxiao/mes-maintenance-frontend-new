@@ -5,9 +5,7 @@
         <!-- Basic Info + Stock -->
         <el-descriptions :column="descCols" direction="vertical" label-width="33%">
           <el-descriptions-item label="Spare Part Name">
-            {{
-                localData.name ? localData.name : '--'
-            }}
+            {{ localData.name ? localData.name : '--' }}
           </el-descriptions-item>
 
           <el-descriptions-item label="Part Code">{{ localData.code ? localData.code : '--' }}</el-descriptions-item>

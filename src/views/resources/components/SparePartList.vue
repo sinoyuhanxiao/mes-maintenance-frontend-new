@@ -41,7 +41,7 @@
               @click="handleClicked(item)"
               class="card"
               :class="{
-                selected: selectedId === item.id,
+                selected: props.modelValue === item.id,
                 'low-stock': item.current_stock <= (item.reorder_point ?? 0),
                 'out-of-stock': item.current_stock <= 0,
               }"
@@ -57,7 +57,7 @@
                   <div class="sub ellipsis">{{ 'Universal Code' }}: {{ item.universal_code || '-' }}</div>
 
                   <div class="ellipsis evenly">
-                    <div class="sub">{{ 'Current Stock' }}: {{ item.current_stock ?? 0 }}</div>
+                    <div class="sub">{{ 'Total Stock' }}: {{ item.current_stock ?? 0 }}</div>
 
                     <div class="sub">{{ 'Average Unit Price' }}: {{ item.average_unit_cost?.avg ?? '-' }}</div>
                   </div>
@@ -101,9 +101,9 @@
 
     <div class="pagination" v-if="total > 0">
       <el-pagination
-        layout="total, prev, pager, next, jumper"
+        layout="prev, pager, next, jumper"
         :page-size="selectedPageSize"
-        :pager-count="3"
+        :pager-count="5"
         :total="total"
         @current-change="handlePageChange"
         @size-change="handlePageSizeChange"
@@ -117,23 +117,26 @@ import { useI18n } from 'vue-i18n'
 import { ref } from 'vue'
 import { Picture } from '@element-plus/icons-vue'
 
-defineProps( {
+const props = defineProps( {
   list : { type : Array, default : () => [] },
   total : { type : Number, default : 0 },
-  loading : { type : Boolean, default : false }
+  loading : { type : Boolean, default : false },
+  modelValue : {
+    type : Number,
+    default : null
+  }
 } )
 
-const emits = defineEmits( ['select', 'page-change', 'page-size-change'] )
+const emits = defineEmits( ['select', 'page-change', 'page-size-change', 'update:modelValue'] )
 
 const { t } = useI18n()
 
-const selectedId = ref( null )
 const currentPage = ref( 1 )
 const selectedPageSize = ref( 20 )
 const allPageSizes = [10, 20, 50]
 
 function handleClicked( item ) {
-  selectedId.value = item.id
+  emits( 'update:modelValue', item.id )
   emits( 'select', item )
 }
 

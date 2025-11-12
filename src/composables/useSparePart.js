@@ -11,7 +11,8 @@ import {
   createSparePart,
   updateSparePart,
   deleteSparePart,
-  searchInventory, searchInventoryTransactionLogs
+  searchInventory,
+  searchInventoryTransactionLogs
 } from '@/api/resources'
 
 export function useSparePart() {
@@ -145,9 +146,9 @@ export function useSparePart() {
     }
   }
 
-  async function fetchInventoryTransactionLogs( ) {
+  async function fetchInventoryTransactionLogs() {
     try {
-      const res = await searchInventoryTransactionLogs( )
+      const res = await searchInventoryTransactionLogs()
       inventoryTransferRecords.value = res.data.content || []
     } catch ( err ) {
       console.error( err )
@@ -238,9 +239,7 @@ export function useSparePart() {
     }
 
     // Filter records whose material_id matches
-    return inventoryTransferRecords.value.filter(
-      itr => itr.material_id === material_id
-    )
+    return inventoryTransferRecords.value.filter( itr => itr.material_id === material_id )
   }
 
   return {
@@ -283,7 +282,9 @@ export function computeAverageVendorCost( material_suppliers = [] ) {
 
   // TODO: refactor later, uses first supplier's price uom for now
   const currency = withPrice[0]?.price_uom?.name || null
-  const avg = withPrice.reduce( ( s, v ) => s + v.unit_price, 0 ) / withPrice.length
+
+  // Round to 2 decimal places, and convert back to number
+  const avg = Number( ( withPrice.reduce( ( s, v ) => s + v.unit_price, 0 ) / withPrice.length ).toFixed( 2 ) )
 
   return { avg, currency }
 }

@@ -179,11 +179,11 @@
                 <span class="section-title">
                   <el-icon class="section-icon icon-color"><Van /></el-icon>
 
-                  Material Supplier
+                  Material Vendor
                 </span>
 
                 <div v-if="form.material_suppliers?.length > 0" class="form-section-card-actions">
-                  <el-button size="default" @click="openSupplierForm()" :icon="Plus"> Add Material Supplier </el-button>
+                  <el-button size="default" @click="openSupplierForm()" :icon="Plus"> Add Material Vendor </el-button>
 
                   <el-button size="default" @click="handleDeleteAll('material-supplier')" :icon="Delete">
                     Clear All ({{ form.material_suppliers?.length }})
@@ -198,14 +198,14 @@
                 <div class="empty-content">
                   <el-icon class="empty-icon"><Van /></el-icon>
 
-                  <h4>No Material Suppliers</h4>
+                  <h4>No Material Vendors</h4>
 
-                  <p>Add material supplier information</p>
+                  <p>Add material Vendor information</p>
 
-                  <el-button type="primary" @click="openSupplierForm">
+                  <el-button type="primary" @click="openSupplierForm()">
                     <el-icon><Plus /></el-icon>
 
-                    Add Material Supplier
+                    Add Material Vendor
                   </el-button>
                 </div>
               </div>
@@ -280,7 +280,7 @@
     <div class="form-actions">
       <el-button @click="$emit('cancel')">{{ 'Cancel' }}</el-button>
 
-      <el-button type="warning" @click="reset( false )">{{ 'Reset' }}</el-button>
+      <el-button type="warning" @click="reset(false)">{{ 'Reset' }}</el-button>
 
       <el-button type="primary" @click="submit">{{ 'Confirm' }}</el-button>
     </div>
@@ -469,12 +469,16 @@ function transformSparePartData( v ) {
 
 async function reset( skipConfirmation = false ) {
   if ( !skipConfirmation ) {
-    await ElMessageBox.confirm( 'Are you sure you want to reset the form? All unsaved changes will be lost.', 'Warning', {
-      type : 'warning',
-      confirmButtonText : t( 'common.confirm' ),
-      cancelButtonText : t( 'common.cancel' ),
-      distinguishCancelAndClose : true
-    } )
+    await ElMessageBox.confirm(
+      'Are you sure you want to reset the form? All unsaved changes will be lost.',
+      'Warning',
+      {
+        type : 'warning',
+        confirmButtonText : t( 'common.confirm' ),
+        cancelButtonText : t( 'common.cancel' ),
+        distinguishCancelAndClose : true
+      }
+    )
   }
 
   if ( originalSnapShotForm === null ) {
@@ -483,7 +487,7 @@ async function reset( skipConfirmation = false ) {
     Object.assign( form, originalSnapShotForm )
   }
 
-  fileUploadRef?.value.resetNewFileLists()
+  fileUploadRef?.value?.resetNewFileLists()
 
   existingImages.value = form.image_list
   existingFiles.value = form.file_list
@@ -619,7 +623,6 @@ async function processInventoryCrud( materialId ) {
     }
 
     try {
-      console.log( 'createInventoryPayload', payload )
       await createInventory( payload )
       ElMessage.success( `Created inventory for ${payload.batch_number || 'new lot'}` )
     } catch ( err ) {
@@ -633,7 +636,6 @@ async function processInventoryCrud( materialId ) {
     const payload = buildInventoryPatchPayload( lot, originalSnapShotForm.material_lots )
     if ( Object.keys( payload ).length === 0 ) continue
     try {
-      console.log( 'updateInventoryPayload', lot.id, payload )
       await updateInventory( lot.id, payload )
       ElMessage.success( `Updated inventory #${lot.id}` )
     } catch ( err ) {
@@ -687,13 +689,9 @@ async function submit() {
     form.file_list = finalFileList
 
     if ( form.id ) {
-      console.log( 'buildUpdateSparePartPayload' )
-      console.log( buildUpdateSparePartPayload( form, originalSnapShotForm ) )
       await updateSparePart( form.id, buildUpdateSparePartPayload( form, originalSnapShotForm ) )
       ElMessage.success( 'Spare part updated successfully.' )
     } else {
-      console.log( 'buildCreateSparePartPayload' )
-      console.log( buildCreateSparePartPayload( form ) )
       const res = await createSparePart( buildCreateSparePartPayload( form ) )
       form.id = res.data.id
       ElMessage.success( 'Spare part created successfully.' )
@@ -703,7 +701,7 @@ async function submit() {
     await processInventoryCrud( form.id )
 
     // notify root view to clean up selected and close form
-    emit( 'confirm', { ...form } )
+    emit( 'confirm', form.id )
   } catch ( e ) {
     console.error( 'Error submitting spare part:', e )
     ElMessage.error( 'Error submitting spare part form' )
@@ -762,8 +760,6 @@ function openLotForm( lot = null, index = -1 ) {
 }
 
 function saveLot( payload ) {
-  console.log( 'material lot form payload:', payload )
-
   if ( payload._index != null && payload._index > -1 ) {
     form.material_lots.splice( payload._index, 1, stripIndex( payload ) )
 

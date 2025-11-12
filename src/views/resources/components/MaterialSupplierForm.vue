@@ -1,6 +1,6 @@
 <template>
   <el-dialog
-    :title="isEdit ? `Edit Material Supplier` : 'Add New Material Supplier'"
+    :title="isEdit ? `Edit Material Vendor` : 'Add New Material Vendor'"
     :model-value="modelValue"
     @update:model-value="emit('update:modelValue', $event)"
     width="560px"
@@ -93,7 +93,8 @@ function getEmptyForm() {
     order_code : '',
     lead_time_days : 1,
     unit_price : 0,
-    price_uom_id : 23 // default with CAD currency uom_id
+    price_uom_id : 23, // default with CAD currency uom_id
+    _index : -1
   }
 }
 

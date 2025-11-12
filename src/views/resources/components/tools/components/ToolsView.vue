@@ -52,7 +52,13 @@
     </el-dialog>
 
     <div class="table-body">
-      <el-table v-loading="loading" :data="tools" :style="{ width: '100%', height: maxHeight }" border @sort-change="handleSortChange">
+      <el-table
+        v-loading="loading"
+        :data="tools"
+        :style="{ width: '100%', height: maxHeight }"
+        border
+        @sort-change="handleSortChange"
+      >
         <!-- IMAGE COLUMN (preview only if image valid) -->
         <el-table-column prop="name" label="Tool Name" sortable="custom" align="center" />
         <el-table-column prop="id" label="ID" width="80px" align="center" sortable="custom" />
@@ -120,24 +126,24 @@ size="small"
     </div>
 
     <el-pagination
-        layout="total, sizes, prev, pager, next"
-        :current-page="listQuery.page"
-        :page-size="listQuery.size"
-        :total="totalItems"
-        @current-change="handleCurrentChange"
-        @size-change="handleSizeChange"
-        :page-sizes="[10, 20, 50]"
-        class="pagination"
+      layout="total, sizes, prev, pager, next"
+      :current-page="listQuery.page"
+      :page-size="listQuery.size"
+      :total="totalItems"
+      @current-change="handleCurrentChange"
+      @size-change="handleSizeChange"
+      :page-sizes="[10, 20, 50]"
+      class="pagination"
     >
       <!-- page -->
       <template #sizes>
         <span>{{ t('pagination.perPage') }}</span>
         <el-select v-model="listQuery.size" placeholder="Select">
           <el-option
-              v-for="size in [10, 20, 50]"
-              :key="size"
-              :label="`${size} ${t('pagination.perPage')}`"
-              :value="size"
+            v-for="size in [10, 20, 50]"
+            :key="size"
+            :label="`${size} ${t('pagination.perPage')}`"
+            :value="size"
           />
         </el-select>
       </template>

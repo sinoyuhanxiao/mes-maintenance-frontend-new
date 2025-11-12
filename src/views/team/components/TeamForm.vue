@@ -20,10 +20,7 @@
       <div class="form-row">
         <el-form-item :label="'Parent Group'" class="full-width">
           <div class="parent-team-row">
-            <el-switch
-                v-model="isChildTeam"
-                active-text="Assign under another group"
-            />
+            <el-switch v-model="isChildTeam" active-text="Assign under another group" />
             <div v-if="isChildTeam" style="width: 100%">
               <TeamTreeSelect v-model="internalTeam.parent_id" :disable-team-id="internalTeam.id" style="flex: 1" />
             </div>

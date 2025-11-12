@@ -48,12 +48,12 @@
       <!-- Upload Section -->
       <div class="file-upload">
         <FileUploadMultiple
-            @update:imageList="handleImageListUpdate"
-            @update:removedExistingImages="handleRemovedExistingImages"
-            :existing-image-list="existingImages"
-            image-label="Images"
-            upload-type="images"
-            :max-images="1"
+          @update:imageList="handleImageListUpdate"
+          @update:removedExistingImages="handleRemovedExistingImages"
+          :existing-image-list="existingImages"
+          image-label="Images"
+          upload-type="images"
+          :max-images="1"
         />
       </div>
 

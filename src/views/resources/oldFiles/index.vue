@@ -77,19 +77,19 @@
       </div>
 
       <div class="right-header">
-<!--        <el-dropdown @command="handleCommand">-->
-<!--          <el-text class="el-dropdown-link" style="border: solid 1px #d5d5d5; padding: 5px">-->
-<!--            <el-icon><component :is="currentIcon" /></el-icon>-->
-<!--            {{ currentLabel }}-->
-<!--            <el-icon class="el-icon&#45;&#45;right"><arrow-down /></el-icon>-->
-<!--          </el-text>-->
-<!--          <template #dropdown>-->
-<!--            <el-dropdown-menu>-->
-<!--              <el-dropdown-item command="a" :icon="Magnet">Spare Parts</el-dropdown-item>-->
-<!--              <el-dropdown-item command="b" :icon="Tools">Tools</el-dropdown-item>-->
-<!--            </el-dropdown-menu>-->
-<!--          </template>-->
-<!--        </el-dropdown>-->
+        <!--        <el-dropdown @command="handleCommand">-->
+        <!--          <el-text class="el-dropdown-link" style="border: solid 1px #d5d5d5; padding: 5px">-->
+        <!--            <el-icon><component :is="currentIcon" /></el-icon>-->
+        <!--            {{ currentLabel }}-->
+        <!--            <el-icon class="el-icon&#45;&#45;right"><arrow-down /></el-icon>-->
+        <!--          </el-text>-->
+        <!--          <template #dropdown>-->
+        <!--            <el-dropdown-menu>-->
+        <!--              <el-dropdown-item command="a" :icon="Magnet">Spare Parts</el-dropdown-item>-->
+        <!--              <el-dropdown-item command="b" :icon="Tools">Tools</el-dropdown-item>-->
+        <!--            </el-dropdown-menu>-->
+        <!--          </template>-->
+        <!--        </el-dropdown>-->
 
         <el-button @click="() => (currentView === 1 ? (dialogVisible = true) : (newTool = true))" type="primary">
           {{ currentView === 1 ? 'Create Spare Part' : 'Create Tool' }}

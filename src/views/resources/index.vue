@@ -65,12 +65,12 @@
             <el-option label="Out Of Stock" value="out_of_stock" />
           </el-select>
 
-          <el-text tag="b">Material Supplier</el-text>
+          <el-text tag="b">Material Vendor</el-text>
 
           <el-select
             :teleported="false"
             v-model="listQuery.vendor_ids"
-            placeholder="Filter by material supplier"
+            placeholder="Filter by material vendor"
             clearable
             multiple
             filterable
@@ -112,7 +112,7 @@
           <el-text tag="b">Unit Price</el-text>
 
           <div style="display: flex; justify-content: space-between">
-            <el-input-number v-model="listQuery.unit_cost_min" placeholder="Min Cost" min="0" @change="handleFilter" />
+            <el-input-number v-model="listQuery.unit_cost_min" placeholder="Min Cost" :min="0" @change="handleFilter" />
 
             <el-input-number
               v-model="listQuery.unit_cost_max"
@@ -167,6 +167,7 @@
     <div class="split-view">
       <div class="left-pane">
         <SparePartList
+          v-model="selectedSparePartId"
           :list="list"
           :loading="loading"
           :total="total"
@@ -179,7 +180,7 @@
 
       <div class="right-pane">
         <SparePartForm
-          v-if="editing"
+          v-if="showSparePartForm"
           :data="selected"
           :all_locations="locationOptions"
           @cancel="cancelEdit"
@@ -189,9 +190,11 @@
         <SparePartDetail
           v-else-if="selected"
           :data="selected"
+          :loading="loading"
           :inventory_transaction_logs="selectedInventoryTransactionLogs"
           :all_locations="locationOptions"
           @edit="startEdit"
+          @refresh="handleRefresh"
           @delete="handleDelete"
         />
 
@@ -239,9 +242,10 @@ const {
   fetchInventoryTransactionLogs
 } = useSparePart()
 
-const selected = ref( null )
+const selected = ref( null ) // selected spare part object
+const selectedSparePartId = ref( null )
 const selectedInventoryTransactionLogs = ref( [] )
-const editing = ref( false )
+const showSparePartForm = ref( false )
 const page = ref( 1 )
 const all_data_loading = ref( false )
 const sparePartClassesOptions = ref( [] )
@@ -281,7 +285,7 @@ const activeFilterTags = computed( () => {
 
   if ( listQuery.location_ids?.length ) {
     listQuery.location_ids.forEach( id => {
-      tags.push( { key : 'location_ids', value : id, label : `Location: ${id}` } )
+      tags.push( { key : 'location_ids', value : id, label : `Location: ${getLocationNameById( id )}` } )
     } )
   }
 
@@ -310,6 +314,11 @@ const activeFilterTags = computed( () => {
   return tags
 } )
 
+function getLocationNameById( locationId ) {
+  const name = locationOptions.value.find( location => location.id === locationId )?.name
+  return name || '-'
+}
+
 function removeFilterTag( tag ) {
   const { key, value } = tag
 
@@ -324,12 +333,13 @@ function removeFilterTag( tag ) {
 
 function showDetail( item ) {
   selected.value = item
+  selectedSparePartId.value = item.id
   selectedInventoryTransactionLogs.value = getMaterialInventoryTransactionLog( item.id )
-  editing.value = false
+  showSparePartForm.value = false
 }
 
 function startEdit() {
-  editing.value = true
+  showSparePartForm.value = true
 }
 
 async function handleDelete() {
@@ -360,24 +370,25 @@ async function handleDelete() {
 }
 
 function cancelEdit() {
-  editing.value = false
+  showSparePartForm.value = false
 }
 
 function openCreateForm() {
   selected.value = null
-  editing.value = true
+  selectedSparePartId.value = null
+  showSparePartForm.value = true
 }
 
-async function savePart() {
-  const selectionId = selected.value?.id
+async function savePart( sparePartId ) {
   selected.value = null
-  editing.value = false
+  selectedSparePartId.value = sparePartId
+  showSparePartForm.value = false
 
   await fetchSpareParts()
 
   // Reselect the item that was just saved
-  if ( selectionId ) {
-    const updated = list.value.find( item => item.id === selectionId )
+  if ( sparePartId ) {
+    const updated = list.value.find( item => item.id === sparePartId )
 
     if ( updated ) {
       selected.value = updated
@@ -386,31 +397,33 @@ async function savePart() {
   }
 }
 
-function handlePageChange( newPage ) {
+async function handlePageChange( newPage ) {
   listQuery.page = newPage
-  fetchSpareParts()
+  await fetchSpareParts()
 }
 
-function handlePageSizeChange( newPageSize ) {
+async function handlePageSizeChange( newPageSize ) {
   listQuery.limit = newPageSize
   listQuery.page = 1
-  fetchSpareParts()
+  await fetchSpareParts()
 }
 
-function handleFilter() {
-  fetchSpareParts()
+async function handleFilter() {
+  await fetchSpareParts()
 }
 
 function handleResetFilters() {
   selected.value = null
-  editing.value = false
+  showSparePartForm.value = false
   resetFilters()
 }
 
-function handleRefresh() {
-  selected.value = null
-  editing.value = false
-  fetchSpareParts()
+async function handleRefresh() {
+  showSparePartForm.value = false
+  await refreshAllData()
+
+  selected.value = list.value.find( item => item.id === selectedSparePartId.value )
+  selectedInventoryTransactionLogs.value = getMaterialInventoryTransactionLog( selectedSparePartId.value )
 }
 
 // function showManufacturerDetailPopup( manufacturerId ) {
@@ -535,9 +548,6 @@ onMounted( async() => {
   min-width: 0;
   flex-wrap: nowrap;
   overflow-x: auto;
-  overflow-y: hidden;
-  white-space: nowrap;
-  scrollbar-width: thin;
   min-height: 32px; /* keep visible height even if empty */
 
   .filter-tag {
@@ -554,7 +564,7 @@ onMounted( async() => {
 }
 
 .left-pane {
-  flex: 3;
+  flex: 3 0 0;
   overflow: hidden; /* prevent double scrollbars */
   border-radius: 8px;
   border: 1px solid var(--el-border-color-light);
