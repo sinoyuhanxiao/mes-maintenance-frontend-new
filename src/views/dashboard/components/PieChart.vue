@@ -57,12 +57,20 @@ const initChart = () => {
   } )
 }
 
+const handleResize = () => {
+  if ( chart.value ) {
+    chart.value.resize()
+  }
+}
+
 onMounted( () => {
   nextTick( () => {
     initChart()
+    window.addEventListener( 'resize', handleResize )
   } )
 } )
 onBeforeUnmount( () => {
+  window.removeEventListener( 'resize', handleResize )
   if ( !chart.value ) {
     return
   }

@@ -15,7 +15,9 @@
 </template>
 
 <script setup>
-import logo from '@/assets/fps_logo_medium_white.png'
+import { computed } from 'vue'
+import logoExpanded from '@/assets/fps_logo_medium_white.png'
+import logoCollapsed from '@/assets/imgs/logo2.png'
 import defaultSettings from '@/settings'
 const { title } = defaultSettings
 
@@ -24,6 +26,10 @@ const props = defineProps( {
     type : Boolean,
     required : true
   }
+} )
+
+const logo = computed( () => {
+  return props.collapse ? logoCollapsed : logoExpanded
 } )
 
 defineOptions( {
@@ -75,8 +81,14 @@ defineOptions( {
   }
 
   &.collapse {
+    height: 50px;
+    line-height: 50px;
+
     .sidebar-logo {
       margin-right: 0;
+      width: 40px;
+      height: 40px;
+      margin-top: 0;
     }
   }
 }

@@ -6,7 +6,6 @@
 import * as echarts from 'echarts'
 import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue'
 
-const animationDuration = 6000
 const props = defineProps( {
   className : {
     type : String,
@@ -27,77 +26,76 @@ const container = ref( null )
 
 const initChart = () => {
   chart.value = echarts.init( container.value )
+
   chart.value.setOption( {
     tooltip : {
       trigger : 'axis',
       axisPointer : {
-        // 坐标轴指示器，坐标轴触发有效
-        type : 'shadow' // 默认为直线，可选为：'line' | 'shadow'
+        type : 'shadow'
+      },
+      formatter : params => {
+        let result = `${params[0].axisValue}<br/>`
+        let total = 0
+        params.forEach( item => {
+          result += `${item.marker} ${item.seriesName}: ${item.value} hrs<br/>`
+          total += item.value
+        } )
+        result += `<strong>Total: ${total} hrs</strong>`
+        return result
       }
     },
     legend : {
-      data : ['Preventive Maintenance', 'Corrective Maintenance', 'Inspections'],
+      data : ['Planned Maintenance', 'Unplanned Downtime', 'Repair Time'],
       top : 10
     },
     grid : {
       top : 50,
-      left : '2%',
-      right : '2%',
+      left : '3%',
+      right : '4%',
       bottom : '3%',
       containLabel : true
     },
-    xAxis : [
-      {
-        type : 'category',
-        data : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-        axisTick : {
-          alignWithLabel : true
-        }
+    xAxis : {
+      type : 'category',
+      data : ['Week 1', 'Week 2', 'Week 3', 'Week 4']
+    },
+    yAxis : {
+      type : 'value',
+      name : 'Hours',
+      axisLabel : {
+        formatter : '{value} hrs'
       }
-    ],
-    yAxis : [
-      {
-        type : 'value',
-        axisTick : {
-          show : false
-        }
-      }
-    ],
+    },
     series : [
       {
-        name : 'Preventive Maintenance',
+        name : 'Planned Maintenance',
         type : 'bar',
-        stack : 'maintenance',
-        barWidth : '60%',
-        data : [45, 38, 52, 48, 55, 42, 38],
-        animationDuration,
+        stack : 'downtime',
+        data : [12, 10, 14, 11],
         itemStyle : {
-          color : '#0085a4'
+          color : '#29bbe3'
         }
       },
       {
-        name : 'Corrective Maintenance',
+        name : 'Unplanned Downtime',
         type : 'bar',
-        stack : 'maintenance',
-        barWidth : '60%',
-        data : [28, 35, 42, 38, 32, 28, 30],
-        animationDuration,
+        stack : 'downtime',
+        data : [8, 15, 6, 12],
         itemStyle : {
           color : '#ec536c'
         }
       },
       {
-        name : 'Inspections',
+        name : 'Repair Time',
         type : 'bar',
-        stack : 'maintenance',
-        barWidth : '60%',
-        data : [65, 58, 72, 68, 75, 62, 58],
-        animationDuration,
+        stack : 'downtime',
+        data : [18, 22, 16, 20],
         itemStyle : {
-          color : '#29bbe3'
+          color : '#f5b225'
         }
       }
-    ]
+    ],
+    animationEasing : 'cubicInOut'
   } )
 }
 
@@ -113,6 +111,7 @@ onMounted( () => {
     window.addEventListener( 'resize', handleResize )
   } )
 } )
+
 onBeforeUnmount( () => {
   window.removeEventListener( 'resize', handleResize )
   if ( !chart.value ) {
@@ -123,6 +122,6 @@ onBeforeUnmount( () => {
 } )
 
 defineOptions( {
-  name : 'BarChart'
+  name : 'StackedBarChart'
 } )
 </script>

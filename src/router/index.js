@@ -81,25 +81,18 @@ export const constantRoutes = [
 export const asyncRoutes = [
   {
     path : '/',
-    redirect : '/maintenance/dashboard',
+    redirect : '/dashboard',
     meta : {
       hidden : true
     }
   },
   {
-    path : '/maintenance',
-    name : 'Maintenance',
+    path : '/dashboard',
+    name : 'Dashboard',
     component : Layout,
-    redirect : '/maintenance/dashboard',
-    meta : {
-      title : 'Maintenance',
-      icon : 'setting',
-      alwaysShow : true
-    },
     children : [
       {
-        path : 'dashboard',
-        name : 'Dashboard',
+        path : '',
         component : () => import( '@/views/dashboard/index.vue' ),
         meta : {
           title : 'router.dashboard',
@@ -107,7 +100,20 @@ export const asyncRoutes = [
           noCache : true,
           affix : true
         }
-      },
+      }
+    ]
+  },
+  {
+    path : '/maintenance',
+    name : 'Maintenance',
+    component : Layout,
+    redirect : '/maintenance/equipment',
+    meta : {
+      title : 'Maintenance',
+      icon : 'setting',
+      alwaysShow : true
+    },
+    children : [
       {
         path : 'equipment',
         name : 'Equipment',
