@@ -290,3 +290,37 @@
     }
   }
 }
+
+// Fix for collapsed sidebar submenu popups
+// Element Plus renders poppers as siblings in body, so we need global z-index management
+
+// First level popup menus
+.el-menu--popup {
+  z-index: 3000 !important;
+  overflow: visible !important;
+}
+
+// Custom popper class for first-level collapsed sidebar popups
+.sub-menu-test {
+  z-index: 3000 !important;
+  overflow: visible !important;
+}
+
+// Custom popper class for nested submenus (second level)
+.sub-menu-nested {
+  z-index: 3010 !important;
+  overflow: visible !important;
+}
+
+// All menu poppers need high z-index to appear above fixed header (z-index: 9)
+[class*='el-popper'] {
+  &.el-popper {
+    // Use very high z-index for all poppers to ensure they stack correctly
+    z-index: 3000 !important;
+  }
+}
+
+// Submenu poppers specifically - these are the nested level
+.el-sub-menu__popper {
+  z-index: 3005 !important;
+}
