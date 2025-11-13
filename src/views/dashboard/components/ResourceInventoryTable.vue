@@ -1,10 +1,5 @@
 <template>
-  <el-table
-    :data="inventoryData"
-    v-loading="loading"
-    style="width: 100%"
-    stripe
-  >
+  <el-table :data="inventoryData" v-loading="loading" style="width: 100%" stripe>
     <el-table-column label="Item Name" min-width="200">
       <template #default="{ row }">
         <div style="font-weight: 500">{{ row.spare_part?.name || row.tool?.name || '-' }}</div>
@@ -58,17 +53,12 @@ import { convertToLocalTime } from '@/utils/datetime'
 const loading = ref( false )
 const inventoryData = ref( [] )
 
+// eslint-disable-next-line no-unused-vars
 const fetchData = async() => {
   loading.value = true
   try {
     // Fetch inventory data (top 10, sorted by updated date)
-    const response = await searchInventory(
-      1,
-      10,
-      'updated_at',
-      'DESC',
-      {}
-    )
+    const response = await searchInventory( 1, 10, 'updated_at', 'DESC', {} )
 
     if ( response.data && response.data.content ) {
       inventoryData.value = response.data.content

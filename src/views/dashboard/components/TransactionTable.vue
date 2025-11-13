@@ -1,11 +1,5 @@
 <template>
-  <el-table
-    ref="multipleTable"
-    :data="workOrders"
-    v-loading="loading"
-    tooltip-effect="dark"
-    style="width: 100%"
-  >
+  <el-table ref="multipleTable" :data="workOrders" v-loading="loading" tooltip-effect="dark" style="width: 100%">
     <el-table-column label="Work Order" min-width="100">
       <template #default="{ row }">
         <div style="font-weight: 500">{{ row.name }}</div>

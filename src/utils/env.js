@@ -37,7 +37,8 @@ export const ENV_CONFIG = {
 
   // Iframe Module Configuration
   QC_IFRAME_BASE_URL : env.VITE_QC_IFRAME_BASE_URL || 'http://10.10.12.12:3001',
-  PRODUCTION_IFRAME_BASE_URL : env.VITE_PRODUCTION_IFRAME_BASE_URL || 'http://10.10.12.12:8088/data/perspective/client/MES_Baseline',
+  PRODUCTION_IFRAME_BASE_URL :
+    env.VITE_PRODUCTION_IFRAME_BASE_URL || 'http://10.10.12.12:8088/data/perspective/client/MES_Baseline',
 
   // Build Configuration
   LEGACY : env.VITE_LEGACY === 'true' || env.VITE_LEGACY === true,

@@ -15,10 +15,10 @@
             class="card-panel-num"
           >
             <template #prefix v-if="prefix">
-              <span style="font-size: 24px; margin-right: 4px;">{{ prefix }}</span>
+              <span style="font-size: 24px; margin-right: 4px">{{ prefix }}</span>
             </template>
             <template #suffix v-if="postfix">
-              <span style="font-size: 16px; margin-left: 4px;">{{ postfix }}</span>
+              <span style="font-size: 16px; margin-left: 4px">{{ postfix }}</span>
             </template>
           </el-statistic>
         </h2>
@@ -74,9 +74,13 @@ const displayValue = useTransition( source, {
 } )
 
 // Watch for changes in end value and update source
-watch( () => props.end, newVal => {
-  source.value = newVal
-}, { immediate : true } )
+watch(
+  () => props.end,
+  newVal => {
+    source.value = newVal
+  },
+  { immediate : true }
+)
 
 defineOptions( {
   name : 'Card'

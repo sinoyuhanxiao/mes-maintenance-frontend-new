@@ -14,17 +14,17 @@
   >
     <el-table-column prop="name" label="Equipment Name" min-width="300" show-overflow-tooltip fixed="left">
       <template #default="{ row }">
-        <div style="display: flex; align-items: center;">
-          <el-icon v-if="row.level === 1" style="margin-right: 8px; color: #409EFF;">
+        <div style="display: flex; align-items: center">
+          <el-icon v-if="row.level === 1" style="margin-right: 8px; color: #409eff">
             <OfficeBuilding />
           </el-icon>
-          <el-icon v-else-if="row.level === 2" style="margin-right: 8px; color: #67C23A;">
+          <el-icon v-else-if="row.level === 2" style="margin-right: 8px; color: #67c23a">
             <Box />
           </el-icon>
-          <el-icon v-else-if="row.level === 3" style="margin-right: 8px; color: #E6A23C;">
+          <el-icon v-else-if="row.level === 3" style="margin-right: 8px; color: #e6a23c">
             <Grid />
           </el-icon>
-          <el-icon v-else style="margin-right: 8px; color: #909399;">
+          <el-icon v-else style="margin-right: 8px; color: #909399">
             <Setting />
           </el-icon>
           <span style="font-weight: 500">{{ row.name || `[Node ${row.id}]` }}</span>
@@ -36,10 +36,10 @@
 
     <el-table-column prop="code" label="Equipment Code" min-width="180" show-overflow-tooltip>
       <template #default="{ row }">
-        <el-text v-if="row.code" style="font-family: monospace;">
+        <el-text v-if="row.code" style="font-family: monospace">
           {{ row.code }}
         </el-text>
-        <span v-else style="color: #C0C4CC;">-</span>
+        <span v-else style="color: #c0c4cc">-</span>
       </template>
     </el-table-column>
 
@@ -59,7 +59,7 @@
         <el-tag v-if="row.hasChildren" type="primary" size="small" effect="plain">
           {{ row.childrenCount }}
         </el-tag>
-        <span v-else style="color: #C0C4CC;">0</span>
+        <span v-else style="color: #c0c4cc">0</span>
       </template>
     </el-table-column>
   </el-table>
@@ -68,7 +68,7 @@
 <script setup>
 import { ref, onBeforeMount } from 'vue'
 import { getEquipmentTree } from '@/api/equipment'
-import { OfficeBuilding, Box, Grid, Setting, CircleCheck, CircleClose } from '@element-plus/icons-vue'
+import { OfficeBuilding, Box, Grid, Setting } from '@element-plus/icons-vue'
 
 const loading = ref( false )
 const equipmentData = ref( [] )
@@ -89,7 +89,7 @@ const transformTreeNode = ( node, level = 1 ) => {
     nodeTypeId : node.nodeTypeId,
     sequenceOrder : node.sequenceOrder,
     inPath : node.inPath || false,
-    level : level,
+    level,
     hasChildren : hasValidChildren,
     childrenCount : 0
   }
@@ -129,9 +129,7 @@ const fetchData = async() => {
     }
 
     // Transform the tree data and filter out null nodes
-    equipmentData.value = dataArray
-      .map( node => transformTreeNode( node, 1 ) )
-      .filter( node => node !== null )
+    equipmentData.value = dataArray.map( node => transformTreeNode( node, 1 ) ).filter( node => node !== null )
   } catch ( error ) {
     console.error( 'Failed to fetch equipment tree:', error )
     equipmentData.value = []
@@ -178,15 +176,15 @@ const getLevelName = level => {
 
 const getTypeTagType = typeId => {
   const typeMap = {
-    1 : 'danger',    // Site
-    2 : 'warning',   // Diagram
-    3 : 'danger',    // Production Line
-    4 : 'warning',   // Equipment Group
-    5 : 'primary',   // Equipment
-    6 : 'info',      // Component
-    7 : 'success',   // Unit
-    8 : '',          // Section
-    9 : 'info'       // Device
+    1 : 'danger', // Site
+    2 : 'warning', // Diagram
+    3 : 'danger', // Production Line
+    4 : 'warning', // Equipment Group
+    5 : 'primary', // Equipment
+    6 : 'info', // Component
+    7 : 'success', // Unit
+    8 : '', // Section
+    9 : 'info' // Device
   }
   return typeMap[typeId] || ''
 }
@@ -201,11 +199,11 @@ defineOptions( {
 </script>
 
 <style scoped>
-  :deep(.cell.el-tooltip) {
-    display: flex;
-  }
+:deep(.cell.el-tooltip) {
+  display: flex;
+}
 
-  :deep(.el-table__expand-icon) {
-    margin-top: 5px;
-  }
+:deep(.el-table__expand-icon) {
+  margin-top: 5px;
+}
 </style>

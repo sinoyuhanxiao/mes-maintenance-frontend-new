@@ -1,10 +1,5 @@
 <template>
-  <el-table
-    :data="requestsData"
-    v-loading="loading"
-    style="width: 100%"
-    stripe
-  >
+  <el-table :data="requestsData" v-loading="loading" style="width: 100%" stripe>
     <el-table-column label="Request" min-width="200">
       <template #default="{ row }">
         <div style="font-weight: 500">{{ row.name }}</div>
@@ -60,13 +55,7 @@ const fetchData = async() => {
   loading.value = true
   try {
     // Fetch maintenance requests (top 10, sorted by created date)
-    const response = await searchMaintenanceRequests(
-      1,
-      10,
-      'createdAt',
-      'DESC',
-      {}
-    )
+    const response = await searchMaintenanceRequests( 1, 10, 'createdAt', 'DESC', {} )
 
     if ( response.data && response.data.content ) {
       requestsData.value = response.data.content

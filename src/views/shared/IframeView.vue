@@ -29,11 +29,11 @@ import { useRoute } from 'vue-router'
 import { Loading, WarningFilled } from '@element-plus/icons-vue'
 
 const route = useRoute()
-const loading = ref(true)
+const loading = ref( true )
 
-const iframeUrl = computed(() => {
+const iframeUrl = computed( () => {
   return route.meta?.iframeUrl || ''
-})
+} )
 
 const handleLoad = () => {
   loading.value = false
@@ -43,11 +43,11 @@ const handleError = () => {
   loading.value = false
 }
 
-onMounted(() => {
-  if (!iframeUrl.value) {
+onMounted( () => {
+  if ( !iframeUrl.value ) {
     loading.value = false
   }
-})
+} )
 </script>
 
 <style scoped lang="scss">

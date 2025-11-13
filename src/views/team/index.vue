@@ -101,7 +101,7 @@
         style="width: 100%"
         fit
         highlight-current-row
-        c
+        :row-class-name="getRowClassName"
         :height="tableHeight"
         :empty-text="t('common.noData')"
         :cell-style="indentCellStyle"

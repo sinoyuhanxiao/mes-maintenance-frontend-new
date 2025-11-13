@@ -203,7 +203,7 @@ import TopEquipmentChart from './components/TopEquipmentChart.vue'
 import EquipmentStatusTable from './components/EquipmentStatusTable.vue'
 import ResourceInventoryTable from './components/ResourceInventoryTable.vue'
 import MaintenanceRequestsTable from './components/MaintenanceRequestsTable.vue'
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 
 // Responsive chart height based on screen size
 const chartHeight = ref( '350px' )
@@ -254,7 +254,7 @@ const bag_packaging = ref( {
 } )
 
 // Handle equipment hotspot click
-const handleEquipmentClick = ( equipmentType ) => {
+const handleEquipmentClick = equipmentType => {
   console.log( `Clicked on equipment: ${equipmentType}` )
   // TODO: Add navigation or modal display logic here
 }
