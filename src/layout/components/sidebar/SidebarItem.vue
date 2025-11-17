@@ -21,7 +21,13 @@
       </AppLink>
     </template>
 
-    <el-sub-menu v-else ref="subMenu" popper-class="sub-menu-test" :index="resolvePath(props.item.path)">
+    <el-sub-menu
+      v-else
+      ref="subMenu"
+      :popper-class="props.isNest ? 'sub-menu-nested' : 'sub-menu-test'"
+      :index="resolvePath(props.item.path)"
+      :popper-offset="8"
+    >
       <template #title>
         <svg-icon
           class-name="menu-icons"
