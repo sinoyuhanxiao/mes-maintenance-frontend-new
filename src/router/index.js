@@ -81,7 +81,7 @@ export const constantRoutes = [
 export const asyncRoutes = [
   {
     path : '/',
-    redirect : '/dashboard',
+    redirect : '/e2e-overview',
     meta : {
       hidden : true
     }
