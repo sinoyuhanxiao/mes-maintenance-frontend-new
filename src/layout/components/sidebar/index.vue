@@ -11,7 +11,7 @@
 <script setup>
 import { computed, reactive } from 'vue'
 import { useAppStore, useSettingsStore } from '@/store'
-import { ENV_UTILS } from '@/utils/env'
+// import { ENV_UTILS } from '@/utils/env'
 import Logo from './Logo'
 import Menu from './Menu'
 import VersionInfo from './VersionInfo'
@@ -30,7 +30,7 @@ const set = reactive( {
     return !appStore.sidebar.opened
   } ),
   showVersion : computed( () => {
-    return !ENV_UTILS.isDemo()
+    return true
   } )
 } )
 </script>

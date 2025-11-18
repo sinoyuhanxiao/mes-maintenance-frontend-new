@@ -19,10 +19,10 @@ export default function getPageTitle( pageTitle ) {
   if ( typeof pageTitle === 'string' && pageTitle.trim().length > 0 ) {
     // 有合法的 i18n key，尝试翻译
     try {
-      return `${$t( pageTitle )} - ${appTitle}`
+      return $t( pageTitle )
     } catch ( e ) {
       // 如果 i18n key 不存在，直接显示原字符串
-      return `${pageTitle} - ${appTitle}`
+      return pageTitle
     }
   }
   // 没传 pageTitle，直接用应用默认标题

@@ -85,6 +85,18 @@ const productionRoutes = {
         hidden : false,
         noCache : false
       }
+    },
+    {
+      path : 'freezing',
+      name : 'ProductionFreezing',
+      component : () => import( '@/views/shared/IframeView.vue' ),
+      meta : {
+        title : 'Freezing',
+        icon : 'cpu',
+        iframeUrl : `${PRODUCTION_IFRAME_BASE_URL}/RMS_Freezing`,
+        hidden : false,
+        noCache : false
+      }
     }
   ]
 }

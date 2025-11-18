@@ -81,7 +81,7 @@ export const constantRoutes = [
 export const asyncRoutes = [
   {
     path : '/',
-    redirect : '/dashboard',
+    redirect : '/e2e-overview',
     meta : {
       hidden : true
     }
@@ -93,6 +93,7 @@ export const asyncRoutes = [
     children : [
       {
         path : '',
+        name : 'E2EOverviewPage',
         component : () => import( '@/views/e2eOverview/index.vue' ),
         meta : {
           title : 'Overview',
