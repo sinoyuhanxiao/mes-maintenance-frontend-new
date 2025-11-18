@@ -93,6 +93,7 @@ export const asyncRoutes = [
     children : [
       {
         path : '',
+        name : 'E2EOverviewPage',
         component : () => import( '@/views/e2eOverview/index.vue' ),
         meta : {
           title : 'Overview',

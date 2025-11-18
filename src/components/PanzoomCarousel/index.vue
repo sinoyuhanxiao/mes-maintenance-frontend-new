@@ -91,6 +91,7 @@
 
 <script setup>
 import { ref, onMounted, onBeforeUnmount, computed, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import Panzoom from 'panzoom'
 import { WarnTriangleFilled, ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 import ZoomControls from '@/views/e2eOverview/components/ZoomControls.vue'
@@ -99,6 +100,9 @@ import ActivityFeed from '@/views/e2eOverview/components/ActivityFeed.vue'
 import EquipmentModal from '@/views/e2eOverview/components/EquipmentModal.vue'
 import fpsE2eImage from '@/assets/fps_e2e.png'
 import fpsPackagingImage from '@/assets/fps_packaging.JPG'
+
+// Router
+const router = useRouter()
 
 // Props
 // eslint-disable-next-line no-unused-vars
@@ -422,48 +426,97 @@ const equipmentZones = computed( () => {
   return currentImageIndex.value === 0 ? equipmentZonesImage1 : equipmentZonesImage2
 } )
 
-// Recent Activities
+// Recent Activities - Hardcoded for demo with e2e-overview equipment context
 const recentActivities = ref( [
   {
     id : 1,
-    timestamp : '10:23',
-    type : 'maintenance',
-    message : 'Warehouse Transfer maintenance completed',
-    severity : 'success'
+    timestamp : '11:45',
+    type : 'alert',
+    message : 'Battering System: Critical error detected - Hopper level sensor malfunction',
+    severity : 'danger'
   },
   {
     id : 2,
-    timestamp : '10:15',
+    timestamp : '11:32',
     type : 'alert',
-    message : 'Processing Station A: Temperature threshold exceeded',
+    message : 'Freezing System: Temperature warning - PulseFlow™ IQF chamber running 2°C above target',
     severity : 'warning'
   },
   {
     id : 3,
-    timestamp : '10:12',
+    timestamp : '11:18',
     type : 'alert',
-    message : 'Critical: Quality Control system malfunction detected',
-    severity : 'danger'
+    message : 'PEF System: OPTICEPT® dual conveyor performance degradation warning',
+    severity : 'warning'
   },
   {
     id : 4,
-    timestamp : '10:08',
-    type : 'production',
-    message : 'Production milestone: 12,000 units completed',
-    severity : 'info'
+    timestamp : '11:05',
+    type : 'maintenance',
+    message : 'Frying System: Scheduled oil quality check completed successfully',
+    severity : 'success'
   },
   {
     id : 5,
-    timestamp : '09:54',
-    type : 'status',
-    message : 'Palletizer changed to Idle status',
+    timestamp : '10:52',
+    type : 'production',
+    message : 'Raw Receiving: Storage bin capacity at 85% - 12,800 units processed',
     severity : 'info'
   },
   {
     id : 6,
-    timestamp : '09:42',
+    timestamp : '10:38',
     type : 'maintenance',
-    message : 'Case Packing scheduled maintenance started',
+    message : 'Blanching System: Multi-zone belt maintenance completed',
+    severity : 'success'
+  },
+  {
+    id : 7,
+    timestamp : '10:24',
+    type : 'production',
+    message : 'SAPP System: Sodium acid pyrophosphate dosing calibrated - throughput 810 units/hr',
+    severity : 'info'
+  },
+  {
+    id : 8,
+    timestamp : '10:15',
+    type : 'status',
+    message : 'Drying System: Changed to Idle status for scheduled inspection',
+    severity : 'info'
+  },
+  {
+    id : 9,
+    timestamp : '09:58',
+    type : 'alert',
+    message : 'Bag Inspection: Critical equipment malfunction - throughput dropped to 0 units/hr',
+    severity : 'danger'
+  },
+  {
+    id : 10,
+    timestamp : '09:42',
+    type : 'alert',
+    message : 'Case Packing: Warning - packing speed reduced to 720 units/hr',
+    severity : 'warning'
+  },
+  {
+    id : 11,
+    timestamp : '09:28',
+    type : 'maintenance',
+    message : 'Palletizer: Preventive maintenance check completed - uptime 99.2%',
+    severity : 'success'
+  },
+  {
+    id : 12,
+    timestamp : '09:15',
+    type : 'production',
+    message : 'Case Transport: Operating at optimal capacity - 820 units/hr throughput',
+    severity : 'info'
+  },
+  {
+    id : 13,
+    timestamp : '09:05',
+    type : 'status',
+    message : 'Bag Packaging: System returned to Idle status after shift change',
     severity : 'info'
   }
 ] )
@@ -616,7 +669,12 @@ const togglePanzoom = () => {
 
 // Zone interaction handlers
 const handleZoneClick = zone => {
-  // Temporarily disabled - no popup on click
+  // Special handling for Freezer - open Production Freezing page in new tab
+  if ( zone.machineType === 'freezer' || zone.name === 'Freezing' ) {
+    router.push( '/production/freezing' )
+  }
+
+  // Temporarily disabled for other zones - no popup on click
   // selectedZone.value = zone
   // showModal.value = true
 }
