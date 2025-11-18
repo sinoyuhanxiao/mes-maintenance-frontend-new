@@ -1,0 +1,247 @@
+<template>
+  <div class="e2e-overview-container">
+    <!-- Top Metrics Bar -->
+    <MetricsBar :metrics="liveMetrics" />
+
+    <!-- Panzoom Carousel -->
+    <PanzoomCarousel :is-e2e-mode="true" :style="{ height: panzoomHeight }" />
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, onBeforeUnmount } from 'vue'
+import MetricsBar from './components/MetricsBar.vue'
+import PanzoomCarousel from '@/components/PanzoomCarousel'
+
+// ========================================
+// METRICS CONFIGURATION CENTER
+// Modify these values to customize all metrics behavior
+// ========================================
+const METRICS_CONFIG = {
+  // Overall Equipment Effectiveness (OEE)
+  OEE : {
+    min : 78.0, // Minimum OEE percentage
+    max : 98.5, // Maximum OEE percentage
+    decimals : 1, // Number of decimal places to display
+    updateInterval : 3000 // Update every 5 seconds (milliseconds)
+  },
+
+  // Production Today
+  PRODUCTION : {
+    min : 0, // Starting production (tons) at beginning of day
+    max : 65, // Target production (tons) at end of day
+    target : 66, // Daily production target (tons)
+    variation : 2, // Random variation (+/- tons)
+    decimals : 2, // Number of decimal places to display
+    updateInterval : 12000, // Update every 2 minutes (milliseconds)
+    timeBased : true // Progress based on time of day (true) or random (false)
+  },
+
+  // Active Work Orders
+  WORK_ORDERS : {
+    activeMin : 80, // Minimum active work orders
+    activeMax : 100, // Maximum active work orders
+    totalMin : 100, // Minimum total work orders
+    totalMax : 120, // Maximum total work orders
+    updateInterval : 100000 // Update every 10 seconds (milliseconds)
+  },
+
+  // Active Alarms
+  ALARMS : {
+    min : 0, // Minimum number of alarms
+    max : 25, // Maximum number of alarms
+    updateInterval : 60000 // Update every 1 minute (milliseconds)
+  },
+
+  // Active Workforce
+  WORKFORCE : {
+    min : 56, // Minimum personnel count
+    max : 89, // Maximum personnel count
+    updateInterval : 10000 // Update every 10 seconds (milliseconds)
+  }
+}
+
+// Live Metrics Data - Initial values set from configuration
+const liveMetrics = ref( {
+  oee : METRICS_CONFIG.OEE.min,
+  productionCount : METRICS_CONFIG.PRODUCTION.min,
+  productionTarget : METRICS_CONFIG.PRODUCTION.target,
+  activeWorkOrders : METRICS_CONFIG.WORK_ORDERS.activeMin,
+  totalWorkOrders : METRICS_CONFIG.WORK_ORDERS.totalMin,
+  alertCount : METRICS_CONFIG.ALARMS.min,
+  currentShift : 'Day Shift',
+  workforceCount : METRICS_CONFIG.WORKFORCE.min
+} )
+
+// Dynamic panzoom height
+const panzoomHeight = ref( 'auto' )
+
+// Timer references for cleanup
+let oeeTimer = null
+let productionTimer = null
+let alarmsTimer = null
+let workforceTimer = null
+let workOrdersTimer = null
+
+// OEE update function - Uses METRICS_CONFIG.OEE
+const updateOEE = () => {
+  const config = METRICS_CONFIG.OEE
+  const range = config.max - config.min
+  const newOEE = ( Math.random() * range + config.min ).toFixed( config.decimals )
+  liveMetrics.value.oee = parseFloat( newOEE )
+}
+
+// Production update function - Uses METRICS_CONFIG.PRODUCTION
+const updateProduction = () => {
+  const config = METRICS_CONFIG.PRODUCTION
+  let newProduction
+
+  if ( config.timeBased ) {
+    // Time-based progression throughout the day
+    const now = new Date()
+    const startOfDay = new Date( now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0 )
+    const endOfDay = new Date( now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59 )
+    const dayProgress = ( now - startOfDay ) / ( endOfDay - startOfDay )
+
+    const baseProduction = dayProgress * config.max
+    const randomVariation = ( Math.random() - 0.5 ) * config.variation
+    newProduction = Math.max( config.min, Math.min( config.max, baseProduction + randomVariation ) )
+  } else {
+    // Random value between min and max
+    const range = config.max - config.min
+    newProduction = Math.random() * range + config.min
+  }
+
+  liveMetrics.value.productionCount = parseFloat( newProduction.toFixed( config.decimals ) )
+}
+
+// Alarms update function - Uses METRICS_CONFIG.ALARMS
+const updateAlarms = () => {
+  const config = METRICS_CONFIG.ALARMS
+  const range = config.max - config.min + 1
+  liveMetrics.value.alertCount = Math.floor( Math.random() * range ) + config.min
+}
+
+// Workforce update function - Uses METRICS_CONFIG.WORKFORCE
+const updateWorkforce = () => {
+  const config = METRICS_CONFIG.WORKFORCE
+  const range = config.max - config.min + 1
+  liveMetrics.value.workforceCount = Math.floor( Math.random() * range ) + config.min
+}
+
+// Work Orders update function - Uses METRICS_CONFIG.WORK_ORDERS
+const updateWorkOrders = () => {
+  const config = METRICS_CONFIG.WORK_ORDERS
+  const activeRange = config.activeMax - config.activeMin + 1
+  const totalRange = config.totalMax - config.totalMin + 1
+
+  liveMetrics.value.activeWorkOrders = Math.floor( Math.random() * activeRange ) + config.activeMin
+  liveMetrics.value.totalWorkOrders = Math.floor( Math.random() * totalRange ) + config.totalMin
+}
+
+// Start all metric update timers - Uses METRICS_CONFIG for intervals
+const startMetricUpdates = () => {
+  // Initial updates
+  updateOEE()
+  updateProduction()
+  updateAlarms()
+  updateWorkforce()
+  updateWorkOrders()
+
+  // Set up intervals using centralized configuration
+  oeeTimer = setInterval( updateOEE, METRICS_CONFIG.OEE.updateInterval )
+  productionTimer = setInterval( updateProduction, METRICS_CONFIG.PRODUCTION.updateInterval )
+  alarmsTimer = setInterval( updateAlarms, METRICS_CONFIG.ALARMS.updateInterval )
+  workforceTimer = setInterval( updateWorkforce, METRICS_CONFIG.WORKFORCE.updateInterval )
+  workOrdersTimer = setInterval( updateWorkOrders, METRICS_CONFIG.WORK_ORDERS.updateInterval )
+}
+
+// Stop all metric update timers
+const stopMetricUpdates = () => {
+  if ( oeeTimer ) clearInterval( oeeTimer )
+  if ( productionTimer ) clearInterval( productionTimer )
+  if ( alarmsTimer ) clearInterval( alarmsTimer )
+  if ( workforceTimer ) clearInterval( workforceTimer )
+  if ( workOrdersTimer ) clearInterval( workOrdersTimer )
+}
+
+const updatePanzoomHeight = () => {
+  // Get the heights of all header elements
+  const navbar = document.querySelector( '.fixed-header .navbar' )
+  const tagsView = document.querySelector( '#tags-view-container' )
+  const metricsBar = document.querySelector( '.metrics-bar' )
+
+  const navbarHeight = navbar ? navbar.offsetHeight : 0
+  const tagsViewHeight = tagsView ? tagsView.offsetHeight : 0
+  const metricsBarHeight = metricsBar ? metricsBar.offsetHeight : 0
+
+  // Calculate available height: viewport - navbar - tags - metrics bar - bottom margin
+  const availableHeight = window.innerHeight - navbarHeight - tagsViewHeight - metricsBarHeight - 20
+
+  panzoomHeight.value = `${Math.max( availableHeight, 300 )}px`
+}
+
+let resizeTimer = null
+const handleResize = () => {
+  // Debounce resize events to avoid excessive updates
+  clearTimeout( resizeTimer )
+  resizeTimer = setTimeout( () => {
+    updatePanzoomHeight()
+  }, 100 )
+}
+
+onMounted( () => {
+  // Start metric updates
+  startMetricUpdates()
+
+  // Delay panzoom height calculation to ensure DOM is fully rendered
+  setTimeout( () => {
+    updatePanzoomHeight()
+  }, 100 )
+  window.addEventListener( 'resize', handleResize )
+} )
+
+onBeforeUnmount( () => {
+  // Stop metric updates
+  stopMetricUpdates()
+
+  window.removeEventListener( 'resize', handleResize )
+  if ( resizeTimer ) {
+    clearTimeout( resizeTimer )
+  }
+} )
+</script>
+
+<style lang="scss" scoped>
+.e2e-overview-container {
+  width: 100%;
+  height: 100%;
+  background-color: rgb(240, 242, 245);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+
+  .panzoom-wrapper {
+    .panzoom-container {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      cursor: grab;
+      background-color: #ffffff;
+      position: relative;
+
+      &:active {
+        cursor: grabbing;
+      }
+    }
+  }
+}
+</style>
+
+<style lang="scss">
+// Global style for Element Plus scrollbar when containing e2e-overview
+.el-scrollbar__view:has(> .e2e-overview-container) {
+  height: 100%;
+}
+</style>

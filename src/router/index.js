@@ -87,6 +87,23 @@ export const asyncRoutes = [
     }
   },
   {
+    path : '/e2e-overview',
+    name : 'E2EOverview',
+    component : Layout,
+    children : [
+      {
+        path : '',
+        component : () => import( '@/views/e2eOverview/index.vue' ),
+        meta : {
+          title : 'Overview',
+          icon : 'production-line-white',
+          noCache : true,
+          affix : false
+        }
+      }
+    ]
+  },
+  {
     path : '/dashboard',
     name : 'Dashboard',
     component : Layout,
@@ -98,7 +115,8 @@ export const asyncRoutes = [
           title : 'router.dashboard',
           icon : 'dashboard',
           noCache : true,
-          affix : true
+          affix : true,
+          hidden : true
         }
       }
     ]
