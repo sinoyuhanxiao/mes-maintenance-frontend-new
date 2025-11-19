@@ -20,10 +20,11 @@ import PanzoomCarousel from '@/components/PanzoomCarousel'
 const METRICS_CONFIG = {
   // Overall Equipment Effectiveness (OEE)
   OEE : {
-    min : 78.0, // Minimum OEE percentage
-    max : 98.5, // Maximum OEE percentage
+    min : 60.0, // Minimum OEE percentage (French fries production)
+    max : 85.0, // Maximum OEE percentage (French fries production)
+    maxVariation : 0.5, // Maximum variation per update (±0.5%)
     decimals : 1, // Number of decimal places to display
-    updateInterval : 3000 // Update every 5 seconds (milliseconds)
+    updateInterval : 1000 // Update every second (milliseconds)
   },
 
   // Production Today
@@ -61,15 +62,22 @@ const METRICS_CONFIG = {
   }
 }
 
+// Helper function to get initial shift based on current browser time
+const getInitialShift = () => {
+  const currentHour = new Date().getHours()
+  return currentHour >= 7 && currentHour < 19 ? 'Day Shift' : 'Night Shift'
+}
+
 // Live Metrics Data - Initial values set from configuration
 const liveMetrics = ref( {
-  oee : METRICS_CONFIG.OEE.min,
+  oee : 72.5, // Start at mid-range for realistic French fries production OEE
+  previousOee : 72.5, // Track previous OEE for trend calculation
   productionCount : METRICS_CONFIG.PRODUCTION.min,
   productionTarget : METRICS_CONFIG.PRODUCTION.target,
   activeWorkOrders : METRICS_CONFIG.WORK_ORDERS.activeMin,
   totalWorkOrders : METRICS_CONFIG.WORK_ORDERS.totalMin,
   alertCount : METRICS_CONFIG.ALARMS.min,
-  currentShift : 'Day Shift',
+  currentShift : getInitialShift(), // Dynamically set based on browser time
   workforceCount : METRICS_CONFIG.WORKFORCE.min
 } )
 
@@ -82,13 +90,25 @@ let productionTimer = null
 let alarmsTimer = null
 let workforceTimer = null
 let workOrdersTimer = null
+let shiftTimer = null
 
 // OEE update function - Uses METRICS_CONFIG.OEE
+// Updates with small incremental changes for realistic variation
 const updateOEE = () => {
   const config = METRICS_CONFIG.OEE
-  const range = config.max - config.min
-  const newOEE = ( Math.random() * range + config.min ).toFixed( config.decimals )
-  liveMetrics.value.oee = parseFloat( newOEE )
+  const currentOEE = liveMetrics.value.oee
+
+  // Store previous OEE for trend calculation
+  liveMetrics.value.previousOee = currentOEE
+
+  // Generate a small random variation between -maxVariation and +maxVariation
+  const variation = ( Math.random() - 0.5 ) * 2 * config.maxVariation
+
+  // Apply variation and constrain within min/max bounds
+  let newOEE = currentOEE + variation
+  newOEE = Math.max( config.min, Math.min( config.max, newOEE ) )
+
+  liveMetrics.value.oee = parseFloat( newOEE.toFixed( config.decimals ) )
 }
 
 // Production update function - Uses METRICS_CONFIG.PRODUCTION
@@ -139,6 +159,21 @@ const updateWorkOrders = () => {
   liveMetrics.value.totalWorkOrders = Math.floor( Math.random() * totalRange ) + config.totalMin
 }
 
+// Shift update function - Determines shift based on browser time
+// Day Shift: 7:00 AM - 7:00 PM (07:00 - 19:00)
+// Night Shift: 7:00 PM - 7:00 AM (19:00 - 07:00)
+const updateShift = () => {
+  const now = new Date()
+  const currentHour = now.getHours()
+
+  // Day shift is from 7 AM (7) to 7 PM (19)
+  if ( currentHour >= 7 && currentHour < 19 ) {
+    liveMetrics.value.currentShift = 'Day Shift'
+  } else {
+    liveMetrics.value.currentShift = 'Night Shift'
+  }
+}
+
 // Start all metric update timers - Uses METRICS_CONFIG for intervals
 const startMetricUpdates = () => {
   // Initial updates
@@ -147,6 +182,7 @@ const startMetricUpdates = () => {
   updateAlarms()
   updateWorkforce()
   updateWorkOrders()
+  updateShift()
 
   // Set up intervals using centralized configuration
   oeeTimer = setInterval( updateOEE, METRICS_CONFIG.OEE.updateInterval )
@@ -154,6 +190,8 @@ const startMetricUpdates = () => {
   alarmsTimer = setInterval( updateAlarms, METRICS_CONFIG.ALARMS.updateInterval )
   workforceTimer = setInterval( updateWorkforce, METRICS_CONFIG.WORKFORCE.updateInterval )
   workOrdersTimer = setInterval( updateWorkOrders, METRICS_CONFIG.WORK_ORDERS.updateInterval )
+  // Update shift every minute to catch shift changes
+  shiftTimer = setInterval( updateShift, 60000 )
 }
 
 // Stop all metric update timers
@@ -163,6 +201,7 @@ const stopMetricUpdates = () => {
   if ( alarmsTimer ) clearInterval( alarmsTimer )
   if ( workforceTimer ) clearInterval( workforceTimer )
   if ( workOrdersTimer ) clearInterval( workOrdersTimer )
+  if ( shiftTimer ) clearInterval( shiftTimer )
 }
 
 const updatePanzoomHeight = () => {

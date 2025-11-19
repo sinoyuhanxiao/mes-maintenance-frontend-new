@@ -10,9 +10,9 @@
           <div class="metric-label">Overall Equipment Effectiveness</div>
           <div class="metric-value">
             {{ metrics.oee.toFixed(1) }}%
-            <span class="metric-trend" :class="getTrendClass(metrics.oee, 85)">
+            <span class="metric-trend" :class="getOeeTrendClass()">
               <el-icon>
-                <Top v-if="metrics.oee >= 85" />
+                <Top v-if="metrics.oee >= metrics.previousOee" />
                 <Bottom v-else />
               </el-icon>
             </span>
@@ -135,6 +135,12 @@ const getOeeColor = value => {
   return '#c03639'
 }
 
+const getOeeTrendClass = () => {
+  // Compare current OEE to previous OEE to determine trend direction
+  return props.metrics.oee >= props.metrics.previousOee ? 'positive' : 'negative'
+}
+
+// eslint-disable-next-line no-unused-vars
 const getTrendClass = ( value, threshold ) => {
   return value >= threshold ? 'positive' : 'negative'
 }

@@ -2457,8 +2457,8 @@ const populateFormFromWorkOrder = workOrder => {
       if ( workOrder.start_date ) {
         recurrenceSetting.start_date_time = formatDateTimeForPicker( workOrder.start_date )
       }
-      if ( workOrder.end_date || workOrder.due_date ) {
-        recurrenceSetting.end_date_time = formatDateTimeForPicker( workOrder.end_date || workOrder.due_date )
+      if ( workOrder.due_date || workOrder.end_date ) {
+        recurrenceSetting.end_date_time = formatDateTimeForPicker( workOrder.due_date || workOrder.end_date )
       }
     }
 
@@ -2474,8 +2474,8 @@ const populateFormFromWorkOrder = workOrder => {
       workOrder.recurrence_setting_request || {
         start_date_time : workOrder.start_date ? formatDateTimeForPicker( workOrder.start_date ) : null,
         end_date_time :
-          workOrder.end_date || workOrder.due_date
-            ? formatDateTimeForPicker( workOrder.end_date || workOrder.due_date )
+          workOrder.due_date || workOrder.end_date
+            ? formatDateTimeForPicker( workOrder.due_date || workOrder.end_date )
             : null
       }
     )
@@ -2501,9 +2501,9 @@ const populateFormFromWorkOrder = workOrder => {
         '00:00:00'
       )
     }
-    if ( !form.recurrence_setting_request.end_date_time && ( workOrder.end_date || workOrder.due_date ) ) {
+    if ( !form.recurrence_setting_request.end_date_time && ( workOrder.due_date || workOrder.end_date ) ) {
       form.recurrence_setting_request.end_date_time = withDefaultTime(
-        formatDateTimeForPicker( workOrder.end_date || workOrder.due_date ),
+        formatDateTimeForPicker( workOrder.due_date || workOrder.end_date ),
         '23:59:59'
       )
     }

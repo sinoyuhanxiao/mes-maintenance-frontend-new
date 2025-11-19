@@ -661,7 +661,7 @@ const handleDelete = async() => {
 
 const handleCreateWorkOrder = () => {
   router.push( {
-    path : '/work-order/table',
+    path : '/maintenance/work-orders/table',
     query : {
       action : 'create',
       requestId : selectedRequestId.value
