@@ -1,110 +1,21 @@
 <template>
   <div class="iframe-container">
-    <div v-if="loading" class="loading-overlay">
-      <el-icon class="is-loading">
-        <Loading />
-      </el-icon>
-      <span>{{ loadingMessage }}</span>
-    </div>
-    <iframe
-      v-if="iframeUrl"
-      :src="iframeUrl"
-      class="iframe-content"
-      frameborder="0"
-      @load="handleLoad"
-      @error="handleError"
-    />
-    <div v-else class="error-state">
-      <el-icon>
-        <WarningFilled />
-      </el-icon>
-      <p>No URL provided</p>
-    </div>
+    <iframe ref="iframeRef" :src="iframeUrl" class="iframe-content" frameborder="0" @load="handleIframeLoad" />
   </div>
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { Loading, WarningFilled } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import { updateCurrentView } from '@/api/production'
-import useTagsViewStore from '@/store/modules/tagsView'
+import { ref } from 'vue'
 
-const route = useRoute()
-const tagsViewStore = useTagsViewStore()
-const loading = ref( true )
-const loadingMessage = ref( 'Loading...' )
-const iframeLoaded = ref( false )
+const iframeRef = ref( null )
+const iframeUrl = 'https://dev.fpsmonitoring.com:8043/data/perspective/client/MES_Production/proxy'
 
-const iframeUrl = computed( () => {
-  return route.meta?.iframeUrl || ''
-} )
-
-const updateIgnitionView = async() => {
-  const ignitionViewPath = route.meta?.ignitionViewPath
-  if ( !ignitionViewPath ) {
-    console.warn( 'No ignitionViewPath found in route meta' )
-    return
-  }
-
-  try {
-    loadingMessage.value = 'Switching view...'
-    loading.value = true
-
-    const response = await updateCurrentView( ignitionViewPath )
-
-    if ( response.data?.success ) {
-      // Update tags-view tab title to "Production - {subview}"
-      const productionTitle = `Production - ${route.meta.title}`
-      tagsViewStore.updateVisitedViewTitle( route.path, productionTitle )
-    } else {
-      throw new Error( 'API returned success: false' )
-    }
-  } catch ( error ) {
-    console.error( 'Failed to update Ignition view:', error )
-    ElMessage.error( {
-      message : 'Failed to switch production view',
-      duration : 3000
-    } )
-  } finally {
-    // If iframe already loaded, hide loading immediately
-    if ( iframeLoaded.value ) {
-      loading.value = false
-    }
-  }
+const handleIframeLoad = () => {
+  // Iframe loaded successfully
 }
 
-const handleLoad = () => {
-  iframeLoaded.value = true
-  loading.value = false
-  loadingMessage.value = 'Loading...'
-}
-
-const handleError = () => {
-  loading.value = false
-  loadingMessage.value = 'Loading...'
-  ElMessage.error( 'Failed to load iframe' )
-}
-
-// Watch for route changes within Production section
-watch(
-  () => route.path,
-  async( newPath, oldPath ) => {
-    // Only trigger if navigating within production routes
-    if ( newPath.startsWith( '/production' ) && oldPath?.startsWith( '/production' ) && newPath !== oldPath ) {
-      await updateIgnitionView()
-    }
-  }
-)
-
-onMounted( async() => {
-  if ( !iframeUrl.value ) {
-    loading.value = false
-  } else {
-    // Initial view update on mount
-    await updateIgnitionView()
-  }
+defineOptions( {
+  name : 'ProductionView'
 } )
 </script>
 

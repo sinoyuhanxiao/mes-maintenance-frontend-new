@@ -105,6 +105,25 @@ export const asyncRoutes = [
     ]
   },
   {
+    path : '/test-erik',
+    name : 'TestErik',
+    component : Layout,
+    children : [
+      {
+        path : '',
+        name : 'TestErikPage',
+        component : () => import( '@/views/test_erik.vue' ),
+        meta : {
+          title : 'API Tester',
+          icon : 'tools',
+          noCache : true,
+          affix : false,
+          hidden : true
+        }
+      }
+    ]
+  },
+  {
     path : '/dashboard',
     name : 'Dashboard',
     component : Layout,

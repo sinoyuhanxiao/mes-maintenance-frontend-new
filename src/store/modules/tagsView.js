@@ -49,19 +49,19 @@ const useTagsViewStore = defineStore( {
         const existingProductionView = this.visitedViews.find( v => v.path && v.path.startsWith( '/production' ) )
 
         if ( existingProductionView ) {
-          // Update existing Production tab
+          // Update existing Production tab - keep title as just "Production"
           existingProductionView.path = view.path
           existingProductionView.name = view.name
           existingProductionView.fullPath = view.fullPath
           existingProductionView.query = view.query
           existingProductionView.meta = view.meta
-          existingProductionView.title = `Production - ${view.meta.title}`
+          existingProductionView.title = 'Production'
           return
         } else {
-          // Create new Production tab with custom title
+          // Create new Production tab with simple title
           this.visitedViews.push(
             Object.assign( {}, view, {
-              title : `Production - ${view.meta.title}`
+              title : 'Production'
             } )
           )
           return

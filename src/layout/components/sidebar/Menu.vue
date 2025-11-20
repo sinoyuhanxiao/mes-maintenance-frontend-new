@@ -10,7 +10,10 @@
     :mode="set.layoutMod"
     class="sidebar-menus"
   >
-    <SidebarItem v-for="item in set.routerLists" :key="item.path" :item="item" :base-path="item.path" />
+    <template v-for="item in set.routerLists" :key="item.path">
+      <ProductionMenuItem v-if="item.path === '/production'" />
+      <SidebarItem v-else :item="item" :base-path="item.path" />
+    </template>
   </el-menu>
 </template>
 
@@ -18,6 +21,7 @@
 import { computed, reactive } from 'vue'
 import variables from '@/styles/variables.module.scss'
 import SidebarItem from './SidebarItem'
+import ProductionMenuItem from './ProductionMenuItem.vue'
 
 import { useRoute } from 'vue-router'
 import { useAppStore, useSettingsStore, usePermissionStore } from '@/store'
