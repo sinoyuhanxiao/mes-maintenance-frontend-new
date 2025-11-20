@@ -18,11 +18,17 @@
                     : workOrder.created_by
                 }}
               </span>
-              <span class="created-date">
-                {{ $t('workOrder.form.createdOn') }}: {{ formatDate(workOrder.created_at) }}
+              <span class="created-date"> Created At: {{ formatDate(workOrder.created_at) }} </span>
+              <span v-if="workOrder.updated_by" class="created-by">
+                Updated By:
+                {{
+                  typeof workOrder.updated_by === 'object'
+                    ? `${workOrder.updated_by.first_name} ${workOrder.updated_by.last_name}`
+                    : workOrder.updated_by
+                }}
               </span>
               <span v-if="workOrder.updated_at" class="updated-date">
-                Updated: {{ formatDate(workOrder.updated_at) }}
+                Updated At: {{ formatDate(workOrder.updated_at) }}
               </span>
             </div>
           </div>
@@ -718,7 +724,7 @@
                     <span class="standard-code">{{ standard.code }}</span>
                   </div>
                   <!--                  <div v-if="standard.description" class="standard-description">{{ standard.description }}</div>-->
-                  <div class="standard-tags">
+                  <div class="standard-tags" v-show="false">
                     <el-tag v-if="standard.category" size="small" class="tag-item">
                       {{ formatCategoryName(standard.category) }}
                     </el-tag>
@@ -2236,7 +2242,7 @@ const handleParentWorkOrderClick = workOrder => {
 
   // Navigate to work order view page in a new tab
   const route = router.resolve( {
-    path : `/work-order/view/${workOrder.id}`
+    path : `/maintenance/work-orders/view/${workOrder.id}`
   } )
   window.open( route.href, '_blank' )
 }
@@ -2362,11 +2368,13 @@ defineOptions( {
     }
 
     .meta-info {
+      margin-top: 12px;
       display: flex;
-      gap: 38px;
+      gap: 35px;
       font-size: 14px;
       color: var(--el-text-color-secondary);
       flex-wrap: wrap;
+      width: 1000px;
     }
 
     .header-meta {

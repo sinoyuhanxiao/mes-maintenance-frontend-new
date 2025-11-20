@@ -1129,7 +1129,7 @@ const createNewWorkOrder = async() => {
 
     // Navigate to work order view in todo mode
     router.push( {
-      path : '/work-order',
+      path : '/maintenance/work-orders/table',
       query : { view : 'todo' }
     } )
 

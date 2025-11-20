@@ -320,7 +320,7 @@ const getPreviewTemplateTitle = () => {
 }
 
 const handleNewTask = () => {
-  const returnPath = route.fullPath || '/work-order/table'
+  const returnPath = route.fullPath || '/maintenance/work-orders/table'
   workOrderDraftStore.setReturnRoute( returnPath )
 
   const panel = props.originPanel === 'edit' ? 'edit' : 'create'

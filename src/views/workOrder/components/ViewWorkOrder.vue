@@ -88,7 +88,7 @@ const loadWorkOrder = async() => {
 const handleEdit = async workOrderToEdit => {
   // Navigate to work order management page with edit panel
   router.push( {
-    path : '/work-order/table',
+    path : '/maintenance/work-orders/table',
     query : {
       panel : 'edit',
       workOrderId : workOrderToEdit.id
@@ -140,7 +140,7 @@ const handleAddComment = () => {
 const handleStartWorkOrder = async workOrderToStart => {
   // Navigate to work order management page with execution panel
   router.push( {
-    path : '/work-order/table',
+    path : '/maintenance/work-orders/table',
     query : {
       panel : 'execution',
       workOrderId : workOrderToStart.id
@@ -156,7 +156,7 @@ const handleRefresh = async() => {
 const handleRecreate = async workOrderToRecreate => {
   // Navigate to work order management page with create panel for recreation
   router.push( {
-    path : '/work-order/table',
+    path : '/maintenance/work-orders/table',
     query : {
       panel : 'create',
       workOrderId : workOrderToRecreate.id,
@@ -173,11 +173,11 @@ const handleCopy = async workOrderToCopy => {
 const handleDelete = async( { workOrder : workOrderToDelete, type } ) => {
   // After delete, go back to the work order list
   ElMessage.success( `Work order deleted (${type})` )
-  router.push( '/work-order/table' )
+  router.push( '/maintenance/work-orders/table' )
 }
 
 const goBack = () => {
-  router.push( '/work-order/table' )
+  router.push( '/maintenance/work-orders/table' )
 }
 
 // Lifecycle

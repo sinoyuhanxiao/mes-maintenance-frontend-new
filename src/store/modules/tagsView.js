@@ -44,6 +44,31 @@ const useTagsViewStore = defineStore( {
     },
 
     ADD_VISITED_VIEW( view ) {
+      // Special handling for Production routes - use single tab
+      if ( view.path && view.path.startsWith( '/production' ) ) {
+        const existingProductionView = this.visitedViews.find( v => v.path && v.path.startsWith( '/production' ) )
+
+        if ( existingProductionView ) {
+          // Update existing Production tab
+          existingProductionView.path = view.path
+          existingProductionView.name = view.name
+          existingProductionView.fullPath = view.fullPath
+          existingProductionView.query = view.query
+          existingProductionView.meta = view.meta
+          existingProductionView.title = `Production - ${view.meta.title}`
+          return
+        } else {
+          // Create new Production tab with custom title
+          this.visitedViews.push(
+            Object.assign( {}, view, {
+              title : `Production - ${view.meta.title}`
+            } )
+          )
+          return
+        }
+      }
+
+      // Standard behavior for non-Production routes
       if ( this.visitedViews.some( v => v.path === view.path ) ) return
       this.visitedViews.push(
         Object.assign( {}, view, {

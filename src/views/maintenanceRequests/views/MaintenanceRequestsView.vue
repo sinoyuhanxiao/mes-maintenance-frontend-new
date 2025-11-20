@@ -707,7 +707,7 @@ const handleUpdateRequest = async formData => {
 
 const navigateToWorkOrder = workOrderId => {
   router.push( {
-    path : `/work-order/view/${workOrderId}`
+    path : `/maintenance/work-orders/view/${workOrderId}`
   } )
 }
 

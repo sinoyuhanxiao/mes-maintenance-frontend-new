@@ -528,7 +528,7 @@ const workOrderDraftStore = useWorkOrderDraftStore()
 const fromWorkOrder = computed( () => route.query.fromWorkOrder === 'true' )
 const workOrderReturnRoute = computed( () => {
   const queryRoute = typeof route.query.returnRoute === 'string' ? route.query.returnRoute : null
-  return queryRoute || workOrderDraftStore.returnRoute || '/work-order/table'
+  return queryRoute || workOrderDraftStore.returnRoute || '/maintenance/work-orders/table'
 } )
 
 const workOrderReturnPanel = computed( () => {
@@ -1046,12 +1046,12 @@ const handleBack = () => {
 }
 
 const navigateBackToWorkOrder = async( message, additionalQuery = {} ) => {
-  const rawTarget = workOrderReturnRoute.value || '/work-order/table'
+  const rawTarget = workOrderReturnRoute.value || '/maintenance/work-orders/table'
   const panel = workOrderReturnPanel.value
   const returnWorkOrderId = workOrderReturnWorkOrderId.value
 
   const targetUrl = new URL( rawTarget, window.location.origin )
-  let basePath = targetUrl.pathname || '/work-order/table'
+  let basePath = targetUrl.pathname || '/maintenance/work-orders/table'
   if ( basePath === '/' && targetUrl.hash && targetUrl.hash.startsWith( '#/' ) ) {
     basePath = targetUrl.hash.slice( 1 )
   }

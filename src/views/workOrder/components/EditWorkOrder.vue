@@ -53,7 +53,7 @@ const loadWorkOrderData = async() => {
 
     if ( !workOrderId ) {
       ElMessage.error( 'No work order ID provided' )
-      router.push( '/work-order/table' )
+      router.push( '/maintenance/work-orders/table' )
       return
     }
 
@@ -82,12 +82,12 @@ const loadWorkOrderData = async() => {
 const handleWorkOrderUpdated = workOrder => {
   ElMessage.success( 'Work order updated successfully' )
   // Navigate back to the work order table view
-  router.push( '/work-order/table' )
+  router.push( '/maintenance/work-orders/table' )
 }
 
 const handleBackToTable = () => {
   // Navigate back to work order table
-  router.push( '/work-order/table' )
+  router.push( '/maintenance/work-orders/table' )
 }
 
 // Lifecycle

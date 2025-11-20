@@ -113,6 +113,20 @@ const props = defineProps( {
   }
 } )
 
+// ========================================
+// STATUS UPDATE CONFIGURATION CENTER
+// Modify these values to customize status behavior
+// ========================================
+const STATUS_UPDATE_CONFIG = {
+  updateInterval : 5000, // Update every 5 seconds (milliseconds)
+  statusRatios : {
+    operational : 0.7,
+    warning : 0.05,
+    error : 0.05,
+    idle : 0.1
+  }
+}
+
 // Panzoom instance
 const panzoomInstance = ref( null )
 const panzoomContainer = ref( null )
@@ -146,7 +160,7 @@ const carouselImages = ref( [
 ] )
 
 // Equipment Zones for Image 1 (fps_e2e.png) - 9 Machines from FPS E2E Line
-const equipmentZonesImage1 = [
+const equipmentZonesImage1 = ref( [
   {
     id : 1,
     name : 'Raw Receiving',
@@ -307,10 +321,10 @@ const equipmentZonesImage1 = [
       description : 'PulseFlow™ IQF freezing and chilling solutions'
     }
   }
-]
+] )
 
 // Equipment Zones for Image 2 (fps_packaging.JPG)
-const equipmentZonesImage2 = [
+const equipmentZonesImage2 = ref( [
   {
     id : 5,
     name : 'Palletizer',
@@ -419,11 +433,11 @@ const equipmentZonesImage2 = [
       nextMaintenance : '2025-01-18'
     }
   }
-]
+] )
 
 // Computed property for current equipment zones
 const equipmentZones = computed( () => {
-  return currentImageIndex.value === 0 ? equipmentZonesImage1 : equipmentZonesImage2
+  return currentImageIndex.value === 0 ? equipmentZonesImage1.value : equipmentZonesImage2.value
 } )
 
 // Recent Activities - Hardcoded for demo with e2e-overview equipment context
@@ -709,6 +723,58 @@ const handleNextImage = () => {
   handleReset()
 }
 
+// Status update timer
+let statusUpdateTimer = null
+
+// Random status assignment function based on configured ratios
+const getRandomStatus = () => {
+  const { statusRatios } = STATUS_UPDATE_CONFIG
+  const random = Math.random()
+  let cumulative = 0
+
+  // Build cumulative probability distribution
+  const statuses = ['operational', 'warning', 'error', 'idle']
+  for ( const status of statuses ) {
+    cumulative += statusRatios[status]
+    if ( random <= cumulative ) {
+      return status
+    }
+  }
+
+  // Fallback to operational if something goes wrong
+  return 'operational'
+}
+
+// Update all equipment status indicators randomly
+const updateEquipmentStatuses = () => {
+  // Update Image 1 equipment zones
+  equipmentZonesImage1.value.forEach( zone => {
+    zone.status = getRandomStatus()
+  } )
+
+  // Update Image 2 equipment zones
+  equipmentZonesImage2.value.forEach( zone => {
+    zone.status = getRandomStatus()
+  } )
+}
+
+// Start status update timer
+const startStatusUpdates = () => {
+  // Initial update
+  updateEquipmentStatuses()
+
+  // Set up interval
+  statusUpdateTimer = setInterval( updateEquipmentStatuses, STATUS_UPDATE_CONFIG.updateInterval )
+}
+
+// Stop status update timer
+const stopStatusUpdates = () => {
+  if ( statusUpdateTimer ) {
+    clearInterval( statusUpdateTimer )
+    statusUpdateTimer = null
+  }
+}
+
 // Utility functions
 // eslint-disable-next-line no-unused-vars
 const getStatusText = status => {
@@ -756,6 +822,8 @@ const handleKeyDown = e => {
 
 onMounted( () => {
   window.addEventListener( 'keydown', handleKeyDown )
+  // Start status updates
+  startStatusUpdates()
 } )
 
 onBeforeUnmount( () => {
@@ -763,6 +831,8 @@ onBeforeUnmount( () => {
     panzoomInstance.value.dispose()
   }
   window.removeEventListener( 'keydown', handleKeyDown )
+  // Stop status updates
+  stopStatusUpdates()
 } )
 </script>
 
@@ -825,16 +895,55 @@ onBeforeUnmount( () => {
   z-index: 10;
 
   &:hover {
-    background-color: rgba(0, 133, 164, 0.15);
-    border: 2px solid rgba(0, 133, 164, 0.6);
-    box-shadow: 0 0 15px rgba(0, 133, 164, 0.4);
     transform: scale(1.02);
+
+    &.status-operational {
+      background-color: rgba(48, 176, 143, 0.15);
+      border: 2px solid rgba(48, 176, 143, 0.6);
+      box-shadow: 0 0 15px rgba(48, 176, 143, 0.4);
+    }
+
+    &.status-warning {
+      background-color: rgba(254, 193, 113, 0.15);
+      border: 2px solid rgba(254, 193, 113, 0.6);
+      box-shadow: 0 0 15px rgba(254, 193, 113, 0.4);
+    }
+
+    &.status-error {
+      background-color: rgba(192, 54, 57, 0.15);
+      border: 2px solid rgba(192, 54, 57, 0.6);
+      box-shadow: 0 0 15px rgba(192, 54, 57, 0.4);
+    }
+
+    &.status-idle {
+      background-color: rgba(100, 116, 139, 0.15);
+      border: 2px solid rgba(100, 116, 139, 0.6);
+      box-shadow: 0 0 15px rgba(100, 116, 139, 0.4);
+    }
   }
 
   &:active {
-    background-color: rgba(0, 133, 164, 0.25);
-    border: 2px solid rgba(0, 133, 164, 0.8);
     transform: scale(0.98);
+
+    &.status-operational {
+      background-color: rgba(48, 176, 143, 0.25);
+      border: 2px solid rgba(48, 176, 143, 0.8);
+    }
+
+    &.status-warning {
+      background-color: rgba(254, 193, 113, 0.25);
+      border: 2px solid rgba(254, 193, 113, 0.8);
+    }
+
+    &.status-error {
+      background-color: rgba(192, 54, 57, 0.25);
+      border: 2px solid rgba(192, 54, 57, 0.8);
+    }
+
+    &.status-idle {
+      background-color: rgba(100, 116, 139, 0.25);
+      border: 2px solid rgba(100, 116, 139, 0.8);
+    }
   }
 
   &.dryer {

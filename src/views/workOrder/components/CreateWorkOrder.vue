@@ -76,12 +76,12 @@ const loadInitialData = async() => {
 const handleWorkOrderCreated = workOrder => {
   ElMessage.success( 'Work order created successfully' )
   // Navigate to the work order table view
-  router.push( '/work-order/table' )
+  router.push( '/maintenance/work-orders/table' )
 }
 
 const handleBackToDetail = () => {
   // Navigate back to work order table
-  router.push( '/work-order/table' )
+  router.push( '/maintenance/work-orders/table' )
 }
 
 // Lifecycle
