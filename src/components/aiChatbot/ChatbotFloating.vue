@@ -51,15 +51,17 @@
 
         <!-- Chips -->
         <div class="chip-group" role="group" aria-label="Common questions">
-          <button class="chip chip--outline" @click="startChat('What Is FPS MES')">What Is FPS MES</button>
-          <button class="chip chip--outline" @click="startChat('How Does This AI Chatbot Work')">
+          <button class="chip chip--outline" @click="startChat('What is FPS MES?')">What Is FPS MES</button>
+          <button class="chip chip--outline" @click="startChat('How does this AI Chatbot work?')">
             How Does This AI Chatbot Work
           </button>
-          <button class="chip chip--outline" @click="startChat('Any Alarms Today')">Any Alarms Today</button>
-          <button class="chip chip--outline" @click="startChat('How to contact 24/7 service?')">Contact Support</button>
-          <button class="chip chip--outline" @click="startChat('Where To Check Maintenance Report')">
-            How To Check Maintenance Report
+          <button class="chip chip--outline" @click="startChat('How to operate the packaging machine?')">
+            How To Operate The Packaging Machine
           </button>
+          <button class="chip chip--outline" @click="startChat('How to initialize the metal detector?')">
+            How To Initialize The Metal Detector
+          </button>
+          <button class="chip chip--outline" @click="startChat('Bagger spare parts?')">Bagger Spare Parts</button>
         </div>
 
         <!-- Start Conversation (bottom call-to-action) -->
@@ -522,11 +524,11 @@ onMounted( () => {
   background-image: radial-gradient(
     480px 320px at 20% 12%,
     #a3cdf9 0%,
-    /* softer light blue */ #c1defa 20%,
-    /* more neutral */ #daeafc 40%,
-    /* closer to gray-white */ #e8f2fd 60%,
-    /* very soft */ #f5faff 75%,
-    /* almost white */ #ffffff 90% /* pure white */
+      /* softer light blue */ #c1defa 20%,
+      /* more neutral */ #daeafc 40%,
+      /* closer to gray-white */ #e8f2fd 60%,
+      /* very soft */ #f5faff 75%,
+      /* almost white */ #ffffff 90% /* pure white */
   );
   background-repeat: no-repeat;
   color: #111;

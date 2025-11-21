@@ -1667,7 +1667,7 @@ const rules = computed( () => {
       { min : 3, max : 200, message : 'Name must be between 3 and 200 characters', trigger : 'blur' }
     ],
     equipment_node_ids : [{ required : true, message : 'Please select at least one asset', trigger : 'change' }],
-    assignee_ids : [{ required : true, message : 'Please assign at least one person', trigger : 'change' }],
+    assignee_ids : [],
     start_date : [
       {
         required : !isNoneRecurrence,
@@ -2392,11 +2392,6 @@ const populateFormFromWorkOrder = workOrder => {
     // Ensure approval_id is a string to match tree node IDs
     const approvalTemplateId = workOrder.approval_entry?.template_id || workOrder.approval_id
     form.approval_id = approvalTemplateId ? String( approvalTemplateId ) : null
-
-    if ( !Array.isArray( form.assignee_ids ) || form.assignee_ids.length === 0 ) {
-      // Default to "System" (ID 84)
-      form.assignee_ids = [84]
-    }
 
     if ( ( form.approved_by_id == null || form.approved_by_id === '' ) && supervisorOptions.value.length > 0 ) {
       const randomSupervisor = pickRandomOptionId( supervisorOptions.value )
