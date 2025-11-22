@@ -34,7 +34,7 @@ export function useWorkOrder() {
     importance : undefined,
     title : undefined,
     type : undefined,
-    latest_per_recurrence : true,
+    latest_per_recurrence : false,
     // Filter properties that are actually used
     assignedTo : undefined,
     priority : undefined,
