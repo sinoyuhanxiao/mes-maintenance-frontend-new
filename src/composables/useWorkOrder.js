@@ -3,7 +3,7 @@
  * Provides centralized state management and business logic for work orders
  */
 import { ref, reactive, computed } from 'vue'
-import { ElMessage, ElNotification } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
 import {
   searchWorkOrders,
@@ -255,12 +255,7 @@ export function useWorkOrder() {
         if ( action === 'confirm' ) {
           // Delete entire recurrence
           await deleteRecurrenceWorkOrders( row.recurrence_uuid )
-          ElNotification( {
-            title : t( 'common.success' ),
-            message : 'All recurring work orders deleted successfully',
-            type : 'success',
-            duration : 3000
-          } )
+          ElMessage.success( 'All recurring work orders deleted successfully' )
 
           // Remove all work orders with the same recurrence UUID from the list
           const indicesToRemove = []
@@ -277,23 +272,26 @@ export function useWorkOrder() {
         } else {
           // Delete individual work order
           await deleteIndividualWorkOrder( row.id )
-          ElNotification( {
-            title : t( 'common.success' ),
-            message : t( 'workOrder.messages.deleteSuccess' ),
-            type : 'success',
-            duration : 2000
-          } )
+          ElMessage.success( t( 'workOrder.messages.deleteSuccess' ) )
           list.value.splice( index, 1 )
         }
       } else {
-        // For non-recurring work orders, delete individual
+        // For non-recurring work orders, show simple confirmation
+        const { ElMessageBox } = await import( 'element-plus' )
+
+        await ElMessageBox.confirm(
+          'This action will permanently delete this work order. This cannot be undone.',
+          'Delete Work Order',
+          {
+            confirmButtonText : 'Delete',
+            cancelButtonText : 'Cancel',
+            type : 'warning'
+          }
+        )
+
+        // Delete individual work order
         await deleteIndividualWorkOrder( row.id )
-        ElNotification( {
-          title : t( 'common.success' ),
-          message : t( 'workOrder.messages.deleteSuccess' ),
-          type : 'success',
-          duration : 2000
-        } )
+        ElMessage.success( t( 'workOrder.messages.deleteSuccess' ) )
         list.value.splice( index, 1 )
       }
 
@@ -301,7 +299,7 @@ export function useWorkOrder() {
       total.value = Math.max( 0, total.value - 1 )
     } catch ( error ) {
       console.error( 'Delete failed:', error )
-      if ( error.message !== 'User cancelled' ) {
+      if ( error.message !== 'User cancelled' && error !== 'cancel' ) {
         ElMessage.error( t( 'workOrder.messages.deleteFailed' ) )
       }
     }

@@ -683,12 +683,28 @@ const togglePanzoom = () => {
 
 // Zone interaction handlers
 const handleZoneClick = zone => {
-  // Special handling for Freezer - open Production Freezing page in new tab
-  if ( zone.machineType === 'freezer' || zone.name === 'Freezing' ) {
-    router.push( '/production/freezing' )
+  // Map equipment zones to RMS routes
+  const equipmentRouteMap = {
+    // First Picture (FPS E2E Line)
+    Freezing : '/rms/freezing',
+    Drying : '/rms/drying',
+    Frying : '/rms/frying',
+    // Second Picture (Packaging Line)
+    Palletizer : '/rms/palletizer',
+    'Case Transport' : '/rms/case-transport',
+    'Case Handling' : '/rms/case-handling',
+    'Case Packing' : '/rms/case-packing',
+    'Bag Inspection' : '/rms/bag-inspection',
+    'Bag Packaging' : '/rms/bag-packaging'
   }
 
-  // Temporarily disabled for other zones - no popup on click
+  // Navigate to RMS route if equipment is mapped
+  const routePath = equipmentRouteMap[zone.name]
+  if ( routePath ) {
+    router.push( routePath )
+  }
+
+  // Temporarily disabled - no popup on click
   // selectedZone.value = zone
   // showModal.value = true
 }

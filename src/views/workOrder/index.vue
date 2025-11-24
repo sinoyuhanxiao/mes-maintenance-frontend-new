@@ -232,15 +232,8 @@ const handleUpdate = row => {
 }
 
 const handleDelete = async( row, index ) => {
-  // WorkOrderDetail component already handles the deletion and shows confirmation dialogs
-  // This handler just needs to refresh the list after the delete event is emitted
-  try {
-    showSuccess( t( 'workOrder.messages.deleteSuccess' ) )
-    // Refresh the work order list to reflect the deletion
-    await fetchWorkOrders()
-  } catch ( error ) {
-    // Error handled by fetchWorkOrders
-  }
+  // Call the delete function from the composable which handles all the logic
+  await deleteWorkOrder( row, index )
 }
 
 const handleViewChange = async view => {

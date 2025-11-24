@@ -2,11 +2,13 @@
   <div class="work-order-image">
     <el-image
       v-if="hasImage"
+      class="circular-image"
       style="width: 50px; height: 50px"
       :src="imagePath[0]"
       :preview-src-list="[imagePath[0]]"
       loading="lazy"
       :alt="$t('workOrder.table.preview')"
+      fit="cover"
     >
       <template #error>
         <div class="image-slot">
@@ -15,7 +17,7 @@
       </template>
     </el-image>
 
-    <el-image v-else style="width: 50px; height: 50px">
+    <el-image v-else class="circular-image" style="width: 50px; height: 50px">
       <template #error>
         <el-tooltip>
           <template #content>
@@ -54,6 +56,15 @@ defineOptions( {
 
 <style scoped lang="scss">
 .work-order-image {
+  .circular-image {
+    border-radius: 50%;
+    overflow: hidden;
+
+    :deep(img) {
+      border-radius: 50%;
+    }
+  }
+
   .image-slot {
     display: flex;
     justify-content: center;
@@ -63,6 +74,7 @@ defineOptions( {
     background: var(--el-fill-color-light);
     color: var(--el-text-color-secondary);
     font-size: 30px;
+    border-radius: 50%;
   }
 }
 </style>

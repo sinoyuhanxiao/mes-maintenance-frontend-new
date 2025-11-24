@@ -16,16 +16,32 @@
       :row-class-name="getRowClass"
     >
       <!-- Work Order Name -->
-      <el-table-column :label="$t('workOrder.table.name')" prop="name" align="left" width="300" fixed="left">
-        <template #default="{ row }">
-          <span style="color: black">{{ row.name }}</span>
-        </template>
-      </el-table-column>
+      <el-table-column :label="$t('workOrder.table.name')" prop="name" align="left" width="400" fixed="left" />
 
       <!-- ID Column -->
       <el-table-column :label="$t('workOrder.table.id')" prop="id" align="center" width="120">
         <template #default="{ row }">
-          <span style="color: grey">#{{ row.id }}</span>
+          <span class="work-order-id clickable-id" @click="$emit('view', row)">#{{ row.id }}</span>
+        </template>
+      </el-table-column>
+
+      <!-- Work Order Image -->
+      <el-table-column :label="$t('workOrder.table.preview')" align="center" width="100">
+        <template #default="{ row }">
+          <WorkOrderImage :image-path="row.image_list" />
+        </template>
+      </el-table-column>
+
+      <!-- Assigned To -->
+      <el-table-column :label="$t('workOrder.table.assignedTo')" align="center" width="360">
+        <template #default="{ row }">
+          <span v-if="!row.user_list || row.user_list.length <= 2">
+            {{ displayedAssignedUsers(row) }}
+          </span>
+          <span v-else>
+            {{ displayedAssignedUsersText(row) }}
+            <span class="total-count-link" @click="openUserListDialog(row)"> ({{ row.user_list.length }} total) </span>
+          </span>
         </template>
       </el-table-column>
 
@@ -38,13 +54,6 @@
           <span :style="{ color: isOverdue(row.due_date) ? 'var(--el-color-danger)' : '' }">
             {{ formatDateTime(row.due_date) }}
           </span>
-        </template>
-      </el-table-column>
-
-      <!-- Work Order Image -->
-      <el-table-column :label="$t('workOrder.table.preview')" align="center" width="150">
-        <template #default="{ row }">
-          <WorkOrderImage :image-path="row.image_list" />
         </template>
       </el-table-column>
 
@@ -63,9 +72,16 @@
       </el-table-column>
 
       <!-- Category -->
-      <el-table-column :label="$t('workOrder.table.category')" prop="category.name" align="center" width="150">
+      <el-table-column :label="$t('workOrder.table.category')" prop="category.name" align="center" width="400">
         <template #default="{ row }">
-          <CategoryTag :category="row.category" />
+          <div class="category-tag-list" v-if="getCategoryTags(row).length">
+            <CategoryTag
+              v-for="category in getCategoryTags(row)"
+              :key="getCategoryKey(category)"
+              :category="category"
+            />
+          </div>
+          <span v-else>-</span>
         </template>
       </el-table-column>
 
@@ -102,39 +118,64 @@
         </template>
       </el-table-column>
 
-      <!-- Finished Date -->
-      <el-table-column :label="$t('workOrder.table.finishedDate')" prop="finished_at" align="center" width="200">
-        <template #default="{ row }">
-          {{ row.finished_at ? formatDateTime(row.finished_at) : '-' }}
-        </template>
-      </el-table-column>
-
-      <!-- Approved At -->
-      <el-table-column :label="$t('workOrder.table.approvedDate')" prop="approved_at" align="center" width="200">
-        <template #default="{ row }">
-          {{ row.approved_at ? formatDateTime(row.approved_at) : '-' }}
-        </template>
-      </el-table-column>
-
       <!-- State -->
       <el-table-column :label="$t('workOrder.table.state')" prop="state.name" align="center" width="150">
         <template #default="{ row }">
-          <StatusTag :status="row.state" />
+          <el-tag
+            v-if="row.state?.name"
+            :type="getStateTagType(row.state?.name)"
+            :effect="getStateTagEffect(row.state?.name)"
+          >
+            {{ row.state.name }}
+          </el-tag>
+          <span v-else>-</span>
         </template>
       </el-table-column>
 
       <!-- Created By -->
-      <el-table-column :label="$t('workOrder.table.createdBy')" prop="created_by" align="center" width="150" />
-
-      <!-- Approved By -->
-      <el-table-column :label="$t('workOrder.table.approvedBy')" prop="approved_by_id" align="center" width="150">
+      <el-table-column :label="$t('workOrder.table.createdBy')" prop="created_by" align="center" width="200">
         <template #default="{ row }">
-          {{ row.approved_by_id != null ? row.approved_by_id : '-' }}
+          <span v-if="row.created_by">
+            {{
+              typeof row.created_by === 'object'
+                ? `${row.created_by.first_name} ${row.created_by.last_name}`
+                : row.created_by
+            }}
+          </span>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+
+      <!-- Created At -->
+      <el-table-column :label="$t('workOrder.table.createdAt')" prop="created_at" align="center" width="180">
+        <template #default="{ row }">
+          {{ formatDateTime(row.created_at) }}
+        </template>
+      </el-table-column>
+
+      <!-- Updated By -->
+      <el-table-column :label="$t('workOrder.table.updatedBy')" prop="updated_by" align="center" width="200">
+        <template #default="{ row }">
+          <span v-if="row.updated_by">
+            {{
+              typeof row.updated_by === 'object'
+                ? `${row.updated_by.first_name} ${row.updated_by.last_name}`
+                : row.updated_by
+            }}
+          </span>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
+
+      <!-- Updated At -->
+      <el-table-column :label="$t('workOrder.table.updatedAt')" prop="updated_at" align="center" width="180">
+        <template #default="{ row }">
+          {{ row.updated_at ? formatDateTime(row.updated_at) : '-' }}
         </template>
       </el-table-column>
 
       <!-- Description -->
-      <el-table-column :label="$t('workOrder.table.description')" prop="description" align="left" min-width="200">
+      <el-table-column :label="$t('workOrder.table.description')" prop="description" align="left" width="500">
         <template #default="{ row }">
           <span :title="row.description">{{ row.description || '-' }}</span>
         </template>
@@ -159,19 +200,97 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <!-- User List Dialog -->
+    <el-dialog v-model="userListDialogVisible" title="Assigned Users" width="900px" top="10vh" class="user-list-dialog">
+      <div class="tab-toolbar">
+        <el-input
+          v-model="userSearchQuery"
+          placeholder="Search by name or email"
+          prefix-icon="Search"
+          clearable
+          class="toolbar-input"
+        />
+      </div>
+
+      <el-table :data="filteredUserList" style="width: 100%" height="400">
+        <el-table-column label="Name" min-width="170px" align="center" fixed="left">
+          <template #default="scope">
+            <span>{{ scope.row.first_name + ' ' + scope.row.last_name }}</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="id" label="ID" min-width="80px" align="center" fixed="left" />
+
+        <el-table-column prop="image" label="Profile Picture" min-width="150px" align="center">
+          <template #default="scope">
+            <div class="profile-picture-cell">
+              <template v-if="!scope.row.image">
+                <el-tooltip content="No image available">
+                  <div class="image-slot-circle">
+                    <el-icon><Picture /></el-icon>
+                  </div>
+                </el-tooltip>
+              </template>
+
+              <el-image
+                v-else
+                :src="scope.row.image"
+                fit="cover"
+                style="width: 30px; height: 30px; border-radius: 50%"
+                :preview-src-list="[scope.row.image]"
+                preview-teleported
+              >
+                <template #error>
+                  <el-tooltip content="Image failed to load">
+                    <div class="image-slot-circle">
+                      <el-icon><Picture /></el-icon>
+                    </div>
+                  </el-tooltip>
+                </template>
+              </el-image>
+            </div>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="role_list" label="Primary Role" min-width="200px" align="center">
+          <template #default="scope">
+            <el-tag v-if="scope.row.role_list && scope.row.role_list.length > 0">
+              {{ getPrimaryRole(scope.row.role_list) }}
+            </el-tag>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="email" label="Email" min-width="220px" align="center" />
+        <el-table-column prop="phone_number" label="Phone" min-width="220px" align="center" />
+        <el-table-column prop="username" label="Username" min-width="220px" align="center" />
+
+        <el-table-column prop="employee_number" label="Employee Number" min-width="200" align="center">
+          <template #default="scope">
+            <el-text>{{ scope.row.employee_number || '-' }}</el-text>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <template #footer>
+        <el-button @click="userListDialogVisible = false">Close</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { convertToLocalTime } from '@/utils/datetime'
+import { Picture } from '@element-plus/icons-vue'
 import WorkOrderImage from '../Display/WorkOrderImage.vue'
 import PriorityTag from '../Display/PriorityTag.vue'
 import WorkTypeTag from '../Display/WorkTypeTag.vue'
 import CategoryTag from '../Display/CategoryTag.vue'
 import RecurrenceTag from '../Display/RecurrenceTag.vue'
-import StatusTag from '../Display/StatusTag.vue'
 import WorkOrderActions from '../Actions/WorkOrderActions.vue'
+import { getStateTagType, getStateTagEffect } from '@/components/WorkOrder/utils/stateUtils'
 
 // Props
 const props = defineProps( {
@@ -203,11 +322,32 @@ const emit = defineEmits( ['expand-change', 'view', 'edit', 'delete', 'view-recu
 // State
 const tableHeight = ref( 300 )
 const rootEl = ref( null )
+const userListDialogVisible = ref( false )
+const userSearchQuery = ref( '' )
+const currentWorkOrderRow = ref( null )
 
 // Computed
 const getRowClass = ( { row } ) => {
   return props.expandedRows.has( row.id ) ? 'expanded-highlight' : ''
 }
+
+const filteredUserList = computed( () => {
+  const userList = currentWorkOrderRow.value?.user_list
+  if ( !userList || !Array.isArray( userList ) ) {
+    return []
+  }
+
+  if ( !userSearchQuery.value ) {
+    return userList
+  }
+
+  const query = userSearchQuery.value.toLowerCase()
+  return userList.filter( user => {
+    const fullName = `${user.first_name} ${user.last_name}`.toLowerCase()
+    const email = ( user.email || '' ).toLowerCase()
+    return fullName.includes( query ) || email.includes( query )
+  } )
+} )
 
 // Methods
 let roNavbar = null
@@ -261,6 +401,90 @@ const handleRecurrenceClick = row => {
     return
   }
   emit( 'view-recurrence', row.recurrence_uuid )
+}
+
+const displayedAssignedUsers = row => {
+  const userList = row?.user_list
+  if ( !userList || !Array.isArray( userList ) || userList.length === 0 ) {
+    return 'Unassigned'
+  }
+
+  const formatUser = user => `${user.first_name} ${user.last_name}`
+
+  if ( userList.length === 1 ) {
+    return formatUser( userList[0] )
+  } else if ( userList.length === 2 ) {
+    return `${formatUser( userList[0] )}, ${formatUser( userList[1] )}`
+  } else {
+    return `${formatUser( userList[0] )}, ${formatUser( userList[1] )}... (${userList.length} total)`
+  }
+}
+
+const displayedAssignedUsersText = row => {
+  const userList = row?.user_list
+  if ( !userList || !Array.isArray( userList ) || userList.length === 0 ) {
+    return 'Unassigned'
+  }
+
+  const formatUser = user => `${user.first_name} ${user.last_name}`
+
+  if ( userList.length === 1 ) {
+    return formatUser( userList[0] )
+  } else if ( userList.length === 2 ) {
+    return `${formatUser( userList[0] )}, ${formatUser( userList[1] )}`
+  } else {
+    return `${formatUser( userList[0] )}, ${formatUser( userList[1] )}...`
+  }
+}
+
+const openUserListDialog = row => {
+  currentWorkOrderRow.value = row
+  userSearchQuery.value = ''
+  userListDialogVisible.value = true
+}
+
+const getPrimaryRole = roleList => {
+  if ( !roleList || !Array.isArray( roleList ) || roleList.length === 0 ) {
+    return '-'
+  }
+
+  // Find the primary role
+  const primaryRole = roleList.find( r => r.is_primary === true )
+
+  if ( primaryRole && primaryRole.role && primaryRole.role.name ) {
+    return primaryRole.role.name
+  }
+
+  // Fallback to first role if no primary role found
+  if ( roleList[0] && roleList[0].role && roleList[0].role.name ) {
+    return roleList[0].role.name
+  }
+
+  return '-'
+}
+
+const getCategoryTags = row => {
+  if ( !row ) return []
+  // Check for categories array first
+  if ( Array.isArray( row.categories ) && row.categories.length ) {
+    return row.categories
+  }
+  // Check for category_list array
+  if ( Array.isArray( row.category_list ) && row.category_list.length ) {
+    return row.category_list
+  }
+  // Check for single category
+  if ( row.category ) {
+    return Array.isArray( row.category ) ? row.category : [row.category]
+  }
+  return []
+}
+
+const getCategoryKey = category => {
+  if ( category && typeof category === 'object' ) {
+    return category.id ?? category.name ?? JSON.stringify( category )
+  }
+  return category
 }
 
 // Lifecycle
@@ -352,6 +576,82 @@ defineOptions( {
     background-color: var(--el-color-primary-light-9);
     transform: translateY(-1px);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+}
+
+// Category tag list styling
+.category-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+}
+
+// Work order ID styling (matching detail view)
+.work-order-id {
+  color: var(--el-color-primary);
+  font-weight: 500;
+  font-size: 14px;
+
+  &.clickable-id {
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover {
+      text-decoration: underline;
+      color: var(--el-color-primary-light-3);
+    }
+
+    &:active {
+      color: var(--el-color-primary-dark-2);
+    }
+  }
+}
+
+// Assigned users styling
+.total-count-link {
+  color: var(--el-color-primary);
+  cursor: pointer;
+  margin-left: 4px;
+  transition: all 0.2s ease;
+  font-weight: 500;
+
+  &:hover {
+    text-decoration: underline;
+    color: var(--el-color-primary-light-3);
+  }
+
+  &:active {
+    color: var(--el-color-primary-dark-2);
+  }
+}
+
+// User list dialog styling
+.user-list-dialog {
+  .tab-toolbar {
+    margin-bottom: 16px;
+
+    .toolbar-input {
+      width: 100%;
+    }
+  }
+
+  .profile-picture-cell {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    .image-slot-circle {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background-color: var(--el-fill-color-light);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: var(--el-text-color-secondary);
+      font-size: 16px;
+    }
   }
 }
 </style>

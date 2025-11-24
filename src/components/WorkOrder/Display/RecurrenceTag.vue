@@ -1,5 +1,5 @@
 <template>
-  <el-tag :type="tagType" :title="recurrenceType?.description || $t('workOrder.recurrence.none')" effect="dark">
+  <el-tag :type="tagType" :title="recurrenceType?.description || $t('workOrder.recurrence.none')" effect="plain">
     {{ recurrenceName }}
   </el-tag>
 </template>

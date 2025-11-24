@@ -61,7 +61,9 @@
           <button class="chip chip--outline" @click="startChat('How to initialize the metal detector?')">
             How To Initialize The Metal Detector
           </button>
-          <button class="chip chip--outline" @click="startChat('Bagger spare parts?')">Bagger Spare Parts</button>
+          <button class="chip chip--outline" @click="startChat('X-Ray machine spare parts?')">
+            X-Ray Machine Spare Parts
+          </button>
         </div>
 
         <!-- Start Conversation (bottom call-to-action) -->
@@ -524,11 +526,11 @@ onMounted( () => {
   background-image: radial-gradient(
     480px 320px at 20% 12%,
     #a3cdf9 0%,
-      /* softer light blue */ #c1defa 20%,
-      /* more neutral */ #daeafc 40%,
-      /* closer to gray-white */ #e8f2fd 60%,
-      /* very soft */ #f5faff 75%,
-      /* almost white */ #ffffff 90% /* pure white */
+    /* softer light blue */ #c1defa 20%,
+    /* more neutral */ #daeafc 40%,
+    /* closer to gray-white */ #e8f2fd 60%,
+    /* very soft */ #f5faff 75%,
+    /* almost white */ #ffffff 90% /* pure white */
   );
   background-repeat: no-repeat;
   color: #111;

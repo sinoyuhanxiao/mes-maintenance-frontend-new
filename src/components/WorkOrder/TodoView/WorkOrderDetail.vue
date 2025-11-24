@@ -103,7 +103,7 @@
                     <el-icon><Share /></el-icon>
                     {{ $t('workOrder.actions.share') }}
                   </el-dropdown-item>
-                  <el-dropdown-item command="export" :disabled="disableActions">
+                  <el-dropdown-item command="export" disabled>
                     <el-icon><Download /></el-icon>
                     {{ $t('workOrder.actions.export') }}
                   </el-dropdown-item>

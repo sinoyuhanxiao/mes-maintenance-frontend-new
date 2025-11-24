@@ -9,6 +9,7 @@ import Layout from '@/layout/index.vue'
 // import taskLibraryRoutes from './modules/taskLibrary'
 import qcRoutes from './modules/qc'
 import productionRoutes from './modules/production'
+import rmsRoutes from './modules/rms'
 
 const isAllowAll = import.meta.env.VITE_ALL_PERMISSION === 'true'
 
@@ -98,7 +99,7 @@ export const asyncRoutes = [
         meta : {
           title : 'Overview',
           icon : 'production-line-white',
-          noCache : true,
+          noCache : false,
           affix : false
         }
       }
@@ -333,6 +334,8 @@ export const asyncRoutes = [
   productionRoutes,
   // QC Routes
   qcRoutes,
+  // RMS Routes
+  rmsRoutes,
   // Administration Routes
   {
     path : '/administration',

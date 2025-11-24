@@ -1,10 +1,10 @@
 <template>
   <div class="work-order-actions">
-    <el-button type="info" size="small" @click="$emit('view')" :aria-label="$t('workOrder.actions.view')">
+    <el-button type="info" plain size="small" @click="$emit('view')" :aria-label="$t('workOrder.actions.view')">
       {{ $t('workOrder.actions.view') }}
     </el-button>
 
-    <el-button type="primary" size="small" @click="$emit('edit')" :aria-label="$t('workOrder.actions.edit')">
+    <el-button type="primary" plain size="small" @click="$emit('edit')" :aria-label="$t('workOrder.actions.edit')">
       {{ $t('workOrder.actions.edit') }}
     </el-button>
 
@@ -12,9 +12,8 @@
       v-if="row.status !== 'deleted'"
       size="small"
       type="danger"
-      @click="handleDelete"
+      @click="$emit('delete')"
       :aria-label="$t('workOrder.actions.delete')"
-      :loading="deleteLoading"
     >
       {{ $t('workOrder.actions.delete') }}
     </el-button>
@@ -22,12 +21,8 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { useErrorHandler } from '@/composables/useErrorHandler'
-
 // Props
-const props = defineProps( {
+defineProps( {
   row : {
     type : Object,
     required : true
@@ -39,33 +34,7 @@ const props = defineProps( {
 } )
 
 // Emits
-const emit = defineEmits( ['view', 'edit', 'delete'] )
-
-const { t } = useI18n()
-const { confirmAction } = useErrorHandler()
-
-// State
-const deleteLoading = ref( false )
-
-// Methods
-const handleDelete = async() => {
-  const confirmed = await confirmAction( {
-    title : t( 'common.confirm' ),
-    message : t( 'common.deleteConfirmMessage', { name : props.row.name } ),
-    confirmButtonText : t( 'workOrder.actions.delete' ),
-    cancelButtonText : t( 'workOrder.actions.cancel' ),
-    type : 'warning'
-  } )
-
-  if ( confirmed ) {
-    deleteLoading.value = true
-    try {
-      emit( 'delete' )
-    } finally {
-      deleteLoading.value = false
-    }
-  }
-}
+defineEmits( ['view', 'edit', 'delete'] )
 
 defineOptions( {
   name : 'WorkOrderActions'

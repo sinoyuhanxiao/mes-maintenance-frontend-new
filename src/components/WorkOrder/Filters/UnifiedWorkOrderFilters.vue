@@ -206,7 +206,14 @@
               {{ $t('workOrder.actions.create') }}
             </el-button>
 
-            <el-button size="default" :loading="exportLoading" type="success" :icon="Download" @click="$emit('export')">
+            <el-button
+              v-show="false"
+              size="default"
+              :loading="exportLoading"
+              type="success"
+              :icon="Download"
+              @click="$emit('export')"
+            >
               {{ $t('workOrder.actions.export') }}
             </el-button>
 
