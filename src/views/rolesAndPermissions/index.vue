@@ -404,7 +404,8 @@ async function loadRoles() {
 
     rolesTableData.value = rawRole.map( role => {
       return {
-        ...role
+        ...role,
+        user_list : ( role.user_list || [] ).filter( user => user.status === 1 )
       }
     } )
 

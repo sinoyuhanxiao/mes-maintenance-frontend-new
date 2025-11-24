@@ -428,7 +428,8 @@ async function loadMaterialLots( material_id ) {
 async function loadTransactionType() {
   try {
     const res = await getAllTransactionTypes()
-    const types = res.data.filter( type => type.status === 1 )
+    // Prevent create/update transaction type to be selected
+    const types = res.data.filter( type => ( type.status === 1 ) && ![106, 107].includes( type.id ) )
 
     transactionTypeOptions.value = types
 

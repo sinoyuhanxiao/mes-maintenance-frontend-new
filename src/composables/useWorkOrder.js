@@ -8,7 +8,6 @@ import { useI18n } from 'vue-i18n'
 import {
   searchWorkOrders,
   getWorkOrdersByRecurrence,
-  searchWorkOrdersByList,
   deleteIndividualWorkOrder,
   deleteRecurrenceWorkOrders,
   setIncompleteWorkOrders
@@ -79,8 +78,15 @@ export function useWorkOrder() {
       let response
       let data
       if ( listQuery.page === -1 && listQuery.limit === -1 ) {
-        response = await searchWorkOrdersByList( getSearchFilterPayload() )
-        data = response.data
+        // response = await searchWorkOrdersByList( getSearchFilterPayload() )
+        response = await searchWorkOrders(
+          1,
+          10000,
+          'createdAt',
+          'DESC',
+          getSearchFilterPayload()
+        )
+        data = response.data.content
       } else {
         response = await searchWorkOrders(
           listQuery.page,

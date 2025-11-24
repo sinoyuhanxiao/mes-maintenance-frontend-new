@@ -49,8 +49,34 @@
 
       <el-dropdown class="p8 avatar-container right-menu-item hover-effect" trigger="click">
         <div class="avatar-wrapper">
-          <!--          <img :src="set.avatar + '?imageView2/1/w/80/h/80'" class="user-avatar" />-->
-          <img :src="set.avatar" class="user-avatar" />
+<!--          <img :src="set.avatar + '?imageView2/1/w/80/h/80'" class="user-avatar" />-->
+
+          <div class="user-avatar">
+            <template v-if="!set.avatar">
+              <div class="circular-image">
+                <el-tooltip content="No image available">
+                  <div class="image-slot-circle">
+                    <el-icon><Picture /></el-icon>
+                  </div>
+                </el-tooltip>
+              </div>
+            </template>
+
+            <el-image v-else
+                      :src="set.avatar"
+                      fit="cover"
+                      class="circular-image"
+                      preview-teleported
+            >
+              <template #error>
+                <el-tooltip content="Image failed to load">
+                  <div class="image-slot-circle">
+                    <el-icon><Picture /></el-icon>
+                  </div>
+                </el-tooltip>
+              </template>
+            </el-image>
+          </div>
 
           <div class="fullName">
             {{ set.fullName }}
@@ -107,6 +133,7 @@ import { Refresh } from '@element-plus/icons-vue'
 import Logo from '@/layout/components/sidebar/Logo'
 import MenuBar from '../sidebar/Menu'
 import { useChatbotStore } from '@/store/modules/ai-chatbot'
+import { Picture } from '@element-plus/icons-vue'
 
 const chatbot = useChatbotStore()
 // const router = useRouter()
@@ -354,6 +381,31 @@ defineOptions( {
   margin-right: 8px;
 }
 
+.circular-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid var(--el-border-color-lighter);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.image-slot-circle {
+  display: flex;
+  justify-content: center;
+  border-radius: 10px;
+  align-items: center;
+  width: 40px;
+  height: 40px;
+  background: var(--el-fill-color-light);
+  color: var(--el-text-color-secondary);
+  font-size: 30px;
+}
+  
 .refresh-production-btn {
   background: none;
   border: none;

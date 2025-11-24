@@ -4,30 +4,30 @@
 
     <div class="left-container">
       <div class="profile-preview">
-        <!--              <WorkOrderImage :image-path="scope.row.image ? [scope.row.image] : null" />-->
-        <el-image
-          :src="
-            rawUser?.image !== null
-              ? rawUser?.image
-              : 'https://api.dicebear.com/7.x/initials/svg?seed=' +
-                encodeURIComponent(rawUser?.first_name + ' ' + rawUser?.last_name)
-          "
+        <template v-if="!rawUser?.image">
+          <div class="circular-image">
+            <el-tooltip content="No image available">
+              <div class="image-slot-circle">
+                <el-icon><Picture /></el-icon>
+              </div>
+            </el-tooltip>
+          </div>
+        </template>
+
+        <el-image v-else
+          :src="rawUser?.image"
           fit="cover"
-          :preview-src-list="[
-            rawUser?.image !== null
-              ? rawUser?.image
-              : 'https://api.dicebear.com/7.x/initials/svg?seed=' +
-                encodeURIComponent(rawUser?.first_name + ' ' + rawUser?.last_name),
-          ]"
+          :preview-src-list="[rawUser?.image]"
           class="circular-image"
           :z-index="2000"
           preview-teleported
-          style="width: 150px; height: 150px; border-radius: 50%"
         >
           <template #error>
-            <div class="image-slot-circle">
-              <el-icon><Picture /></el-icon>
-            </div>
+            <el-tooltip content="Image failed to load">
+              <div class="image-slot-circle">
+                <el-icon><Picture /></el-icon>
+              </div>
+            </el-tooltip>
           </template>
         </el-image>
 
@@ -555,5 +555,24 @@ async function loadUserTeams( userId ) {
 .section-container {
   margin-top: 24px;
   padding: 0 24px 24px 24px;
+}
+
+.circular-image {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  border: 2px solid var(--el-border-color-lighter);
+  display: flex;
+}
+
+.image-slot-circle {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--el-fill-color-light);
+  color: var(--el-text-color-secondary);
+  font-size: 70px;
+  border-radius: 50%;
 }
 </style>

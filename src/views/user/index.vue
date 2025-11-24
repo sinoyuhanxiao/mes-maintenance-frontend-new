@@ -155,23 +155,29 @@
               <div class="profile-picture-cell">
                 <!-- image URL missing -->
                 <template v-if="!scope.row.image">
-                  <el-text>
-                    {{ '-' }}
-                  </el-text>
+                  <div class="circular-image">
+                    <el-tooltip content="No image available">
+                      <div class="image-slot-circle">
+                        <el-icon><Picture /></el-icon>
+                      </div>
+                    </el-tooltip>
+                  </div>
                 </template>
 
                 <el-image
                   v-else
                   :src="scope.row.image"
                   fit="cover"
-                  class="image-slot-circle"
+                  class="circular-image"
                   :preview-src-list="[scope.row.image]"
                   preview-teleported
                 >
                   <template #error>
-                    <el-text>
-                      {{ '-' }}
-                    </el-text>
+                    <el-tooltip content="Image failed to load">
+                      <div class="image-slot-circle">
+                        <el-icon><Picture /></el-icon>
+                      </div>
+                    </el-tooltip>
                   </template>
                 </el-image>
               </div>
@@ -440,7 +446,7 @@ import {
   QuestionFilled,
   Search,
   Refresh as RefreshIcon,
-  Remove
+  Remove, Picture
 } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -758,7 +764,9 @@ onBeforeUnmount( () => {
 }
 
 .circular-image {
-  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 50px;
   height: 50px;
   border-radius: 50%;
@@ -774,17 +782,6 @@ onBeforeUnmount( () => {
   align-items: center;
   height: 50px;
 }
-
-//.image-slot-circle {
-//  width: 50px;
-//  height: 50px;
-//  border-radius: 50%;
-//  display: flex;
-//  justify-content: center;
-//  align-items: center;
-//  background-color: var(--el-fill-color-light);
-//  color: var(--el-text-color-secondary);
-//}
 
 .image-slot-circle {
   display: flex;

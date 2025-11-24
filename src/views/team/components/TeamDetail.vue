@@ -274,14 +274,6 @@
               </el-text>
             </template>
           </el-table-column>
-
-          <el-table-column prop="capacity" label="Capacity" min-width="150" align="center">
-            <template #default="scope">
-              <el-text>
-                {{ scope.row.capacity || '-' }}
-              </el-text>
-            </template>
-          </el-table-column>
         </el-table>
 
         <div class="pagination-container">
@@ -312,16 +304,13 @@ import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Edit } from '@element-plus/icons-vue'
 import CertificateHoverDetail from '@/views/user/components/CertificateHoverDetail.vue'
+import { getEquipmentById } from '@/api/equipment'
 
 const props = defineProps( {
   team : { type : Object, default : null },
   initialTab : { type : String, default : 'members' },
   modelValue : { type : Boolean, default : false },
   userMap : {
-    type : Object,
-    default : () => {}
-  },
-  equipmentMap : {
     type : Object,
     default : () => {}
   },
@@ -343,23 +332,12 @@ const router = useRouter()
 
 const emit = defineEmits( ['update:modelValue', 'edit'] )
 const visible = ref( props.modelValue )
-watch(
-  () => props.modelValue,
-  v => ( visible.value = v )
-)
-watch( visible, v => emit( 'update:modelValue', v ) )
 
 // States
 const activeTab = ref( props.initialTab )
 
-watch(
-  () => props.initialTab,
-  newVal => {
-    if ( newVal && newVal !== activeTab.value ) {
-      activeTab.value = newVal
-    }
-  }
-)
+const fetchedEquipment = ref( [] )
+const loadingEquipment = ref( false )
 
 const pageSize = ref( 10 )
 const pageSizeOptions = [5, 10, 20, 50]
@@ -373,6 +351,36 @@ const sort = ref( {
   locations : { prop : null, order : null }
 } )
 
+watch(
+  () => props.modelValue,
+  v => ( visible.value = v )
+)
+
+watch( visible, v => emit( 'update:modelValue', v ) )
+
+watch( visible, v => {
+  if ( v ) {
+    loadEquipmentNodes()
+  }
+} )
+
+watch(
+  () => props.initialTab,
+  newVal => {
+    if ( newVal && newVal !== activeTab.value ) {
+      activeTab.value = newVal
+    }
+  }
+)
+
+watch(
+  () => props.team,
+  () => {
+    loadEquipmentNodes()
+  },
+  { immediate : true }
+)
+
 // Map associated lists from team object =====
 const mappedMembers = computed( () => {
   if ( !props.team ) return []
@@ -385,11 +393,33 @@ const mappedMembers = computed( () => {
   return orderedIds.map( id => props.userMap[id] || props.userMap[String( id )] ).filter( Boolean )
 } )
 
-const mappedEquipment = computed( () => {
-  if ( !props.team ) return []
+async function loadEquipmentNodes() {
+  if ( !props.team ) {
+    fetchedEquipment.value = []
+    return
+  }
+
   const ids = props.team.team_equipment_nodes_id || []
-  return ids.map( id => props.equipmentMap[id] || props.equipmentMap[String( id )] ).filter( Boolean )
-} )
+  if ( ids.length === 0 ) {
+    fetchedEquipment.value = []
+    return
+  }
+
+  loadingEquipment.value = true
+  try {
+    const requests = ids.map( id => getEquipmentById( id ) )
+    const responses = await Promise.all( requests )
+
+    fetchedEquipment.value = responses.map( r => r.data ).filter( Boolean )
+  } catch ( err ) {
+    console.error( 'Failed to fetch equipment nodes:', err )
+    fetchedEquipment.value = []
+  } finally {
+    loadingEquipment.value = false
+  }
+}
+
+const mappedEquipment = computed( () => fetchedEquipment.value )
 
 const mappedLocations = computed( () => {
   if ( !props.team ) return []
@@ -432,11 +462,10 @@ const sortData = ( list, { prop, order } ) => {
   return sorted
 }
 
-const handleSortChange =
-  type =>
-    ( { prop, order } ) => {
-      sort.value[type] = { prop, order }
-    }
+const handleSortChange = type =>
+  ( { prop, order } ) => {
+    sort.value[type] = { prop, order }
+  }
 
 // ===== Computed filtered lists =====
 const filteredMembers = computed( () => {
@@ -457,6 +486,7 @@ const paginate = ( list, p ) => {
   const start = ( p - 1 ) * pageSize.value
   return list.slice( start, start + pageSize.value )
 }
+
 const paginatedMembers = computed( () => paginate( filteredMembers.value, page.value.members ) )
 const paginatedEquipment = computed( () => paginate( filteredEquipment.value, page.value.equipment ) )
 const paginatedLocations = computed( () => paginate( filteredLocations.value, page.value.locations ) )

@@ -46,9 +46,7 @@ const useUserStore = defineStore( {
       this.username = user.username || ''
       this.firstName = user.first_name || ''
       this.lastName = user.last_name || ''
-      this.avatar =
-        user.image ||
-        'https://api.dicebear.com/7.x/initials/svg?seed=' + encodeURIComponent( user?.first_name + ' ' + user?.last_name )
+      this.avatar = user.image
       this.phone = user.phone_number || ''
       this.email = user.email || ''
       this.title = user.title || ''

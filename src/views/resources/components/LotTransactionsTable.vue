@@ -153,7 +153,6 @@ onMounted( async() => {
 
 <style scoped>
 .lot-transaction-table {
-  width: 1080px;
   height: 450px;
   box-sizing: border-box;
   padding: 8px 0;

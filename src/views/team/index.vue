@@ -284,7 +284,6 @@
         :team="selectedTeam"
         :initial-tab="initialTab"
         :user-map="userMap"
-        :equipment-map="equipmentMap"
         :location-map="locationMap"
         :shift-map="shiftMap"
         :team-map="teamMap"
@@ -344,7 +343,6 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { searchTeams, deactivateTeam, getAllTeamTree, getTeamTreeByIds } from '@/api/team.js'
 import { searchUsers } from '@/api/user.js'
 import { searchLocations } from '@/api/location'
-import { searchEquipmentNodes } from '@/api/equipment'
 // import LocationTag from '@/views/team/components/LocationTag.vue'
 // import EquipmentTag from '@/views/team/components/EquipmentTag.vue'
 import LocationTreeSelect from '@/views/team/components/LocationTreeSelect.vue'
@@ -377,7 +375,6 @@ const teamTree = ref( [] )
 const teamMap = ref( {} )
 const shiftOptions = ref( [] )
 const locationMap = ref( {} )
-const equipmentMap = ref( {} )
 // const departmentOptions = ref( [] )
 const currentEditingTeam = ref( null )
 const initialFilters = {
@@ -547,7 +544,7 @@ async function filterFullTreeAndLoadPartialTreeAndSetTeamTable() {
     }
   } catch ( e ) {
     console.error( 'Error filtering team by local filter:', e )
-    ElMessage.error( t( 'team.message.teamFetchFailed' ) )
+    ElMessage.error( 'Failed to fetch work group data' )
   }
 }
 
@@ -702,25 +699,12 @@ async function loadLocations() {
   }
 }
 
-async function loadEquipments() {
-  try {
-    const response = await searchEquipmentNodes( { status_ids : [1] }, 1, 1000 )
-    const equipments = response?.data?.content || []
-
-    equipmentMap.value = Object.fromEntries( equipments.map( e => [String( e.id ), { ...e }] ) )
-  } catch ( err ) {
-    console.error( 'Failed to load equipments:', err )
-    ElMessage.error( t( 'common.message.errorLoadingEquipmentData' ) )
-  }
-}
-
 async function refreshAllData() {
   try {
     loading.value = true
 
     await loadShifts()
     await loadLocations()
-    await loadEquipments()
     await loadUsers()
     await refreshTeamsData()
   } catch ( e ) {

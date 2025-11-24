@@ -6,10 +6,10 @@
 
     <div v-else class="sp-detail">
       <div class="header">
-        <div>
+        <div style="display: flex; flex-direction: row; justify-content: space-between;">
           <div>
             <span
-              style="
+                style="
                 margin: 0px 12px 0px 0px;
                 font-size: 20px;
                 font-weight: 600;
@@ -23,34 +23,34 @@
             <span style="color: var(--el-color-primary); font-weight: 500; font-size: 14px"> #{{ data?.id }} </span>
           </div>
 
-          <div>
-            <span style="margin-right: 38px; font-size: 14px; font-weight: 500; color: var(--el-text-color-secondary)">
-              {{ 'Created At: ' + formatAsLocalDateTimeString(data?.created_at) }}
-            </span>
-
-            <span
-              v-if="data?.created_by"
-              style="margin-right: 38px; font-size: 14px; font-weight: 500; color: var(--el-text-color-secondary)"
-            >
-              {{ 'Created By: ' + data?.created_by?.first_name + ' ' + data?.created_by?.last_name }}
-            </span>
-
-            <span style="margin-right: 38px; font-size: 14px; font-weight: 500; color: var(--el-text-color-secondary)">
-              {{ 'Updated At: ' + formatAsLocalDateTimeString(data?.updated_at) }}
-            </span>
-
-            <span
-              v-if="data?.updated_by"
-              style="font-size: 14px; font-weight: 500; color: var(--el-text-color-secondary)"
-            >
-              {{ 'Updated By: ' + data?.updated_by?.first_name + ' ' + data?.updated_by?.last_name }}
-            </span>
+          <div class="actions">
+            <el-button :icon="Edit" type="primary" plain @click="emit('edit')">{{ t('common.edit') }}</el-button>
+            <el-button :icon="Delete" type="danger" plain @click="emit('delete')">{{ t('common.delete') }}</el-button>
           </div>
         </div>
 
-        <div class="actions">
-          <el-button :icon="Edit" type="primary" plain @click="emit('edit')">{{ t('common.edit') }}</el-button>
-          <el-button :icon="Delete" type="danger" plain @click="emit('delete')">{{ t('common.delete') }}</el-button>
+        <div>
+          <span style="margin-right: 38px; font-size: 14px; font-weight: 500; color: var(--el-text-color-secondary)">
+            {{ 'Created At: ' + formatAsLocalDateTimeString(data?.created_at) }}
+          </span>
+
+          <span
+            v-if="data?.created_by"
+            style="margin-right: 38px; font-size: 14px; font-weight: 500; color: var(--el-text-color-secondary)"
+          >
+            {{ 'Created By: ' + data?.created_by?.first_name + ' ' + data?.created_by?.last_name }}
+          </span>
+
+          <span style="margin-right: 38px; font-size: 14px; font-weight: 500; color: var(--el-text-color-secondary)">
+            {{ 'Updated At: ' + formatAsLocalDateTimeString(data?.updated_at) }}
+          </span>
+
+          <span
+            v-if="data?.updated_by"
+            style="font-size: 14px; font-weight: 500; color: var(--el-text-color-secondary)"
+          >
+            {{ 'Updated By: ' + data?.updated_by?.first_name + ' ' + data?.updated_by?.last_name }}
+          </span>
         </div>
       </div>
 
@@ -545,8 +545,8 @@ async function loadRelatedEquipment( id ) {
 /* Fixed header */
 .sp-detail .header {
   display: flex;
+  flex-direction: column;
   justify-content: space-between;
-  align-items: center;
   padding: 12px 16px 12px 0;
   margin-left: 16px;
   border-bottom: 1px solid var(--el-border-color-light);

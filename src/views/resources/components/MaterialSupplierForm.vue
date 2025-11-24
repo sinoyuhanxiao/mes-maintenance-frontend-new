@@ -8,7 +8,7 @@
   >
     <el-form ref="formRef" :model="form" :rules="rules" label-width="160px">
       <el-form-item :label="'Vendor'" prop="vendor_id">
-        <el-select v-model="form.vendor_id" filterable clearable placeholder="Select">
+        <el-select v-model="form.vendor_id" filterable clearable>
           <el-option
             v-for="v in vendorOptions"
             :key="v.id"

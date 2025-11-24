@@ -247,7 +247,7 @@ const selectedSparePartId = ref( null )
 const selectedInventoryTransactionLogs = ref( [] )
 const showSparePartForm = ref( false )
 const page = ref( 1 )
-const all_data_loading = ref( false )
+// const all_data_loading = ref( false )
 const sparePartClassesOptions = ref( [] )
 const vendorOptions = ref( [] )
 const locationOptions = ref( [] )
@@ -384,6 +384,7 @@ async function savePart( sparePartId ) {
   selectedSparePartId.value = sparePartId
   showSparePartForm.value = false
 
+  await fetchInventoryTransactionLogs()
   await fetchSpareParts()
 
   // Reselect the item that was just saved
@@ -478,8 +479,8 @@ async function loadLocation() {
     const response = await searchLocations( { status_ids : [1] }, 1, 1000, 'id', 'ASC' )
     locationOptions.value = response?.data?.content || []
   } catch ( err ) {
-    console.error( 'Failed to load vendors:', err )
-    ElMessage.error( 'Error loading vendors data' )
+    console.error( 'Failed to load location:', err )
+    ElMessage.error( 'Error loading location data' )
   }
 }
 
@@ -494,18 +495,12 @@ async function loadLocation() {
 // }
 
 async function refreshAllData() {
-  try {
-    all_data_loading.value = true
-    await fetchInventoryTransactionLogs()
-    await loadLocation()
-    await loadSparePartClasses()
-    await loadVendor()
-    // await loadManufacturer()
-    await fetchSpareParts()
-  } catch ( e ) {
-  } finally {
-    all_data_loading.value = false
-  }
+  await fetchInventoryTransactionLogs()
+  await loadLocation()
+  await loadSparePartClasses()
+  await loadVendor()
+  // await loadManufacturer()
+  await fetchSpareParts()
 }
 
 onMounted( async() => {
@@ -575,6 +570,7 @@ onMounted( async() => {
   padding: 0 15px 15px 0;
   border-radius: 8px;
   border: 1px solid var(--el-border-color-light);
+  width: 66%;
 }
 
 .action-group {

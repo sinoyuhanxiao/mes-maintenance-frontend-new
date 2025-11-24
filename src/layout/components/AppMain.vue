@@ -124,7 +124,7 @@ defineOptions( {
 <style lang="scss">
 .el-popup-parent--hidden {
   .fixed-header {
-    padding-right: 15px;
+    //padding-right: 15px;
   }
 }
 </style>
