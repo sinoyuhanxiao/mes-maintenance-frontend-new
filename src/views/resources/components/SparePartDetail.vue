@@ -6,10 +6,10 @@
 
     <div v-else class="sp-detail">
       <div class="header">
-        <div style="display: flex; flex-direction: row; justify-content: space-between;">
+        <div style="display: flex; flex-direction: row; justify-content: space-between">
           <div>
             <span
-                style="
+              style="
                 margin: 0px 12px 0px 0px;
                 font-size: 20px;
                 font-weight: 600;

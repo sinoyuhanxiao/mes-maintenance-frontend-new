@@ -14,7 +14,8 @@
           </div>
         </template>
 
-        <el-image v-else
+        <el-image
+          v-else
           :src="rawUser?.image"
           fit="cover"
           :preview-src-list="[rawUser?.image]"

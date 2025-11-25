@@ -257,13 +257,24 @@ export const asyncRoutes = [
       },
       {
         path : 'requests',
-        name : 'MaintenanceRequests',
-        component : () => import( '@/views/maintenanceRequests/index.vue' ),
-        meta : {
-          title : 'router.request',
-          icon : 'message',
-          noCache : false
-        }
+        name : 'MaintenanceRequestsMenu',
+        redirect : 'requests/list',
+        meta : { title : 'router.request', icon : 'message', noCache : false },
+        children : [
+          {
+            path : 'list',
+            component : () => import( '@/views/maintenanceRequests/index.vue' ),
+            name : 'MaintenanceRequests',
+            meta : { title : 'router.request', noCache : false }
+          },
+          {
+            path : 'view/:id',
+            component : () => import( '@/views/maintenanceRequests/components/ViewMaintenanceRequest.vue' ),
+            name : 'ViewMaintenanceRequest',
+            props : true,
+            meta : { title : 'View Request', noCache : true, hidden : true }
+          }
+        ]
       },
       {
         path : 'resources',

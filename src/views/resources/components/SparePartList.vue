@@ -57,7 +57,9 @@
                   <div class="sub ellipsis">{{ 'Universal Code' }}: {{ item.universal_code || '-' }}</div>
 
                   <div class="evenly">
-                    <div class="sub" style="white-space: nowrap; margin-right: 6px;">{{ 'Total Stock' }}: {{ item.current_stock ?? 0 }}</div>
+                    <div class="sub" style="white-space: nowrap; margin-right: 6px">
+                      {{ 'Total Stock' }}: {{ item.current_stock ?? 0 }}
+                    </div>
 
                     <div class="sub ellipsis">{{ 'Average Unit Price' }}: {{ item.average_unit_cost?.avg ?? '-' }}</div>
                   </div>

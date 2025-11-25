@@ -429,7 +429,7 @@ async function loadTransactionType() {
   try {
     const res = await getAllTransactionTypes()
     // Prevent create/update transaction type to be selected
-    const types = res.data.filter( type => ( type.status === 1 ) && ![106, 107].includes( type.id ) )
+    const types = res.data.filter( type => type.status === 1 && ![106, 107].includes( type.id ) )
 
     transactionTypeOptions.value = types
 

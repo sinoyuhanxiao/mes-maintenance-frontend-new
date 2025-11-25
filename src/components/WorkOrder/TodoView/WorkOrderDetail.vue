@@ -2184,10 +2184,9 @@ const handleRequestClick = request => {
     return
   }
 
-  // Navigate to maintenance requests page with request ID as query parameter
+  // Navigate to maintenance request detail view page
   router.push( {
-    path : '/maintenance-requests',
-    query : { requestId : request.id }
+    path : `/maintenance/requests/view/${request.id}`
   } )
 }
 

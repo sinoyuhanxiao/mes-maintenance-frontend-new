@@ -1,5 +1,5 @@
 <template>
-  <div class="request-card" :class="{ selected: isSelected }" @click="$emit('select', request)">
+  <div class="request-card" :class="{ selected: isSelected }" @click="handleClick">
     <!-- Card Content -->
     <div class="card-content">
       <!-- Row 1: Title + Request ID -->
@@ -36,6 +36,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { Grid, Clock } from '@element-plus/icons-vue'
 
 const props = defineProps( {
@@ -46,11 +47,29 @@ const props = defineProps( {
   isSelected : {
     type : Boolean,
     default : false
+  },
+  standalone : {
+    type : Boolean,
+    default : false
   }
 } )
 
 // eslint-disable-next-line no-unused-vars
 const emit = defineEmits( ['select'] )
+
+const router = useRouter()
+
+const handleClick = () => {
+  if ( props.standalone ) {
+    // Navigate to standalone view page
+    router.push( {
+      path : `/maintenance/requests/view/${props.request.id}`
+    } )
+  } else {
+    // Emit select event for list view
+    emit( 'select', props.request )
+  }
+}
 
 const statusLabel = computed( () => {
   const statusMap = {

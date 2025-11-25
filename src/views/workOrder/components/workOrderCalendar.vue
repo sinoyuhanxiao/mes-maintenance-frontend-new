@@ -5,11 +5,11 @@
         <div class="fc-ref">
           <!-- Work order event display -->
           <div
-              class="fc-item"
-              :class="{
-                'fc-item-hover': hoveredEventId === event.id,
-                'fc-item-selected': selectedEventId === event.id,
-              }"
+            class="fc-item"
+            :class="{
+              'fc-item-hover': hoveredEventId === event.id,
+              'fc-item-selected': selectedEventId === event.id,
+            }"
           >
             <span class="fc-title"> {{ timeText }} {{ event.title }} </span>
 
@@ -53,137 +53,155 @@
         </div>
       </template>
 
-     <div class="work-order-popover-root">
-
-         <div class="content">
-           <!-- Left content -->
-           <div class="left-section">
-             <!-- Work Order Title -->
-             <div style="flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 350px;">
-               <el-tooltip
-                   placement="top"
-                   effect="dark"
-                   :content="workOrderDialogEventData.title"
-               >
+      <div class="work-order-popover-root">
+        <div class="content">
+          <!-- Left content -->
+          <div class="left-section">
+            <!-- Work Order Title -->
+            <div style="flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 350px">
+              <el-tooltip placement="top" effect="dark" :content="workOrderDialogEventData.title">
                 <el-text tag="b" size="large">{{ workOrderDialogEventData.title }}</el-text>
-               </el-tooltip>
-             </div>
+              </el-tooltip>
+            </div>
 
-             <!--                <div v-if="event.extendedProps.recurrence_type">-->
-             <!--                  <el-text>{{ $t('workOrder.table.recurrenceType') }}: </el-text>-->
+            <!--                <div v-if="event.extendedProps.recurrence_type">-->
+            <!--                  <el-text>{{ $t('workOrder.table.recurrenceType') }}: </el-text>-->
 
-             <!--                  <el-text>{{ event.extendedProps.recurrence_type.name }}</el-text>-->
-             <!--                </div>-->
+            <!--                  <el-text>{{ event.extendedProps.recurrence_type.name }}</el-text>-->
+            <!--                </div>-->
 
-             <div>
-               <el-text class="item-label">{{ $t('workOrder.table.startDate') }}: </el-text>
+            <div>
+              <el-text class="item-label">{{ $t('workOrder.table.startDate') }}: </el-text>
 
-               <el-text class="item-value">
-                 {{ formatDate(workOrderDialogEventData.start) }}
-               </el-text>
-             </div>
+              <el-text class="item-value">
+                {{ formatDate(workOrderDialogEventData.start) }}
+              </el-text>
+            </div>
 
-             <!--        <div v-if="popoverData.endDate">-->
-             <!--          <el-text>{{ $t('workOrder.calendar.endDate') }}: </el-text>-->
-             <!--          <el-text>{{ formatDate(popoverData.endDate || popoverData.startDate) }}</el-text>-->
-             <!--        </div>-->
+            <!--        <div v-if="popoverData.endDate">-->
+            <!--          <el-text>{{ $t('workOrder.calendar.endDate') }}: </el-text>-->
+            <!--          <el-text>{{ formatDate(popoverData.endDate || popoverData.startDate) }}</el-text>-->
+            <!--        </div>-->
 
-             <div>
-               <el-text class="item-label">{{ $t('workOrder.table.dueDate') }}: </el-text>
+            <div>
+              <el-text class="item-label">{{ $t('workOrder.table.dueDate') }}: </el-text>
 
-               <el-text class="item-value" :type="getTextTypeByDueDate(workOrderDialogEventData.extendedProps.isOverDue)">
-                 {{ formatDate(workOrderDialogEventData.extendedProps.dueDate) }}
-               </el-text>
-             </div>
+              <el-text
+                class="item-value"
+                :type="getTextTypeByDueDate(workOrderDialogEventData.extendedProps.isOverDue)"
+              >
+                {{ formatDate(workOrderDialogEventData.extendedProps.dueDate) }}
+              </el-text>
+            </div>
 
-             <!--                <div v-if="event.extendedProps.finished_at">-->
-             <!--                  <el-text>{{ $t('workOrder.table.finishedDate') }}: </el-text>-->
-             <!--                  <el-text>-->
-             <!--                    {{ formatDate(event.extendedProps.finished_at) }}-->
-             <!--                  </el-text>-->
-             <!--                </div>-->
+            <!--                <div v-if="event.extendedProps.finished_at">-->
+            <!--                  <el-text>{{ $t('workOrder.table.finishedDate') }}: </el-text>-->
+            <!--                  <el-text>-->
+            <!--                    {{ formatDate(event.extendedProps.finished_at) }}-->
+            <!--                  </el-text>-->
+            <!--                </div>-->
 
-             <div v-if="workOrderDialogEventData.extendedProps.user_list && workOrderDialogEventData.extendedProps.user_list.length > 0" style="display: flex; flex-direction: row; gap: 8px;">
-               <el-text class="item-label">{{ $t('workOrder.calendar.assignedUser') }}: </el-text>
+            <div
+              v-if="
+                workOrderDialogEventData.extendedProps.user_list &&
+                workOrderDialogEventData.extendedProps.user_list.length > 0
+              "
+              style="display: flex; flex-direction: row; gap: 8px"
+            >
+              <el-text class="item-label">{{ $t('workOrder.calendar.assignedUser') }}: </el-text>
 
-               <el-tooltip
-                   placement="top"
-                   effect="dark"
-                   :content="fullAssignedUserList"
-               >
-                 <div class="assigned-users-text">
-                   {{ truncatedAssignedUserList }}
-                 </div>
-               </el-tooltip>
-             </div>
+              <el-tooltip placement="top" effect="dark" :content="fullAssignedUserList">
+                <div class="assigned-users-text">
+                  {{ truncatedAssignedUserList }}
+                </div>
+              </el-tooltip>
+            </div>
 
-             <!--                  <div v-if="event.extendedProps.equipment_node_ids && event.extendedProps.equipment_node_ids.length > 0">-->
-             <!--                    <el-text class="item-label">{{ $t('workOrder.calendar.equipment') }}: </el-text>-->
+            <!--                  <div v-if="event.extendedProps.equipment_node_ids && event.extendedProps.equipment_node_ids.length > 0">-->
+            <!--                    <el-text class="item-label">{{ $t('workOrder.calendar.equipment') }}: </el-text>-->
 
-             <!--                    <template v-for="e in event.extendedProps.equipment_node_ids" :key="e">-->
-             <!--                      <el-text class="item-value" style="margin-right: 8px">{{ e }}</el-text>-->
-             <!--                    </template>-->
-             <!--                  </div>-->
+            <!--                    <template v-for="e in event.extendedProps.equipment_node_ids" :key="e">-->
+            <!--                      <el-text class="item-value" style="margin-right: 8px">{{ e }}</el-text>-->
+            <!--                    </template>-->
+            <!--                  </div>-->
 
-             <!-- Task Progress -->
-             <div style="display: flex">
-               <el-text class="item-label" style="margin-right: 8px">{{ 'Progress' }}: </el-text>
+            <!-- Task Progress -->
+            <div style="display: flex">
+              <el-text class="item-label" style="margin-right: 8px">{{ 'Progress' }}: </el-text>
 
-               <el-progress
-                   :percentage="Number(((workOrderDialogEventData.extendedProps.work_order_progress?.completed_task_amount /
-                       workOrderDialogEventData.extendedProps.work_order_progress?.total_task_amount || 0) * 100).toFixed(2))"
-                   style="flex: 1"
-               />
-             </div>
+              <el-progress
+                :percentage="
+                  Number(
+                    (
+                      (workOrderDialogEventData.extendedProps.work_order_progress?.completed_task_amount /
+                        workOrderDialogEventData.extendedProps.work_order_progress?.total_task_amount || 0) * 100
+                    ).toFixed(2)
+                  )
+                "
+                style="flex: 1"
+              />
+            </div>
 
-             <!-- Badges (state , priority, category, is over due) -->
-             <div class="tag-row">
-               <el-tag :type="getStateTagType(workOrderDialogEventData.extendedProps.state?.name)" :effect="getStateTagEffect(workOrderDialogEventData.extendedProps.state?.name)">
-                 {{ getStatusName(workOrderDialogEventData.extendedProps.state?.name) }}
-               </el-tag>
+            <!-- Badges (state , priority, category, is over due) -->
+            <div class="tag-row">
+              <el-tag
+                :type="getStateTagType(workOrderDialogEventData.extendedProps.state?.name)"
+                :effect="getStateTagEffect(workOrderDialogEventData.extendedProps.state?.name)"
+              >
+                {{ getStatusName(workOrderDialogEventData.extendedProps.state?.name) }}
+              </el-tag>
 
-               <el-tag :type="getPriorityTagType(workOrderDialogEventData.extendedProps.priority?.name)" effect="plain">
-                 <el-icon style="margin: 0 0 4px 0">
-                   <Flag />
-                 </el-icon>
-                 {{ getPriorityName(workOrderDialogEventData.extendedProps.priority?.name) }}
-               </el-tag>
+              <el-tag :type="getPriorityTagType(workOrderDialogEventData.extendedProps.priority?.name)" effect="plain">
+                <el-icon style="margin: 0 0 4px 0">
+                  <Flag />
+                </el-icon>
+                {{ getPriorityName(workOrderDialogEventData.extendedProps.priority?.name) }}
+              </el-tag>
 
-               <RecurrenceTag
-                   v-if="workOrderDialogEventData.extendedProps.recurrence_type && workOrderDialogEventData.extendedProps.recurrence_type.id !== 1"
-                   :recurrence-type="workOrderDialogEventData.extendedProps.recurrence_type"
-               />
+              <RecurrenceTag
+                v-if="
+                  workOrderDialogEventData.extendedProps.recurrence_type &&
+                  workOrderDialogEventData.extendedProps.recurrence_type.id !== 1
+                "
+                :recurrence-type="workOrderDialogEventData.extendedProps.recurrence_type"
+              />
 
-               <div v-for="category in workOrderDialogEventData.extendedProps.category_list" :key="category.id">
-                 <CategoryTag :category="category" />
-               </div>
+              <div v-for="category in workOrderDialogEventData.extendedProps.category_list" :key="category.id">
+                <CategoryTag :category="category" />
+              </div>
 
-               <!-- Overdue tag -->
-               <el-tag v-if="workOrderDialogEventData.extendedProps.isOverDue" type="danger" effect="dark">
-                 {{ $t('workOrder.status.overdue') }}
-               </el-tag>
-             </div>
-           </div>
+              <!-- Overdue tag -->
+              <el-tag v-if="workOrderDialogEventData.extendedProps.isOverDue" type="danger" effect="dark">
+                {{ $t('workOrder.status.overdue') }}
+              </el-tag>
+            </div>
+          </div>
 
-           <!-- Image (First one only) -->
-           <div class="card-thumbnail-circle" v-if="workOrderDialogEventData.extendedProps.image_list && workOrderDialogEventData.extendedProps.image_list.length">
-             <el-image
-                 :src="workOrderDialogEventData.extendedProps.image_list[0]"
-                 fit="cover"
-                 :preview-src-list="workOrderDialogEventData.extendedProps.image_list"
-                 class="circular-image"
-                 :z-index="9999"
-                 preview-teleported
-             >
-               <template #error>
-                 <div class="image-slot-circle">
-                   <el-icon><Picture /></el-icon>
-                 </div>
-               </template>
-             </el-image>
-           </div>
-         </div>
-       </div>
+          <!-- Image (First one only) -->
+          <div
+            class="card-thumbnail-circle"
+            v-if="
+              workOrderDialogEventData.extendedProps.image_list &&
+              workOrderDialogEventData.extendedProps.image_list.length
+            "
+          >
+            <el-image
+              :src="workOrderDialogEventData.extendedProps.image_list[0]"
+              fit="cover"
+              :preview-src-list="workOrderDialogEventData.extendedProps.image_list"
+              class="circular-image"
+              :z-index="9999"
+              preview-teleported
+            >
+              <template #error>
+                <div class="image-slot-circle">
+                  <el-icon><Picture /></el-icon>
+                </div>
+              </template>
+            </el-image>
+          </div>
+        </div>
+      </div>
     </el-dialog>
   </div>
 </template>
@@ -419,7 +437,7 @@ function goToDetail( id ) {
   emit( 'view', { id } )
 }
 
-document.addEventListener( 'click', ( e ) => {
+document.addEventListener( 'click', e => {
   // ignore inside dialog
   if ( e.target.closest( '.wo-custom-dialog' ) ) {
     console.log( 'clicked event target closest to .wo-custom-dialog' )
@@ -526,7 +544,7 @@ function doPopoverAdjustment( popover ) {
 
   const body = popover.querySelector( '.fc-popover-body' )
   if ( body ) {
-    body.style.maxHeight = ( availableHeight - 40 ) + 'px'
+    body.style.maxHeight = availableHeight - 40 + 'px'
   }
 
   // Re-measure after height changes
@@ -615,9 +633,7 @@ function openWorkOrderDialog( event, jsEvent, eventEl ) {
     workOrderDialogTop.value = safeTop + 'px'
 
     const canPlaceLeft = rect.left >= dialogW + hMargin
-    workOrderDialogLeft.value = canPlaceLeft
-      ? rect.left - dialogW - hMargin + 'px'
-      : rect.right + hMargin + 'px'
+    workOrderDialogLeft.value = canPlaceLeft ? rect.left - dialogW - hMargin + 'px' : rect.right + hMargin + 'px'
 
     return
   }
@@ -629,17 +645,14 @@ function openWorkOrderDialog( event, jsEvent, eventEl ) {
 
   // FULL-ROW EVENT (span whole row → place above or below)
   if ( isFullRowEvent ) {
-    const shouldPlaceAbove =
-        spaceAbove >= dialogH || spaceAbove > spaceBelow
+    const shouldPlaceAbove = spaceAbove >= dialogH || spaceAbove > spaceBelow
 
-    const topPos = shouldPlaceAbove
-      ? rect.top - dialogH
-      : rect.bottom
+    const topPos = shouldPlaceAbove ? rect.top - dialogH : rect.bottom
 
     workOrderDialogTop.value = Math.max( 0, topPos ) + 'px'
 
     // center horizontally
-    workOrderDialogLeft.value = ( screenW / 2 - 260 ) + 'px'
+    workOrderDialogLeft.value = screenW / 2 - 260 + 'px'
     return
   }
 
@@ -647,9 +660,7 @@ function openWorkOrderDialog( event, jsEvent, eventEl ) {
 
   const canPlaceLeft = rect.left >= dialogW + hMargin
 
-  workOrderDialogLeft.value = canPlaceLeft
-    ? rect.left - dialogW - hMargin + 'px'
-    : rect.right + hMargin + 'px'
+  workOrderDialogLeft.value = canPlaceLeft ? rect.left - dialogW - hMargin + 'px' : rect.right + hMargin + 'px'
 
   // Vertical placement (avoid clipping)
   const clippedBottom = spaceBelow <= dialogH
@@ -687,16 +698,16 @@ onMounted( () => {
 }
 
 .work-order-popover-header {
-  display : flex;
-  flex-direction : row;
-  align-items : center;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
   justify-content: space-between;
   margin-top: -8px;
 }
 
 .work-order-popover-root {
-  display : flex;
-  flex-direction : column;
+  display: flex;
+  flex-direction: column;
 
   .content {
     display: flex;
@@ -705,8 +716,8 @@ onMounted( () => {
     justify-content: space-between;
 
     .left-section {
-      display : flex;
-      flex-direction : column;
+      display: flex;
+      flex-direction: column;
       gap: 4px;
       flex: 1;
       width: 100%;
@@ -817,12 +828,9 @@ onMounted( () => {
 }
 
 :deep(.fc-item-selected) {
-  z-index: 50 !important;   /* ensure it floats above siblings */
+  z-index: 50 !important; /* ensure it floats above siblings */
   position: relative;
-  box-shadow:
-      0 6px 10px 0 rgba(0, 0, 0, .14),
-      0 1px 18px 0 rgba(0, 0, 0, .12),
-      0 3px 5px -1px rgba(0, 0, 0, .2);
+  box-shadow: 0 6px 10px 0 rgba(0, 0, 0, 0.14), 0 1px 18px 0 rgba(0, 0, 0, 0.12), 0 3px 5px -1px rgba(0, 0, 0, 0.2);
 }
 
 :deep(.fc-event) {

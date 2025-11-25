@@ -79,13 +79,7 @@ export function useWorkOrder() {
       let data
       if ( listQuery.page === -1 && listQuery.limit === -1 ) {
         // response = await searchWorkOrdersByList( getSearchFilterPayload() )
-        response = await searchWorkOrders(
-          1,
-          10000,
-          'createdAt',
-          'DESC',
-          getSearchFilterPayload()
-        )
+        response = await searchWorkOrders( 1, 10000, 'createdAt', 'DESC', getSearchFilterPayload() )
         data = response.data.content
       } else {
         response = await searchWorkOrders(

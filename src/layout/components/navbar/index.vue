@@ -49,7 +49,7 @@
 
       <el-dropdown class="p8 avatar-container right-menu-item hover-effect" trigger="click">
         <div class="avatar-wrapper">
-<!--          <img :src="set.avatar + '?imageView2/1/w/80/h/80'" class="user-avatar" />-->
+          <!--          <img :src="set.avatar + '?imageView2/1/w/80/h/80'" class="user-avatar" />-->
 
           <div class="user-avatar">
             <template v-if="!set.avatar">
@@ -62,12 +62,7 @@
               </div>
             </template>
 
-            <el-image v-else
-                      :src="set.avatar"
-                      fit="cover"
-                      class="circular-image"
-                      preview-teleported
-            >
+            <el-image v-else :src="set.avatar" fit="cover" class="circular-image" preview-teleported>
               <template #error>
                 <el-tooltip content="Image failed to load">
                   <div class="image-slot-circle">
@@ -128,12 +123,11 @@ import SizeSelect from './components/SizeSelect'
 import LangSelect from './components/LangSelect'
 import { emitter } from '@/utils/mitt'
 import { gotoCognitoLogin } from '@/utils/cognito/cognito'
-import { Refresh } from '@element-plus/icons-vue'
+import { Refresh, Picture } from '@element-plus/icons-vue'
 
 import Logo from '@/layout/components/sidebar/Logo'
 import MenuBar from '../sidebar/Menu'
 import { useChatbotStore } from '@/store/modules/ai-chatbot'
-import { Picture } from '@element-plus/icons-vue'
 
 const chatbot = useChatbotStore()
 // const router = useRouter()
@@ -405,7 +399,7 @@ defineOptions( {
   color: var(--el-text-color-secondary);
   font-size: 30px;
 }
-  
+
 .refresh-production-btn {
   background: none;
   border: none;
