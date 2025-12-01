@@ -207,6 +207,11 @@
           }
         }
       }
+
+      // Fix: Remove yellow background from active menu items when sidebar is collapsed
+      .el-menu-item.is-active {
+        background-color: $menuHover !important;
+      }
     }
   }
 
@@ -323,4 +328,17 @@
 // Submenu poppers specifically - these are the nested level
 .el-sub-menu__popper {
   z-index: 3005 !important;
+}
+
+// Fix for collapsed Production submenu: override yellow active background
+.el-menu--popup {
+  .nest-menu {
+    .el-menu-item.is-active {
+      background-color: $menuHover !important;
+    }
+
+    a.router-link-active .el-menu-item {
+      background-color: $menuHover !important;
+    }
+  }
 }
