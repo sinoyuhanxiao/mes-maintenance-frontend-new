@@ -37,7 +37,9 @@
                     {{ standard.category || 'Uncategorized' }}
                   </el-descriptions-item>
                   <el-descriptions-item width="50%" label="Total Rules">
-                    <span class="info-value highlight">{{ standard.items?.length || 0 }} rules</span>
+                    <span class="info-value highlight clickable-rules" @click="navigateToRulesTab"
+                      >{{ standard.items?.length || 0 }} rules</span
+                    >
                   </el-descriptions-item>
                   <el-descriptions-item width="50%" label="Standard Code">
                     <span class="standard-id">{{ standard.code || 'N/A' }}</span>
@@ -108,6 +110,10 @@ const loading = ref( false )
 const error = ref( null )
 const standard = ref( null )
 const activeTab = ref( 'general' )
+
+const navigateToRulesTab = () => {
+  activeTab.value = 'rules'
+}
 
 // Load standard data
 const fetchStandard = async() => {
@@ -297,6 +303,16 @@ defineOptions( {
 .info-value.highlight {
   color: #409eff;
   font-weight: 600;
+}
+
+.clickable-rules {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clickable-rules:hover {
+  color: #409eff !important;
+  text-decoration: underline;
 }
 
 /* Description Card */

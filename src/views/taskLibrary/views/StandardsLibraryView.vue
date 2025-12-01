@@ -172,7 +172,9 @@
                       selectedstandard.category || 'Uncategorized'
                     }}</el-descriptions-item>
                     <el-descriptions-item width="50%" label="Total Rules">
-                      <span class="info-value highlight">{{ selectedstandard.items?.length || 0 }} rules</span>
+                      <span class="info-value highlight clickable-rules" @click="activeTab = 'rules'"
+                        >{{ selectedstandard.items?.length || 0 }} rules</span
+                      >
                     </el-descriptions-item>
                     <!--                    <el-descriptions-item width="50%" label="Standard ID">-->
                     <!--                      <span class="standard-id">{{ getStandardId(selectedstandard) }}</span>-->
@@ -1049,6 +1051,16 @@ defineOptions( {
 .info-value.highlight {
   color: #409eff;
   font-weight: 600;
+}
+
+.clickable-rules {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.clickable-rules:hover {
+  color: #409eff !important;
+  text-decoration: underline;
 }
 
 /* Description Card */

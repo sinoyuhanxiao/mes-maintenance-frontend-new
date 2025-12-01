@@ -642,8 +642,9 @@ const handleDelete = workOrder => {
 const handleDeleteFromDetail = async( { workOrder, type } ) => {
   const deletedWorkOrderId = workOrder.id
 
-  // Emit delete event to parent (index.vue) which will handle the API call and refresh
-  emit( 'delete', workOrder )
+  // Since WorkOrderDetail has already handled the API call for deletion,
+  // we only need to ask the parent to refresh the list.
+  emit( 'refresh' )
 
   // Clear the selected work order immediately to avoid showing stale data
   selectedWorkOrder.value = null
