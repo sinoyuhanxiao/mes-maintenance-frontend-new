@@ -183,11 +183,10 @@
         </el-tooltip>
       </template>
       <el-date-picker
-        v-model="startDate"
+        v-model="startDateTimeValue"
         type="datetime"
         :placeholder="$t('workOrder.recurrence.selectStartTime')"
         format="YYYY-MM-DD HH:mm"
-        value-format="YYYY-MM-DD HH:mm:ss"
         style="width: 100%"
       />
     </el-form-item>
@@ -208,11 +207,11 @@
         </el-tooltip>
       </template>
       <el-date-picker
-        v-model="endDate"
+        v-model="endDateTimeValue"
         type="datetime"
         :placeholder="$t('workOrder.recurrence.selectEndTime')"
         format="YYYY-MM-DD HH:mm"
-        value-format="YYYY-MM-DD HH:mm:ss"
+        
         style="width: 100%"
       />
     </el-form-item>
@@ -277,9 +276,8 @@ import { ref, watch, computed, onMounted, nextTick } from 'vue'
 import { Warning, Clock, QuestionFilled } from '@element-plus/icons-vue'
 import { getAllRecurrenceTypes } from '@/api/work-order'
 
-// eslint-disable-next-line vue/no-dupe-keys
-const startDate = ref( null )
-const endDate = ref( null )
+const startDateTimeValue = ref(null)
+const endDateTimeValue = ref(null)
 const recurrence = ref( 'none' ) // Initialize with 'none' instead of empty string
 const repeatInterval = ref( 1 ) // Control for how many weeks to repeat
 const selectedDays = ref( [] ) // Store selected days as numbers (1 to 7)
@@ -436,15 +434,15 @@ const initializeFromRecurrenceSetting = () => {
 
   if ( recurrenceTypeString === 'none' || isSingleInstanceMode.value ) {
     if ( setting.start_date_time ) {
-      startDate.value = setting.start_date_time
+      startDateTimeValue.value = new Date(setting.start_date_time)
     } else if ( props.workOrderStartDate ) {
-      startDate.value = props.workOrderStartDate
+      startDateTimeValue.value = new Date(props.workOrderStartDate)
     }
 
     if ( setting.end_date_time ) {
-      endDate.value = setting.end_date_time
+      endDateTimeValue.value = new Date(setting.end_date_time)
     } else if ( props.workOrderDueDate ) {
-      endDate.value = props.workOrderDueDate
+      endDateTimeValue.value = new Date(props.workOrderDueDate)
     }
   } else {
     if ( setting.start_time ) {
@@ -474,16 +472,7 @@ onMounted( async() => {
   initializeFromRecurrenceSetting()
 } )
 
-// Watch for changes to recurrenceSetting prop
-watch(
-  () => props.recurrenceSetting,
-  () => {
-    if ( Object.keys( recurrenceTypeMap.value ).length > 0 ) {
-      initializeFromRecurrenceSetting()
-    }
-  },
-  { deep : true }
-)
+
 
 watch(
   () => props.singleInstanceMode,
@@ -493,17 +482,6 @@ watch(
     }
   }
 )
-
-// Sync standalone datetime pickers back to parent for 'none' recurrence
-watch( startDate, value => {
-  if ( !isSingleInstanceMode.value && recurrence.value !== 'none' ) return
-  emit( 'update:startDate', value || null )
-} )
-
-watch( endDate, value => {
-  if ( !isSingleInstanceMode.value && recurrence.value !== 'none' ) return
-  emit( 'update:dueDate', value || null )
-} )
 
 // Helper function to get work order start date part
 const getWorkOrderStartDate = () => {
@@ -568,23 +546,22 @@ const showTimeValidationError = computed( () => {
   return calculateTimeDuration() === 0
 } )
 
-// eslint-disable-next-line vue/no-dupe-keys
-const recurrenceSetting = computed( () => {
+const computedRecurrenceSetting = computed( () => {
   const setting = {}
 
   // Handle different recurrence types
   if ( recurrence.value === 'none' || isSingleInstanceMode.value ) {
     // For 'none' recurrence, use the original date-time fields
-    if ( startDate.value ) {
-      setting.start_date_time = new Date( startDate.value ).toISOString()
+    if ( startDateTimeValue.value ) {
+      setting.start_date_time = startDateTimeValue.value.toISOString()
     }
-    if ( endDate.value ) {
-      setting.end_date_time = new Date( endDate.value ).toISOString()
+    if ( endDateTimeValue.value ) {
+      setting.end_date_time = endDateTimeValue.value.toISOString()
     }
     // Calculate duration_minutes based on date difference
-    if ( startDate.value && endDate.value ) {
-      const start = new Date( startDate.value )
-      const end = new Date( endDate.value )
+    if ( startDateTimeValue.value && endDateTimeValue.value ) {
+      const start = startDateTimeValue.value
+      const end = endDateTimeValue.value
       const diffMs = end - start
       const minutes = Math.ceil( diffMs / ( 1000 * 60 ) )
       setting.duration_minutes = minutes > 0 ? minutes : 0
@@ -634,7 +611,7 @@ const recurrenceSetting = computed( () => {
 // Sync recurrence_setting on internal changes
 let isUpdating = false
 watch(
-  recurrenceSetting,
+  computedRecurrenceSetting,
   newSetting => {
     if ( isUpdating ) return
     isUpdating = true

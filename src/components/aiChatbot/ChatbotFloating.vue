@@ -57,7 +57,6 @@
           </button>
           <button class="chip chip--outline" @click="startChat('How to operate the packaging machine?')">
             How To Operate The Packaging Machine
-
           </button>
           <button class="chip chip--outline" @click="startChat('How to initialize the metal detector?')">
             How To Initialize The Metal Detector

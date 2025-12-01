@@ -45,7 +45,7 @@
 
           <WorkOrderStandardSelector
             :data="standardTemplates"
-            :maxHeight="'60vh'"
+            :maxHeight="selectedCount > 0 ? '45vh' : '60vh'"
             :totalItems="totalItems"
             :currentPage="currentPage"
             :pageSize="pageSize"
@@ -58,6 +58,34 @@
           />
         </div>
       </div>
+
+      <!-- Selected Standards Summary -->
+      <div v-if="!showPreviewDialog && selectedCount > 0" class="selected-standards-summary">
+        <div class="summary-header">
+          <h4 class="summary-title">
+            <el-icon><Collection /></el-icon>
+            Selected Standards ({{ selectedCount }})
+          </h4>
+          <el-tooltip content="Clear all selections" placement="top">
+            <el-button type="text" size="small" class="clear-all-button" @click="handleClearAllSelections">
+              <el-icon><CircleClose /></el-icon>
+            </el-button>
+          </el-tooltip>
+        </div>
+        <div class="summary-content">
+          <el-tag
+            v-for="standard in selectedStandardsList"
+            :key="standard.id"
+            type="primary"
+            size="small"
+            closable
+            @close="handleRemoveSelection(standard.id)"
+            class="selection-tag"
+          >
+            {{ standard.name }}
+          </el-tag>
+        </div>
+      </div>
     </div>
 
     <!-- Footer Actions -->
@@ -66,8 +94,13 @@
         <el-button :type="focusedCardId ? 'success' : ''" :disabled="!focusedCardId" @click="handlePreview">
           Preview
         </el-button>
-        <el-button type="primary" :disabled="selectedStandards.size === 0" @click="handleAddStandards">
-          Add Standards ({{ selectedStandards.size }})
+        <el-button
+          type="primary"
+          :disabled="selectedCount === 0 || isAddingStandards"
+          :loading="isAddingStandards"
+          @click="handleAddStandards"
+        >
+          Add Standards ({{ selectedCount }})
         </el-button>
       </div>
     </div>
@@ -106,7 +139,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { Search, ArrowLeft } from '@element-plus/icons-vue'
+import { Search, ArrowLeft, Collection, CircleClose } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import WorkOrderStandardSelector from '@/components/WorkOrder/Selectors/WorkOrderStandardSelector.vue'
 import StandardsPreview from '@/components/TaskLibrary/StandardsPreview.vue'
@@ -127,6 +160,8 @@ const pageSize = ref( 20 )
 
 // Track selected standards
 const selectedStandards = ref( new Set() )
+const selectedStandardsData = ref( new Map() ) // Store full standard objects
+const isAddingStandards = ref( false )
 
 // Track focused card for preview functionality
 const focusedCardId = ref( null )
@@ -147,8 +182,10 @@ const createStandardLoading = ref( false )
 
 // Computed properties
 const selectedStandardsList = computed( () => {
-  return standardTemplates.value.filter( standard => selectedStandards.value.has( standard.id || standard._id ) )
+  return Array.from( selectedStandardsData.value.values() )
 } )
+
+const selectedCount = computed( () => selectedStandardsData.value.size )
 
 const paginationInfo = computed( () => {
   const start = totalItems.value === 0 ? 0 : ( currentPage.value - 1 ) * pageSize.value + 1
@@ -217,22 +254,60 @@ const handlePageSizeChange = newSize => {
 }
 
 const handleStandardAction = selectionData => {
-  const { id, action } = selectionData
+  const { id, action, data } = selectionData
 
   if ( action === 'check' ) {
     selectedStandards.value.add( id )
+    selectedStandardsData.value.set( id, data ) // Store full standard object
+    // Force reactivity by creating new Set and Map
+    selectedStandards.value = new Set( selectedStandards.value )
+    selectedStandardsData.value = new Map( selectedStandardsData.value )
   } else if ( action === 'uncheck' ) {
     selectedStandards.value.delete( id )
+    selectedStandardsData.value.delete( id )
+    // Force reactivity by creating new Set and Map
+    selectedStandards.value = new Set( selectedStandards.value )
+    selectedStandardsData.value = new Map( selectedStandardsData.value )
   } else if ( action === 'focus' ) {
     focusedCardId.value = id
   }
 }
 
+const handleRemoveSelection = standardId => {
+  selectedStandards.value.delete( standardId )
+  selectedStandardsData.value.delete( standardId )
+  selectedStandards.value = new Set( selectedStandards.value )
+  selectedStandardsData.value = new Map( selectedStandardsData.value )
+}
+
+const handleClearAllSelections = () => {
+  selectedStandards.value.clear()
+  selectedStandardsData.value.clear()
+  selectedStandards.value = new Set( selectedStandards.value )
+  selectedStandardsData.value = new Map( selectedStandardsData.value )
+}
+
 const handleAddStandards = () => {
-  if ( selectedStandards.value.size > 0 ) {
-    emit( 'addStandards', selectedStandardsList.value )
-    selectedStandards.value.clear()
+  if ( selectedStandardsData.value.size === 0 || isAddingStandards.value ) {
+    return
+  }
+
+  isAddingStandards.value = true
+  try {
+    const standardsToAdd = selectedStandardsList.value
+    if ( standardsToAdd.length === 0 ) {
+      ElMessage.warning( 'No valid standards to add' )
+      return
+    }
+
+    emit( 'addStandards', standardsToAdd )
+    handleClearAllSelections()
     emit( 'close' )
+  } catch ( error ) {
+    console.error( 'Error adding standards:', error )
+    ElMessage.error( 'Failed to add standards. Please try again.' )
+  } finally {
+    isAddingStandards.value = false
   }
 }
 
@@ -269,7 +344,7 @@ const debouncedSearch = debounce( () => {
 
 // Event handlers
 const handleSearch = () => {
-  selectedStandards.value.clear() // Clear selections when searching
+  // DO NOT clear selections - allow persistence across search
   focusedCardId.value = null // Clear focused card when searching
   debouncedSearch()
 }
@@ -340,8 +415,14 @@ const handleSaveAsTemplate = async formData => {
     // Auto-select the new standard
     const newStandardId = response.data?.id || response.data?._id
     if ( newStandardId ) {
-      selectedStandards.value.add( newStandardId )
-      focusedCardId.value = newStandardId
+      const newStandard = standardTemplates.value.find( s => s.id === newStandardId )
+      if ( newStandard ) {
+        selectedStandards.value.add( newStandardId )
+        selectedStandardsData.value.set( newStandardId, newStandard )
+        selectedStandards.value = new Set( selectedStandards.value )
+        selectedStandardsData.value = new Map( selectedStandardsData.value )
+        focusedCardId.value = newStandardId
+      }
     }
   } catch ( error ) {
     console.error( 'Failed to create standard:', error )
@@ -375,7 +456,6 @@ const handleSaveForWorkOrderOnly = formData => {
 // Watch for search query changes
 watch( searchQuery, () => {
   if ( !searchQuery.value?.trim() ) {
-    selectedStandards.value.clear()
     focusedCardId.value = null
     fetchStandards( true )
   }
@@ -511,6 +591,99 @@ defineOptions( {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+// Selected Standards Summary Section
+.selected-standards-summary {
+  margin-top: 12px;
+  padding: 0 12px 12px 12px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 6px;
+  background: var(--el-fill-color-lighter);
+  height: 10vh;
+  overflow-y: auto;
+
+  .summary-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--el-fill-color-lighter);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+
+    .summary-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--el-text-color-primary);
+
+      .el-icon {
+        color: var(--el-color-primary);
+        font-size: 16px;
+      }
+    }
+
+    .clear-all-button {
+      padding: 4px;
+      color: var(--el-text-color-secondary);
+      transition: all 0.2s ease;
+
+      .el-icon {
+        font-size: 16px;
+      }
+
+      &:hover {
+        color: var(--el-color-danger);
+        background: var(--el-color-danger-light-9);
+        border-radius: 4px;
+      }
+    }
+  }
+
+  .summary-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    .selection-tag {
+      max-width: 100%;
+      cursor: default;
+
+      :deep(.el-tag__content) {
+        display: inline-block;
+        max-width: 300px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+  }
+
+  // Custom scrollbar
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--el-fill-color-lighter);
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--el-fill-color-dark);
+    border-radius: 3px;
+
+    &:hover {
+      background: var(--el-fill-color-darker);
+    }
+  }
 }
 
 // Responsive adjustments

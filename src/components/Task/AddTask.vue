@@ -45,7 +45,7 @@
 
           <WorkOrderTaskSelector
             :data="taskTemplates"
-            :maxHeight="'60vh'"
+            :maxHeight="selectedCount > 0 ? '45vh' : '60vh'"
             :totalItems="totalItems"
             :currentPage="currentPage"
             :pageSize="pageSize"
@@ -58,6 +58,34 @@
           />
         </div>
       </div>
+
+      <!-- Selected Templates Summary -->
+      <div v-if="!showPreviewDialog && selectedCount > 0" class="selected-templates-summary">
+        <div class="summary-header">
+          <h4 class="summary-title">
+            <el-icon><Collection /></el-icon>
+            Selected Templates ({{ selectedCount }})
+          </h4>
+          <el-tooltip content="Clear all selections" placement="top">
+            <el-button type="text" size="small" class="clear-all-button" @click="handleClearAllSelections">
+              <el-icon><CircleClose /></el-icon>
+            </el-button>
+          </el-tooltip>
+        </div>
+        <div class="summary-content">
+          <el-tag
+            v-for="template in selectedTemplatesList"
+            :key="template.id"
+            type="primary"
+            size="small"
+            closable
+            @close="handleRemoveSelection(template.id)"
+            class="selection-tag"
+          >
+            {{ template.name }}
+          </el-tag>
+        </div>
+      </div>
     </div>
 
     <!-- Footer Actions -->
@@ -68,11 +96,11 @@
         </el-button>
         <el-button
           type="primary"
-          :disabled="selectedTemplates.size === 0 || isAddingTemplates"
+          :disabled="selectedCount === 0 || isAddingTemplates"
           :loading="isAddingTemplates"
           @click="handleAddTemplates"
         >
-          Add Templates ({{ selectedTemplates.size }})
+          Add Templates ({{ selectedCount }})
         </el-button>
       </div>
     </div>
@@ -109,7 +137,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { Search, ArrowLeft } from '@element-plus/icons-vue'
+import { Search, ArrowLeft, Collection, CircleClose } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import WorkOrderTaskSelector from '@/components/WorkOrder/Selectors/WorkOrderTaskSelector.vue'
 import StepsPreview from '@/components/TaskLibrary/StepsPreview.vue'
@@ -146,6 +174,7 @@ const pageSize = ref( 20 )
 
 // Track selected templates
 const selectedTemplates = ref( new Set() )
+const selectedTemplatesData = ref( new Map() ) // Store full template objects
 const isAddingTemplates = ref( false )
 
 // Track focused card for preview functionality
@@ -158,8 +187,10 @@ const isInteractive = ref( false )
 
 // Computed properties
 const selectedTemplatesList = computed( () => {
-  return taskTemplates.value.filter( template => selectedTemplates.value.has( template.id || template._id ) )
+  return Array.from( selectedTemplatesData.value.values() )
 } )
+
+const selectedCount = computed( () => selectedTemplatesData.value.size )
 
 const paginationInfo = computed( () => {
   const start = totalItems.value === 0 ? 0 : ( currentPage.value - 1 ) * pageSize.value + 1
@@ -221,16 +252,20 @@ const handlePageSizeChange = newSize => {
 }
 
 const handleTaskAction = selectionData => {
-  const { id, action } = selectionData
+  const { id, action, data } = selectionData
 
   if ( action === 'check' ) {
     selectedTemplates.value.add( id )
-    // Force reactivity by creating a new Set
+    selectedTemplatesData.value.set( id, data ) // Store full template object
+    // Force reactivity by creating a new Set and Map
     selectedTemplates.value = new Set( selectedTemplates.value )
+    selectedTemplatesData.value = new Map( selectedTemplatesData.value )
   } else if ( action === 'uncheck' ) {
     selectedTemplates.value.delete( id )
-    // Force reactivity by creating a new Set
+    selectedTemplatesData.value.delete( id )
+    // Force reactivity by creating a new Set and Map
     selectedTemplates.value = new Set( selectedTemplates.value )
+    selectedTemplatesData.value = new Map( selectedTemplatesData.value )
   } else if ( action === 'focus' ) {
     focusedCardId.value = id
   }
@@ -271,8 +306,22 @@ const ensureTemplateSteps = async template => {
   }
 }
 
+const handleRemoveSelection = templateId => {
+  selectedTemplates.value.delete( templateId )
+  selectedTemplatesData.value.delete( templateId )
+  selectedTemplates.value = new Set( selectedTemplates.value )
+  selectedTemplatesData.value = new Map( selectedTemplatesData.value )
+}
+
+const handleClearAllSelections = () => {
+  selectedTemplates.value.clear()
+  selectedTemplatesData.value.clear()
+  selectedTemplates.value = new Set( selectedTemplates.value )
+  selectedTemplatesData.value = new Map( selectedTemplatesData.value )
+}
+
 const handleAddTemplates = async() => {
-  if ( selectedTemplates.value.size === 0 || isAddingTemplates.value ) {
+  if ( selectedTemplatesData.value.size === 0 || isAddingTemplates.value ) {
     return
   }
 
@@ -282,12 +331,18 @@ const handleAddTemplates = async() => {
 
     const validTemplates = templatesToAdd.filter( Boolean )
     if ( validTemplates.length === 0 ) {
+      ElMessage.warning( 'No valid templates to add' )
       return
     }
 
+    // eslint-disable-next-line no-unused-vars
+    const count = validTemplates.length
     emit( 'addTemplates', validTemplates )
-    selectedTemplates.value.clear()
+    handleClearAllSelections()
     emit( 'close' )
+  } catch ( error ) {
+    console.error( 'Error adding templates:', error )
+    ElMessage.error( 'Failed to add templates. Please try again.' )
   } finally {
     isAddingTemplates.value = false
   }
@@ -361,7 +416,7 @@ const debouncedSearch = debounce( () => {
 
 // Event handlers
 const handleSearch = () => {
-  selectedTemplates.value.clear() // Clear selections when searching
+  // DO NOT clear selections - allow persistence across search
   focusedCardId.value = null // Clear focused card when searching
   debouncedSearch()
 }
@@ -369,7 +424,6 @@ const handleSearch = () => {
 // Watch for search query changes
 watch( searchQuery, () => {
   if ( !searchQuery.value?.trim() ) {
-    selectedTemplates.value.clear()
     focusedCardId.value = null
     fetchTaskTemplates( true )
   }
@@ -503,6 +557,99 @@ defineOptions( {
   font-weight: 600;
   color: var(--el-text-color-primary);
   flex: 1;
+}
+
+// Selected Templates Summary Section
+.selected-templates-summary {
+  margin-top: 12px;
+  padding: 0 12px 12px 12px;
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 6px;
+  background: var(--el-fill-color-lighter);
+  height: 10vh;
+  overflow-y: auto;
+
+  .summary-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--el-fill-color-lighter);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+
+    .summary-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--el-text-color-primary);
+
+      .el-icon {
+        color: var(--el-color-primary);
+        font-size: 16px;
+      }
+    }
+
+    .clear-all-button {
+      padding: 4px;
+      color: var(--el-text-color-secondary);
+      transition: all 0.2s ease;
+
+      .el-icon {
+        font-size: 16px;
+      }
+
+      &:hover {
+        color: var(--el-color-danger);
+        background: var(--el-color-danger-light-9);
+        border-radius: 4px;
+      }
+    }
+  }
+
+  .summary-content {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    .selection-tag {
+      max-width: 100%;
+      cursor: default;
+
+      :deep(.el-tag__content) {
+        display: inline-block;
+        max-width: 300px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+  }
+
+  // Custom scrollbar
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--el-fill-color-lighter);
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: var(--el-fill-color-dark);
+    border-radius: 3px;
+
+    &:hover {
+      background: var(--el-fill-color-darker);
+    }
+  }
 }
 
 // Responsive adjustments
