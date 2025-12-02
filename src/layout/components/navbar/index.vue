@@ -34,19 +34,6 @@
         <LangSelect class="hover-effect" />
       </el-tooltip>
 
-      <el-tooltip content="Return to main page" effect="dark" placement="bottom">
-        <button
-          type="button"
-          class="p8 hover-effect refresh-production-btn"
-          aria-label="Return to main page"
-          @click="refreshProduction"
-        >
-          <el-icon>
-            <Refresh />
-          </el-icon>
-        </button>
-      </el-tooltip>
-
       <el-dropdown class="p8 avatar-container right-menu-item hover-effect" trigger="click">
         <div class="avatar-wrapper">
           <!--          <img :src="set.avatar + '?imageView2/1/w/80/h/80'" class="user-avatar" />-->
@@ -123,7 +110,7 @@ import SizeSelect from './components/SizeSelect'
 import LangSelect from './components/LangSelect'
 import { emitter } from '@/utils/mitt'
 import { gotoCognitoLogin } from '@/utils/cognito/cognito'
-import { Refresh, Picture } from '@element-plus/icons-vue'
+import { Picture } from '@element-plus/icons-vue'
 
 import Logo from '@/layout/components/sidebar/Logo'
 import MenuBar from '../sidebar/Menu'
@@ -170,10 +157,6 @@ const logout = async() => {
 
 const openSettings = () => {
   emitter.emit( 'openSettings' )
-}
-
-const refreshProduction = () => {
-  emitter.emit( 'refreshProduction' )
 }
 
 defineOptions( {
@@ -398,16 +381,5 @@ defineOptions( {
   background: var(--el-fill-color-light);
   color: var(--el-text-color-secondary);
   font-size: 30px;
-}
-
-.refresh-production-btn {
-  background: none;
-  border: none;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  color: #5a5e66;
 }
 </style>
