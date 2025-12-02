@@ -30,6 +30,7 @@ const qcRoutes = {
           component : () => import( '@/views/shared/IframeView.vue' ),
           meta : {
             title : 'Form Tree',
+            icon : 'tree',
             iframeUrl : `${QC_IFRAME_BASE_URL}/quality-form-management?embed=true`,
             hidden : false,
             noCache : false
@@ -41,6 +42,7 @@ const qcRoutes = {
           component : () => import( '@/views/shared/IframeView.vue' ),
           meta : {
             title : 'Form Designer',
+            icon : 'edit',
             iframeUrl : `${QC_IFRAME_BASE_URL}/form-designer?embed=true`,
             hidden : false,
             noCache : false
@@ -64,6 +66,7 @@ const qcRoutes = {
           component : () => import( '@/views/shared/IframeView.vue' ),
           meta : {
             title : 'Form Data Summary',
+            icon : 'table',
             iframeUrl : `${QC_IFRAME_BASE_URL}/form-data-summary?embed=true`,
             hidden : false,
             noCache : false
@@ -75,6 +78,7 @@ const qcRoutes = {
           component : () => import( '@/views/shared/IframeView.vue' ),
           meta : {
             title : 'Alarm Records',
+            icon : 'message',
             iframeUrl : `${QC_IFRAME_BASE_URL}/alarm-records?embed=true`,
             hidden : false,
             noCache : false
@@ -86,6 +90,7 @@ const qcRoutes = {
           component : () => import( '@/views/shared/IframeView.vue' ),
           meta : {
             title : 'QC Summary',
+            icon : 'table',
             iframeUrl : `${QC_IFRAME_BASE_URL}/qc-summary?embed=true`,
             hidden : false,
             noCache : false
@@ -109,6 +114,7 @@ const qcRoutes = {
           component : () => import( '@/views/shared/IframeView.vue' ),
           meta : {
             title : 'Pending Tasks',
+            icon : 'list',
             iframeUrl : `${QC_IFRAME_BASE_URL}/pending-tasks?embed=true`,
             hidden : false,
             noCache : false
@@ -120,6 +126,7 @@ const qcRoutes = {
           component : () => import( '@/views/shared/IframeView.vue' ),
           meta : {
             title : 'Approval Center',
+            icon : 'approval-center',
             iframeUrl : `${QC_IFRAME_BASE_URL}/approval-info?embed=true`,
             hidden : false,
             noCache : false

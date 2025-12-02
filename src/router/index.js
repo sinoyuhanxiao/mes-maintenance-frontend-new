@@ -219,6 +219,7 @@ export const asyncRoutes = [
             component : () => import( '@/views/taskLibrary/views/TemplateLibraryView.vue' ),
             meta : {
               title : 'Tasks',
+              icon : 'list',
               hidden : false,
               noCache : false
             }
@@ -229,6 +230,7 @@ export const asyncRoutes = [
             component : () => import( '@/views/taskLibrary/views/StandardsLibraryView.vue' ),
             meta : {
               title : 'Standards',
+              icon : 'list',
               hidden : false,
               noCache : false
             }
@@ -239,6 +241,7 @@ export const asyncRoutes = [
             component : () => import( '@/views/taskLibrary/views/TaskDesignerCreateView.vue' ),
             meta : {
               title : 'Designer',
+              icon : 'edit',
               hidden : false,
               noCache : false
             }
@@ -286,13 +289,13 @@ export const asyncRoutes = [
             path : 'spare-parts',
             component : () => import( '@/views/resources/index.vue' ),
             name : 'SpareParts',
-            meta : { title : 'Spare Parts', noCache : false }
+            meta : { title : 'Spare Parts', icon : 'list', noCache : false }
           },
           {
             path : 'tools',
             component : () => import( '@/views/resources/components/tools/index.vue' ),
             name : 'Tools',
-            meta : { title : 'Tools', noCache : true }
+            meta : { title : 'Tools', icon : 'list', noCache : true }
           }
         ]
       },
