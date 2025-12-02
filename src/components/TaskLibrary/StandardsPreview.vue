@@ -37,7 +37,8 @@
                     {{ standard.category || 'Uncategorized' }}
                   </el-descriptions-item>
                   <el-descriptions-item width="50%" label="Total Rules">
-                    <span class="info-value highlight clickable-rules" @click="navigateToRulesTab"
+                    <span class="info-value highlight clickable-rules"
+@click="navigateToRulesTab"
                       >{{ standard.items?.length || 0 }} rules</span
                     >
                   </el-descriptions-item>

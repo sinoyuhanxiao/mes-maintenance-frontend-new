@@ -172,7 +172,8 @@
                       selectedstandard.category || 'Uncategorized'
                     }}</el-descriptions-item>
                     <el-descriptions-item width="50%" label="Total Rules">
-                      <span class="info-value highlight clickable-rules" @click="activeTab = 'rules'"
+                      <span class="info-value highlight clickable-rules"
+@click="activeTab = 'rules'"
                         >{{ selectedstandard.items?.length || 0 }} rules</span
                       >
                     </el-descriptions-item>

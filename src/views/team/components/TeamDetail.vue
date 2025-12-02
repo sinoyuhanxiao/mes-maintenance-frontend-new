@@ -462,10 +462,11 @@ const sortData = ( list, { prop, order } ) => {
   return sorted
 }
 
-const handleSortChange = type =>
-  ( { prop, order } ) => {
-    sort.value[type] = { prop, order }
-  }
+const handleSortChange =
+  type =>
+    ( { prop, order } ) => {
+      sort.value[type] = { prop, order }
+    }
 
 // ===== Computed filtered lists =====
 const filteredMembers = computed( () => {

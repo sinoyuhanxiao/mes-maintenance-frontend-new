@@ -211,7 +211,6 @@
         type="datetime"
         :placeholder="$t('workOrder.recurrence.selectEndTime')"
         format="YYYY-MM-DD HH:mm"
-        
         style="width: 100%"
       />
     </el-form-item>
@@ -276,8 +275,8 @@ import { ref, watch, computed, onMounted, nextTick } from 'vue'
 import { Warning, Clock, QuestionFilled } from '@element-plus/icons-vue'
 import { getAllRecurrenceTypes } from '@/api/work-order'
 
-const startDateTimeValue = ref(null)
-const endDateTimeValue = ref(null)
+const startDateTimeValue = ref( null )
+const endDateTimeValue = ref( null )
 const recurrence = ref( 'none' ) // Initialize with 'none' instead of empty string
 const repeatInterval = ref( 1 ) // Control for how many weeks to repeat
 const selectedDays = ref( [] ) // Store selected days as numbers (1 to 7)
@@ -434,15 +433,15 @@ const initializeFromRecurrenceSetting = () => {
 
   if ( recurrenceTypeString === 'none' || isSingleInstanceMode.value ) {
     if ( setting.start_date_time ) {
-      startDateTimeValue.value = new Date(setting.start_date_time)
+      startDateTimeValue.value = new Date( setting.start_date_time )
     } else if ( props.workOrderStartDate ) {
-      startDateTimeValue.value = new Date(props.workOrderStartDate)
+      startDateTimeValue.value = new Date( props.workOrderStartDate )
     }
 
     if ( setting.end_date_time ) {
-      endDateTimeValue.value = new Date(setting.end_date_time)
+      endDateTimeValue.value = new Date( setting.end_date_time )
     } else if ( props.workOrderDueDate ) {
-      endDateTimeValue.value = new Date(props.workOrderDueDate)
+      endDateTimeValue.value = new Date( props.workOrderDueDate )
     }
   } else {
     if ( setting.start_time ) {
@@ -471,8 +470,6 @@ onMounted( async() => {
   // Initialize after recurrence types are loaded
   initializeFromRecurrenceSetting()
 } )
-
-
 
 watch(
   () => props.singleInstanceMode,
