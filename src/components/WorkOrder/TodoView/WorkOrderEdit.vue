@@ -657,7 +657,7 @@ import { calculateStepChangesForTask, hasAnyStepChanged } from './taskStepChange
 import {
   formatDateTimeForPicker,
   withDefaultTime,
-  toUtcIso,
+  toLocalIso,
   normalizeDateFields,
   extractWorkOrderDates
 } from '@/components/WorkOrder/utils/dateFormatter'
@@ -1572,8 +1572,8 @@ watch(
 
       const updatedRequest = {
         ...form.recurrence_setting_request,
-        start_date_time : rawStartValue ? toUtcIso( withDefaultTime( rawStartValue, '00:00:00' ) ) : null,
-        end_date_time : rawEndValue ? toUtcIso( withDefaultTime( rawEndValue, '23:59:59' ) ) : null,
+        start_date_time : rawStartValue ? toLocalIso( withDefaultTime( rawStartValue, '00:00:00' ) ) : null,
+        end_date_time : rawEndValue ? toLocalIso( withDefaultTime( rawEndValue, '23:59:59' ) ) : null,
         month_of_year : newVal.month_of_year,
         day_of_month : newVal.day_of_month,
         days_of_week : newVal.days_of_week,
@@ -2697,27 +2697,27 @@ const buildRecurrenceSettingPayload = () => {
     const startBase = startSource ?? form.start_date
     const endBase = endSource ?? form.due_date ?? form.end_date
 
-    payload.start_date_time = startBase ? toUtcIso( withDefaultTime( startBase, '00:00:00' ) ) : null
-    payload.end_date_time = endBase ? toUtcIso( withDefaultTime( endBase, '23:59:59' ) ) : null
+    payload.start_date_time = startBase ? toLocalIso( withDefaultTime( startBase, '00:00:00' ) ) : null
+    payload.end_date_time = endBase ? toLocalIso( withDefaultTime( endBase, '23:59:59' ) ) : null
   } else {
     if ( startSource ) {
-      payload.start_date_time = toUtcIso( startSource )
+      payload.start_date_time = toLocalIso( startSource )
     } else if ( form.start_date && payload.start_time ) {
-      payload.start_date_time = toUtcIso( `${form.start_date}T${payload.start_time}` )
+      payload.start_date_time = toLocalIso( `${form.start_date}T${payload.start_time}` )
     } else if ( form.start_date ) {
-      payload.start_date_time = toUtcIso( withDefaultTime( form.start_date, '00:00:00' ) )
+      payload.start_date_time = toLocalIso( withDefaultTime( form.start_date, '00:00:00' ) )
     } else {
       payload.start_date_time = null
     }
 
     if ( endSource ) {
-      payload.end_date_time = toUtcIso( endSource )
+      payload.end_date_time = toLocalIso( endSource )
     } else {
       const endDateCandidate = form.end_date || form.due_date || form.start_date
       if ( endDateCandidate && payload.end_time ) {
-        payload.end_date_time = toUtcIso( `${endDateCandidate}T${payload.end_time}` )
+        payload.end_date_time = toLocalIso( `${endDateCandidate}T${payload.end_time}` )
       } else if ( endDateCandidate ) {
-        payload.end_date_time = toUtcIso( withDefaultTime( endDateCandidate, '23:59:59' ) )
+        payload.end_date_time = toLocalIso( withDefaultTime( endDateCandidate, '23:59:59' ) )
       } else {
         payload.end_date_time = null
       }
@@ -2740,8 +2740,8 @@ const createWorkOrderPayload = () => {
     // Copy from recurrence_setting_request for 'none' type, normalizing to UTC
     const startDateWithTime = withDefaultTime( form.recurrence_setting_request.start_date_time, '00:00:00' )
     const endDateWithTime = withDefaultTime( form.recurrence_setting_request.end_date_time, '23:59:59' )
-    formattedStartDate = toUtcIso( startDateWithTime )
-    formattedEndDate = toUtcIso( endDateWithTime )
+    formattedStartDate = toLocalIso( startDateWithTime )
+    formattedEndDate = toLocalIso( endDateWithTime )
     formattedDueDate = formattedEndDate // due_date same as end_date_time for 'none'
   } else {
     // Use form fields for recurring types with default times
@@ -2749,9 +2749,9 @@ const createWorkOrderPayload = () => {
     const startDateWithTime = withDefaultTime( form.start_date, '00:00:00' )
     const dueDateWithTime = withDefaultTime( form.due_date, '23:59:59' )
     const endDateWithTime = withDefaultTime( form.end_date, '23:59:59' )
-    formattedStartDate = toUtcIso( startDateWithTime )
-    formattedDueDate = toUtcIso( dueDateWithTime )
-    formattedEndDate = toUtcIso( endDateWithTime )
+    formattedStartDate = toLocalIso( startDateWithTime )
+    formattedDueDate = toLocalIso( dueDateWithTime )
+    formattedEndDate = toLocalIso( endDateWithTime )
   }
 
   // Calculate task and standard changes

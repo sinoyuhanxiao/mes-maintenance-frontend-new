@@ -143,8 +143,8 @@ export const withDefaultTime = ( dateValue, defaultTime = '00:00:00' ) => {
 
 /**
  * Converts local datetime string to UTC ISO string (ending with Z)
- * Used for backend payload preparation
  *
+ * @deprecated For work orders, use toLocalIso() instead to preserve local timezone
  * @param {string} localDateTimeString - Local datetime string (YYYY-MM-DDTHH:mm:ss or YYYY-MM-DD HH:mm:ss)
  * @returns {string|null} UTC ISO string or null
  */
@@ -159,6 +159,47 @@ export const toUtcIso = localDateTimeString => {
     if ( isNaN( date.getTime() ) ) return null
 
     return date.toISOString()
+  } catch ( e ) {
+    return null
+  }
+}
+
+/**
+ * Converts local datetime string to ISO 8601 format with local timezone offset
+ * Used for backend payload preparation (sends local time, not UTC)
+ *
+ * Example: "2025-12-02T00:00:00" → "2025-12-02T00:00:00-08:00" (in PST)
+ *
+ * @param {string} localDateTimeString - Local datetime string (YYYY-MM-DDTHH:mm:ss or YYYY-MM-DD HH:mm:ss)
+ * @returns {string|null} ISO 8601 string with timezone offset or null
+ */
+export const toLocalIso = localDateTimeString => {
+  if ( !localDateTimeString ) return null
+
+  try {
+    // Ensure T separator
+    const normalized = String( localDateTimeString ).trim().replace( ' ', 'T' )
+    const date = new Date( normalized )
+
+    if ( isNaN( date.getTime() ) ) return null
+
+    // Get timezone offset in minutes
+    const tzOffset = -date.getTimezoneOffset()
+    const offsetHours = Math.floor( Math.abs( tzOffset ) / 60 )
+    const offsetMinutes = Math.abs( tzOffset ) % 60
+    const offsetSign = tzOffset >= 0 ? '+' : '-'
+
+    // Format: YYYY-MM-DDTHH:mm:ss±HH:mm
+    const year = date.getFullYear()
+    const month = String( date.getMonth() + 1 ).padStart( 2, '0' )
+    const day = String( date.getDate() ).padStart( 2, '0' )
+    const hours = String( date.getHours() ).padStart( 2, '0' )
+    const minutes = String( date.getMinutes() ).padStart( 2, '0' )
+    const seconds = String( date.getSeconds() ).padStart( 2, '0' )
+    const tzHours = String( offsetHours ).padStart( 2, '0' )
+    const tzMinutes = String( offsetMinutes ).padStart( 2, '0' )
+
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${offsetSign}${tzHours}:${tzMinutes}`
   } catch ( e ) {
     return null
   }

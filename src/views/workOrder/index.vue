@@ -468,6 +468,7 @@ defineOptions( {
 
 // View Containers
 .table-view {
+  margin-top: 8px;
   background: var(--el-bg-color);
 }
 

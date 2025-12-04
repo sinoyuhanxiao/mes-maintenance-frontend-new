@@ -187,6 +187,7 @@
         type="datetime"
         :placeholder="$t('workOrder.recurrence.selectStartTime')"
         format="YYYY-MM-DD HH:mm"
+        value-format="YYYY-MM-DD HH:mm:ss"
         style="width: 100%"
       />
     </el-form-item>
@@ -211,6 +212,7 @@
         type="datetime"
         :placeholder="$t('workOrder.recurrence.selectEndTime')"
         format="YYYY-MM-DD HH:mm"
+        value-format="YYYY-MM-DD HH:mm:ss"
         style="width: 100%"
       />
     </el-form-item>
@@ -433,15 +435,35 @@ const initializeFromRecurrenceSetting = () => {
 
   if ( recurrenceTypeString === 'none' || isSingleInstanceMode.value ) {
     if ( setting.start_date_time ) {
-      startDateTimeValue.value = new Date( setting.start_date_time )
+      // Value should be a string in format YYYY-MM-DD HH:mm:ss to match value-format
+      // Handle various datetime formats: YYYY-MM-DDTHH:mm:ss, YYYY-MM-DD HH:mm:ss, with/without timezone
+      const startStr = String( setting.start_date_time )
+      // Extract first 19 characters (YYYY-MM-DD HH:mm:ss) by replacing T with space and removing any extra characters
+      const normalized = startStr.replace( 'T', ' ' ).substring( 0, 19 )
+      // Validate format before assigning
+      if ( /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test( normalized ) ) {
+        startDateTimeValue.value = normalized
+      }
     } else if ( props.workOrderStartDate ) {
-      startDateTimeValue.value = new Date( props.workOrderStartDate )
+      const startStr = String( props.workOrderStartDate )
+      const normalized = startStr.replace( 'T', ' ' ).substring( 0, 19 )
+      if ( /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test( normalized ) ) {
+        startDateTimeValue.value = normalized
+      }
     }
 
     if ( setting.end_date_time ) {
-      endDateTimeValue.value = new Date( setting.end_date_time )
+      const endStr = String( setting.end_date_time )
+      const normalized = endStr.replace( 'T', ' ' ).substring( 0, 19 )
+      if ( /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test( normalized ) ) {
+        endDateTimeValue.value = normalized
+      }
     } else if ( props.workOrderDueDate ) {
-      endDateTimeValue.value = new Date( props.workOrderDueDate )
+      const endStr = String( props.workOrderDueDate )
+      const normalized = endStr.replace( 'T', ' ' ).substring( 0, 19 )
+      if ( /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test( normalized ) ) {
+        endDateTimeValue.value = normalized
+      }
     }
   } else {
     if ( setting.start_time ) {
@@ -478,6 +500,17 @@ watch(
       initializeFromRecurrenceSetting()
     }
   }
+)
+
+// Watch for changes to recurrenceSetting prop to reinitialize
+watch(
+  () => props.recurrenceSetting,
+  newVal => {
+    if ( newVal && Object.keys( newVal ).length > 0 && Object.keys( recurrenceTypeMap.value ).length > 0 ) {
+      initializeFromRecurrenceSetting()
+    }
+  },
+  { deep : true }
 )
 
 // Helper function to get work order start date part
@@ -548,17 +581,17 @@ const computedRecurrenceSetting = computed( () => {
 
   // Handle different recurrence types
   if ( recurrence.value === 'none' || isSingleInstanceMode.value ) {
-    // For 'none' recurrence, use the original date-time fields
+    // For 'none' recurrence, use the original date-time fields (as strings from value-format)
     if ( startDateTimeValue.value ) {
-      setting.start_date_time = startDateTimeValue.value.toISOString()
+      setting.start_date_time = startDateTimeValue.value
     }
     if ( endDateTimeValue.value ) {
-      setting.end_date_time = endDateTimeValue.value.toISOString()
+      setting.end_date_time = endDateTimeValue.value
     }
     // Calculate duration_minutes based on date difference
     if ( startDateTimeValue.value && endDateTimeValue.value ) {
-      const start = startDateTimeValue.value
-      const end = endDateTimeValue.value
+      const start = new Date( startDateTimeValue.value )
+      const end = new Date( endDateTimeValue.value )
       const diffMs = end - start
       const minutes = Math.ceil( diffMs / ( 1000 * 60 ) )
       setting.duration_minutes = minutes > 0 ? minutes : 0

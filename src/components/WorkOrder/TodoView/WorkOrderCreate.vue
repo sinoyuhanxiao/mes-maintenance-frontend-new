@@ -619,7 +619,7 @@ import { DEFAULT_TASK_STATE, buildDisplayTaskFromTemplate } from './taskPayloadH
 import {
   formatDateTimeForPicker,
   withDefaultTime,
-  toUtcIso,
+  toLocalIso,
   normalizeDateFields,
   extractWorkOrderDates
 } from '@/components/WorkOrder/utils/dateFormatter'
@@ -2220,15 +2220,15 @@ const createWorkOrderPayload = () => {
     // Copy from recurrence_setting_request for 'none' type, but normalize to UTC
     const startDateWithTime = withDefaultTime( form.recurrence_setting_request.start_date_time, '00:00:00' )
     const endDateWithTime = withDefaultTime( form.recurrence_setting_request.end_date_time, '23:59:59' )
-    formattedStartDate = toUtcIso( startDateWithTime )
-    formattedDueDate = toUtcIso( endDateWithTime )
+    formattedStartDate = toLocalIso( startDateWithTime )
+    formattedDueDate = toLocalIso( endDateWithTime )
   } else {
     // Use form fields for recurring types with default times
     // Start date defaults to 00:00:00, due date defaults to 23:59:59
     const startDateWithTime = withDefaultTime( form.start_date, '00:00:00' )
     const dueDateWithTime = withDefaultTime( form.due_date, '23:59:59' )
-    formattedStartDate = toUtcIso( startDateWithTime )
-    formattedDueDate = toUtcIso( dueDateWithTime )
+    formattedStartDate = toLocalIso( startDateWithTime )
+    formattedDueDate = toLocalIso( dueDateWithTime )
   }
 
   // Create a clean copy of recurrence_setting_request without mutating the original form
@@ -2244,12 +2244,12 @@ const createWorkOrderPayload = () => {
   } else {
     // For recurring types, ensure recurrence_setting_request datetimes are converted to UTC
     if ( recurrenceSettingPayload.start_date_time ) {
-      recurrenceSettingPayload.start_date_time = toUtcIso(
+      recurrenceSettingPayload.start_date_time = toLocalIso(
         withDefaultTime( recurrenceSettingPayload.start_date_time, '00:00:00' )
       )
     }
     if ( recurrenceSettingPayload.end_date_time ) {
-      recurrenceSettingPayload.end_date_time = toUtcIso(
+      recurrenceSettingPayload.end_date_time = toLocalIso(
         withDefaultTime( recurrenceSettingPayload.end_date_time, '23:59:59' )
       )
     }
@@ -2313,9 +2313,9 @@ watch(
       // RecurrenceEditor emits start_date_time and end_date_time as already-UTC ISO strings
       // Use them directly without re-conversion to avoid double timezone conversion
       const startDateTime =
-        newVal.start_date_time || ( form.start_date ? toUtcIso( withDefaultTime( form.start_date, '00:00:00' ) ) : null )
+        newVal.start_date_time || ( form.start_date ? toLocalIso( withDefaultTime( form.start_date, '00:00:00' ) ) : null )
       const endDateTime =
-        newVal.end_date_time || ( form.due_date ? toUtcIso( withDefaultTime( form.due_date, '23:59:59' ) ) : null )
+        newVal.end_date_time || ( form.due_date ? toLocalIso( withDefaultTime( form.due_date, '23:59:59' ) ) : null )
 
       form.recurrence_setting_request = {
         start_date_time : startDateTime,
@@ -2416,8 +2416,8 @@ const submitForm = async() => {
     form.file_list = finalFileList
 
     // Prepare properly formatted local datetime strings for backend
-    const formattedStartDate = toUtcIso( withDefaultTime( form.start_date, '00:00:00' ) )
-    const formattedDueDate = toUtcIso( withDefaultTime( form.due_date, '23:59:59' ) )
+    const formattedStartDate = toLocalIso( withDefaultTime( form.start_date, '00:00:00' ) )
+    const formattedDueDate = toLocalIso( withDefaultTime( form.due_date, '23:59:59' ) )
 
     // Ensure recurrence setting defaults exist
     if ( !form.recurrence_setting_request ) {
