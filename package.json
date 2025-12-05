@@ -12,7 +12,7 @@
     "build:staging": "rimraf dist && cross-env vite build --mode staging",
     "build:demo": "rimraf dist && cross-env vite build --mode demo",
     "build:dev-demo": "rimraf dist && cross-env vite build --mode dev-demo",
-    "build:dev": "rimraf dist && cross-env vite build --mode dev",
+    "build:dev": "rimraf dist && cross-env vite build --mode development",
     "report": "rimraf dist && cross-env vite build",
     "vis": "set vis=true && vite build",
     "lint-fix": "eslint --fix --ext .js,.ts,.jsx,.tsx,.vue src",
