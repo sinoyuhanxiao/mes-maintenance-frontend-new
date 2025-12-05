@@ -1548,11 +1548,13 @@ const preFillFromRequestData = requestData => {
     // Check if recurrence_type is "none" (id=1) and extract datetime from main fields
     const isNonRecurring = requestData.recurrence_type_id === 1 || requestData.recurrence_type?.id === 1
 
-    let rawStartDateTime = dates.recurrence_start_date_time ||
+    let rawStartDateTime =
+      dates.recurrence_start_date_time ||
       requestData.recurrence_setting_request?.start_date_time ||
       requestData.recurrence_setting?.start_date_time
 
-    let rawEndDateTime = dates.recurrence_end_date_time ||
+    let rawEndDateTime =
+      dates.recurrence_end_date_time ||
       requestData.recurrence_setting_request?.end_date_time ||
       requestData.recurrence_setting?.end_date_time
 
