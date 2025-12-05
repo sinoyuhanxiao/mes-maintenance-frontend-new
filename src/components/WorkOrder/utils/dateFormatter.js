@@ -226,20 +226,45 @@ export const normalizeDateFields = form => {
 }
 
 /**
- * Extracts and formats date fields from backend work order payload
- * Uses only: start_date, due_date, end_date (with due_date → end_date fallback)
+ * Extracts and formats date and datetime fields from backend work order payload
+ * Uses: start_date, due_date, end_date (with due_date → end_date fallback)
+ * Also extracts: recurrence_setting datetime fields (start_date_time, end_date_time)
  *
  * @param {Object} workOrder - Work order object from backend
- * @returns {Object} Object with formatted start_date, due_date, end_date
+ * @returns {Object} Object with formatted dates and datetime fields from recurrence_setting
  */
 export const extractWorkOrderDates = workOrder => {
   if ( !workOrder ) {
-    return { start_date : null, due_date : null, end_date : null }
+    return {
+      start_date : null,
+      due_date : null,
+      end_date : null,
+      recurrence_start_date_time : null,
+      recurrence_end_date_time : null
+    }
   }
 
-  return {
+  // Extract basic date fields (existing behavior)
+  const result = {
     start_date : formatDateForDatePicker( workOrder.start_date ),
     due_date : formatDateForDatePicker( workOrder.due_date || workOrder.end_date ),
     end_date : formatDateForDatePicker( workOrder.end_date || workOrder.due_date )
   }
+
+  // Extract datetime fields from recurrence_setting or recurrence_setting_request
+  // Priority: recurrence_setting_request > recurrence_setting
+  const recurrenceSetting = workOrder.recurrence_setting_request || workOrder.recurrence_setting
+  if ( recurrenceSetting && typeof recurrenceSetting === 'object' ) {
+    // Extract start_date_time if present
+    if ( recurrenceSetting.start_date_time ) {
+      result.recurrence_start_date_time = formatDateTimeForPicker( recurrenceSetting.start_date_time )
+    }
+
+    // Extract end_date_time if present
+    if ( recurrenceSetting.end_date_time ) {
+      result.recurrence_end_date_time = formatDateTimeForPicker( recurrenceSetting.end_date_time )
+    }
+  }
+
+  return result
 }

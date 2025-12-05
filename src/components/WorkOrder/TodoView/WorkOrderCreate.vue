@@ -263,8 +263,8 @@
           v-model:start-date="form.start_date"
           v-model:due-date="form.due_date"
           v-model:recurrence-setting="form.recurrence_setting"
-          :work-order-start-date="form.start_date"
-          :work-order-due-date="form.due_date"
+          :work-order-start-date="form.recurrence_setting?.start_date_time || form.start_date"
+          :work-order-due-date="form.recurrence_setting?.end_date_time || form.due_date"
         />
       </div>
 
@@ -1519,16 +1519,18 @@ const preFillFromRequestData = requestData => {
       form.vendor_ids = [...requestData.vendor_ids]
     }
 
-    // Prefill dates - use only start_date, due_date, end_date from backend
+    // Prefill dates - extract both basic dates and recurrence datetime fields
     const dates = extractWorkOrderDates( requestData )
     form.start_date = dates.start_date
     form.due_date = dates.due_date
     form.end_date = dates.end_date
 
     // Prefill recurrence settings
-    if ( requestData.recurrence_type_id ) {
-      form.recurrence_type_id = requestData.recurrence_type_id
-      form.recurrence_type = requestData.recurrence_type_id
+    // Extract recurrence_type_id from either recurrence_type_id field or recurrence_type.id
+    const recurrenceTypeId = requestData.recurrence_type_id || requestData.recurrence_type?.id
+    if ( recurrenceTypeId ) {
+      form.recurrence_type_id = recurrenceTypeId
+      form.recurrence_type = recurrenceTypeId
     }
 
     const recurrenceSettingSource =
@@ -1541,16 +1543,34 @@ const preFillFromRequestData = requestData => {
         ? { ...requestData.recurrence_setting_request }
         : {}
 
-    // Extract recurrence datetime fields - use only recurrence_setting fields, no fallback to main fields
-    const rawStartDateTime =
-      requestData.recurrence_setting_request?.start_date_time ?? requestData.recurrence_setting?.start_date_time
+    // Extract recurrence datetime fields - prioritize extracted values from dates object
+    // For "Does not repeat" work orders, the datetime is in main start_date/end_date fields
+    // Check if recurrence_type is "none" (id=1) and extract datetime from main fields
+    const isNonRecurring = requestData.recurrence_type_id === 1 || requestData.recurrence_type?.id === 1
 
-    const rawEndDateTime =
-      requestData.recurrence_setting_request?.end_date_time ?? requestData.recurrence_setting?.end_date_time
+    let rawStartDateTime = dates.recurrence_start_date_time ||
+      requestData.recurrence_setting_request?.start_date_time ||
+      requestData.recurrence_setting?.start_date_time
 
-    // Format for display (local time) and for request (UTC ISO)
-    const displayStartDateTime = formatDateTimeForPicker( rawStartDateTime )
-    const displayEndDateTime = formatDateTimeForPicker( rawEndDateTime )
+    let rawEndDateTime = dates.recurrence_end_date_time ||
+      requestData.recurrence_setting_request?.end_date_time ||
+      requestData.recurrence_setting?.end_date_time
+
+    // Fallback: For non-recurring work orders, extract datetime from main start_date/end_date
+    if ( isNonRecurring && !rawStartDateTime && requestData.start_date ) {
+      rawStartDateTime = formatDateTimeForPicker( requestData.start_date )
+    }
+
+    if ( isNonRecurring && !rawEndDateTime ) {
+      const endSource = requestData.due_date || requestData.end_date
+      if ( endSource ) {
+        rawEndDateTime = formatDateTimeForPicker( endSource )
+      }
+    }
+
+    // Format for display (already formatted by extractWorkOrderDates if present)
+    const displayStartDateTime = rawStartDateTime
+    const displayEndDateTime = rawEndDateTime
 
     const requestStartDateTime = rawStartDateTime ? withDefaultTime( rawStartDateTime, '00:00:00' ) : null
     const requestEndDateTime = rawEndDateTime ? withDefaultTime( rawEndDateTime, '23:59:59' ) : null
@@ -1572,6 +1592,20 @@ const preFillFromRequestData = requestData => {
       recurrenceRequestSource.end_date_time = requestEndDateTime
     } else {
       delete recurrenceRequestSource.end_date_time
+    }
+
+    // Calculate duration_minutes based on start and end datetime (same logic as RecurrenceEditor)
+    if ( rawStartDateTime && rawEndDateTime ) {
+      const start = new Date( rawStartDateTime )
+      const end = new Date( rawEndDateTime )
+      const diffMs = end - start
+      const minutes = Math.ceil( diffMs / ( 1000 * 60 ) )
+      recurrenceSettingSource.duration_minutes = minutes > 0 ? minutes : 0
+      recurrenceRequestSource.duration_minutes = minutes > 0 ? minutes : 0
+    } else if ( requestData.recurrence_setting?.duration_minutes ) {
+      // Fallback: use existing duration_minutes if available
+      recurrenceSettingSource.duration_minutes = requestData.recurrence_setting.duration_minutes
+      recurrenceRequestSource.duration_minutes = requestData.recurrence_setting.duration_minutes
     }
 
     form.recurrence_setting = recurrenceSettingSource
@@ -2302,7 +2336,9 @@ watch(
   () => form.recurrence_setting,
   newVal => {
     // Don't run during form hydration/prefill to avoid overwriting data
-    if ( isHydratingForm ) return
+    if ( isHydratingForm ) {
+      return
+    }
 
     if ( newVal && typeof newVal === 'object' ) {
       // The RecurrenceEditor outputs recurrence_type, map it correctly

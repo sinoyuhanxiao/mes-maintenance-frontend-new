@@ -490,7 +490,10 @@ const initializeFromRecurrenceSetting = () => {
 onMounted( async() => {
   await loadRecurrenceTypes()
   // Initialize after recurrence types are loaded
-  initializeFromRecurrenceSetting()
+  // Use nextTick to ensure parent has time to populate props
+  nextTick( () => {
+    initializeFromRecurrenceSetting()
+  } )
 } )
 
 watch(
@@ -502,15 +505,54 @@ watch(
   }
 )
 
+// Track if we're processing our own emission to avoid circular updates
+let isProcessingOwnEmission = false
+
 // Watch for changes to recurrenceSetting prop to reinitialize
 watch(
   () => props.recurrenceSetting,
-  newVal => {
-    if ( newVal && Object.keys( newVal ).length > 0 && Object.keys( recurrenceTypeMap.value ).length > 0 ) {
+  ( newVal, oldVal ) => {
+    // Skip if this update came from our own emission (avoid circular updates)
+    if ( isProcessingOwnEmission ) {
+      return
+    }
+
+    if ( !newVal || Object.keys( newVal ).length === 0 ) {
+      return
+    }
+
+    // Check if this update has datetime values
+    const hasDatetime = newVal.start_date_time || newVal.end_date_time
+
+    if ( hasDatetime ) {
+      // Directly set the internal datetime values without waiting for recurrenceTypeMap
+      // This ensures we capture the datetime values before they get overwritten
+      const startStr = String( newVal.start_date_time )
+      const normalized = startStr.replace( 'T', ' ' ).substring( 0, 19 )
+      if ( /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test( normalized ) ) {
+        startDateTimeValue.value = normalized
+      }
+
+      if ( newVal.end_date_time ) {
+        const endStr = String( newVal.end_date_time )
+        const normalizedEnd = endStr.replace( 'T', ' ' ).substring( 0, 19 )
+        if ( /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test( normalizedEnd ) ) {
+          endDateTimeValue.value = normalizedEnd
+        }
+      }
+
+      // Temporarily disable emissions to prevent overwriting parent
+      const wasInitializing = isInitializing
+      isInitializing = true
+      nextTick( () => {
+        isInitializing = wasInitializing
+      } )
+    } else if ( Object.keys( recurrenceTypeMap.value ).length > 0 ) {
+      // Only call initializeFromRecurrenceSetting if recurrenceTypeMap is loaded
       initializeFromRecurrenceSetting()
     }
   },
-  { deep : true }
+  { deep : true, immediate : false }
 )
 
 // Helper function to get work order start date part
@@ -640,19 +682,40 @@ const computedRecurrenceSetting = computed( () => {
 
 // Sync recurrence_setting on internal changes
 let isUpdating = false
+let isInitializing = true
+
 watch(
   computedRecurrenceSetting,
   newSetting => {
     if ( isUpdating ) return
+
+    // Don't emit during initial mount - wait for parent to populate values first
+    if ( isInitializing ) {
+      return
+    }
+
     isUpdating = true
+    isProcessingOwnEmission = true
     emit( 'update:recurrenceSetting', newSetting )
-    // Use nextTick to reset the flag after the update cycle completes
+    // Use nextTick to reset the flags after the update cycle completes
     nextTick( () => {
       isUpdating = false
+      nextTick( () => {
+        isProcessingOwnEmission = false
+      } )
     } )
   },
   { deep : true }
 )
+
+// Mark initialization as complete after first tick
+onMounted( () => {
+  nextTick( () => {
+    nextTick( () => {
+      isInitializing = false
+    } )
+  } )
+} )
 </script>
 
 <style scoped lang="scss">
