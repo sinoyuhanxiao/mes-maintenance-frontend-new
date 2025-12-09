@@ -114,21 +114,21 @@
     <el-dialog
       :model-value="props.showCreateDialog && props.activeTab === 'locations'"
       @update:modelValue="val => emit('update:showCreateDialog', val)"
-      :title="'Create Location'"
+      :title="createLocationTitle"
       width="600px"
       destroy-on-close
     >
       <LocationForm v-model="newLocation" :location-types="locationTypes" ref="locationFormRef" />
       <template #footer>
         <el-button @click="emit('update:showCreateDialog', false)">Cancel</el-button>
-        <el-button type="primary" @click="submitNewLocation">Create</el-button>
+        <el-button type="primary" @click="submitNewLocation"> Create </el-button>
       </template>
     </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, watch } from 'vue'
+import { ref, onMounted, nextTick, watch, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 
 import VendorCard from './VendorCard.vue'
@@ -210,12 +210,22 @@ const newLocation = ref( {
   name : '',
   code : '',
   location_type : null,
-  person_in_charge_id : null, // ✅ new field
+  person_in_charge_id : null,
   address : '',
   description : '',
   image_list : [],
   file_list : [],
-  parent_id : null
+  parent_id : null,
+  latitude : null,
+  longitude : null
+} )
+
+const isRootLocation = computed( () => {
+  return newLocation.value?.parent_id === null || newLocation.value?.parent_id === undefined
+} )
+
+const createLocationTitle = computed( () => {
+  return isRootLocation.value ? 'Create New Location' : 'Create Sub Location'
 } )
 
 const locationTypes = ref( [] )
@@ -429,7 +439,9 @@ const openAddChildDialog = parent => {
     description : '',
     image_list : [],
     file_list : [],
-    parent_id : parent.id
+    parent_id : parent.id,
+    latitude : null,
+    longitude : null
   }
   emit( 'update:showCreateDialog', true )
 }
@@ -513,6 +525,13 @@ const submitNewLocation = async() => {
   const typeId = f.location_type_id == null ? null : Number( f.location_type_id )
   const picId = f.person_in_charge_id === '' || f.person_in_charge_id == null ? null : Number( f.person_in_charge_id )
 
+  // normalize coordinates
+  const lat =
+    f.latitude === '' || f.latitude == null ? null : Number.isFinite( Number( f.latitude ) ) ? Number( f.latitude ) : null
+
+  const lng =
+    f.longitude === '' || f.longitude == null ? null : Number.isFinite( Number( f.longitude ) ) ? Number( f.longitude ) : null
+
   // Upload new images only
   let uploadedImageUrls = []
   try {
@@ -537,7 +556,9 @@ const submitNewLocation = async() => {
     address : f.address?.trim() || '',
     image_list,
     ...( typeId != null && Number.isFinite( typeId ) ? { location_type_id : typeId } : {} ),
-    ...( Number.isFinite( picId ) ? { person_in_charge_id : picId } : {} )
+    ...( Number.isFinite( picId ) ? { person_in_charge_id : picId } : {} ),
+    ...( Number.isFinite( lat ) ? { latitude : lat } : {} ),
+    ...( Number.isFinite( lng ) ? { longitude : lng } : {} )
   }
 
   try {
@@ -604,7 +625,12 @@ watch(
 watch(
   () => props.showCreateDialog,
   open => {
-    if ( !open ) return
+    if ( !open ) {
+      // dialog closing → reset flag
+      isChildCreate.value = false
+      return
+    }
+
     if ( props.activeTab === 'vendors' ) {
       Object.assign( newVendor.value, {
         name : '',
@@ -624,12 +650,14 @@ watch(
         name : '',
         code : '',
         location_type : null,
-        person_in_charge_id : null, // ✅ reset
+        person_in_charge_id : null,
         address : '',
         description : '',
         image_list : [],
         file_list : [],
-        parent_id : isChildCreate.value ? newLocation.value.parent_id : null
+        parent_id : isChildCreate.value ? newLocation.value.parent_id : null,
+        latitude : null,
+        longitude : null
       } )
     }
   }

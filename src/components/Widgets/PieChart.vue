@@ -59,7 +59,10 @@ function renderChart() {
       {
         name : 'Status',
         type : 'pie',
-        radius : ['40%', '70%'],
+
+        // 👇 thinner ring: inner 65%, outer 80%
+        radius : ['58%', '80%'],
+
         avoidLabelOverlap : false,
         itemStyle : { borderRadius : 10, borderColor : '#fff', borderWidth : 2 },
         label : { show : false, position : 'center' },
@@ -121,6 +124,7 @@ watch(
   display: flex;
   flex-direction: column;
   min-height: 0;
+  cursor: pointer;
 }
 .title {
   flex-shrink: 0;

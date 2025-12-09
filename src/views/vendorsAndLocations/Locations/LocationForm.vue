@@ -27,7 +27,7 @@
       <el-form-item label="Person in Charge" prop="person_in_charge_id">
         <el-select
           v-model="localForm.person_in_charge_id"
-          placeholder="Search users..."
+          placeholder="Search users"
           clearable
           filterable
           remote
@@ -41,9 +41,28 @@
       </el-form-item>
     </div>
 
-    <!-- Full-width Address -->
-    <el-form-item label="Address" class="full-span">
-      <el-input v-model="localForm.address" placeholder="Enter address" clearable />
+    <!-- Address (root required, auto-geocode) -->
+    <el-form-item class="full-span" prop="address">
+      <template #label>
+        <span>
+          <span v-if="isRootLocation" style="color: red; margin-right: 4px">*</span>
+          Address
+        </span>
+      </template>
+
+      <el-input
+        v-model="localForm.address"
+        placeholder="Enter street name, city, state/province, country"
+        :prefix-icon="Search"
+        clearable
+      />
+    </el-form-item>
+
+    <!-- Map preview (always visible, default to North America if no coords) -->
+    <el-form-item class="full-span">
+      <div class="map-preview">
+        <OsmMapFrame :lat="mapCenter.lat" :lng="mapCenter.lng" :delta="hasCoords ? 0.02 : 40" :showMarker="hasCoords" />
+      </div>
     </el-form-item>
 
     <!-- Full-width Description -->
@@ -69,8 +88,12 @@
 
 <script setup>
 import { ref, reactive, watch, nextTick, computed } from 'vue'
+import axios from 'axios'
+import { ElMessage } from 'element-plus'
 import FileUploadMultiple from '@/components/FileUpload/FileUploadMultiple.vue'
-import { searchUsers, getUserById } from '@/api/user' // you already have these
+import OsmMapFrame from '@/components/Common/OsmMapFrame.vue'
+import { searchUsers, getUserById } from '@/api/user'
+import { Search } from '@element-plus/icons-vue'
 
 const props = defineProps( {
   modelValue : { type : Object, required : true },
@@ -82,11 +105,14 @@ const formRef = ref( null )
 /** Force a clean remount of FileUploadMultiple on fresh-create forms */
 const uploaderKey = ref( 0 )
 
+/** Default map center: North America */
+const DEFAULT_CENTER = {
+  lat : 48, // North America-ish center
+  lng : -97
+}
+
 /**
  * Local model
- * - image_list: string[] of URLs (existing on server)
- * - image_files: File[] of new picks (to upload)
- * - removed_existing_images: string[] of URLs to delete
  */
 const localForm = reactive( {
   name : '',
@@ -99,11 +125,27 @@ const localForm = reactive( {
   image_files : [], // Files (new)
   removed_existing_images : [], // URLs
   files_list : [], // reserved
-  parent_id : null
+  parent_id : null,
+  latitude : null,
+  longitude : null
 } )
 
 let applyingFromParent = false
 let lastIsNewForm = false
+
+// root vs child helper
+const isRootLocation = computed( () => {
+  return localForm.parent_id === null || localForm.parent_id === undefined
+} )
+
+// address validator (root: required, child: optional)
+const validateAddress = ( rule, value, callback ) => {
+  if ( isRootLocation.value && ( !value || !value.trim() ) ) {
+    callback( new Error( 'Address is required for root location' ) )
+  } else {
+    callback()
+  }
+}
 
 /** Detect a fresh-create form to reset the uploader */
 const isNewForm = v => {
@@ -184,6 +226,135 @@ const ensureSelectedUserOptionExists = async id => {
   } catch {}
 }
 
+/** ---------- Coords + map center helpers ---------- */
+const normalizeCoord = val => {
+  if ( val === null || val === undefined || val === '' ) return null
+  const n = Number( val )
+  if ( !Number.isFinite( n ) ) return null
+  // treat 0 as "unset" to avoid (0,0) default ocean view
+  if ( n === 0 ) return null
+  return n
+}
+
+const hasCoords = computed( () => {
+  const lat = normalizeCoord( localForm.latitude )
+  const lng = normalizeCoord( localForm.longitude )
+  return lat !== null && lng !== null
+} )
+
+/** Map center:
+ *  - if this location has coords → use them
+ *  - otherwise → default to North America
+ */
+const mapCenter = computed( () => {
+  if ( hasCoords.value ) {
+    return {
+      lat : normalizeCoord( localForm.latitude ),
+      lng : normalizeCoord( localForm.longitude )
+    }
+  }
+  return DEFAULT_CENTER
+} )
+
+/** ---------- Geocoding for address -> latitude/longitude ---------- */
+const geocoding = ref( false )
+
+// Normalize multi-line / pasted address into a single line
+const normalizeAddressString = raw => {
+  if ( !raw ) return ''
+  return raw
+    .split( /\r?\n+/ ) // split on new lines
+    .map( p => p.trim() )
+    .filter( Boolean )
+    .join( ', ' ) // join with commas
+    .replace( /\s+/g, ' ' ) // collapse repeated spaces
+    .trim()
+}
+
+// reusable geocode function (can be used silent or with toasts)
+const handleGeocode = async( addrParam, { silent = false } = {} ) => {
+  const raw = addrParam ?? localForm.address
+  const addr = normalizeAddressString( raw )
+  if ( !addr ) return
+
+  geocoding.value = true
+  try {
+    const res = await axios.get( 'https://nominatim.openstreetmap.org/search', {
+      params : {
+        q : addr,
+        format : 'json',
+        limit : 1
+      },
+      headers : {
+        'Accept-Language' : 'en',
+        'User-Agent' : 'mes-qc-frontend/1.0 (your_email@example.com)' // required by Nominatim
+      }
+    } )
+
+    const arr = Array.isArray( res.data ) ? res.data : []
+    const first = arr[0]
+
+    if ( !first ) {
+      throw new Error( 'No results' )
+    }
+
+    const lat = Number( first.lat )
+    const lng = Number( first.lon )
+
+    if ( !Number.isFinite( lat ) || !Number.isFinite( lng ) ) {
+      throw new Error( 'Invalid coordinates' )
+    }
+
+    localForm.latitude = lat
+    localForm.longitude = lng
+
+    if ( !silent ) {
+      ElMessage.success( 'Location found!' )
+    }
+  } catch ( err ) {
+    console.error( 'Geocode error:', err )
+    if ( !silent ) {
+      ElMessage.error( 'Failed to identify address' )
+    }
+  } finally {
+    geocoding.value = false
+  }
+}
+
+/** Auto-geocode on address change (debounced, user-only) */
+let geocodeTimer = null
+watch(
+  () => localForm.address,
+  val => {
+    if ( geocodeTimer ) clearTimeout( geocodeTimer )
+
+    // ignore changes coming from parent hydration
+    if ( applyingFromParent ) return
+
+    const addr = normalizeAddressString( val )
+    if ( !addr ) {
+      // user cleared address: clear coords
+      localForm.latitude = null
+      localForm.longitude = null
+      return
+    }
+
+    geocodeTimer = setTimeout( () => {
+      handleGeocode( addr, { silent : true } )
+    }, 800 )
+  }
+)
+
+// re-validate address when parent_id changes (root <-> child)
+watch(
+  () => localForm.parent_id,
+  () => {
+    if ( formRef.value ) {
+      formRef.value.validateField( 'address' )
+    }
+  }
+)
+
 /** Parent -> Local */
 watch(
   () => props.modelValue,
@@ -202,6 +373,10 @@ watch(
     localForm.address = v.address || ''
     localForm.description = v.description || ''
     localForm.parent_id = v.parent_id ?? null
+
+    // coordinates from parent (normalized so 0 -> null)
+    localForm.latitude = normalizeCoord( v.latitude )
+    localForm.longitude = normalizeCoord( v.longitude )
 
     // existing URLs only
     localForm.image_list = Array.isArray( v.image_list )
@@ -244,10 +419,15 @@ watch(
           ? Number( val.person_in_charge_id )
           : null
 
+    const latitude = normalizeCoord( val.latitude )
+    const longitude = normalizeCoord( val.longitude )
+
     emit( 'update:modelValue', {
       ...val,
       location_type,
       person_in_charge_id : picId,
+      latitude,
+      longitude,
       image_list : Array.isArray( val.image_list ) ? val.image_list : [],
       image_files : Array.isArray( val.image_files ) ? val.image_files : [],
       removed_existing_images : Array.isArray( val.removed_existing_images ) ? val.removed_existing_images : []
@@ -259,7 +439,8 @@ watch(
 const rules = {
   name : [{ required : true, message : 'Name is required', trigger : 'blur' }],
   code : [{ required : true, message : 'Code is required', trigger : 'blur' }],
-  location_type_id : [{ required : true, message : 'Location type is required', trigger : 'change' }]
+  location_type_id : [{ required : true, message : 'Location type is required', trigger : 'change' }],
+  address : [{ validator : validateAddress, trigger : 'blur' }]
   // person_in_charge_id: [{ required: true, message: 'Person in charge is required', trigger: 'change' }], // optional
 }
 
@@ -297,9 +478,8 @@ defineExpose( {
   grid-column: 1 / -1;
 }
 
-@media (max-width: 720px) {
-  .grid-2 {
-    grid-template-columns: 1fr;
-  }
+.map-preview {
+  width: 100%;
+  height: 220px; /* match detail view / OL map height */
 }
 </style>

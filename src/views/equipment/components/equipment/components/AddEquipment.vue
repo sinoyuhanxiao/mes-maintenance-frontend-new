@@ -12,7 +12,7 @@
                 { type: 'string', message: 'Equipment name must be a string' },
               ]"
             >
-              <el-input v-model="formData.name" />
+              <el-input v-model="formData.name" placeholder="Enter equipment name" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -21,7 +21,7 @@
               prop="code"
               :rules="[{ required: true, message: 'Equipment code is required' }]"
             >
-              <el-input v-model="formData.code" />
+              <el-input v-model="formData.code" placeholder="Enter a unique code" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -164,16 +164,8 @@
         />
       </div>
 
-      <el-divider />
-
       <div class="file-upload">
-        <FileUploadMultiple
-          @update:imageList="handleImageListUpdate"
-          @update:filesList="handleFilesListUpdate"
-          upload-type="both"
-          :max-images="5"
-          :max-files="5"
-        />
+        <FileUploadMultiple @update:filesList="handleFilesListUpdate" upload-type="files" :max-files="5" />
       </div>
 
       <div class="dialog-footer">
@@ -185,11 +177,11 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch, computed } from 'vue'
+import { ref, reactive, onMounted, watch, computed, nextTick } from 'vue'
 import { Loading } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getLocationTree } from '@/api/location.js'
-import { getEquipmentNodes, createNewNode } from '@/api/equipment.js'
+import { getEquipmentNodes, createNewNode, getEquipmentById } from '@/api/equipment.js'
 import { uploadMultipleToMinio } from '@/api/minio.js'
 import FileUploadMultiple from '@/components/FileUpload/FileUploadMultiple.vue'
 
@@ -255,14 +247,70 @@ const formData = reactive( {
   filesList : []
 } )
 
+const setCurrentTreeNode = async locationId => {
+  if ( !treeRef.value || locationId == null ) return
+  await nextTick()
+  if ( treeData.value.length === 0 ) return
+
+  const idNum = Number( locationId )
+  treeRef.value.setCurrentKey( idNum )
+  const node = treeRef.value.getNode( idNum )
+  if ( !node ) return
+
+  // expand parents
+  let parentNode = node.parent
+  while ( parentNode && parentNode.key !== undefined ) {
+    parentNode.expanded = true
+    parentNode = parentNode.parent
+  }
+
+  // sync model
+  formData.selectedLocationId = idNum
+  selectedNodeId.value = idNum
+
+  // show only the leaf name (last tier), same as T4 behavior
+  filterText.value = node.data?.name || node.label || ''
+}
+
+const prefillLocationFromParent = async() => {
+  if ( !props.parentId ) return
+  try {
+    const res = await getEquipmentById( props.parentId )
+    const raw = res.data?.data || res.data || {}
+
+    const parentLocId =
+      raw.location?.id != null ? Number( raw.location.id ) : raw.location_id != null ? Number( raw.location_id ) : null
+
+    // Only prefill if user hasn’t chosen anything yet
+    if ( parentLocId != null && formData.selectedLocationId == null ) {
+      formData.selectedLocationId = parentLocId
+      selectedNodeId.value = parentLocId
+
+      if ( treeData.value.length > 0 ) {
+        await setCurrentTreeNode( parentLocId )
+      } else {
+        // tree not ready yet – at least store something in the search box
+        filterText.value = String( parentLocId )
+      }
+    }
+  } catch {
+    // silently ignore; user can still pick manually
+  }
+}
+
 /* ---------- watches ---------- */
 watch(
   () => props.parentId,
-  ( newVal, oldVal ) => {
+
+  async( newVal, oldVal ) => {
     if ( newVal !== oldVal ) {
       formData.parentId = newVal
       resetFormData()
-      fetchProductionLines()
+      await fetchProductionLines()
+      await prefillLocationFromParent()
+      if ( formData.selectedLocationId != null && treeData.value.length > 0 ) {
+        await setCurrentTreeNode( formData.selectedLocationId )
+      }
     }
   }
 )
@@ -296,23 +344,6 @@ const onClearSearch = () => {
   // formData.selectedLocationId = null
 }
 
-function findPathById( nodes, targetId, path = [] ) {
-  for ( const n of nodes || [] ) {
-    const next = [...path, n]
-    if ( n.id === targetId ) return next
-    if ( n.children?.length ) {
-      const hit = findPathById( n.children, targetId, next )
-      if ( hit ) return hit
-    }
-  }
-  return null
-}
-
-function getPathLabelById( id ) {
-  const path = findPathById( treeData.value, id )
-  return path ? path.map( n => n.name ).join( ' / ' ) : ''
-}
-
 const handleNodeClick = data => {
   selectedNodeId.value = data.id
   formData.selectedLocationId = data.id
@@ -334,13 +365,12 @@ const fetchLocationTree = async() => {
     else if ( Array.isArray( response.data ) ) dataArray = response.data
     else if ( response.data ) dataArray = [response.data]
     else dataArray = []
+
     treeData.value = dataArray
 
-    // If a location is already selected, mirror it into the search bar & highlight
-    if ( formData.selectedLocationId ) {
-      selectedNodeId.value = formData.selectedLocationId
-      filterText.value = getPathLabelById( formData.selectedLocationId )
-      // nextTick(() => treeRef.value?.setCurrentKey?.(selectedNodeId.value))
+    // If we already know a location (from parent prefill), highlight & show it
+    if ( formData.selectedLocationId != null ) {
+      await setCurrentTreeNode( formData.selectedLocationId )
     }
   } catch ( err ) {
     error.value = err.message || 'Failed to load location tree'
@@ -381,10 +411,6 @@ const maxSequenceOrder = computed( () => {
 } )
 
 /* ---------- uploads ---------- */
-const handleImageListUpdate = images => {
-  uploadedImages.value = images
-  formData.imageList = images
-}
 
 const handleExplosionViewUpdate = images => {
   uploadedExplosionView.value = images
@@ -508,12 +534,20 @@ const handleCancel = () => {
 }
 
 /* ---------- mount ---------- */
-onMounted( () => {
+onMounted( async() => {
   if ( props.lockProductionLine ) {
     formData.equipmentId = props.productionLineId
   }
-  fetchLocationTree()
-  fetchProductionLines()
+
+  await fetchLocationTree()
+  await fetchProductionLines()
+
+  // Prefill location from parent T2 (same behavior as T4)
+  await prefillLocationFromParent()
+
+  if ( formData.selectedLocationId != null ) {
+    await setCurrentTreeNode( formData.selectedLocationId )
+  }
 } )
 </script>
 

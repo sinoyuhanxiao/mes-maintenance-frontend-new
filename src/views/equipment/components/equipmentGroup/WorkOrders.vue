@@ -27,34 +27,32 @@
     <!-- Empty state -->
     <div v-else class="empty-wrap">No related work orders available</div>
 
-    <!-- Details table -->
+    <!-- Details section -->
     <el-divider v-if="selectedState && hasAnyData" />
+
+    <!-- When there IS a selected state and data exists -->
+    <!-- When there IS a selected state and data exists -->
     <div v-if="selectedState && hasAnyData" class="table-wrap">
       <div class="table-header">
-        <div class="title">Related WO - {{ selectedState }}</div>
+        <div class="title">Related Work Orders - {{ selectedState }}</div>
       </div>
 
-      <!-- 🔍 Search bar right above table -->
-      <div class="search-bar">
-        <el-input
-          v-model="searchQuery"
-          placeholder="Search by name or code"
-          clearable
-          class="search-input"
-          @keyup.enter="onSearchEnter"
-        />
-      </div>
+      <!-- ✅ Always render SearchTable if this state has any rows -->
+      <SearchTable
+        v-if="filteredRows.length"
+        :key="`wo-${selectedState}`"
+        :data="filteredRows"
+        :columns="columns"
+        :enable-search="true"
+        v-model:search="searchQuery"
+        empty-text="No match found"
+        :client-page-size="5"
+        :min-height="200"
+        :row-key="rowKey"
+      />
 
-      <el-table :data="searchedRows" border stripe empty-text="No match found" max-height="280">
-        <el-table-column prop="name" label="WO Name" min-width="220" />
-        <el-table-column prop="code" label="Code" min-width="140" />
-        <el-table-column label="Start Time" min-width="180">
-          <template #default="{ row }">{{ formatDate(row._start) }}</template>
-        </el-table-column>
-        <el-table-column label="End Time" min-width="180">
-          <template #default="{ row }">{{ formatDate(row._end) }}</template>
-        </el-table-column>
-      </el-table>
+      <!-- 🚫 This state has zero work orders overall -->
+      <div v-else class="empty-wrap">No related work orders - {{ selectedState }}</div>
     </div>
   </div>
 </template>
@@ -65,37 +63,84 @@ import { ElMessage } from 'element-plus'
 import { GridLayout, GridItem } from 'vue3-grid-layout'
 import WidgetPie from '../../../../components/Widgets/PieChart.vue'
 import { searchWorkOrders } from '@/api/work-order'
+import SearchTable from '@/components/Common/SearchTable.vue' // adjust path if needed
 
-const props = defineProps( {
-  equipmentId : [Number, String]
-} )
+const props = defineProps( { equipmentId : [Number, String] } )
 
+/* ---------- Columns for SearchTable (basic/fixed) ---------- */
+function formatDate( val ) {
+  if ( !val ) return ''
+  try {
+    // Parse ISO string or timestamp
+    const d = new Date( val )
+    if ( isNaN( d.getTime() ) ) return ''
+
+    // Format nicely in local time (e.g., "Nov 7, 2025, 12:00 AM")
+    return d.toLocaleString( undefined, {
+      year : 'numeric',
+      month : 'short',
+      day : 'numeric',
+      hour : '2-digit',
+      minute : '2-digit',
+      hour12 : true
+    } )
+  } catch {
+    return ''
+  }
+}
+
+const columns = [
+  { label : 'Work Order Name', prop : 'name', width : 400 },
+  { label : 'Code', prop : 'code', width : 120 },
+  { label : 'Start Time', prop : '_start', width : 120, formatter : ( _, __, v ) => formatDate( v ) },
+  { label : 'End Time', prop : '_end', width : 120, formatter : ( _, __, v ) => formatDate( v ) }
+]
+const rowKey = row => row.code || row.name || `${row._start}-${row._end}`
+
+/* ---------- State/colors/pie data ---------- */
 const STATE_ORDER = [
   'Completed',
   'Failed',
   'Incomplete',
-  'In progress',
+  'In Progress',
   'Pending Approval',
   'Pending',
   'Forecast',
   'Ready',
   'Released'
 ]
-
 const STATE_COLORS = {
-  Forecast : '#8D6E63',
-  Pending : '#9E9E9E',
+  // 🔮 keep Forecast neutral / secondary
+  Forecast : '#8D6E63', // soft brown/neutral
+
+  // 🟠 Pending (matches tag text #C45A00)
+  Pending : '#C45A00',
+
+  // 🔵 Ready (keep as action blue)
   Ready : '#2196F3',
-  'In progress' : '#FF9800',
+
+  // 🟧 In Progress (warm orange, distinct from Pending)
+  'In Progress' : '#FF9800',
+
+  // ✅ Completed (green = success)
   Completed : '#4CAF50',
+
+  // ❌ Failed (red = danger)
   Failed : '#F44336',
-  Incomplete : '#D81B60', // distinct pink
-  'Pending Approval' : '#607D8B',
-  Released : '#00796B' // teal
+
+  // ⚠ Incomplete → your Overdue; keep a strong accent
+  Incomplete : '#D81B60', // deep pink / magenta
+
+  // 🌟 Pending Approval (matches tag text #B88600)
+  'Pending Approval' : '#F5D11F',
+
+  // 💜 Released (matches tag text #9b59b6)
+  Released : '#9b59b6'
 }
 
 const initialPieData = STATE_ORDER.map( name => ( { name, value : 0, color : STATE_COLORS[name] } ) )
 
+/* ---------- Local state ---------- */
 const allRows = ref( [] )
 const selectedState = ref( '' )
 const hasAnyData = ref( true )
@@ -113,20 +158,19 @@ const layout = ref( [
   }
 ] )
 
+/* ---------- Helpers ---------- */
 function normalizeState( raw ) {
   if ( !raw ) return ''
   const s = String( raw ).trim().toLowerCase()
-  if ( s === 'in_progress' || s === 'in progress' ) return 'In progress'
+  if ( s === 'in_progress' || s === 'in progress' ) return 'In Progress'
   if ( s === 'pending_approval' || s === 'pending approval' ) return 'Pending Approval'
   if ( s === 'released' ) return 'Released'
   return s.charAt( 0 ).toUpperCase() + s.slice( 1 )
 }
-
 function getStateName( row ) {
   const raw = row?.state?.name ?? row?.state_name ?? row?.state ?? row?.status_name ?? row?.status
   return normalizeState( raw )
 }
-
 const getName = row => row?.name ?? row?.title ?? ''
 const getCode = row => row?.code ?? row?.wo_code ?? ''
 const getDesc = row => row?.description ?? row?.desc ?? ''
@@ -134,12 +178,6 @@ const getStart = row =>
   row?.start_date ?? row?.startTime ?? row?.start_time ?? row?.planned_start ?? row?.scheduledStart ?? row?.createdAt
 const getEnd = row =>
   row?.end_date ?? row?.endTime ?? row?.end_time ?? row?.planned_end ?? row?.scheduledEnd ?? row?.dueAt
-
-function formatDate( val ) {
-  if ( !val ) return ''
-  const d = new Date( val )
-  return isNaN( d.getTime() ) ? '' : d.toLocaleString()
-}
 
 function onPieSelect( payload ) {
   const name = typeof payload === 'string' ? payload : payload?.name
@@ -149,6 +187,8 @@ function onPieSelect( payload ) {
   selectedState.value = normalized
 }
 
+/* ---------- Rows for table ---------- */
+// 1) filter by state (for the page)
 const filteredRows = computed( () =>
   !selectedState.value
     ? []
@@ -164,21 +204,7 @@ const filteredRows = computed( () =>
       } ) )
 )
 
-const searchedRows = computed( () => {
-  const q = searchQuery.value.trim().toLowerCase()
-  if ( !q ) return filteredRows.value
-  return filteredRows.value.filter(
-    r =>
-      r.name.toLowerCase().includes( q ) ||
-      String( r.code ).toLowerCase().includes( q ) ||
-      ( r.description ?? '' ).toLowerCase().includes( q )
-  )
-} )
-
-function onSearchEnter() {
-  // Optional: trigger any analytics or manual refresh here
-}
-
+/* ---------- Data load ---------- */
 async function loadPieData() {
   try {
     const page = 1
@@ -204,6 +230,8 @@ async function loadPieData() {
     }
 
     allRows.value = rows
+
+    // pie counts
     const counts = Object.fromEntries( STATE_ORDER.map( k => [k, 0] ) )
     for ( const row of rows ) {
       const s = getStateName( row )
@@ -260,15 +288,17 @@ defineExpose( { reload : loadPieData, formatDate } )
   border-radius: 8px;
   height: 100%;
   width: 100%;
+
+  /* FIX: Give the pie card enough vertical space */
+  min-height: 420px; /* ← tune between 360–420 if needed */
 }
 .widget {
   width: 100%;
   height: 100%;
 }
 .empty-wrap {
-  padding: 12px 16px;
   font-size: 14px;
-  color: #999;
+  color: gray;
   text-align: left;
   align-self: flex-start;
 }
@@ -287,10 +317,10 @@ defineExpose( { reload : loadPieData, formatDate } )
 .table-header .title {
   font-weight: 600;
 }
+
+/* old page-level search bar is not used anymore */
 .search-bar {
-  display: flex;
-  justify-content: flex-start;
-  margin-bottom: 10px;
+  display: none;
 }
 .search-input {
   width: 300px;

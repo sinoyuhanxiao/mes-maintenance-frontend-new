@@ -35,24 +35,14 @@
 
           <!-- actions -->
           <div class="node-actions" v-if="isEditMode && canShowActions(data)">
-            <el-button
-              v-if="(data.level ?? 0) <= 3"
-              class="action-btn"
-              type="primary"
-              link
-              @click.stop="addNode(data, node)"
-            >
-              Add
+            <!-- Add -->
+            <el-button class="action-btn" link @click.stop="addNode(data, node)">
+              <el-icon><Plus /></el-icon>
             </el-button>
 
-            <el-button
-              v-if="(data.level ?? 0) >= 2"
-              class="action-btn"
-              type="danger"
-              link
-              @click.stop="requestDelete(node, data)"
-            >
-              Delete
+            <!-- Delete -->
+            <el-button class="action-btn delete-btn" link @click.stop="requestDelete(node, data)">
+              <el-icon><Delete /></el-icon>
             </el-button>
           </div>
         </div>
@@ -64,8 +54,8 @@
 <script setup>
 import { ref, watch, onMounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
-import { OfficeBuilding } from '@element-plus/icons-vue'
 import { getEquipmentTree } from '@/api/equipment.js'
+import { Plus, Delete, OfficeBuilding } from '@element-plus/icons-vue'
 
 const emit = defineEmits( ['node-click', 'request-delete', 'request-add'] )
 
@@ -196,7 +186,7 @@ function handleNodeClick( data, node ) {
 
 /* ---------- show actions starting from Tier1 ---------- */
 function canShowActions( item ) {
-  return ( item.level ?? 0 ) >= 1
+  return ( item.level ?? 0 ) >= 0
 }
 
 /* ---------- breadcrumbs helper for any node ctx ---------- */
@@ -233,7 +223,7 @@ function addNode( target, nodeCtx ) {
   expandPathForNodeCtx( nodeCtx )
 
   emit( 'request-add', {
-    nextLevel, // 2 | 3 | 4
+    nextLevel,
     parentId : target.id, // new child’s parent
     node : target, // clicked node’s data
     breadcrumb : collectBreadcrumbFromNodeCtx( nodeCtx )
@@ -242,9 +232,8 @@ function addNode( target, nodeCtx ) {
 
 function requestDelete( nodeCtx, dataItem ) {
   const level = dataItem.level ?? 0
-  if ( level === 1 ) return ElMessage.warning( 'Tier 1 cannot be deleted.' )
   emit( 'request-delete', {
-    level, // 2, 3, or 4
+    level, // 0, 1, 2, 3, or 4
     node : dataItem, // node data
     breadcrumb : collectBreadcrumbFromNodeCtx( nodeCtx )
   } )
@@ -479,5 +468,17 @@ defineExpose( { refreshTree, getChildrenOf, focusNode, removeNodeAndSelectNext }
   height: 15px;
   flex-shrink: 0;
   display: inline-block;
+}
+.node-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.action-btn {
+  color: #409eff; /* default Element Plus primary */
+}
+
+.delete-btn {
+  color: #f56c6c;
 }
 </style>

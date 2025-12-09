@@ -12,7 +12,7 @@
                 { type: 'string', message: 'Equipment Group name must be a string' },
               ]"
             >
-              <el-input v-model="formData.name" />
+              <el-input v-model="formData.name" placeholder="Enter equipment group name" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -21,7 +21,7 @@
               prop="code"
               :rules="[{ required: true, message: 'Equipment Group code is required' }]"
             >
-              <el-input v-model="formData.code" />
+              <el-input v-model="formData.code" placeholder="Enter a unique code" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -117,13 +117,11 @@
           :title-label-position="labelPosition"
         />
       </div>
-      <el-divider />
+
       <div class="file-upload">
         <FileUploadMultiple
-          @update:imageList="handleImageListUpdate"
           @update:filesList="handleFilesListUpdate"
-          upload-type="both"
-          :max-images="5"
+          upload-type="files"
           :max-files="5"
           :title-label-position="labelPosition"
         />
@@ -249,10 +247,6 @@ function getPathLabelById( id ) {
 }
 
 /* ====== File uploads ====== */
-const handleImageListUpdate = images => {
-  uploadedImages.value = images
-  formData.imageList = images
-}
 const handleExplosionViewUpdate = images => {
   uploadedExplosionView.value = images
   formData.explodedViewDrawing = images

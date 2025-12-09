@@ -1,7 +1,13 @@
 <template>
   <div class="search-table">
-    <el-table :data="tableRows" :max-height="240" style="width: 100%" :empty-text="emptyText">
-      <el-table-column v-for="col in columns" :key="col.prop || col.label" :label="col.label" :prop="col.prop" />
+    <el-table :data="tableRows" :max-height="240" style="width: 100%; min-height: 160px" :empty-text="emptyText">
+      <el-table-column
+        v-for="col in columns"
+        :key="col.prop || col.label"
+        :label="col.label"
+        :prop="col.prop"
+        :formatter="col.formatter"
+      />
       <el-table-column v-if="enableSearch" align="right">
         <template #header>
           <el-input
@@ -12,7 +18,13 @@
             @clear="onSearchClear"
             @input="onSearchInput"
             @keyup.enter="onSearchEnter"
-          />
+            class="st-search-input"
+          >
+            <!-- 🔎 icon before text -->
+            <template #prefix>
+              <el-icon size="small" class="st-search-icon"><Search /></el-icon>
+            </template>
+          </el-input>
         </template>
       </el-table-column>
     </el-table>
@@ -43,6 +55,7 @@
 
 <script setup>
 import { ref, computed, defineProps, defineEmits, watch } from 'vue'
+import { Search } from '@element-plus/icons-vue' // 👈 import the icon
 
 const props = defineProps( {
   data : { type : Array, default : () => [] },
@@ -133,3 +146,14 @@ const pagedData = computed( () => {
 /* ----- Table rows presented ----- */
 const tableRows = computed( () => ( useServer.value ? props.data : pagedData.value ) )
 </script>
+
+<style scoped>
+.st-search-input :deep(.el-input__prefix) {
+  display: inline-flex;
+  align-items: center;
+}
+.st-search-icon {
+  font-size: 16px;
+  opacity: 0.7;
+}
+</style>

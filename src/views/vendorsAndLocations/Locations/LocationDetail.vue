@@ -42,13 +42,6 @@
           </el-descriptions-item>
         </el-descriptions>
 
-        <!-- Address -->
-        <el-descriptions :column="1" direction="vertical">
-          <el-descriptions-item label="Address">
-            {{ location?.address?.length ? location.address : 'No address available' }}
-          </el-descriptions-item>
-        </el-descriptions>
-
         <!-- Description -->
         <el-descriptions :column="1" direction="vertical">
           <el-descriptions-item label="Description">
@@ -56,8 +49,23 @@
           </el-descriptions-item>
         </el-descriptions>
 
+        <!-- Address -->
+        <el-descriptions :column="1" direction="vertical">
+          <el-descriptions-item label="Address">
+            {{ location?.address?.length ? location.address : 'No address available' }}
+          </el-descriptions-item>
+        </el-descriptions>
+
+        <div v-if="hasCoords" class="map-block">
+          <el-descriptions :column="1" direction="vertical">
+            <el-descriptions-item>
+              <OsmMapFrame :lat="mapCenter.lat" :lng="mapCenter.lng" :delta="0.03" width="95%" />
+            </el-descriptions-item>
+          </el-descriptions>
+        </div>
+
         <!-- Images -->
-        <el-divider />
+        <el-divider v-if="!hasCoords" />
         <div v-if="isImagesLoading">
           <el-descriptions :column="1" direction="horizontal" class="section">
             <el-descriptions-item label="Images">
@@ -243,14 +251,15 @@
 import { ref, watch, computed } from 'vue'
 import axios from 'axios'
 import { MoreFilled } from '@element-plus/icons-vue'
-import SearchTable from '@/views/vendorsAndLocations/Locations/SearchTable.vue'
+import SearchTable from '@/components/Common/SearchTable.vue'
 import LocationForm from './LocationForm.vue'
 import { useErrorHandler } from '@/composables/useErrorHandler'
 import { ElMessage } from 'element-plus'
 import { updateLocationById, getLocationPathById, getLocationById } from '@/api/location'
-import { getEquipmentNodes } from '@/api/equipment.js'
+import { getEquipmentNodePathById, getEquipmentNodes } from '@/api/equipment.js'
 import { uploadMultipleToMinio, deleteObjectList } from '@/api/minio'
 import LocationPath from '@/components/Common/LocationPath.vue'
+import OsmMapFrame from '@/components/Common/OsmMapFrame.vue'
 
 const props = defineProps( {
   location : Object,
@@ -292,6 +301,42 @@ const picName = computed( () => {
   const uname = p.username ?? ''
   const full = [first, last].filter( Boolean ).join( ' ' )
   return full || uname || ( p.id != null ? `#${p.id}` : '' )
+} )
+
+/** ================= MAP CENTER ================= **/
+const DEFAULT_CENTER = { lat : 49.1666, lng : -123.1336 }
+
+const hasCoords = computed( () => {
+  const loc = props.location
+  if ( !loc ) return false
+
+  // 1) must not be null/undefined
+  if ( loc.latitude == null || loc.longitude == null ) return false
+
+  const lat = Number( loc.latitude )
+  const lng = Number( loc.longitude )
+
+  // 2) must be real numbers
+  if ( !Number.isFinite( lat ) || !Number.isFinite( lng ) ) return false
+
+  // 3) (optional) treat 0,0 as "not set" as well
+  if ( lat === 0 && lng === 0 ) return false
+
+  return true
+} )
+
+const mapCenter = computed( () => {
+  const loc = props.location
+  if ( !loc ) return DEFAULT_CENTER
+
+  const lat = Number( loc.latitude )
+  const lng = Number( loc.longitude )
+
+  if ( Number.isFinite( lat ) && Number.isFinite( lng ) ) {
+    return { lat, lng }
+  }
+
+  return DEFAULT_CENTER
 } )
 
 const fetchLocationPath = async id => {
@@ -422,7 +467,6 @@ const equipmentPageSize = ref( 5 )
 const equipmentSearch = ref( '' )
 let equipDataReqSeq = 0
 
-/** Helper: get auth header once (from local/session storage) */
 const getAuthHeaders = () => {
   const token =
     localStorage.getItem( 'access_token' ) ||
@@ -432,28 +476,22 @@ const getAuthHeaders = () => {
   return token ? { Authorization : `Bearer ${token}` } : {}
 }
 
-/** Helper: pick the T2 node name from a variable-length path */
 const pickT2Name = pathArr => {
   if ( !Array.isArray( pathArr ) || !pathArr.length ) return ''
-  // canonical: T0, T1, T2, ...
   if ( pathArr.length >= 3 ) return ( pathArr[2]?.name || '' ).trim()
-  // fallback to parent if path shorter
   if ( pathArr.length >= 2 ) return ( pathArr[pathArr.length - 2]?.name || '' ).trim()
-  // otherwise root name
   return ( pathArr[0]?.name || '' ).trim()
 }
 
-/** Cache nodeId -> T2 group string */
 const nodePathCache = new Map()
 
-/** Fetch T2 group name for a node id */
 const getT2FromNodePath = async nodeId => {
   const id = Number( nodeId )
   if ( !Number.isFinite( id ) ) return ''
   if ( nodePathCache.has( id ) ) return nodePathCache.get( id )
 
   try {
-    const resp = await axios.get( `http://10.10.12.12:8095/api/equipment/node-path/${id}`, { headers : getAuthHeaders() } )
+    const resp = await getEquipmentNodePathById( id )
     const payload = resp?.data ?? resp
     const path = Array.isArray( payload?.data ) ? payload.data : Array.isArray( payload ) ? payload : []
     const t2 = pickT2Name( path )
@@ -466,11 +504,9 @@ const getT2FromNodePath = async nodeId => {
   }
 }
 
-/** Enrich rows with equipment_group (T2) asynchronously */
 const enrichEquipmentWithGroup = async( rows, seqAtStart ) => {
   const enriched = await Promise.all(
     rows.map( async r => {
-      // IMPORTANT: use the NODE id (r.id), not diagram_id or business id.
       const nodeId = Number( r?.id )
       const group = await getT2FromNodePath( nodeId )
       return { ...r, equipment_group : group || '--' }
@@ -501,13 +537,11 @@ const fetchEquipmentData = async( id = props.location?.id ) => {
     const page = payload?.data ?? payload
     const list = Array.isArray( page?.content ) ? page.content : Array.isArray( page ) ? page : []
 
-    // Normalize & set placeholder for T2 to avoid table jitter
     const normalized = list.map( e => ( { ...e, id : Number( e.id ), equipment_group : '--' } ) )
 
     equipmentList.value = normalized
     equipmentTotal.value = Number( page?.totalElements ?? page?.total ?? list.length )
 
-    // Enrich with T2 (async, guarded by seq)
     await enrichEquipmentWithGroup( normalized, seq )
   } catch ( err ) {
     if ( seq !== equipDataReqSeq ) return
@@ -851,5 +885,8 @@ const saveEdit = async() => {
 }
 .pic-sep {
   opacity: 0.6;
+}
+.map-block {
+  margin-bottom: 20px;
 }
 </style>

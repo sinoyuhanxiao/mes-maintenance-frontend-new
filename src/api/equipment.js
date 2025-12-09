@@ -205,6 +205,18 @@ export const updateEquipmentNodeImage = ( equipmentNodeId, imageUrl ) => {
 }
 
 /**
+ * Fetch equipment node path from root to the given node by equipment node ID.
+ * @param {number} equipmentNodeId - The equipment node ID.
+ * @returns {Promise} API response with an equipment path from root to the given node.
+ */
+export const getEquipmentNodePathById = equipmentNodeId => {
+  return http.request( {
+    method : 'get',
+    url : `/equipment/node-path/${equipmentNodeId}`
+  } )
+}
+
+/**
  * Search equipment with pagination.
  * @param {number} page - The page number.
  * @param {number} size - Number of results per page.

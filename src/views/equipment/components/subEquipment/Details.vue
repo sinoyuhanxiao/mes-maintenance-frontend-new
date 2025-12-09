@@ -54,30 +54,6 @@
 
       <el-divider />
 
-      <!-- Images -->
-      <div class="image">
-        <el-descriptions :column="1" direction="vertical">
-          <el-descriptions-item label="Images">
-            <div v-if="equipmentData.image_list?.length" class="image-gallery">
-              <el-image
-                v-for="(imagePath, index) in equipmentData.image_list"
-                :key="index"
-                :src="imagePath"
-                :preview-src-list="equipmentData.image_list"
-                hide-on-click-modal="true"
-                fit="contain"
-                class="equipment-image"
-              />
-            </div>
-            <div v-else class="no-images">
-              <el-text>No images available</el-text>
-            </div>
-          </el-descriptions-item>
-        </el-descriptions>
-      </div>
-
-      <el-divider />
-
       <!-- Files (reuse) -->
       <div class="files">
         <el-descriptions :column="1" direction="vertical">

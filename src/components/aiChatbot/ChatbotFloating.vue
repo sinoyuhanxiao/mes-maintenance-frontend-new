@@ -64,12 +64,6 @@
           <button class="chip chip--outline" @click="startChat('X-Ray machine spare parts?')">
             X-Ray Machine Spare Parts
           </button>
-          <button class="chip chip--outline" @click="startChat('How to initialize the metal detector?')">
-            How To Initialize The Metal Detector
-          </button>
-          <button class="chip chip--outline" @click="startChat('X-Ray machine spare parts?')">
-            X-Ray Machine Spare Parts
-          </button>
         </div>
 
         <!-- Start Conversation (bottom call-to-action) -->

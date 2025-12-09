@@ -129,17 +129,12 @@
       </div>
 
       <!-- Regular images/files -->
-      <el-divider />
       <div class="file-upload">
         <FileUploadMultiple
-          @update:imageList="handleFileUpdate('imageList', $event)"
           @update:filesList="handleFileUpdate('filesList', $event)"
-          @update:removedExistingImages="handleFileUpdate('removeImage', $event)"
           @update:removedExistingFiles="handleFileUpdate('removeFile', $event)"
-          upload-type="both"
-          :max-images="5"
+          upload-type="files"
           :max-files="5"
-          :existingImageList="formData.imageList"
           :existingFileList="formData.filesList"
           :title-label-position="labelPosition"
         />

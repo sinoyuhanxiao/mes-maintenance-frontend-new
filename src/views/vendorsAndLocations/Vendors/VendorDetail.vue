@@ -211,15 +211,14 @@
 
 <script setup>
 import { ref, watch, computed } from 'vue'
-import axios from 'axios'
-import SearchTable from '@/views/vendorsAndLocations/Locations/SearchTable.vue'
+import SearchTable from '@/components/Common/SearchTable.vue'
 import VendorForm from './VendorForm.vue'
 import FileDisplay from '@/components/Common/FileDisplay.vue'
 import { useErrorHandler } from '@/composables/useErrorHandler'
 import { ElMessage } from 'element-plus'
 import { deactivateVendor, updateVendor, getVendorById } from '@/api/vendor.js'
 import { searchSpareParts } from '@/api/resources.js'
-import { getEquipmentNodes } from '@/api/equipment.js'
+import { getEquipmentNodePathById, getEquipmentNodes } from '@/api/equipment.js'
 import { uploadMultipleToMinio, deleteObjectList } from '@/api/minio'
 import { MoreFilled } from '@element-plus/icons-vue'
 
@@ -355,16 +354,6 @@ const openPreview = u => {
   preview.value.open = true
 }
 
-/* -------------------- Auth header for node-path -------------------- */
-const getAuthHeaders = () => {
-  const token =
-    localStorage.getItem( 'access_token' ) ||
-    localStorage.getItem( 'token' ) ||
-    sessionStorage.getItem( 'access_token' ) ||
-    ''
-  return token ? { Authorization : `Bearer ${token}` } : {}
-}
-
 /* -------------------- T2 resolution via node-path -------------------- */
 const nodePathCache = new Map() // nodeId -> T2 name
 
@@ -381,9 +370,10 @@ const getT2FromNodePath = async nodeId => {
   if ( !Number.isFinite( id ) ) return ''
   if ( nodePathCache.has( id ) ) return nodePathCache.get( id )
   try {
-    const resp = await axios.get( `http://10.10.12.12:8095/api/equipment/node-path/${id}`, {
-      headers : getAuthHeaders()
-    } )
+    // const resp = await axios.get( `http://10.10.12.12:8095/api/equipment/node-path/${id}`, {
+    //   headers : getAuthHeaders()
+    // } )
+    const resp = await getEquipmentNodePathById( id )
     const payload = resp?.data ?? resp
     const path = Array.isArray( payload?.data ) ? payload.data : Array.isArray( payload ) ? payload : []
     const t2 = pickT2Name( path )

@@ -7,71 +7,79 @@ import { onMounted } from 'vue'
 import 'ol/ol.css'
 import Map from 'ol/Map'
 import View from 'ol/View'
-import GeoJSON from 'ol/format/GeoJSON'
-import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style'
+import { fromLonLat } from 'ol/proj'
 import { OSM, Vector as VectorSource } from 'ol/source'
 import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer'
+import Feature from 'ol/Feature'
+import Point from 'ol/geom/Point'
+import { Style, Circle as CircleStyle, Fill, Stroke } from 'ol/style'
+import { defaults as defaultInteractions } from 'ol/interaction'
 
-// doc      : https://openlayers.org/en/latest/doc/quickstart.html
-// examples : https://openlayers.org/en/latest/examples/
-
-const source = new VectorSource( {
-  url : 'https://openlayers.org/en/latest/examples/data/geojson/switzerland.geojson',
-  format : new GeoJSON()
+const props = defineProps( {
+  locations : Array,
+  zoom : Number,
+  centerLon : Number,
+  centerLat : Number
 } )
-const style = new Style( {
-  fill : new Fill( {
-    color : 'rgba(255, 255, 255, 0.6)'
-  } ),
-  stroke : new Stroke( {
-    color : '#319FD3',
-    width : 1
-  } ),
-  image : new CircleStyle( {
-    radius : 5,
-    fill : new Fill( {
-      color : 'rgba(255, 255, 255, 0.6)'
-    } ),
-    stroke : new Stroke( {
-      color : '#319FD3',
-      width : 1
-    } )
-  } )
-} )
-const vectorLayer = new VectorLayer( {
-  source,
-  style
-} )
-const view = new View( {
-  center : [0, 0],
-  zoom : 4
-} )
-
-// 初始化地图
-function initMap() {
-  // eslint-disable-next-line no-new
-  new Map( {
-    target : 'map',
-    layers : [
-      new TileLayer( {
-        source : new OSM()
-      } ),
-      vectorLayer
-    ],
-    view
-  } )
-}
-
-// 设置显示到某一区域 - 定位放大到瑞士
-// eslint-disable-next-line no-unused-vars
-function focusArea() {
-  const feature = source.getFeatures()[0]
-  const polygon = feature.getGeometry()
-  view.fit( polygon, { padding : [170, 50, 30, 150] } )
-}
 
 onMounted( () => {
-  initMap()
+  const baseLayer = new TileLayer( {
+    source : new OSM()
+  } )
+
+  const markerSource = new VectorSource()
+  const markerLayer = new VectorLayer( {
+    source : markerSource
+  } )
+
+  if ( props.locations.length ) {
+    props.locations.forEach( loc => {
+      const coord = fromLonLat( [loc.lon, loc.lat] )
+      const feature = new Feature( {
+        geometry : new Point( coord )
+      } )
+
+      feature.setStyle(
+        new Style( {
+          image : new CircleStyle( {
+            radius : 6,
+            fill : new Fill( { color : '#4B7BFF' } ),
+            stroke : new Stroke( { color : '#fff', width : 2 } )
+          } )
+        } )
+      )
+
+      markerSource.addFeature( feature )
+    } )
+  }
+
+  const view = new View( {
+    center : fromLonLat( [props.centerLon, props.centerLat] ),
+    zoom : props.zoom
+  } )
+
+  const map = new Map( {
+    target : 'map',
+    layers : [baseLayer, markerLayer],
+    view,
+    interactions : defaultInteractions( {
+      mouseWheelZoom : false,
+      doubleClickZoom : false,
+      pinchZoom : false
+    } )
+  } )
+
+  if ( props.locations.length ) {
+    const extent = markerSource.getExtent()
+    if ( extent && isFinite( extent[0] ) ) {
+      view.fit( extent, {
+        padding : [40, 40, 40, 40],
+        maxZoom : props.zoom + 2
+      } )
+    }
+  }
+
+  window._mesMap = map
 } )
 </script>
 

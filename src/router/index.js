@@ -133,7 +133,7 @@ export const asyncRoutes = [
         path : '',
         component : () => import( '@/views/dashboard/index.vue' ),
         meta : {
-          title : 'router.dashboard',
+          title : 'Dashboard',
           icon : 'dashboard',
           noCache : true,
           affix : true,
@@ -153,6 +153,16 @@ export const asyncRoutes = [
       alwaysShow : true
     },
     children : [
+      {
+        path : 'dashboard',
+        name : 'Dashboard',
+        component : () => import( '@/views/dashboard2/index.vue' ),
+        meta : {
+          title : 'Dashboard',
+          icon : 'dashboard',
+          noCache : false
+        }
+      },
       {
         path : 'equipment',
         name : 'Equipment',

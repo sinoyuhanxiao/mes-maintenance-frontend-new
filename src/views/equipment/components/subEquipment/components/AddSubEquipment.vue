@@ -18,7 +18,7 @@
                 { type: 'string', message: 'Sub Equipment name must be a string' },
               ]"
             >
-              <el-input v-model="formData.name" />
+              <el-input v-model="formData.name" placeholder="Enter sub equipment name" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -27,7 +27,7 @@
               prop="code"
               :rules="[{ required: true, message: 'Sub Equipment code is required' }]"
             >
-              <el-input v-model="formData.code" />
+              <el-input v-model="formData.code" placeholder="Enter a unique code" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -102,15 +102,8 @@
         />
       </div>
 
-      <el-divider />
       <div class="file-upload">
-        <FileUploadMultiple
-          @update:imageList="handleImageListUpdate"
-          @update:filesList="handleFilesListUpdate"
-          upload-type="both"
-          :max-images="5"
-          :max-files="5"
-        />
+        <FileUploadMultiple @update:filesList="handleFilesListUpdate" upload-type="files" :max-files="5" />
       </div>
 
       <div class="dialog-footer">
@@ -188,10 +181,6 @@ const treeProps = {
 }
 
 /** ---------------- File handlers ---------------- */
-const handleImageListUpdate = images => {
-  uploadedImages.value = images
-  formData.imageList = images
-}
 const handleExplosionViewUpdate = images => {
   uploadedExplosionView.value = images
   formData.explodedViewDrawing = images
@@ -240,23 +229,6 @@ const onClearSearch = () => {
   // formData.selectedLocationId = null
 }
 
-// Build full breadcrumb label from id
-function findPathById( nodes, targetId, path = [] ) {
-  for ( const n of nodes || [] ) {
-    const next = [...path, n]
-    if ( Number( n.id ) === Number( targetId ) ) return next
-    if ( n.children?.length ) {
-      const hit = findPathById( n.children, targetId, next )
-      if ( hit ) return hit
-    }
-  }
-  return null
-}
-function getPathLabelById( id ) {
-  const path = findPathById( treeData.value, id )
-  return path ? path.map( n => n.name ).join( ' / ' ) : ''
-}
-
 const setCurrentTreeNode = async locationId => {
   if ( !treeRef.value || locationId == null ) return
   await nextTick()
@@ -275,8 +247,7 @@ const setCurrentTreeNode = async locationId => {
   formData.selectedLocationId = idNum
   selectedNodeId.value = idNum
 
-  // mirror into the search bar (full path)
-  filterText.value = getPathLabelById( idNum ) || node.label || ''
+  filterText.value = node.data?.name || node.label || ''
 
   await nextTick()
   formRef.value?.clearValidate( 'selectedLocationId' )

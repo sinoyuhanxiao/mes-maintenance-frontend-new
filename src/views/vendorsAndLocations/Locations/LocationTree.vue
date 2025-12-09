@@ -139,7 +139,12 @@
             </span>
 
             <span v-if="editMode" class="node-actions">
-              <el-button link type="primary" size="default" @click.stop="onAddChildClick(data)">Add</el-button>
+              <el-button link
+type="primary"
+size="default"
+@click.stop="onAddChildClick(data)"
+                ><el-icon><Plus /></el-icon
+              ></el-button>
               <el-button
                 link
                 type="danger"
@@ -147,7 +152,7 @@
                 :disabled="deleting.has(data.id)"
                 @click.stop="deleteNode(data)"
               >
-                Delete
+                <el-icon><Delete /></el-icon>
               </el-button>
             </span>
           </div>
@@ -164,7 +169,7 @@
 <script setup>
 import { ref, watch, nextTick, computed, onMounted, onBeforeUnmount } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Filter } from '@element-plus/icons-vue'
+import { Delete, Filter, Plus } from '@element-plus/icons-vue'
 import { deactivateLocation } from '@/api/location'
 import { useErrorHandler } from '@/composables/useErrorHandler'
 import { getEquipmentTree, getEquipmentNodes } from '@/api/equipment'
@@ -765,7 +770,6 @@ defineExpose( { treeRef, toggleEdit, addChild, deleteNode } )
   display: inline-flex;
   gap: 0;
   white-space: nowrap;
-  padding-right: 4px;
 }
 .edit-toggle-btn {
   width: 60px;
@@ -812,5 +816,15 @@ defineExpose( { treeRef, toggleEdit, addChild, deleteNode } )
 }
 .empty-tip {
   padding: 16px 0;
+}
+/* Kill the default margin between buttons and shrink padding */
+.node-actions :deep(.el-button) {
+  padding: 0 4px;
+  min-width: auto;
+}
+
+/* Default is 8px; reduce or remove it */
+.node-actions :deep(.el-button + .el-button) {
+  margin-left: 2px;
 }
 </style>

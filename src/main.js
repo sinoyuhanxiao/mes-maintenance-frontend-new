@@ -1,3 +1,4 @@
+// src/main.js
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
@@ -18,6 +19,7 @@ import 'element-plus/dist/index.css'
 
 // 导入字体图标
 import './assets/iconfont/iconfont.css'
+
 // 全局事件总成
 import globalEmitter from '@/utils/mitt'
 // 自定义指令
@@ -29,7 +31,7 @@ import { setupElementIcons } from '@/plugins/elementIcons'
 // Debug API configuration in development
 import '@/utils/debug-api'
 
-// https://lottiefiles.com/web-player?lottie_url=https%3A%2F%2Fassets6.lottiefiles.com%2Fpackages%2Flf20_Kr2vAt3caT.json
+// https://lottiefiles.com/web-player?...
 import Vue3Lottie from 'vue3-lottie'
 import 'vue3-lottie/dist/style.css'
 

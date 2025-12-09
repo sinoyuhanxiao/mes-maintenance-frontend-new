@@ -37,32 +37,12 @@
               <el-image
                 :src="equipmentData.exploded_view_drawing"
                 :preview-src-list="[equipmentData.exploded_view_drawing]"
+                :hide-on-click-modal="true"
                 fit="contain"
                 class="equipment-image"
               />
             </div>
             <div v-else class="no-images"><el-text>No exploded view available</el-text></div>
-          </el-descriptions-item>
-        </el-descriptions>
-      </div>
-
-      <el-divider />
-
-      <!-- Images -->
-      <div class="image">
-        <el-descriptions :column="1" direction="vertical">
-          <el-descriptions-item label="Images">
-            <div v-if="equipmentData.image_list?.length" class="image-gallery">
-              <el-image
-                v-for="(img, i) in equipmentData.image_list"
-                :key="i"
-                :src="img"
-                :preview-src-list="equipmentData.image_list"
-                fit="contain"
-                class="equipment-image"
-              />
-            </div>
-            <div v-else class="no-images"><el-text>No images available</el-text></div>
           </el-descriptions-item>
         </el-descriptions>
       </div>
