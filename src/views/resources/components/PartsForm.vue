@@ -2,9 +2,11 @@
   <div class="sp-form" v-loading="submitting">
     <div class="form-header">
       <div class="title">
-        <span v-if="form.id">{{ 'Edit Spare Part' }}</span>
+        <span v-if="form.id">
+          Edit Part - {{ form.name?.trim() ? form.name : originalSnapShotForm?.name || 'Unnamed Part' }}
+        </span>
 
-        <span v-else>{{ 'Create Spare Part' }}</span>
+        <span v-else>{{ 'New Part' }}</span>
 
         <div style="gap: 38px">
           <span
@@ -44,7 +46,7 @@
           </el-form-item>
 
           <el-form-item :label="'Category'" prop="category_id">
-            <el-select v-model="form.category_id" filterable>
+            <el-select v-model="form.category_id" filterable clearable>
               <el-option v-for="c in sparePartClassOptions"
 :key="c.id"
 :label="c.name"
@@ -83,17 +85,23 @@
               value-on-clear="min"
             />
           </el-form-item>
+
+          <!--          <el-form-item :label="'Maximum Stock Level'" prop="maximum_stock_level">-->
+          <!--            <el-input-number v-model="form.maximum_stock_level" :min="1" style="width: 100%" />-->
+          <!--          </el-form-item>-->
+
+          <el-form-item :label="'Quantity Unit'" prop="quantity_uom_id">
+            <el-select v-model="form.quantity_uom_id" filterable clearable>
+              <el-option v-for="quom in quantityUomOptions" :key="quom.id" :value="quom.id" :label="quom.name" />
+            </el-select>
+          </el-form-item>
         </div>
 
         <!--        <div class="form-row">-->
         <!--          <el-form-item :label="'Minimum Stock'" prop="minimum_stock_level">-->
         <!--            <el-input-number v-model="form.minimum_stock_level" :min="0" style="width: 100%"/>-->
         <!--          </el-form-item>-->
-
-        <!--          <el-form-item :label="'Maximum Stock Level'" prop="maximum_stock_level">-->
-        <!--            <el-input-number v-model="form.maximum_stock_level" :min="1" style="width: 100%" />-->
-        <!--          </el-form-item>-->
-        <!--        </div>-->
+        <!--                </div>-->
 
         <div class="form-row">
           <el-form-item class="full-width" :label="t('common.description')" prop="description">
@@ -111,13 +119,13 @@
                 <span class="section-title">
                   <el-icon class="section-icon icon-color"><Place /></el-icon>
 
-                  Material Lot
+                  Parts Inventories
                 </span>
 
                 <div v-if="form.material_lots?.length > 0" class="form-section-card-actions">
-                  <el-button size="default" @click="openLotForm" :icon="Plus"> Add Material Lot </el-button>
+                  <el-button size="default" @click="openInventoryForm" :icon="Plus"> Add Parts Inventory </el-button>
 
-                  <el-button size="default" @click="handleDeleteAll('material-lot')" :icon="Delete">
+                  <el-button size="default" @click="handleDeleteAll('parts-inventory')" :icon="Delete">
                     Clear All ({{ form.material_lots?.length }})
                   </el-button>
                 </div>
@@ -130,36 +138,38 @@
                 <div class="empty-content">
                   <el-icon class="empty-icon"><Place /></el-icon>
 
-                  <h4>No Material Lots</h4>
+                  <h4>No Parts Inventory</h4>
 
-                  <p>Add material Lot information</p>
+                  <p>Add parts inventory information</p>
 
-                  <el-button type="primary" @click="openLotForm">
+                  <el-button type="primary" @click="openInventoryForm">
                     <el-icon><Plus /></el-icon>
 
-                    Add Material Lot
+                    Add Parts Inventory
                   </el-button>
                 </div>
               </div>
 
-              <!-- Material Lot Card List -->
+              <!-- Parts Inventory Card List -->
               <div v-else class="card-list">
                 <div v-for="(lot, i) in form.material_lots" :key="i">
                   <el-card shadow="never">
                     <div class="card-content-row">
                       <el-text class="card-title">
-                        {{ lot.id ? 'Lot # ' + lot.id : 'New Material Lot' }}
+                        {{ lot.id ? 'Inventory # ' + lot.id : 'New Parts Inventory' }}
                       </el-text>
 
                       <div class="card-action">
-                        <el-button size="small" @click="openLotForm(lot, i)">{{ 'Edit' }}</el-button>
+                        <el-button size="small" @click="openInventoryForm(lot, i)">{{ 'Edit' }}</el-button>
 
-                        <el-button size="small" type="danger" @click="removeLot(i, lot.id)">{{ 'Delete' }}</el-button>
+                        <el-button size="small" type="danger" @click="removeInventory(i, lot.id)">{{
+                          'Delete'
+                        }}</el-button>
                       </div>
                     </div>
 
                     <div class="card-content-row">
-                      <div>{{ 'Unit in stock' }}: {{ lot.unit_in_stock ?? '-' }}</div>
+                      <div>{{ 'Available Quantity' }}: {{ lot.unit_in_stock ?? '-' }}</div>
 
                       <div>{{ 'Location' }}: {{ getLocationNameById(lot.location_id || null) }}</div>
                     </div>
@@ -170,7 +180,7 @@
           </el-form-item>
         </div>
 
-        <!-- Material Supplier -->
+        <!-- Part Vendor -->
         <el-divider />
         <div class="form-section form-card-section">
           <el-form-item>
@@ -179,13 +189,13 @@
                 <span class="section-title">
                   <el-icon class="section-icon icon-color"><Van /></el-icon>
 
-                  Material Vendor
+                  Parts Vendor
                 </span>
 
                 <div v-if="form.material_suppliers?.length > 0" class="form-section-card-actions">
-                  <el-button size="default" @click="openSupplierForm()" :icon="Plus"> Add Material Vendor </el-button>
+                  <el-button size="default" @click="openPartsVendorForm()" :icon="Plus"> Add Parts Vendor </el-button>
 
-                  <el-button size="default" @click="handleDeleteAll('material-supplier')" :icon="Delete">
+                  <el-button size="default" @click="handleDeleteAll('parts-vendor')" :icon="Delete">
                     Clear All ({{ form.material_suppliers?.length }})
                   </el-button>
                 </div>
@@ -198,14 +208,14 @@
                 <div class="empty-content">
                   <el-icon class="empty-icon"><Van /></el-icon>
 
-                  <h4>No Material Vendors</h4>
+                  <h4>No Parts Vendors</h4>
 
-                  <p>Add material Vendor information</p>
+                  <p>Add parts vendor information</p>
 
-                  <el-button type="primary" @click="openSupplierForm()">
+                  <el-button type="primary" @click="openPartsVendorForm()">
                     <el-icon><Plus /></el-icon>
 
-                    Add Material Vendor
+                    Add Parts Vendor
                   </el-button>
                 </div>
               </div>
@@ -219,9 +229,9 @@
                         <div class="card-title">{{ findVendorName(ms.vendor_id) }}</div>
 
                         <div class="row actions">
-                          <el-button size="small" @click="openSupplierForm(ms, i)">{{ t('common.edit') }}</el-button>
+                          <el-button size="small" @click="openPartsVendorForm(ms, i)">{{ t('common.edit') }}</el-button>
 
-                          <el-button size="small" @click="removeVendor(i)" type="danger">{{
+                          <el-button size="small" @click="removePartsVendor(i)" type="danger">{{
                             t('common.delete')
                           }}</el-button>
                         </div>
@@ -232,7 +242,7 @@
 
                         <div>{{ 'Lead Time Days' }}: {{ ms.lead_time_days ?? '-' }}</div>
 
-                        <div>{{ 'Order Code' }}: {{ ms.order_code || '-' }}</div>
+                        <div>{{ 'Ordering Part Number' }}: {{ ms.order_code || '-' }}</div>
                       </div>
                     </el-card>
                   </div>
@@ -243,7 +253,7 @@
         </div>
 
         <!-- Images -->
-        <el-divider content-position="left">{{ 'Attachments' }}</el-divider>
+        <el-divider />
 
         <!-- Image and File Upload Section -->
         <div class="form-section">
@@ -256,8 +266,8 @@
               @update:removedExistingFiles="handleRemovedExistingFiles"
               :existing-image-list="existingImages"
               :existing-file-list="existingFiles"
-              :image-label="'Images'"
-              :file-label="'Files'"
+              :image-label="'Image Upload'"
+              :file-label="'File Upload'"
               upload-type="both"
               :max-images="5"
               :max-files="10"
@@ -267,13 +277,13 @@
       </el-form>
 
       <!-- Popups -->
-      <MaterialLotForm v-model="showLotFormDialog" :value="editingLot" @save="saveLot" />
+      <PartsInventoryForm v-model="showLotFormDialog" :value="editingLot" @save="saveInventory" />
 
-      <MaterialSupplierForm
+      <PartsVendorForm
         v-model="showSupplierFormDialog"
-        :value="editingSupplier"
+        :value="editingPartsVendor"
         :selected-vendor-ids="selectedVendorIds"
-        @save="saveVendor"
+        @save="savePartsVendor"
       />
     </div>
 
@@ -290,8 +300,8 @@
 <script setup>
 import { reactive, ref, watch, onMounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import MaterialLotForm from './MaterialLotForm.vue'
-import MaterialSupplierForm from './MaterialSupplierForm.vue'
+import PartsInventoryForm from './PartsInventoryForm.vue'
+import PartsVendorForm from './PartsVendorForm.vue'
 import { Delete, Van, Place, Plus, QuestionFilled } from '@element-plus/icons-vue'
 import {
   createInventory,
@@ -307,6 +317,7 @@ import FileUploadMultiple from '@/components/FileUpload/FileUploadMultiple.vue'
 import { uploadMultipleToMinio } from '@/api/minio'
 import { searchVendors } from '@/api/vendor'
 import { formatAsLocalDateTimeString } from '@/utils/datetime'
+import { getUnitByType } from '@/api/common'
 
 const props = defineProps( {
   data : {
@@ -332,12 +343,14 @@ const originalSnapShotForm = reactive( {} )
 const sparePartClassOptions = ref( [] )
 // const manufacturerOptions = ref( [] )
 const vendorOptions = ref( [] )
+const quantityUomOptions = ref( [] )
 const selectedVendorIds = computed( () => new Set( form.material_suppliers.map( ms => ms.vendor_id ) ) )
 
 const rules = {
   name : [{ required : true, message : 'Name is required', trigger : 'blur' }],
   code : [{ required : true, message : 'Manufacturer code is required', trigger : 'change' }],
-  universal_code : [{ required : true, message : 'Universal code is required', trigger : 'change' }]
+  universal_code : [{ required : true, message : 'Universal code is required', trigger : 'change' }],
+  quantity_uom_id : [{ required : true, message : 'Quantity unit is required', trigger : 'change' }]
 }
 
 // File and image states
@@ -404,6 +417,7 @@ function getEmptySparePart() {
     universal_code : '',
     category_id : null,
     // manufacturer_id : null,
+    quantity_uom_id : null,
     reorder_point : 1,
     minimum_stock_level : 0,
     maximum_stock_level : 100000,
@@ -451,6 +465,7 @@ function transformSparePartData( v ) {
     code : v.code,
     universal_code : v.universal_code,
     category_id : v.spare_parts_class?.status === 1 ? v.spare_parts_class.id : null,
+    quantity_uom_id : v.quantity_uom?.id,
     // manufacturer_id : v.manufacturer?.id ?? null,
     reorder_point : v.reorder_point ?? 1,
     minimum_stock_level : v.minimum_stock_level ?? 0,
@@ -515,7 +530,7 @@ const buildCreateSparePartPayload = entry => {
     universal_code : entry.universal_code,
     description : entry.description,
     spare_parts_class_id : entry.category_id,
-    quantity_uom_id : 26, // TODO: add a quantity unit select, hardcoded to unit "each" for now
+    quantity_uom_id : entry.quantity_uom_id,
     image_list : entry.image_list,
     file_list : entry.file_list,
     // current_stock : 0 // dont need to provide as it is declared in material lot?
@@ -552,6 +567,10 @@ const buildUpdateSparePartPayload = ( entry, original ) => {
 
   if ( entry.category_id !== original.category_id ) {
     payload.spare_parts_class_id = entry.category_id
+  }
+
+  if ( entry.quantity_uom_id !== original.quantity_uom_id ) {
+    payload.quantity_uom_id = entry.quantity_uom_id
   }
 
   // if ( entry.manufacturer_id !== original.manufacturer_id ) {
@@ -624,7 +643,7 @@ async function processInventoryCrud( materialId ) {
 
     try {
       await createInventory( payload )
-      ElMessage.success( `Created inventory for ${payload.batch_number || 'new lot'}` )
+      // ElMessage.success( `Created inventory for ${payload.batch_number || 'new lot'}` )
     } catch ( err ) {
       console.error( 'Create inventory failed:', err )
       ElMessage.error( 'Failed to create inventory lot' )
@@ -637,7 +656,7 @@ async function processInventoryCrud( materialId ) {
     if ( Object.keys( payload ).length === 0 ) continue
     try {
       await updateInventory( lot.id, payload )
-      ElMessage.success( `Updated inventory #${lot.id}` )
+      // ElMessage.success( `Updated inventory #${lot.id}` )
     } catch ( err ) {
       console.error( 'Update inventory failed:', err )
       ElMessage.error( `Failed to update inventory #${lot.id}` )
@@ -649,7 +668,7 @@ async function processInventoryCrud( materialId ) {
     try {
       await deleteInventory( id )
 
-      ElMessage.success( `Deleted inventory #${id}` )
+      // ElMessage.success( `Deleted inventory #${id}` )
     } catch ( err ) {
       console.error( 'Delete inventory failed:', err )
       ElMessage.error( `Failed to delete inventory #${id}` )
@@ -688,6 +707,8 @@ async function submit() {
     form.image_list = finalImageList
     form.file_list = finalFileList
 
+    const isCreate = form.id === null
+
     if ( form.id ) {
       await updateSparePart( form.id, buildUpdateSparePartPayload( form, originalSnapShotForm ) )
       ElMessage.success( 'Spare part updated successfully.' )
@@ -701,7 +722,7 @@ async function submit() {
     await processInventoryCrud( form.id )
 
     // notify root view to clean up selected and close form
-    emit( 'confirm', form.id )
+    emit( 'confirm', { id : form.id, isCreate } )
   } catch ( e ) {
     console.error( 'Error submitting spare part:', e )
     ElMessage.error( 'Error submitting spare part form' )
@@ -718,14 +739,14 @@ function validate( refEl ) {
 
 // Material supplier form state
 const showSupplierFormDialog = ref( false )
-const editingSupplier = ref( null )
+const editingPartsVendor = ref( null )
 
-function openSupplierForm( vo = null, index = -1 ) {
-  editingSupplier.value = vo ? { ...vo, _index : index } : null
+function openPartsVendorForm( vo = null, index = -1 ) {
+  editingPartsVendor.value = vo ? { ...vo, _index : index } : null
   showSupplierFormDialog.value = true
 }
 
-function saveVendor( payload ) {
+function savePartsVendor( payload ) {
   if ( payload._index != null && payload._index > -1 ) {
     form.material_suppliers.splice( payload._index, 1, stripIndex( payload ) )
   } else {
@@ -733,7 +754,7 @@ function saveVendor( payload ) {
   }
 }
 
-function removeVendor( i ) {
+function removePartsVendor( i ) {
   form.material_suppliers.splice( i, 1 )
 }
 
@@ -754,12 +775,12 @@ const toBeCreateLots = ref( [] )
 const toBeUpdateLots = ref( [] )
 const toBeDeleteLotIds = ref( [] )
 
-function openLotForm( lot = null, index = -1 ) {
+function openInventoryForm( lot = null, index = -1 ) {
   editingLot.value = lot ? { ...lot, _index : index } : null
   showLotFormDialog.value = true
 }
 
-function saveLot( payload ) {
+function saveInventory( payload ) {
   if ( payload._index != null && payload._index > -1 ) {
     form.material_lots.splice( payload._index, 1, stripIndex( payload ) )
 
@@ -772,7 +793,7 @@ function saveLot( payload ) {
   }
 }
 
-function removeLot( i, lot_id ) {
+function removeInventory( i, lot_id ) {
   form.material_lots.splice( i, 1 )
 
   // Track delete lot request by its id
@@ -783,10 +804,10 @@ function removeLot( i, lot_id ) {
 
 function handleDeleteAll( type ) {
   switch ( type ) {
-    case 'material-lot':
+    case 'parts-inventory':
       form.material_lots = []
       break
-    case 'material-supplier':
+    case 'parts-vendor':
       form.material_suppliers = []
       break
 
@@ -801,7 +822,7 @@ function getLocationNameById( id ) {
   }
 
   const loc = props.all_locations.find( loc => loc.id === id )
-  return loc?.name || `#${id}`
+  return ( loc?.name + '(' + loc?.code + ')' ) || `#${id}`
 }
 
 // Upload files to MinIO server
@@ -832,6 +853,7 @@ async function loadSparePartClasses() {
   try {
     const response = await getAllSparePartClasses( { status_ids : [1] }, 1, 1000, 'id', 'ASC' )
     sparePartClassOptions.value = response?.data || []
+    console.log( 'Loaded new data for sparePartClassOptions in PartsForm' )
   } catch ( err ) {
     console.error( 'Failed to load spare part classes:', err )
     ElMessage.error( 'Error loading spare part classes data' )
@@ -852,15 +874,28 @@ async function loadVendor() {
   try {
     const response = await searchVendors( { status_ids : [1] }, 1, 1000, 'id', 'ASC' )
     vendorOptions.value = response?.data?.content || []
+    console.log( 'Loaded new data for vendorOptions in PartsForm' )
   } catch ( err ) {
     console.error( 'Failed to load vendors:', err )
     ElMessage.error( 'Error loading vendors data' )
   }
 }
 
+async function loadQuantityUom() {
+  try {
+    const [u1, u2, u15] = await Promise.all( [getUnitByType( 1 ), getUnitByType( 2 ), getUnitByType( 15 )] )
+
+    quantityUomOptions.value = [...( u1?.data || [] ), ...( u2?.data || [] ), ...( u15?.data || [] )]
+  } catch ( e ) {
+    console.error( 'Failed loading quantity UOM options:', e )
+    ElMessage.error( 'Error loading quantity UOM options' )
+  }
+}
+
 onMounted( async() => {
   await loadSparePartClasses()
   await loadVendor()
+  await loadQuantityUom()
   // await loadManufacturer()
 } )
 </script>

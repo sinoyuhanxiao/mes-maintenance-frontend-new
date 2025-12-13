@@ -93,11 +93,13 @@
           <el-table-column prop="email" label="Email" min-width="220" align="center" />
           <el-table-column prop="phone_number" label="Phone" min-width="140" align="center" />
           <el-table-column prop="username" label="Username" min-width="220px" align="center" />
-          <el-table-column :label="'Certificates'" prop="certificate_list" min-width="220px" align="center">
-            <template #default="scope">
-              <certificate-hover-detail :certificates="scope.row.certificate_list || []" />
-            </template>
-          </el-table-column>
+
+<!--          <el-table-column :label="'Certificates'" prop="certificate_list" min-width="220px" align="center">-->
+<!--            <template #default="scope">-->
+<!--              <certificate-hover-detail :certificates="scope.row.certificate_list || []" />-->
+<!--            </template>-->
+<!--          </el-table-column>-->
+
           <el-table-column prop="employee_number" label="Employee Number" min-width="200" align="center">
             <template #default="scope">
               <el-text>
@@ -132,7 +134,7 @@
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { Edit } from '@element-plus/icons-vue'
-import CertificateHoverDetail from '@/views/user/components/CertificateHoverDetail.vue'
+// import CertificateHoverDetail from '@/views/user/components/CertificateHoverDetail.vue'
 
 const props = defineProps( {
   role : { type : Object, default : null },

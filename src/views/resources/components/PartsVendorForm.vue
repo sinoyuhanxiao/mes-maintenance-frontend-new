@@ -1,6 +1,6 @@
 <template>
   <el-dialog
-    :title="isEdit ? `Edit Material Vendor` : 'Add New Material Vendor'"
+    :title="isEdit ? `Edit Parts Vendor` : 'Add Parts Vendor'"
     :model-value="modelValue"
     @update:model-value="emit('update:modelValue', $event)"
     width="560px"
@@ -39,7 +39,7 @@
         <el-input-number v-model="form.lead_time_days" :min="1" value-on-clear="min" />
       </el-form-item>
 
-      <el-form-item :label="'Order Code'" prop="order_code">
+      <el-form-item :label="'Ordering Part Number'" prop="order_code">
         <el-input v-model="form.order_code" />
       </el-form-item>
     </el-form>
@@ -53,7 +53,7 @@
 </template>
 
 <script setup>
-import { reactive, ref, watch, onMounted, computed } from 'vue'
+import { reactive, ref, watch, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { searchVendors } from '@/api/vendor'
 import { ElMessage } from 'element-plus'
@@ -80,8 +80,9 @@ const rules = {
 
 watch(
   () => props.modelValue,
-  v => {
-    if ( v ) {
+  async( open ) => {
+    if ( open ) {
+      await Promise.all( [loadCurrencyUnits(), loadVendors()] )
       init()
     }
   }
@@ -133,6 +134,7 @@ async function loadVendors() {
   try {
     const response = await searchVendors( { status_ids : [1] }, 1, 1000, 'id', 'ASC' )
     vendorOptions.value = response?.data?.content || []
+    console.log( 'Loaded new data for vendorOptions. PartsVendorForm' )
   } catch ( err ) {
     console.error( 'Failed to load vendors:', err )
     ElMessage.error( 'Error loading vendors data' )
@@ -144,16 +146,12 @@ async function loadCurrencyUnits() {
     // 11 is the monetary uom type id
     const response = await getUnitByType( 11 )
     currencyUnitOptions.value = response.data || []
+    console.log( 'Loaded new data for currencyOptions. PartsVendorForm' )
   } catch ( e ) {
     console.error( 'Failed to load currency units:', e )
     ElMessage.error( 'Error loading currency unit data' )
   }
 }
-
-onMounted( async() => {
-  await loadCurrencyUnits()
-  await loadVendors()
-} )
 </script>
 
 <style scoped>

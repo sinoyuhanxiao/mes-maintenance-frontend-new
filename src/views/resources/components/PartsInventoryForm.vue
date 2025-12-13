@@ -1,6 +1,6 @@
 <template>
   <el-dialog
-    :title="isEdit ? `Edit Material Lot #${form.id}` : 'Add New Material Lot'"
+    :title="isEdit ? `Edit Part Inventory #${form.id}` : 'New Part Inventory'"
     :model-value="modelValue"
     @update:model-value="emit('update:modelValue', $event)"
     width="560px"
@@ -11,7 +11,7 @@
         <LocationTreeSelect v-model="form.location_id" :input-placeholder="'Select location'" :multiple="false" />
       </el-form-item>
 
-      <el-form-item :label="'Units in lot'" prop="unit_in_stock">
+      <el-form-item :label="'Available Quantity'" prop="unit_in_stock">
         <el-input-number v-model="form.unit_in_stock" :min="0" :max="9999" value-on-clear="min" />
       </el-form-item>
     </el-form>

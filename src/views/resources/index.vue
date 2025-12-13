@@ -65,7 +65,7 @@
             <el-option label="Out Of Stock" value="out_of_stock" />
           </el-select>
 
-          <el-text tag="b">Material Vendor</el-text>
+          <el-text tag="b">Parts Vendor</el-text>
 
           <el-select
             :teleported="false"
@@ -79,13 +79,13 @@
             <el-option v-for="vendor in vendorOptions" :key="vendor.id" :label="vendor.name" :value="vendor.id" />
           </el-select>
 
-          <el-text tag="b">Lot Location</el-text>
+          <el-text tag="b">Parts Inventory Location</el-text>
 
           <LocationTreeSelect
             v-model="listQuery.location_ids"
             :max-collapse-tags="1"
             @change="handleFilter"
-            :input-placeholder="'Filter by lot location'"
+            :input-placeholder="'Filter by inventory location'"
           />
 
           <!--            <el-row>-->
@@ -112,11 +112,16 @@
           <el-text tag="b">Unit Price</el-text>
 
           <div style="display: flex; justify-content: space-between">
-            <el-input-number v-model="listQuery.unit_cost_min" placeholder="Min Cost" :min="0" @change="handleFilter" />
+            <el-input-number
+              v-model="listQuery.unit_cost_min"
+              placeholder="Min Price"
+              :min="0"
+              @change="handleFilter"
+            />
 
             <el-input-number
               v-model="listQuery.unit_cost_max"
-              placeholder="Max Cost"
+              placeholder="Max Price"
               :min="listQuery.unit_cost_min"
               @change="handleFilter"
             />
@@ -155,7 +160,7 @@
         </el-input>
 
         <el-button :icon="EditPen" type="primary" style="margin-left: 12px" @click="openCreateForm">{{
-          'Create Spare Part'
+          'Create'
         }}</el-button>
 
         <el-button :icon="Remove" type="warning" plain @click="handleResetFilters">{{ 'Clear Filters' }}</el-button>
@@ -166,12 +171,12 @@
 
     <div class="split-view">
       <div class="left-pane">
-        <SparePartList
+        <PartsList
           v-model="selectedSparePartId"
           :list="list"
           :loading="loading"
           :total="total"
-          :page="page"
+          :page="listQuery.page"
           @page-change="handlePageChange"
           @page-size-change="handlePageSizeChange"
           @select="showDetail"
@@ -179,7 +184,7 @@
       </div>
 
       <div class="right-pane">
-        <SparePartForm
+        <PartsForm
           v-if="showSparePartForm"
           :data="selected"
           :all_locations="locationOptions"
@@ -187,10 +192,10 @@
           @confirm="savePart"
         />
 
-        <SparePartDetail
+        <PartsDetail
           v-else-if="selected"
           :data="selected"
-          :loading="loading"
+          :loading="detailViewLoading"
           :inventory_transaction_logs="selectedInventoryTransactionLogs"
           :all_locations="locationOptions"
           @edit="startEdit"
@@ -213,22 +218,23 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useSparePart } from '@/composables/useSparePart'
-import SparePartForm from '@/views/resources/components/SparePartForm.vue'
-import SparePartDetail from '@/views/resources/components/SparePartDetail.vue'
-import SparePartList from '@/views/resources/components/SparePartList.vue'
+import PartsForm from '@/views/resources/components/PartsForm.vue'
+import PartsDetail from '@/views/resources/components/PartsDetail.vue'
+import PartsList from '@/views/resources/components/PartsList.vue'
 import LocationTreeSelect from '@/views/team/components/LocationTreeSelect.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { deleteSparePart, getAllSparePartClasses } from '@/api/resources'
+import { deleteSparePart, getAllSparePartClasses, getSparePartById } from '@/api/resources'
 import { searchVendors } from '@/api/vendor'
-import { EditPen, Remove, Search, Refresh as RefreshIcon } from '@element-plus/icons-vue'
+import { EditPen, Refresh as RefreshIcon, Remove, Search } from '@element-plus/icons-vue'
 // import ManufacturerDetailPopup from '@/views/resources/components/ManufacturerDetailPopup.vue'
 // import { searchManufacturers } from '@/api/manufacturer'
 import { searchLocations } from '@/api/location'
+import { useRoute } from 'vue-router'
 
 defineOptions( {
-  name : 'SpareParts'
+  name : 'Parts'
 } )
 
 const {
@@ -238,15 +244,16 @@ const {
   fetchSpareParts,
   resetFilters,
   listQuery,
-  getMaterialInventoryTransactionLog,
-  fetchInventoryTransactionLogs
+  getMaterialInventoryTransactionLog
 } = useSparePart()
 
+const route = useRoute()
 const selected = ref( null ) // selected spare part object
 const selectedSparePartId = ref( null )
 const selectedInventoryTransactionLogs = ref( [] )
 const showSparePartForm = ref( false )
-const page = ref( 1 )
+const detailViewLoading = ref( false )
+
 // const all_data_loading = ref( false )
 const sparePartClassesOptions = ref( [] )
 const vendorOptions = ref( [] )
@@ -331,15 +338,41 @@ function removeFilterTag( tag ) {
   handleFilter()
 }
 
-function showDetail( item ) {
-  selected.value = item
-  selectedSparePartId.value = item.id
-  selectedInventoryTransactionLogs.value = getMaterialInventoryTransactionLog( item.id )
-  showSparePartForm.value = false
+async function showDetail( partsId ) {
+  try {
+    selected.value = null
+    selectedSparePartId.value = null
+
+    detailViewLoading.value = true
+
+    const response = await getSparePartById( partsId )
+    const part = response.data || {}
+    selected.value = part
+    selectedSparePartId.value = part.id
+    selectedInventoryTransactionLogs.value = await getMaterialInventoryTransactionLog( part.id )
+    showSparePartForm.value = false
+  } catch ( e ) {
+    console.error( 'Failed to load part' )
+    ElMessage.error( 'Error loading part data' )
+  } finally {
+    detailViewLoading.value = false
+  }
 }
 
-function startEdit() {
-  showSparePartForm.value = true
+async function startEdit() {
+  try {
+    detailViewLoading.value = true
+
+    const response = await getSparePartById( selectedSparePartId.value )
+    selected.value = response.data || {}
+    selectedInventoryTransactionLogs.value = await getMaterialInventoryTransactionLog( selectedSparePartId.value.id )
+    showSparePartForm.value = true
+  } catch ( e ) {
+    console.error( 'Failed to load part' )
+    ElMessage.error( 'Error loading part data' )
+  } finally {
+    detailViewLoading.value = false
+  }
 }
 
 async function handleDelete() {
@@ -379,21 +412,24 @@ function openCreateForm() {
   showSparePartForm.value = true
 }
 
-async function savePart( sparePartId ) {
+async function savePart( { id, isCreate } ) {
   selected.value = null
-  selectedSparePartId.value = sparePartId
+  selectedSparePartId.value = id
   showSparePartForm.value = false
 
-  await fetchInventoryTransactionLogs()
+  if ( isCreate ) {
+    listQuery.page = 1
+  }
+
   await fetchSpareParts()
 
   // Reselect the item that was just saved
-  if ( sparePartId ) {
-    const updated = list.value.find( item => item.id === sparePartId )
+  if ( id ) {
+    const updated = list.value.find( item => item.id === id )
 
     if ( updated ) {
       selected.value = updated
-      selectedInventoryTransactionLogs.value = getMaterialInventoryTransactionLog( updated.id )
+      selectedInventoryTransactionLogs.value = await getMaterialInventoryTransactionLog( updated.id )
     }
   }
 }
@@ -495,13 +531,23 @@ async function loadLocation() {
 // }
 
 async function refreshAllData() {
-  await fetchInventoryTransactionLogs()
   await loadLocation()
   await loadSparePartClasses()
   await loadVendor()
   // await loadManufacturer()
   await fetchSpareParts()
 }
+
+// Watch for parts query parameter to auto-select parts
+watch(
+  () => route.query.partsId,
+  async partsId => {
+    if ( partsId ) {
+      await nextTick()
+      await showDetail( partsId )
+    }
+  }
+)
 
 onMounted( async() => {
   await refreshAllData()

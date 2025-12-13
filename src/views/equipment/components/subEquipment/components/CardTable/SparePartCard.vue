@@ -49,6 +49,10 @@
           <!-- actions grouped tightly -->
           <div class="sp-actions">
             <!-- Option A: two buttons with margin reset -->
+            <el-tooltip content="View Parts Detail" placement="top">
+              <el-button class="sp-action-btn" size="small" type="text" :icon="View" @click="handlePartsViewDetailClicked( item.sparePartId )" />
+            </el-tooltip>
+
             <el-tooltip content="Edit" placement="top">
               <el-button class="sp-action-btn" size="small" type="text" :icon="Edit" @click="$emit('edit', item)" />
             </el-tooltip>
@@ -92,8 +96,12 @@
 </template>
 
 <script setup>
-import { Picture, Edit, Delete } from '@element-plus/icons-vue'
+import { View, Picture, Edit, Delete } from '@element-plus/icons-vue'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 defineProps( { item : { type : Object, required : true }} )
+
+const router = useRouter()
 
 function formatDays( n ) {
   if ( n == null || Number.isNaN( Number( n ) ) ) return '—'
@@ -104,6 +112,21 @@ function formatDate( iso ) {
   if ( !iso ) return '—'
   const d = new Date( iso )
   return Number.isNaN( d.getTime() ) ? '—' : d.toISOString().slice( 0, 10 )
+}
+
+function handlePartsViewDetailClicked( sparePartId ) {
+  if ( !sparePartId ) {
+    ElMessage.warning( 'Equipment information is not available' )
+    return
+  }
+
+  // Navigate to maintenance resources parts page with parts ID as query parameter
+  router.push(
+    {
+      path : '/maintenance/resources/parts',
+      query : { partsId : sparePartId }
+    }
+  )
 }
 </script>
 

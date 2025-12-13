@@ -1,6 +1,6 @@
 <template>
   <el-dialog
-    :title="'Adjust Material Stock'"
+    :title="'Update Inventory Stock'"
     :model-value="modelValue"
     @update:model-value="emit('update:modelValue', $event)"
     width="750px"
@@ -13,7 +13,7 @@
       label-width="180px"
       :validate-on-rule-change="false"
     >
-      <el-form-item :label="'Adjustment Type'" prop="transaction_type_id">
+      <el-form-item :label="'Transaction Type'" prop="transaction_type_id">
         <el-select v-model="form.transaction_type_id" filterable>
           <el-option v-for="type in transactionTypeOptions" :key="type.id" :label="type.name" :value="type.id" />
         </el-select>
@@ -30,14 +30,14 @@
 
       <!-- Conditional Fields -->
       <!-- Origin lot -->
-      <el-form-item v-show="needsOrigin" label="Origin Lot" prop="inventory_from">
-        <el-select v-model="form.inventory_from" placeholder="Select origin lot" clearable filterable>
+      <el-form-item v-show="needsOrigin" label="Origin Inventory" prop="inventory_from">
+        <el-select v-model="form.inventory_from" placeholder="Select origin Inventory" clearable filterable>
           <!-- Custom label for selected item -->
           <template #label>
             <template v-if="form.inventory_from">
               <div style="display: flex; justify-content: space-between; width: 100%">
                 <span>
-                  {{ 'Lot #' + (lotOptions.find(l => l.id === form.inventory_from)?.id ?? '') }}
+                  {{ 'Inventory #' + (lotOptions.find(l => l.id === form.inventory_from)?.id ?? '') }}
                 </span>
 
                 <span style="color: var(--el-text-color-secondary); font-size: 13px">
@@ -57,7 +57,15 @@
           >
             <template #default>
               <div style="display: flex; justify-content: space-between; width: 100%">
-                <span>{{ 'Lot #' + lot.id }}</span>
+                <span>{{ 'Inventory #' + lot.id  }}</span>
+
+                <span>
+                  <el-icon><Location /></el-icon>
+
+                  <span>
+                    {{ lot.location?.name + " (" + lot.location?.code +  ")" }}
+                  </span>
+                </span>
 
                 <span style="color: var(--el-text-color-secondary); font-size: 13px">
                   Stock: {{ lot.unit_in_stock ?? 0 }}
@@ -69,14 +77,14 @@
       </el-form-item>
 
       <!-- Destination Lot -->
-      <el-form-item v-show="needsDestination" label="Destination Lot" prop="inventory_to">
-        <el-select v-model="form.inventory_to" placeholder="Select destination lot" clearable filterable>
+      <el-form-item v-show="needsDestination" label="Destination Inventory" prop="inventory_to">
+        <el-select v-model="form.inventory_to" placeholder="Select destination Inventory" clearable filterable>
           <!-- Custom label for selected item -->
           <template #label>
             <template v-if="form.inventory_to">
               <div style="display: flex; justify-content: space-between; width: 100%">
                 <span>
-                  {{ 'Lot #' + (lotOptions.find(l => l.id === form.inventory_to)?.id ?? '') }}
+                  {{ 'Inventory #' + (lotOptions.find(l => l.id === form.inventory_to)?.id ?? '') }}
                 </span>
 
                 <span style="color: var(--el-text-color-secondary); font-size: 13px">
@@ -96,7 +104,15 @@
           >
             <template #default>
               <div style="display: flex; justify-content: space-between; width: 100%">
-                <span>{{ 'Lot #' + lot.id }}</span>
+                <span>{{ 'Inventory #' + lot.id }}</span>
+
+                <span>
+                  <el-icon><Location /></el-icon>
+
+                  <span>
+                    {{ lot.location?.name + " (" + lot.location?.code +  ")" }}
+                  </span>
+                </span>
 
                 <span style="color: var(--el-text-color-secondary); font-size: 13px">
                   Stock: {{ lot.unit_in_stock ?? 0 }}
@@ -195,6 +211,7 @@ import {
   transferInventory
 } from '@/api/resources'
 import { ElMessage } from 'element-plus'
+import { Location } from '@element-plus/icons-vue'
 
 const props = defineProps( {
   modelValue : { type : Boolean, default : false }, // dialog visibility
@@ -220,15 +237,15 @@ const lotTransactionFormValidationRules = computed( () => {
   // Rules for Transfer type
   const transferRules = {
     transaction_type_id : [{ required : true, message : 'Transaction type is required', trigger : 'change' }],
-    inventory_from : [{ required : true, message : 'Origin lot is required', trigger : 'change' }],
-    inventory_to : [{ required : true, message : 'Destination lot is required', trigger : 'change' }],
+    inventory_from : [{ required : true, message : 'Origin Inventory is required', trigger : 'change' }],
+    inventory_to : [{ required : true, message : 'Destination Inventory is required', trigger : 'change' }],
     quantity : [{ required : true, message : 'Quantity is required', trigger : 'blur' }]
   }
 
   // Rules for all other types
   const normalRules = {
     transaction_type_id : [{ required : true, message : 'Transaction type is required', trigger : 'change' }],
-    inventory_to : [{ required : true, message : 'Destination lot is required', trigger : 'change' }],
+    inventory_to : [{ required : true, message : 'Destination Inventory is required', trigger : 'change' }],
     quantity : [{ required : true, message : 'Quantity is required', trigger : 'blur' }]
   }
 
@@ -419,9 +436,10 @@ async function loadMaterialLots( material_id ) {
     } )
 
     lotOptions.value = res.data.content.filter( inventory => inventory.status === 1 ) || []
+    console.log( 'Loaded new data for lotOptions. PartsInventoryTransactionForm' )
   } catch ( e ) {
-    console.error( 'Failed to load material lots: ', e )
-    ElMessage.error( 'Error loading material lots' )
+    console.error( 'Failed to load parts inventories: ', e )
+    ElMessage.error( 'Error loading parts inventories' )
   }
 }
 
@@ -471,7 +489,7 @@ const resultPreview = computed( () => {
     case t.RECEIVE_FROM_VENDOR:
       if ( toLot ) {
         result.to = {
-          name : `Lot #${toLot.id}`,
+          name : `Inventory #${toLot.id}`,
           before : toLot.unit_in_stock ?? 0,
           after : ( toLot.unit_in_stock ?? 0 ) + qty
         }
@@ -483,7 +501,7 @@ const resultPreview = computed( () => {
     case t.RETURN_TO_VENDOR:
       if ( toLot ) {
         result.to = {
-          name : `Lot #${toLot.id}`,
+          name : `Inventory #${toLot.id}`,
           before : toLot.unit_in_stock ?? 0,
           after : Math.max( ( toLot.unit_in_stock ?? 0 ) - qty, 0 )
         }
@@ -495,7 +513,7 @@ const resultPreview = computed( () => {
     case t.USE_IN_MAINTENANCE:
       if ( toLot ) {
         result.to = {
-          name : `Lot #${toLot.id}`,
+          name : `Inventory #${toLot.id}`,
           before : toLot.unit_in_stock ?? 0,
           after : Math.max( ( toLot.unit_in_stock ?? 0 ) - qty, 0 )
         }
@@ -507,7 +525,7 @@ const resultPreview = computed( () => {
     case t.DISCARD:
       if ( toLot ) {
         result.to = {
-          name : `Lot #${toLot.id}`,
+          name : `Inventory #${toLot.id}`,
           before : toLot.unit_in_stock ?? 0,
           after : Math.max( ( toLot.unit_in_stock ?? 0 ) - qty, 0 )
         }
@@ -519,12 +537,12 @@ const resultPreview = computed( () => {
     case t.MOVE_BETWEEN_LOTS:
       if ( fromLot && toLot ) {
         result.from = {
-          name : `Lot #${fromLot.id}`,
+          name : `Inventory #${fromLot.id}`,
           before : fromLot.unit_in_stock ?? 0,
           after : Math.max( ( fromLot.unit_in_stock ?? 0 ) - qty, 0 )
         }
         result.to = {
-          name : `Lot #${toLot.id}`,
+          name : `Inventory #${toLot.id}`,
           before : toLot.unit_in_stock ?? 0,
           after : ( toLot.unit_in_stock ?? 0 ) + qty
         }

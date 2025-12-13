@@ -54,14 +54,30 @@
 
                   <div class="sub ellipsis">{{ 'Manufacturer Code' }}: {{ item.code || '-' }}</div>
 
-                  <div class="sub ellipsis">{{ 'Universal Code' }}: {{ item.universal_code || '-' }}</div>
+                  <!-- Associated Inventory Location  -->
+                  <div v-if="item.inventories && item.inventories.length > 0">
+                    <el-tooltip
+                        placement="top"
+                        effect="dark"
+                        :content="item.inventories.map(inv => inv.location?.name).join(', ')"
+                    >
+                      <div class="sub ellipsis">
+                        At
+                        {{ formatFirstLocation(item.inventories) }}
+                      </div>
+                    </el-tooltip>
+                  </div>
+
+<!--                  <div class="sub ellipsis">{{ 'Universal Code' }}: {{ item.universal_code || '-' }}</div>-->
 
                   <div class="evenly">
                     <div class="sub" style="white-space: nowrap; margin-right: 6px">
-                      {{ 'Total Stock' }}: {{ item.current_stock ?? 0 }}
+                      {{ 'Total Quantity' }}: {{ item.current_stock ?? 0 }}
+
+                      {{ item.quantity_uom.name }}
                     </div>
 
-                    <div class="sub ellipsis">{{ 'Average Unit Price' }}: {{ item.average_unit_cost?.avg ?? '-' }}</div>
+                    <div class="sub ellipsis">{{ 'Avg. Unit Price' }}: {{ item.average_unit_cost?.avg ? '$' + item.average_unit_cost?.avg : '-' }}</div>
                   </div>
 
                   <div class="stock-tags">
@@ -104,6 +120,7 @@
     <div class="pagination" v-if="total > 0">
       <el-pagination
         layout="prev, pager, next, jumper"
+        v-model:current-page="currentPage"
         :page-size="selectedPageSize"
         :pager-count="5"
         :total="total"
@@ -116,13 +133,17 @@
 
 <script setup>
 import { useI18n } from 'vue-i18n'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { Picture } from '@element-plus/icons-vue'
 
 const props = defineProps( {
   list : { type : Array, default : () => [] },
-  total : { type : Number, default : 0 },
   loading : { type : Boolean, default : false },
+  total : { type : Number, default : 0 },
+  page : {
+    type : Number,
+    required : true
+  },
   modelValue : {
     type : Number,
     default : null
@@ -133,13 +154,13 @@ const emits = defineEmits( ['select', 'page-change', 'page-size-change', 'update
 
 const { t } = useI18n()
 
-const currentPage = ref( 1 )
+const currentPage = ref( props.page )
 const selectedPageSize = ref( 20 )
 const allPageSizes = [10, 20, 50]
 
 function handleClicked( item ) {
   emits( 'update:modelValue', item.id )
-  emits( 'select', item )
+  emits( 'select', item.id )
 }
 
 function handlePageChange( newPage ) {
@@ -151,6 +172,29 @@ function handlePageSizeChange( newPageSize ) {
   selectedPageSize.value = newPageSize
   emits( 'page-size-change', newPageSize )
 }
+
+function formatFirstLocation( inventories ) {
+  const names = inventories.map( inv => inv.location?.name ).filter( Boolean )
+
+  if ( names.length === 0 ) {
+    return '-'
+  }
+
+  if ( names.length === 1 ) {
+    return names[0]
+  }
+
+  return `${names[0]} (+${names.length - 1} more)`
+}
+
+// Sync local page number with root components' page number
+watch(
+  () => props.page,
+  ( newVal ) => {
+    currentPage.value = newVal
+  }
+)
+
 </script>
 
 <style scoped lang="scss">

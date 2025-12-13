@@ -271,3 +271,10 @@ export const deactivateEquipmentNode = equipmentId => {
     url : `/equipment/equipment-node/${equipmentId}/deactivate`
   } )
 }
+
+export const getEquipmentNodePathToRoot = id => {
+  return http.request( {
+    method : 'get',
+    url : `/equipment/node-path/${id}`
+  } )
+}

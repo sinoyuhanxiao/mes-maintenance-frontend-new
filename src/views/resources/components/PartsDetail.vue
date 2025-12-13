@@ -72,12 +72,12 @@
           </el-descriptions-item>
 
           <el-descriptions-item :label="'Average Unit Price'">
-            <span v-if="avgCost.avg !== null">{{ avgCost.avg }}</span>
+            <span v-if="avgCost.avg !== null">{{ '$' + avgCost.avg }}</span>
 
             <span v-else>-</span>
           </el-descriptions-item>
 
-          <el-descriptions-item :label="'Total Stock'">
+          <el-descriptions-item :label="'Total Available Quantity'" :span="2">
             <span
               class="stat-value"
               :class="{
@@ -87,16 +87,18 @@
               }"
             >
               {{ data?.current_stock ?? 0 }}
+
+              {{ data.quantity_uom?.name || '' }}
             </span>
           </el-descriptions-item>
 
-          <el-descriptions-item :label="'Reorder Point'">
+          <el-descriptions-item :label="'Restock Point'" :span="2">
             <template #label>
               <span>
                 Reorder Point
                 <el-tooltip
                   effect="dark"
-                  content="Used to indicate for low stock when total stock is below the reorder point"
+                  content="Part with total available quantity equal or below this reorder point is considered as low stock"
                   placement="top"
                 >
                   <el-icon class="info-icon">
@@ -109,7 +111,7 @@
             {{ data?.reorder_point ?? 0 }}
           </el-descriptions-item>
 
-          <el-descriptions-item :label="'Description'" :span="4">
+          <el-descriptions-item :label="'Description'" :span="4" v-if="data.description.length > 0" >
             <span class="detail-value">
               {{ data.description || '-' }}
             </span>
@@ -162,22 +164,22 @@
           </div>
         </div>
 
-        <!-- Material Lots -->
+        <!-- Material Inventories -->
         <div>
           <el-divider />
 
           <div style="display: flex; flex-direction: row; justify-content: space-between; align-items: center">
-            <h3 class="section-title">Material Lots</h3>
+            <h3 class="section-title">Inventories</h3>
 
             <div v-if="data.inventories?.length > 0">
               <el-button :icon="Coordinate" :type="'success'" plain @click="handleCreateLotTransaction">{{
-                'Adjust Stock'
+                'Update Stock'
               }}</el-button>
             </div>
           </div>
 
-          <div class="card-list" v-if="data.inventories?.length">
-            <el-card v-for="(lot, i) in data.inventories" :key="i" shadow="never">
+          <div class="card-list" v-if="activeInventories.length">
+            <el-card v-for="(lot, i) in activeInventories" :key="i" shadow="never">
               <div class="card-root-content">
                 <div class="request-image">
                   <div class="request-icon">
@@ -188,15 +190,24 @@
                 <div class="card-info">
                   <div class="card-row">
                     <div class="title">
-                      {{ 'Lot # ' + lot.id || '-' }}
+                      {{ 'Inventory # ' + lot.id || '-' }}
                     </div>
                   </div>
 
                   <div class="card-row">
                     <div class="row-value">
-                      {{ 'Number of Units' }}:
-                      <span :style="{ color: lot.unit_in_stock === 0 ? 'var(--el-color-danger)' : 'inherit' }">
+                      {{ 'Available Quantity' }}:
+                      <span
+                          :style="{
+                            color: lot.unit_in_stock === 0 ? 'var(--el-color-danger)' : 'inherit',
+                            marginRight: '4px'
+                          }"
+                      >
                         {{ lot.unit_in_stock ?? '-' }}
+                      </span>
+
+                      <span>
+                        {{ data.quantity_uom?.name }}
                       </span>
                     </div>
 
@@ -211,16 +222,17 @@
             </el-card>
           </div>
 
-          <el-empty v-else :description="'No Material Lots'" :image-size="60" />
+          <el-empty v-else :description="'No Material Inventories'" :image-size="60" />
 
-          <LotTransactionsTable :inventory_transaction_logs="inventory_transaction_logs" />
+<!--          <LotTransactionsTable :inventory_transaction_logs="inventory_transaction_logs" />-->
+          <InventoryTransactionHistory :inventory_transaction_logs="inventory_transaction_logs" />
         </div>
 
         <!-- Material Vendors -->
         <div>
           <el-divider />
 
-          <h3 class="section-title">Material Vendor</h3>
+          <h3 class="section-title">Related Vendors</h3>
 
           <div class="card-list" v-if="data?.spare_part_vendors?.length">
             <el-card v-for="(spv, i) in data.spare_part_vendors" :key="i" shadow="never">
@@ -240,13 +252,13 @@
 
                   <div class="card-row">
                     <div class="row-value">
-                      {{ 'Unit Price' }}: {{ spv.unit_price ?? '-' }}
+                      Unit Price: ${{ spv.unit_price ?? '-' }}
                       {{ spv.unit_price != null ? ' ' + spv.price_uom?.name : '' }}
                     </div>
 
-                    <div class="row-value">{{ 'Lead Time Days' }}: {{ spv.lead_time_days ?? '-' }}</div>
+                    <div class="row-value">Lead Time Days: {{ spv.lead_time_days ?? '-' }}</div>
 
-                    <div class="row-value">{{ 'Order Code' }}: {{ spv.order_code || '-' }}</div>
+                    <div class="row-value">Ordering Part Number: {{ spv.order_code || '-' }}</div>
                   </div>
                 </div>
               </div>
@@ -262,25 +274,33 @@
           <h3 class="section-title">Related Equipment</h3>
 
           <div class="card-list" v-if="relatedEquipment?.length">
-            <el-card v-for="(equipment, i) in relatedEquipment" :key="i" shadow="never">
-              <div class="card-root-content">
-                <div class="request-image">
-                  <div class="request-icon">
-                    <el-icon><Tools /></el-icon>
+            <el-card v-for="(equipment, i) in relatedEquipment" :key="i" shadow="never" class="equipment-card" @click="handleRelatedEquipmentClicked(equipment)">
+              <div class="request-image">
+                <div class="request-icon">
+                  <el-icon><Tools /></el-icon>
+                </div>
+              </div>
+
+              <div class="card-info">
+                <div class="card-row">
+                  <div class="title">
+                    {{ equipment?.name || '-' }}
                   </div>
                 </div>
 
-                <div class="card-info">
-                  <div class="card-row">
-                    <div class="title">
-                      {{ equipment?.name || '-' }}
-                    </div>
-                  </div>
+                <div class="card-row">
+                  <div class="row-value">{{ 'ID' }}: {{ equipment?.id ?? '-' }}</div>
+                  <div class="row-value">{{ 'Code' }}: {{ equipment?.code ?? '-' }}</div>
+                  <div class="row-value">{{ 'Type' }}: {{ equipment?.node_type?.default_label ?? '-' }}</div>
+                </div>
 
-                  <div class="card-row">
-                    <div class="row-value">{{ 'ID' }}: {{ equipment?.id ?? '-' }}</div>
-                    <div class="row-value">{{ 'Code' }}: {{ equipment?.code ?? '-' }}</div>
-                    <div class="row-value">{{ 'Type' }}: {{ equipment?.node_type?.default_label ?? '-' }}</div>
+                <!-- Breadcrumb -->
+                <div class="card-row">
+                  <div
+                      class="row-value ellipsis"
+                      :title="equipment.breadcrumb?.join(' > ')"
+                  >
+                    Equipment Hierarchy Path: {{ equipment.breadcrumb?.join(' > ') || '-' }}
                   </div>
                 </div>
               </div>
@@ -288,6 +308,11 @@
           </div>
           <el-empty v-else :description="'No Related Equipment'" :image-size="60" />
         </div>
+
+        <!-- Related Work Order -->
+        <PartsRelatedWorkOrder :part-id="2681" :work-orders="mockWorkOrders" />
+
+        <!-- List of work order card (use hard coded data for now) -->
 
         <!-- Manufacturer -->
         <!--      <div class="detail-section">-->
@@ -337,7 +362,7 @@
     </div>
   </div>
 
-  <MaterialLotTransactionForm
+  <PartsInventoryTransactionForm
     v-model="showLotTransactionFormDialog"
     :material_id="data?.id"
     :material_name="data?.name"
@@ -364,9 +389,13 @@ import {
 } from '@element-plus/icons-vue'
 import { computeAverageVendorCost } from '@/composables/useSparePart'
 import { formatAsLocalDateTimeString } from '@/utils/datetime'
-import { searchEquipmentNodes } from '@/api/equipment'
-import MaterialLotTransactionForm from '@/views/resources/components/MaterialLotTransactionForm.vue'
-import LotTransactionsTable from '@/views/resources/components/LotTransactionsTable.vue'
+import { getEquipmentById, getEquipmentNodePathToRoot, searchEquipmentNodes } from '@/api/equipment'
+import PartsInventoryTransactionForm from '@/views/resources/components/PartsInventoryTransactionForm.vue'
+// import LotTransactionsTable from '@/views/resources/components/InventoryTransactionsTable.vue'
+import InventoryTransactionHistory from '@/views/resources/components/InventoryTransactionHistory.vue'
+import { ElMessage } from 'element-plus'
+import { useRouter } from 'vue-router'
+import PartsRelatedWorkOrder from '@/views/resources/components/PartsRelatedWorkOrder.vue'
 
 const props = defineProps( {
   data : {
@@ -390,6 +419,11 @@ const props = defineProps( {
 const emit = defineEmits( ['edit', 'delete', 'refresh'] )
 const { t } = useI18n()
 const relatedEquipment = ref( [] )
+const router = useRouter()
+
+const activeInventories = computed( () =>
+  props.data?.inventories?.filter( inv => inv.status === 1 ) ?? []
+)
 
 watch(
   () => props.data?.id,
@@ -510,15 +544,26 @@ function getLocationNameById( id ) {
   }
 
   const loc = props.all_locations.find( loc => loc.id === id )
-  return loc?.name
+  return loc?.name + '(' + loc?.code + ')'
 }
 
-async function loadRelatedEquipment( id ) {
-  if ( !id ) {
+function handleRelatedEquipmentClicked( equipment ) {
+  if ( !equipment?.id ) {
+    ElMessage.warning( 'Equipment information is not available' )
     return
   }
 
+  // Navigate to maintenance equipment page with equipment ID as query parameter
+  router.push( {
+    path : '/maintenance/equipment',
+    query : { equipmentId : equipment.id }
+  } )
+}
+
+async function loadRelatedEquipment( id ) {
   try {
+    // Refactor in future when actual associated equipment node is more than 1000
+    // Get equipment node (t5) linked to spare part
     const res = await searchEquipmentNodes(
       {
         spare_part_ids : [id]
@@ -529,9 +574,177 @@ async function loadRelatedEquipment( id ) {
       'DESC'
     )
 
-    relatedEquipment.value = res.data.content.filter( e => e?.status === 1 )
-  } catch ( e ) {}
+    const deviceTagNodes = res.data?.content || []
+
+    // Extract distinct parent IDs (t4)
+    const parentIds = [...new Set(
+      deviceTagNodes.map( n => n.parent_equipment_node_id ).filter( id => id != null )
+    )]
+
+    if ( parentIds.length === 0 ) {
+      relatedEquipment.value = []
+      return
+    }
+
+    // Fetch parent nodes + breadcrumb paths
+    const result = await Promise.all(
+      parentIds.map( async id => {
+        try {
+          const [nodeRes, nodePathToRootRes] = await Promise.all( [
+            getEquipmentById( id ),
+            getEquipmentNodePathToRoot( id )
+          ] )
+
+          const parent = nodeRes.data
+          const path = nodePathToRootRes.data || []
+
+          return {
+            ...parent,
+            breadcrumb : path.map( p => p.name )
+          }
+        } catch ( e ) {
+          console.warn( 'Failed to fetch parent node or path:', id )
+          return null
+        }
+      } )
+    )
+
+    relatedEquipment.value = result.filter( node => ( node != null && node.status === 1 ) )
+  } catch ( e ) {
+    console.error( 'Failed loading related equipment:', e )
+    relatedEquipment.value = []
+  }
 }
+
+// Mock data for the related work order section
+const mockWorkOrders = [
+  {
+    id : 5308,
+    name : 'Conveyor Belt Misalignment Correction',
+    finished_at : '2024-10-29T11:10:00Z',
+    task_list : [
+      {
+        id : 'T-6101-1',
+        name : 'Replace crane motor',
+        parts_list : [
+          {
+            part_id : 2681,
+            inventory_id : 276,
+            required_quantity : 1,
+            used_quantity : 1,
+            remark : 'Motor overheating, full replacement'
+          }
+        ]
+      }
+    ]
+  },
+
+  {
+    id : 5307,
+    name : 'Crane vibration inspection',
+    finished_at : '2024-10-29T11:10:00Z',
+    task_list : [
+      {
+        id : 'T-6187-1',
+        name : 'Inspect crane motor bearings',
+        parts_list : [
+          {
+            part_id : 2681,
+            inventory_id : 276,
+            required_quantity : 1,
+            used_quantity : 0,
+            remark : 'Inspection only, motor still usable'
+          }
+        ]
+      }
+    ]
+  },
+
+  {
+    id : 5306,
+    name : 'Replace Sensor Clip on Conveyor Line A',
+    finished_at : '2024-12-06T14:00:00Z',
+    task_list : [
+      {
+        id : 'T-6304-1',
+        name : 'Replace drive motor',
+        parts_list : [
+          {
+            part_id : 2681,
+            inventory_id : 284,
+            required_quantity : 1,
+            used_quantity : 1,
+            remark : 'Electrical short detected'
+          }
+        ]
+      }
+    ]
+  },
+
+  {
+    id : 6379,
+    name : 'Crane duty cycle overload',
+    finished_at : '2024-12-06T14:00:00Z',
+    task_list : [
+      {
+        id : 'T-6379-1',
+        name : 'Motor swap for overload test',
+        parts_list : [
+          {
+            part_id : 2681,
+            inventory_id : 284,
+            required_quantity : 1,
+            used_quantity : 1,
+            remark : 'Temporary replacement during overload test'
+          }
+        ]
+      }
+    ]
+  },
+
+  {
+    id : 6455,
+    name : 'Preventive maintenance – cranes',
+    finished_at : '2024-12-06T14:00:00Z',
+    task_list : [
+      {
+        id : 'T-6455-1',
+        name : 'Preventive inspection',
+        parts_list : [
+          {
+            part_id : 2681,
+            inventory_id : 285,
+            required_quantity : 1,
+            used_quantity : 0,
+            remark : 'Preventive check, no replacement required'
+          }
+        ]
+      }
+    ]
+  },
+
+  {
+    id : 6522,
+    name : 'Crane motor seized',
+    finished_at : '2024-12-18T22:10:00Z',
+    task_list : [
+      {
+        id : 'T-6522-1',
+        name : 'Emergency motor replacement',
+        parts_list : [
+          {
+            part_id : 2681,
+            inventory_id : 285,
+            required_quantity : 1,
+            used_quantity : 1,
+            remark : 'Motor seized during night shift'
+          }
+        ]
+      }
+    ]
+  }
+]
+
 </script>
 
 <style scoped lang="scss">
@@ -571,6 +784,44 @@ async function loadRelatedEquipment( id ) {
   flex-direction: column;
   gap: 10px;
   box-sizing: border-box;
+}
+
+.equipment-card {
+  cursor: pointer;
+  display: flex;
+  flex-direction: row;
+
+  &:hover {
+    border-color: var(--el-color-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
+  }
+
+  .request-image {
+    flex-shrink: 0;
+  }
+
+  .request-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    background: var(--el-color-primary-light-9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    .el-icon {
+      font-size: 22px;
+      color: var(--el-color-primary);
+    }
+  }
+}
+
+:deep(.equipment-card .el-card__body) {
+  display: flex !important;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
 }
 
 .card-root-content {

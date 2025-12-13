@@ -292,14 +292,14 @@ export const asyncRoutes = [
       {
         path : 'resources',
         name : 'ResourcesMenu',
-        redirect : 'resources/spare-parts',
+        redirect : 'resources/parts',
         meta : { title : 'Resources', icon : 'cpu', noCache : true, alwaysShow : true },
         children : [
           {
-            path : 'spare-parts',
+            path : 'parts',
             component : () => import( '@/views/resources/index.vue' ),
-            name : 'SpareParts',
-            meta : { title : 'Spare Parts', icon : 'list', noCache : false }
+            name : 'Parts',
+            meta : { title : 'Parts', icon : 'list', noCache : false }
           },
           {
             path : 'tools',

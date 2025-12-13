@@ -1,32 +1,20 @@
 /**
  * Spare Part Management Composable
  */
-import { ref, reactive, computed } from 'vue'
-import { ElMessage, ElNotification } from 'element-plus'
-import { useI18n } from 'vue-i18n'
+import { ref, reactive } from 'vue'
+import { ElMessage } from 'element-plus'
 
 import {
   searchSpareParts,
-  getSparePartById,
-  createSparePart,
-  updateSparePart,
-  deleteSparePart,
   searchInventory,
   searchInventoryTransactionLogs
 } from '@/api/resources'
 
 export function useSparePart() {
-  const { t } = useI18n()
-
   // List state
   const loading = ref( false )
   const list = ref( [] )
   const total = ref( 0 )
-  const inventoryTransferRecords = ref( [] )
-
-  // Right pane state
-  const selected = ref( null )
-  const editing = ref( false )
 
   // Query & filters
   const listQuery = reactive( {
@@ -42,9 +30,6 @@ export function useSparePart() {
     unit_cost_min : null,
     unit_cost_max : null
   } )
-
-  const hasData = computed( () => list.value && list.value.length > 0 )
-  const isEmpty = computed( () => !loading.value && !hasData.value )
 
   function getSearchPayload() {
     const p = {
@@ -136,84 +121,6 @@ export function useSparePart() {
     }
   }
 
-  async function fetchSparePartById( id ) {
-    try {
-      const res = await getSparePartById( id )
-      selected.value = res.data
-    } catch ( err ) {
-      console.error( err )
-      ElMessage.error( 'Error loading spare part by id' )
-    }
-  }
-
-  async function fetchInventoryTransactionLogs() {
-    try {
-      const res = await searchInventoryTransactionLogs()
-      inventoryTransferRecords.value = res.data.content || []
-    } catch ( err ) {
-      console.error( err )
-      ElMessage.error( 'Error loading spare part by id' )
-    }
-  }
-
-  function openCreate() {
-    selected.value = null
-    editing.value = true
-  }
-  function openEdit() {
-    if ( !selected.value ) {
-      return
-    }
-
-    editing.value = true
-  }
-  function closeForm() {
-    editing.value = false
-  }
-
-  async function save( formData ) {
-    try {
-      if ( formData.id ) {
-        await updateSparePart( formData.id, formData )
-        ElNotification( { title : t( 'common.success' ), message : 'Spare part updated successfully', type : 'success' } )
-      } else {
-        await createSparePart( formData )
-        ElNotification( { title : t( 'common.success' ), message : 'Spare part created successfully', type : 'success' } )
-      }
-
-      editing.value = false
-      await fetchSpareParts()
-    } catch ( err ) {
-      console.error( err )
-      ElMessage.error( "Error saving spare part form's data" )
-    }
-  }
-
-  async function remove( id ) {
-    try {
-      await deleteSparePart( id )
-      ElNotification( { title : t( 'common.success' ), message : 'Spare part deleted successfully', type : 'success' } )
-      await fetchSpareParts()
-
-      if ( selected.value?.id === id ) {
-        selected.value = null
-      }
-    } catch ( err ) {
-      console.error( err )
-      ElMessage.error( 'Error deleting spare part' )
-    }
-  }
-
-  function selectRow( row ) {
-    selected.value = row
-    editing.value = false
-  }
-
-  function setPage( p ) {
-    listQuery.page = p
-    fetchSpareParts()
-  }
-
   function resetFilters() {
     Object.assign( listQuery, {
       page : 1,
@@ -233,38 +140,24 @@ export function useSparePart() {
   }
 
   // Backend filtering on this transaction log is not finished
-  function getMaterialInventoryTransactionLog( material_id ) {
+  async function getMaterialInventoryTransactionLog( material_id ) {
     if ( !material_id ) {
       return []
     }
 
-    // Filter records whose material_id matches
-    return inventoryTransferRecords.value.filter( itr => itr.material_id === material_id )
+    const res = await searchInventoryTransactionLogs( 1, 50, 'createdAt', 'DESC', { material_id } )
+
+    return res.data.content || []
   }
 
   return {
-    // state
-    loading,
     list,
     total,
-    selected,
-    editing,
+    loading,
     listQuery,
-    hasData,
-    isEmpty,
-    // actions
     fetchSpareParts,
-    fetchSparePartById,
-    openCreate,
-    openEdit,
-    closeForm,
-    save,
-    remove,
-    selectRow,
-    setPage,
     resetFilters,
-    getMaterialInventoryTransactionLog,
-    fetchInventoryTransactionLogs
+    getMaterialInventoryTransactionLog
   }
 }
 
