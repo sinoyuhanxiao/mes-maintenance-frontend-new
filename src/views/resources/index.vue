@@ -600,7 +600,7 @@ onMounted( async() => {
 .split-view {
   display: flex;
   height: calc(100vh - 163px);
-  gap: 10px;
+  gap: 16px;
   margin: 0 15px 0 15px;
 }
 
@@ -609,6 +609,7 @@ onMounted( async() => {
   overflow: hidden; /* prevent double scrollbars */
   border-radius: 8px;
   border: 1px solid var(--el-border-color-light);
+  padding: 16px 16px 16px 0;
 }
 
 .right-pane {

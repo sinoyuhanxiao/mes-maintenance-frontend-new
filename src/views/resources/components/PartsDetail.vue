@@ -55,68 +55,75 @@
       </div>
 
       <div class="scroll-area">
-        <!-- Definition -->
-        <el-descriptions :column="4" class="general-details-descriptions">
-          <el-descriptions-item :label="'Manufacturer Code'">
-            <span class="detail-value">
-              {{ data?.code || '-' }}
-            </span>
-          </el-descriptions-item>
-
-          <el-descriptions-item :label="'Universal Code'">
-            {{ data?.universal_code || '-' }}
-          </el-descriptions-item>
-
-          <el-descriptions-item :label="'Category'">
-            {{ data?.spare_parts_class?.name || '-' }}
-          </el-descriptions-item>
-
-          <el-descriptions-item :label="'Average Unit Price'">
-            <span v-if="avgCost.avg !== null">{{ '$' + avgCost.avg }}</span>
-
-            <span v-else>-</span>
-          </el-descriptions-item>
-
-          <el-descriptions-item :label="'Total Available Quantity'" :span="2">
-            <span
-              class="stat-value"
-              :class="{
-                'out-of-stock': data?.current_stock <= 0,
-                'low-stock': data?.current_stock > 0 && data?.current_stock <= (data?.reorder_point ?? 0),
-                'in-stock': data?.current_stock > (data?.reorder_point ?? 0),
-              }"
-            >
-              {{ data?.current_stock ?? 0 }}
-
-              {{ data.quantity_uom?.name || '' }}
-            </span>
-          </el-descriptions-item>
-
-          <el-descriptions-item :label="'Restock Point'" :span="2">
-            <template #label>
-              <span>
-                Reorder Point
-                <el-tooltip
-                  effect="dark"
-                  content="Part with total available quantity equal or below this reorder point is considered as low stock"
-                  placement="top"
-                >
-                  <el-icon class="info-icon">
-                    <QuestionFilled />
-                  </el-icon>
-                </el-tooltip>
+        <!-- General Details Section -->
+        <div class="detail-section">
+          <el-descriptions :column="3" class="general-details-descriptions">
+            <el-descriptions-item :label="'Manufacturer Code'">
+              <span class="detail-value">
+                {{ data?.code || '-' }}
               </span>
-            </template>
+            </el-descriptions-item>
 
-            {{ data?.reorder_point ?? 0 }}
-          </el-descriptions-item>
+            <el-descriptions-item :label="'Universal Code'">
+              {{ data?.universal_code || '-' }}
+            </el-descriptions-item>
 
-          <el-descriptions-item :label="'Description'" :span="4" v-if="data.description.length > 0" >
-            <span class="detail-value">
-              {{ data.description || '-' }}
-            </span>
-          </el-descriptions-item>
-        </el-descriptions>
+            <el-descriptions-item :label="'Category'">
+              {{ data?.spare_parts_class?.name || '-' }}
+            </el-descriptions-item>
+
+            <el-descriptions-item :label="'Average Unit Price'">
+              <span v-if="avgCost.avg !== null">{{ '$' + avgCost.avg }}</span>
+
+              <span v-else>-</span>
+            </el-descriptions-item>
+
+            <el-descriptions-item :label="'Total Available Quantity'" :span="2">
+              <span
+                class="stat-value"
+                :class="{
+                  'out-of-stock': data?.current_stock <= 0,
+                  'low-stock': data?.current_stock > 0 && data?.current_stock <= (data?.reorder_point ?? 0),
+                  'in-stock': data?.current_stock > (data?.reorder_point ?? 0),
+                }"
+              >
+                {{ data?.current_stock ?? 0 }}
+
+                {{ data.quantity_uom?.name || '' }}
+              </span>
+            </el-descriptions-item>
+
+            <el-descriptions-item :label="'Restock Point'" :span="2">
+              <template #label>
+                <span>
+                  Reorder Point
+                  <el-tooltip
+                    effect="dark"
+                    content="Part with total available quantity equal or below this reorder point is considered as low stock"
+                    placement="top"
+                  >
+                    <el-icon class="info-icon">
+                      <QuestionFilled />
+                    </el-icon>
+                  </el-tooltip>
+                </span>
+              </template>
+
+              {{ data?.reorder_point ?? 0 }}
+            </el-descriptions-item>
+          </el-descriptions>
+        </div>
+
+        <!-- Description Section -->
+        <div class="detail-section" v-if="data.description && data.description.length > 0">
+          <el-descriptions :column="1" class="general-details-descriptions">
+            <el-descriptions-item :label="'Description'">
+              <div class="description-content">
+                <p>{{ data.description || '-' }}</p>
+              </div>
+            </el-descriptions-item>
+          </el-descriptions>
+        </div>
 
         <!-- Attachments Section -->
         <div class="detail-section" v-if="hasImageAttachments || hasFileAttachments">
@@ -763,20 +770,24 @@ const mockWorkOrders = [
   padding: 12px 16px 12px 0;
   margin-left: 16px;
   border-bottom: 1px solid var(--el-border-color-light);
+
+  > div {
+    margin-top: 12px;
+  }
 }
 
 /* Scrollable content area */
 .sp-detail .scroll-area {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: 20px;
   scroll-behavior: smooth;
 }
 
 .card-list {
   display: flex;
   flex-direction: column; /* vertical stack */
-  gap: 10px; /* space between cards */
+  gap: 14px; /* space between cards */
 }
 
 .card-list :deep(.el-card) {
@@ -845,7 +856,7 @@ const mockWorkOrders = [
 .card-row {
   display: flex;
   flex-direction: row;
-  gap: 10px;
+  gap: 12px;
   justify-content: space-between;
   text-align: left;
 }
@@ -858,6 +869,21 @@ const mockWorkOrders = [
 .label {
   font-weight: 600;
   margin-bottom: 4px;
+}
+
+.detail-section {
+  margin-bottom: 16px;
+}
+
+.description-content {
+  margin-top: 10px;
+  width: 100%;
+
+  p {
+    margin: 0;
+    line-height: 1.6;
+    color: var(--el-text-color-primary);
+  }
 }
 
 .general-details-descriptions {
@@ -878,10 +904,10 @@ const mockWorkOrders = [
   }
 
   :deep(.el-descriptions__cell) {
-    padding: 0 24px 12px 0;
+    padding: 0 28px 16px 0;
     border: none;
     vertical-align: top;
-    width: 25%;
+    width: 33.33%;
 
     &:last-child {
       padding-right: 0;
@@ -899,6 +925,13 @@ const mockWorkOrders = [
   :deep(.el-descriptions__content) {
     font-size: 14px;
     color: var(--el-text-color-primary);
+  }
+
+  // Full width for single column layout (description)
+  &.el-descriptions--column-1 {
+    :deep(.el-descriptions__cell) {
+      width: 100%;
+    }
   }
 }
 
@@ -995,7 +1028,7 @@ const mockWorkOrders = [
   font-size: 16px;
   font-weight: 500;
   color: var(--el-text-color-primary);
-  margin: 36px 0px;
+  margin: 40px 0px 20px 0px;
 }
 
 .title {

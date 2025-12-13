@@ -325,7 +325,7 @@ watch( groupedByDate, () => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
-  margin-top: 24px;
+  margin-top: 36px;
 }
 
 .chart {
@@ -335,6 +335,7 @@ watch( groupedByDate, () => {
 .progress-header {
   display: flex;
   justify-content: center;
+  margin-top: 16px;
   margin-bottom: 24px;
 }
 

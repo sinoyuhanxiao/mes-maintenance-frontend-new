@@ -294,7 +294,7 @@ function formatTransaction( tx ) {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 12px;
+  margin: 8px 0 16px 0;
 }
 
 .timeline-search-input,
