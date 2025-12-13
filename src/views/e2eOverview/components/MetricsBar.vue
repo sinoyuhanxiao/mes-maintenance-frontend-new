@@ -2,7 +2,7 @@
   <div class="metrics-bar">
     <div class="metrics-container">
       <!-- OEE Metric -->
-      <div class="metric-card primary">
+      <div class="metric-card primary clickable" @click="handleOeeClick">
         <div class="metric-icon">
           <el-icon><DataAnalysis /></el-icon>
         </div>
@@ -108,7 +108,7 @@
 </template>
 
 <script setup>
-import { defineProps } from 'vue'
+import { defineProps, defineEmits } from 'vue'
 import { DataAnalysis, Box, Cpu, WarningFilled, Clock, Top, Bottom } from '@element-plus/icons-vue'
 // import CountUp from './CountUp.vue'
 
@@ -128,6 +128,12 @@ const props = defineProps( {
     } )
   }
 } )
+
+const emit = defineEmits( ['oee-click'] )
+
+const handleOeeClick = () => {
+  emit( 'oee-click' )
+}
 
 const getOeeColor = value => {
   if ( value >= 85 ) return '#30b08f'
@@ -177,6 +183,20 @@ const getProductionPercentage = () => {
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  }
+
+  &.clickable {
+    cursor: pointer;
+
+    &:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 24px rgba(0, 133, 164, 0.25);
+    }
+
+    &:active {
+      transform: translateY(-1px);
+      box-shadow: 0 2px 12px rgba(0, 133, 164, 0.15);
+    }
   }
 
   &.primary {

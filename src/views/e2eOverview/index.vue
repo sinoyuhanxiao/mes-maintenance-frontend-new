@@ -1,10 +1,13 @@
 <template>
   <div class="e2e-overview-container">
     <!-- Top Metrics Bar -->
-    <MetricsBar :metrics="liveMetrics" />
+    <MetricsBar :metrics="liveMetrics" @oee-click="handleOeeClick" />
 
     <!-- Panzoom Carousel -->
-    <PanzoomCarousel :is-e2e-mode="true" :style="{ height: panzoomHeight }" />
+    <PanzoomCarousel :is-e2e-mode="true" :machine-oee-data="machineOEEData" :style="{ height: panzoomHeight }" />
+
+    <!-- OEE Detail Drawer -->
+    <OEEDrawer v-model:visible="showOeeDrawer" @close="handleOeeDrawerClose" @oee-update="handleOeeUpdate" />
   </div>
 </template>
 
@@ -12,6 +15,7 @@
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import MetricsBar from './components/MetricsBar.vue'
 import PanzoomCarousel from '@/components/PanzoomCarousel'
+import OEEDrawer from './components/OEEDrawer.vue'
 
 // ========================================
 // METRICS CONFIGURATION CENTER
@@ -84,6 +88,12 @@ const liveMetrics = ref( {
 // Dynamic panzoom height
 const panzoomHeight = ref( 'auto' )
 
+// OEE Drawer visibility
+const showOeeDrawer = ref( false )
+
+// Machine OEE data from drawer
+const machineOEEData = ref( {} )
+
 // Timer references for cleanup
 let oeeTimer = null
 let productionTimer = null
@@ -92,24 +102,24 @@ let workforceTimer = null
 let workOrdersTimer = null
 let shiftTimer = null
 
-// OEE update function - Uses METRICS_CONFIG.OEE
+// OEE update function - COMMENTED OUT: Now controlled by OEE Drawer
 // Updates with small incremental changes for realistic variation
-const updateOEE = () => {
-  const config = METRICS_CONFIG.OEE
-  const currentOEE = liveMetrics.value.oee
+// const updateOEE = () => {
+//   const config = METRICS_CONFIG.OEE
+//   const currentOEE = liveMetrics.value.oee
 
-  // Store previous OEE for trend calculation
-  liveMetrics.value.previousOee = currentOEE
+//   // Store previous OEE for trend calculation
+//   liveMetrics.value.previousOee = currentOEE
 
-  // Generate a small random variation between -maxVariation and +maxVariation
-  const variation = ( Math.random() - 0.5 ) * 2 * config.maxVariation
+//   // Generate a small random variation between -maxVariation and +maxVariation
+//   const variation = ( Math.random() - 0.5 ) * 2 * config.maxVariation
 
-  // Apply variation and constrain within min/max bounds
-  let newOEE = currentOEE + variation
-  newOEE = Math.max( config.min, Math.min( config.max, newOEE ) )
+//   // Apply variation and constrain within min/max bounds
+//   let newOEE = currentOEE + variation
+//   newOEE = Math.max( config.min, Math.min( config.max, newOEE ) )
 
-  liveMetrics.value.oee = parseFloat( newOEE.toFixed( config.decimals ) )
-}
+//   liveMetrics.value.oee = parseFloat( newOEE.toFixed( config.decimals ) )
+// }
 
 // Production update function - Uses METRICS_CONFIG.PRODUCTION
 const updateProduction = () => {
@@ -177,7 +187,7 @@ const updateShift = () => {
 // Start all metric update timers - Uses METRICS_CONFIG for intervals
 const startMetricUpdates = () => {
   // Initial updates
-  updateOEE()
+  // updateOEE() // COMMENTED OUT: Now controlled by OEE Drawer
   updateProduction()
   updateAlarms()
   updateWorkforce()
@@ -185,7 +195,7 @@ const startMetricUpdates = () => {
   updateShift()
 
   // Set up intervals using centralized configuration
-  oeeTimer = setInterval( updateOEE, METRICS_CONFIG.OEE.updateInterval )
+  // oeeTimer = setInterval( updateOEE, METRICS_CONFIG.OEE.updateInterval ) // COMMENTED OUT: Now controlled by OEE Drawer
   productionTimer = setInterval( updateProduction, METRICS_CONFIG.PRODUCTION.updateInterval )
   alarmsTimer = setInterval( updateAlarms, METRICS_CONFIG.ALARMS.updateInterval )
   workforceTimer = setInterval( updateWorkforce, METRICS_CONFIG.WORKFORCE.updateInterval )
@@ -202,6 +212,28 @@ const stopMetricUpdates = () => {
   if ( workforceTimer ) clearInterval( workforceTimer )
   if ( workOrdersTimer ) clearInterval( workOrdersTimer )
   if ( shiftTimer ) clearInterval( shiftTimer )
+}
+
+// Handle OEE card click
+const handleOeeClick = () => {
+  showOeeDrawer.value = true
+}
+
+// Handle OEE drawer close
+const handleOeeDrawerClose = () => {
+  showOeeDrawer.value = false
+}
+
+// Handle OEE update from drawer
+const handleOeeUpdate = ( oeeData ) => {
+  // Store previous OEE for trend calculation
+  liveMetrics.value.previousOee = liveMetrics.value.oee
+
+  // Update current OEE from drawer
+  liveMetrics.value.oee = oeeData.oee
+
+  // Update machine OEE data for hotspots
+  machineOEEData.value = oeeData.machineOEEData || {}
 }
 
 const updatePanzoomHeight = () => {

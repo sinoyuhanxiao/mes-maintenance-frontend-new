@@ -41,36 +41,40 @@
           v-for="zone in equipmentZones"
           :key="zone.id"
           class="equipment-hotspot"
-          :class="[`status-${zone.status}`, zone.machineType]"
+          :class="[`status-${getZoneStatus( zone )}`, zone.machineType]"
           :style="zone.position"
           @click="handleZoneClick(zone)"
           @mouseenter="handleZoneHover(zone, true)"
           @mouseleave="handleZoneHover(zone, false)"
         >
-          <StatusBadge :status="zone.status" :show-pulse="zone.hasAlert" />
+          <StatusBadge
+            :status="getZoneStatus( zone )"
+            :show-pulse="zone.hasAlert"
+            :oee-value="getZoneOEE( zone )"
+          />
           <span class="equipment-label">{{ zone.name }}</span>
         </div>
       </div>
 
       <!-- Status Legend -->
       <div class="status-legend">
-        <div class="legend-title">Equipment Status</div>
+        <div class="legend-title">Equipment OEE</div>
         <div class="legend-items">
           <div class="legend-item">
-            <span class="legend-dot operational"></span>
-            <span>Operational</span>
+            <span class="legend-dot excellent"></span>
+            <span>Excellent (≥85%)</span>
           </div>
           <div class="legend-item">
-            <span class="legend-dot warning"></span>
-            <span>Warning</span>
+            <span class="legend-dot good"></span>
+            <span>Good (70-84%)</span>
           </div>
           <div class="legend-item">
-            <span class="legend-dot error"></span>
-            <span>Error</span>
+            <span class="legend-dot fair"></span>
+            <span>Fair (50-69%)</span>
           </div>
           <div class="legend-item">
-            <span class="legend-dot idle"></span>
-            <span>Idle</span>
+            <span class="legend-dot poor"></span>
+            <span>Poor (<50%)</span>
           </div>
         </div>
       </div>
@@ -90,7 +94,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed, nextTick } from 'vue'
+import { ref, onMounted, onBeforeUnmount, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Panzoom from 'panzoom'
 import { WarnTriangleFilled, ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
@@ -110,22 +114,26 @@ const props = defineProps( {
   isE2eMode : {
     type : Boolean,
     default : false
+  },
+  machineOeeData : {
+    type : Object,
+    default : () => ( {} )
   }
 } )
 
 // ========================================
 // STATUS UPDATE CONFIGURATION CENTER
-// Modify these values to customize status behavior
+// COMMENTED OUT: Now using OEE-based status assignment
 // ========================================
-const STATUS_UPDATE_CONFIG = {
-  updateInterval : 5000, // Update every 5 seconds (milliseconds)
-  statusRatios : {
-    operational : 0.7,
-    warning : 0.05,
-    error : 0.05,
-    idle : 0.1
-  }
-}
+// const STATUS_UPDATE_CONFIG = {
+//   updateInterval : 5000, // Update every 5 seconds (milliseconds)
+//   statusRatios : {
+//     operational : 0.7,
+//     warning : 0.05,
+//     error : 0.05,
+//     idle : 0.1
+//   }
+// }
 
 // Panzoom instance
 const panzoomInstance = ref( null )
@@ -739,57 +747,113 @@ const handleNextImage = () => {
   handleReset()
 }
 
-// Status update timer
-let statusUpdateTimer = null
+// ========================================
+// OEE-BASED STATUS ASSIGNMENT
+// Replaces random status update logic
+// ========================================
 
-// Random status assignment function based on configured ratios
-const getRandomStatus = () => {
-  const { statusRatios } = STATUS_UPDATE_CONFIG
-  const random = Math.random()
-  let cumulative = 0
-
-  // Build cumulative probability distribution
-  const statuses = ['operational', 'warning', 'error', 'idle']
-  for ( const status of statuses ) {
-    cumulative += statusRatios[status]
-    if ( random <= cumulative ) {
-      return status
-    }
-  }
-
-  // Fallback to operational if something goes wrong
-  return 'operational'
+// Map OEE percentage to status classification
+const getStatusFromOEE = ( oee ) => {
+  if ( oee >= 85 ) return 'excellent'
+  if ( oee >= 70 ) return 'good'
+  if ( oee >= 50 ) return 'fair'
+  return 'poor'
 }
 
-// Update all equipment status indicators randomly
-const updateEquipmentStatuses = () => {
+// Get OEE value for a zone from machineOeeData
+const getZoneOEE = ( zone ) => {
+  if ( !props.machineOeeData || !zone ) return null
+  const oeeData = props.machineOeeData[zone.name]
+  return oeeData ? oeeData.oee : null
+}
+
+// Derive the visual status directly from the live OEE value when available
+const getZoneStatus = ( zone ) => {
+  const oeeValue = getZoneOEE( zone )
+  if ( typeof oeeValue === 'number' && Number.isFinite( oeeValue ) ) {
+    return getStatusFromOEE( oeeValue )
+  }
+  return zone.status || 'operational'
+}
+
+// Debounce timer for status updates
+let updateDebounceTimer = null
+const DEBOUNCE_DELAY = 3000 // 3 seconds max update frequency
+
+// Update equipment statuses from OEE data
+const updateEquipmentStatusesFromOEE = () => {
+  // Only update if OEE data is available
+  if ( !props.machineOeeData || Object.keys( props.machineOeeData ).length === 0 ) {
+    return
+  }
+
   // Update Image 1 equipment zones
   equipmentZonesImage1.value.forEach( zone => {
-    zone.status = getRandomStatus()
+    const oeeData = props.machineOeeData[zone.name]
+    if ( oeeData ) {
+      zone.status = getStatusFromOEE( oeeData.oee )
+    }
   } )
 
   // Update Image 2 equipment zones
   equipmentZonesImage2.value.forEach( zone => {
-    zone.status = getRandomStatus()
+    const oeeData = props.machineOeeData[zone.name]
+    if ( oeeData ) {
+      zone.status = getStatusFromOEE( oeeData.oee )
+    }
   } )
 }
 
-// Start status update timer
-const startStatusUpdates = () => {
-  // Initial update
-  updateEquipmentStatuses()
-
-  // Set up interval
-  statusUpdateTimer = setInterval( updateEquipmentStatuses, STATUS_UPDATE_CONFIG.updateInterval )
-}
-
-// Stop status update timer
-const stopStatusUpdates = () => {
-  if ( statusUpdateTimer ) {
-    clearInterval( statusUpdateTimer )
-    statusUpdateTimer = null
+// Debounced update function to prevent excessive updates during simulation
+const debouncedUpdateStatuses = () => {
+  if ( updateDebounceTimer ) {
+    clearTimeout( updateDebounceTimer )
   }
+  updateDebounceTimer = setTimeout( () => {
+    updateEquipmentStatusesFromOEE()
+  }, DEBOUNCE_DELAY )
 }
+
+// ========================================
+// OLD RANDOM STATUS UPDATE LOGIC (COMMENTED OUT)
+// ========================================
+
+// let statusUpdateTimer = null
+
+// const getRandomStatus = () => {
+//   const { statusRatios } = STATUS_UPDATE_CONFIG
+//   const random = Math.random()
+//   let cumulative = 0
+//   const statuses = ['operational', 'warning', 'error', 'idle']
+//   for ( const status of statuses ) {
+//     cumulative += statusRatios[status]
+//     if ( random <= cumulative ) {
+//       return status
+//     }
+//   }
+//   return 'operational'
+// }
+
+// const updateEquipmentStatuses = () => {
+//   equipmentZonesImage1.value.forEach( zone => {
+//     zone.status = getRandomStatus()
+//   } )
+//   equipmentZonesImage2.value.forEach( zone => {
+//     zone.status = getRandomStatus()
+//   } )
+// }
+
+// const startStatusUpdates = () => {
+//   updateEquipmentStatuses()
+//   statusUpdateTimer = setInterval( updateEquipmentStatuses, STATUS_UPDATE_CONFIG.updateInterval )
+// }
+
+// const stopStatusUpdates = () => {
+//   if ( statusUpdateTimer ) {
+//     clearInterval( statusUpdateTimer )
+//     statusUpdateTimer = null
+//   }
+// }
 
 // Utility functions
 // eslint-disable-next-line no-unused-vars
@@ -836,10 +900,15 @@ const handleKeyDown = e => {
   }
 }
 
+// Watch for OEE data changes and update equipment statuses
+watch( () => props.machineOeeData, () => {
+  debouncedUpdateStatuses()
+}, { deep : true, immediate : true } )
+
 onMounted( () => {
   window.addEventListener( 'keydown', handleKeyDown )
-  // Start status updates
-  startStatusUpdates()
+  // Start status updates - COMMENTED OUT: Now using OEE-based status
+  // startStatusUpdates()
 } )
 
 onBeforeUnmount( () => {
@@ -847,8 +916,14 @@ onBeforeUnmount( () => {
     panzoomInstance.value.dispose()
   }
   window.removeEventListener( 'keydown', handleKeyDown )
-  // Stop status updates
-  stopStatusUpdates()
+
+  // Cleanup debounce timer
+  if ( updateDebounceTimer ) {
+    clearTimeout( updateDebounceTimer )
+  }
+
+  // Stop status updates - COMMENTED OUT: Now using OEE-based status
+  // stopStatusUpdates()
 } )
 </script>
 
@@ -936,6 +1011,31 @@ onBeforeUnmount( () => {
       border: 2px solid rgba(100, 116, 139, 0.6);
       box-shadow: 0 0 15px rgba(100, 116, 139, 0.4);
     }
+
+    // OEE-based status colors (hover)
+    &.status-excellent {
+      background-color: rgba(48, 176, 143, 0.15);
+      border: 2px solid rgba(48, 176, 143, 0.6);
+      box-shadow: 0 0 15px rgba(48, 176, 143, 0.4);
+    }
+
+    &.status-good {
+      background-color: rgba(243, 156, 18, 0.15);
+      border: 2px solid rgba(243, 156, 18, 0.6);
+      box-shadow: 0 0 15px rgba(243, 156, 18, 0.4);
+    }
+
+    &.status-fair {
+      background-color: rgba(192, 54, 57, 0.15);
+      border: 2px solid rgba(192, 54, 57, 0.6);
+      box-shadow: 0 0 15px rgba(192, 54, 57, 0.4);
+    }
+
+    &.status-poor {
+      background-color: rgba(100, 116, 139, 0.15);
+      border: 2px solid rgba(100, 116, 139, 0.6);
+      box-shadow: 0 0 15px rgba(100, 116, 139, 0.4);
+    }
   }
 
   &:active {
@@ -957,6 +1057,27 @@ onBeforeUnmount( () => {
     }
 
     &.status-idle {
+      background-color: rgba(100, 116, 139, 0.25);
+      border: 2px solid rgba(100, 116, 139, 0.8);
+    }
+
+    // OEE-based status colors (active)
+    &.status-excellent {
+      background-color: rgba(48, 176, 143, 0.25);
+      border: 2px solid rgba(48, 176, 143, 0.8);
+    }
+
+    &.status-good {
+      background-color: rgba(243, 156, 18, 0.25);
+      border: 2px solid rgba(243, 156, 18, 0.8);
+    }
+
+    &.status-fair {
+      background-color: rgba(192, 54, 57, 0.25);
+      border: 2px solid rgba(192, 54, 57, 0.8);
+    }
+
+    &.status-poor {
       background-color: rgba(100, 116, 139, 0.25);
       border: 2px solid rgba(100, 116, 139, 0.8);
     }
@@ -1048,6 +1169,57 @@ onBeforeUnmount( () => {
   opacity: 1;
 }
 
+// Equipment hotspot hover - show OEE percentage in status badge
+.equipment-hotspot:hover :deep(.status-badge) {
+  width: auto;
+  min-width: 48px;
+  height: 24px;
+  border-radius: 4px;
+  padding: 0 8px;
+
+  .status-dot {
+    opacity: 0;
+  }
+
+  .oee-percentage {
+    opacity: 1;
+  }
+
+  // Solid backgrounds for each status type with white text
+  &.status-operational,
+  &.status-excellent {
+    background: #30b08f;
+    border: none;
+    box-shadow: 0 2px 8px rgba(48, 176, 143, 0.4);
+  }
+
+  &.status-warning {
+    background: #fec171;
+    border: none;
+    box-shadow: 0 2px 8px rgba(254, 193, 113, 0.4);
+  }
+
+  &.status-good {
+    background: #f39c12;
+    border: none;
+    box-shadow: 0 2px 8px rgba(243, 156, 18, 0.4);
+  }
+
+  &.status-error,
+  &.status-fair {
+    background: #c03639;
+    border: none;
+    box-shadow: 0 2px 8px rgba(192, 54, 57, 0.4);
+  }
+
+  &.status-idle,
+  &.status-poor {
+    background: #64748b;
+    border: none;
+    box-shadow: 0 2px 8px rgba(100, 116, 139, 0.3);
+  }
+}
+
 .carousel-arrow {
   position: absolute;
   top: 50%;
@@ -1121,6 +1293,28 @@ onBeforeUnmount( () => {
       height: 12px;
       border-radius: 50%;
 
+      // OEE-based legend dots
+      &.excellent {
+        background-color: #30b08f;
+        box-shadow: 0 0 8px rgba(48, 176, 143, 0.5);
+      }
+
+      &.good {
+        background-color: #f39c12;
+        box-shadow: 0 0 8px rgba(243, 156, 18, 0.5);
+      }
+
+      &.fair {
+        background-color: #c03639;
+        box-shadow: 0 0 8px rgba(192, 54, 57, 0.5);
+      }
+
+      &.poor {
+        background-color: #64748b;
+        box-shadow: 0 0 8px rgba(100, 116, 139, 0.5);
+      }
+
+      // Old status colors (kept for backward compatibility)
       &.operational {
         background-color: #30b08f;
         box-shadow: 0 0 8px rgba(48, 176, 143, 0.5);
