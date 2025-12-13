@@ -41,17 +41,13 @@
           v-for="zone in equipmentZones"
           :key="zone.id"
           class="equipment-hotspot"
-          :class="[`status-${getZoneStatus( zone )}`, zone.machineType]"
+          :class="[`status-${getZoneStatus(zone)}`, zone.machineType]"
           :style="zone.position"
           @click="handleZoneClick(zone)"
           @mouseenter="handleZoneHover(zone, true)"
           @mouseleave="handleZoneHover(zone, false)"
         >
-          <StatusBadge
-            :status="getZoneStatus( zone )"
-            :show-pulse="zone.hasAlert"
-            :oee-value="getZoneOEE( zone )"
-          />
+          <StatusBadge :status="getZoneStatus(zone)" :show-pulse="zone.hasAlert" :oee-value="getZoneOEE(zone)" />
           <span class="equipment-label">{{ zone.name }}</span>
         </div>
       </div>
@@ -753,7 +749,7 @@ const handleNextImage = () => {
 // ========================================
 
 // Map OEE percentage to status classification
-const getStatusFromOEE = ( oee ) => {
+const getStatusFromOEE = oee => {
   if ( oee >= 85 ) return 'excellent'
   if ( oee >= 70 ) return 'good'
   if ( oee >= 50 ) return 'fair'
@@ -761,14 +757,14 @@ const getStatusFromOEE = ( oee ) => {
 }
 
 // Get OEE value for a zone from machineOeeData
-const getZoneOEE = ( zone ) => {
+const getZoneOEE = zone => {
   if ( !props.machineOeeData || !zone ) return null
   const oeeData = props.machineOeeData[zone.name]
   return oeeData ? oeeData.oee : null
 }
 
 // Derive the visual status directly from the live OEE value when available
-const getZoneStatus = ( zone ) => {
+const getZoneStatus = zone => {
   const oeeValue = getZoneOEE( zone )
   if ( typeof oeeValue === 'number' && Number.isFinite( oeeValue ) ) {
     return getStatusFromOEE( oeeValue )
@@ -901,9 +897,13 @@ const handleKeyDown = e => {
 }
 
 // Watch for OEE data changes and update equipment statuses
-watch( () => props.machineOeeData, () => {
-  debouncedUpdateStatuses()
-}, { deep : true, immediate : true } )
+watch(
+  () => props.machineOeeData,
+  () => {
+    debouncedUpdateStatuses()
+  },
+  { deep : true, immediate : true }
+)
 
 onMounted( () => {
   window.addEventListener( 'keydown', handleKeyDown )

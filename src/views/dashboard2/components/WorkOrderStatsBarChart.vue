@@ -100,9 +100,7 @@ function buildOption() {
 
   // Decide which labels to show on X:
   const xLabels =
-      props.isWeekly && weeklyLabels.value.length === props.categories.length
-        ? weeklyLabels.value
-        : props.categories
+    props.isWeekly && weeklyLabels.value.length === props.categories.length ? weeklyLabels.value : props.categories
 
   return {
     color : COLORS,
@@ -124,8 +122,8 @@ function buildOption() {
 
         // Use dynamic weekly label if weekly mode, otherwise plain category
         const category = props.isWeekly
-          ? ( weeklyLabels.value[idx] ?? props.categories[idx] ?? '' )
-          : ( props.categories[idx] ?? '' )
+          ? weeklyLabels.value[idx] ?? props.categories[idx] ?? ''
+          : props.categories[idx] ?? ''
 
         // Always read values directly from props so "Completed: 0" still shows
         const planned = props.seriesA?.[idx] ?? 0

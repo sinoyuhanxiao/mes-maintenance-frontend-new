@@ -57,13 +57,13 @@
           >
             <template #default>
               <div style="display: flex; justify-content: space-between; width: 100%">
-                <span>{{ 'Inventory #' + lot.id  }}</span>
+                <span>{{ 'Inventory #' + lot.id }}</span>
 
                 <span>
                   <el-icon><Location /></el-icon>
 
                   <span>
-                    {{ lot.location?.name + " (" + lot.location?.code +  ")" }}
+                    {{ lot.location?.name + ' (' + lot.location?.code + ')' }}
                   </span>
                 </span>
 
@@ -110,7 +110,7 @@
                   <el-icon><Location /></el-icon>
 
                   <span>
-                    {{ lot.location?.name + " (" + lot.location?.code +  ")" }}
+                    {{ lot.location?.name + ' (' + lot.location?.code + ')' }}
                   </span>
                 </span>
 

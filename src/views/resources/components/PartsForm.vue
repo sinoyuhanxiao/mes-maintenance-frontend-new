@@ -822,7 +822,7 @@ function getLocationNameById( id ) {
   }
 
   const loc = props.all_locations.find( loc => loc.id === id )
-  return ( loc?.name + '(' + loc?.code + ')' ) || `#${id}`
+  return loc?.name + '(' + loc?.code + ')' || `#${id}`
 }
 
 // Upload files to MinIO server

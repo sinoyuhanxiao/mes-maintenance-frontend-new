@@ -205,10 +205,10 @@
                     <div class="row-value">
                       {{ 'Available Quantity' }}:
                       <span
-                          :style="{
-                            color: lot.unit_in_stock === 0 ? 'var(--el-color-danger)' : 'inherit',
-                            marginRight: '4px'
-                          }"
+                        :style="{
+                          color: lot.unit_in_stock === 0 ? 'var(--el-color-danger)' : 'inherit',
+                          marginRight: '4px',
+                        }"
                       >
                         {{ lot.unit_in_stock ?? '-' }}
                       </span>
@@ -231,7 +231,7 @@
 
           <el-empty v-else :description="'No Material Inventories'" :image-size="60" />
 
-<!--          <LotTransactionsTable :inventory_transaction_logs="inventory_transaction_logs" />-->
+          <!--          <LotTransactionsTable :inventory_transaction_logs="inventory_transaction_logs" />-->
           <InventoryTransactionHistory :inventory_transaction_logs="inventory_transaction_logs" />
         </div>
 
@@ -281,7 +281,13 @@
           <h3 class="section-title">Related Equipment</h3>
 
           <div class="card-list" v-if="relatedEquipment?.length">
-            <el-card v-for="(equipment, i) in relatedEquipment" :key="i" shadow="never" class="equipment-card" @click="handleRelatedEquipmentClicked(equipment)">
+            <el-card
+              v-for="(equipment, i) in relatedEquipment"
+              :key="i"
+              shadow="never"
+              class="equipment-card"
+              @click="handleRelatedEquipmentClicked(equipment)"
+            >
               <div class="request-image">
                 <div class="request-icon">
                   <el-icon><Tools /></el-icon>
@@ -303,10 +309,7 @@
 
                 <!-- Breadcrumb -->
                 <div class="card-row">
-                  <div
-                      class="row-value ellipsis"
-                      :title="equipment.breadcrumb?.join(' > ')"
-                  >
+                  <div class="row-value ellipsis" :title="equipment.breadcrumb?.join(' > ')">
                     Equipment Hierarchy Path: {{ equipment.breadcrumb?.join(' > ') || '-' }}
                   </div>
                 </div>
@@ -428,9 +431,7 @@ const { t } = useI18n()
 const relatedEquipment = ref( [] )
 const router = useRouter()
 
-const activeInventories = computed( () =>
-  props.data?.inventories?.filter( inv => inv.status === 1 ) ?? []
-)
+const activeInventories = computed( () => props.data?.inventories?.filter( inv => inv.status === 1 ) ?? [] )
 
 watch(
   () => props.data?.id,
@@ -584,9 +585,7 @@ async function loadRelatedEquipment( id ) {
     const deviceTagNodes = res.data?.content || []
 
     // Extract distinct parent IDs (t4)
-    const parentIds = [...new Set(
-      deviceTagNodes.map( n => n.parent_equipment_node_id ).filter( id => id != null )
-    )]
+    const parentIds = [...new Set( deviceTagNodes.map( n => n.parent_equipment_node_id ).filter( id => id != null ) )]
 
     if ( parentIds.length === 0 ) {
       relatedEquipment.value = []
@@ -597,10 +596,7 @@ async function loadRelatedEquipment( id ) {
     const result = await Promise.all(
       parentIds.map( async id => {
         try {
-          const [nodeRes, nodePathToRootRes] = await Promise.all( [
-            getEquipmentById( id ),
-            getEquipmentNodePathToRoot( id )
-          ] )
+          const [nodeRes, nodePathToRootRes] = await Promise.all( [getEquipmentById( id ), getEquipmentNodePathToRoot( id )] )
 
           const parent = nodeRes.data
           const path = nodePathToRootRes.data || []
@@ -616,7 +612,7 @@ async function loadRelatedEquipment( id ) {
       } )
     )
 
-    relatedEquipment.value = result.filter( node => ( node != null && node.status === 1 ) )
+    relatedEquipment.value = result.filter( node => node != null && node.status === 1 )
   } catch ( e ) {
     console.error( 'Failed loading related equipment:', e )
     relatedEquipment.value = []
@@ -751,7 +747,6 @@ const mockWorkOrders = [
     ]
   }
 ]
-
 </script>
 
 <style scoped lang="scss">

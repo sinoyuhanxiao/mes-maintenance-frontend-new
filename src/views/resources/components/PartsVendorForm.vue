@@ -80,7 +80,7 @@ const rules = {
 
 watch(
   () => props.modelValue,
-  async( open ) => {
+  async open => {
     if ( open ) {
       await Promise.all( [loadCurrencyUnits(), loadVendors()] )
       init()

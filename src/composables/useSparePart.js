@@ -4,11 +4,7 @@
 import { ref, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
 
-import {
-  searchSpareParts,
-  searchInventory,
-  searchInventoryTransactionLogs
-} from '@/api/resources'
+import { searchSpareParts, searchInventory, searchInventoryTransactionLogs } from '@/api/resources'
 
 export function useSparePart() {
   // List state

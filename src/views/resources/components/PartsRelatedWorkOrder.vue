@@ -9,9 +9,9 @@
 
     <!-- Empty -->
     <el-empty
-        v-else-if="partUsageRows.length === 0"
-        description="This part has not been used in any work orders yet"
-        :image-size="60"
+      v-else-if="partUsageRows.length === 0"
+      description="This part has not been used in any work orders yet"
+      :image-size="60"
     />
 
     <!-- Content -->
@@ -47,13 +47,7 @@
 
     <!-- WORK ORDER LIST -->
     <div class="wo-list">
-      <el-card
-          v-for="wo in workOrdersUsed"
-          :key="wo.id"
-          class="wo-card"
-          shadow="never"
-          @click="handleView(wo)"
-      >
+      <el-card v-for="wo in workOrdersUsed" :key="wo.id" class="wo-card" shadow="never" @click="handleView(wo)">
         <div class="wo-card-content">
           <div class="wo-main">
             <div class="wo-name">{{ wo.name }}</div>
@@ -116,18 +110,12 @@ const partUsageRows = computed( () => {
 /* -------------------------
    KPI COMPUTATIONS
 -------------------------- */
-const totalWorkOrders = computed( () =>
-  new Set( partUsageRows.value.map( r => r.workOrderId ) ).size
-)
+const totalWorkOrders = computed( () => new Set( partUsageRows.value.map( r => r.workOrderId ) ).size )
 
-const totalUsed = computed( () =>
-  partUsageRows.value.reduce( ( s, r ) => s + r.used, 0 )
-)
+const totalUsed = computed( () => partUsageRows.value.reduce( ( s, r ) => s + r.used, 0 ) )
 
 const avgUsedPerWO = computed( () =>
-  totalWorkOrders.value === 0
-    ? 0
-    : ( totalUsed.value / totalWorkOrders.value ).toFixed( 1 )
+  totalWorkOrders.value === 0 ? 0 : ( totalUsed.value / totalWorkOrders.value ).toFixed( 1 )
 )
 
 /* -------------------------
@@ -186,9 +174,7 @@ const workOrdersUsed = computed( () => {
     wo.used += r.used
   } )
 
-  return Array.from( map.values() ).sort(
-    ( a, b ) => new Date( b.date ) - new Date( a.date )
-  )
+  return Array.from( map.values() ).sort( ( a, b ) => new Date( b.date ) - new Date( a.date ) )
 } )
 
 const handleView = row => {
@@ -311,10 +297,7 @@ watch( groupedByDate, () => {
 
     usageQtyChart?.setOption( {
       xAxis : { data : groupedByDate.value.map( d => d.date ) },
-      series : [
-        { data : groupedByDate.value.map( d => d.required ) },
-        { data : groupedByDate.value.map( d => d.used ) }
-      ]
+      series : [{ data : groupedByDate.value.map( d => d.required ) }, { data : groupedByDate.value.map( d => d.used ) }]
     } )
   } )
 } )
@@ -402,5 +385,4 @@ watch( groupedByDate, () => {
   font-size: 12px;
   color: var(--el-text-color-secondary);
 }
-
 </style>

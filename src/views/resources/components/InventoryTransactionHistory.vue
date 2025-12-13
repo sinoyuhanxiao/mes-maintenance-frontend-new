@@ -3,26 +3,15 @@
     <!-- Header (search + type filter) -->
     <div class="timeline-header">
       <el-input
-          v-model="searchInput"
-          placeholder="Search by ID or remark"
-          clearable
-          class="timeline-search-input"
-          prefix-icon="Search"
+        v-model="searchInput"
+        placeholder="Search by ID or remark"
+        clearable
+        class="timeline-search-input"
+        prefix-icon="Search"
       />
 
-      <el-select
-          v-model="selectedType"
-          placeholder="Filter by type"
-          clearable
-          filterable
-          class="timeline-type-select"
-      >
-        <el-option
-            v-for="type in transactionTypeOptions"
-            :key="type.id"
-            :label="type.name"
-            :value="type.id"
-        />
+      <el-select v-model="selectedType" placeholder="Filter by type" clearable filterable class="timeline-type-select">
+        <el-option v-for="type in transactionTypeOptions" :key="type.id" :label="type.name" :value="type.id" />
       </el-select>
     </div>
 
@@ -30,17 +19,15 @@
     <div class="timeline-content">
       <el-timeline>
         <el-timeline-item
-            v-for="tx in paginatedData"
-            :key="tx.id"
-            :timestamp="formatAsLocalDateTimeString(tx.created_at)"
-            placement="top"
+          v-for="tx in paginatedData"
+          :key="tx.id"
+          :timestamp="formatAsLocalDateTimeString(tx.created_at)"
+          placement="top"
         >
           <!-- Custom hollow dot -->
           <template #dot>
             <div class="timeline-dot">
-              <el-icon
-                  :class="['timeline-dot-icon', getIconClass(tx.transaction_type?.id)]"
-              >
+              <el-icon :class="['timeline-dot-icon', getIconClass(tx.transaction_type?.id)]">
                 <component :is="getNodeIcon(tx.transaction_type?.id)" />
               </el-icon>
             </div>
@@ -51,12 +38,7 @@
               {{ formatTransaction(tx).text }}
             </div>
 
-            <div
-                v-if="tx.remark"
-                class="timeline-remark"
-            >
-              Remark: {{ tx.remark }}
-            </div>
+            <div v-if="tx.remark" class="timeline-remark">Remark: {{ tx.remark }}</div>
           </div>
         </el-timeline-item>
 
@@ -69,24 +51,22 @@
     <!-- Pagination -->
     <div v-if="totalCount > 10" class="timeline-footer">
       <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="currentPageSize"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="totalCount"
-          layout="total, sizes, prev, pager, next, jumper"
-          background
-          small
-          @size-change="handlePageSizeChange"
-          @current-change="handlePageChange"
+        v-model:current-page="currentPage"
+        v-model:page-size="currentPageSize"
+        :page-sizes="[10, 20, 50, 100]"
+        :total="totalCount"
+        layout="total, sizes, prev, pager, next, jumper"
+        background
+        small
+        @size-change="handlePageSizeChange"
+        @current-change="handlePageChange"
       />
     </div>
   </div>
 </template>
 
 <script setup>
-import {
-  Top, Bottom, Sort, Edit
-} from '@element-plus/icons-vue'
+import { Top, Bottom, Sort, Edit } from '@element-plus/icons-vue'
 import { computed, onMounted, ref } from 'vue'
 import { getAllTransactionTypes } from '@/api/resources'
 import { ElMessage } from 'element-plus'
@@ -137,9 +117,7 @@ const filteredData = computed( () => {
   if ( searchInput.value.trim() ) {
     const keyword = searchInput.value.toLowerCase()
     data = data.filter(
-      item =>
-        String( item.id ).includes( keyword ) ||
-            ( item.remark && item.remark.toLowerCase().includes( keyword ) )
+      item => String( item.id ).includes( keyword ) || ( item.remark && item.remark.toLowerCase().includes( keyword ) )
     )
   }
 
@@ -193,14 +171,19 @@ function getNodeIcon( typeId ) {
 
 function getIconClass( typeId ) {
   switch ( typeId ) {
-    case 101: return 'icon-green' // Restock
-    case 104: return 'icon-orange' // Transfer
+    case 101:
+      return 'icon-green' // Restock
+    case 104:
+      return 'icon-orange' // Transfer
     case 106:
-    case 107: return 'icon-blue' // Create / Update
+    case 107:
+      return 'icon-blue' // Create / Update
     case 102:
     case 103:
-    case 105: return 'icon-red' // Remove / Use / Discard
-    default: return 'icon-gray'
+    case 105:
+      return 'icon-red' // Remove / Use / Discard
+    default:
+      return 'icon-gray'
   }
 }
 
@@ -231,7 +214,9 @@ function formatTransaction( tx ) {
   -------------------------- */
   if ( typeId === 101 ) {
     return {
-      text : `${user} added ${qty} units to inventory #${toInv?.id ?? fromInv?.id ?? 'Unknown'} at ${toLoc?.name ?? fromLoc?.name ?? 'Unknown'} (${toLoc?.code ?? fromLoc?.code ?? 'N/A'})`
+      text : `${user} added ${qty} units to inventory #${toInv?.id ?? fromInv?.id ?? 'Unknown'} at ${
+        toLoc?.name ?? fromLoc?.name ?? 'Unknown'
+      } (${toLoc?.code ?? fromLoc?.code ?? 'N/A'})`
     }
   }
 
@@ -240,7 +225,9 @@ function formatTransaction( tx ) {
   -------------------------- */
   if ( typeId === 102 || typeId === 105 ) {
     return {
-      text : `${user} removed ${Math.abs( qty )} units from inventory #${fromInv?.id} at ${fromLoc?.name} (${fromLoc?.code})`
+      text : `${user} removed ${Math.abs( qty )} units from inventory #${fromInv?.id} at ${fromLoc?.name} (${
+        fromLoc?.code
+      })`
     }
   }
 
@@ -250,7 +237,9 @@ function formatTransaction( tx ) {
   -------------------------- */
   if ( typeId === 103 ) {
     return {
-      text : `${user} completed maintenance work. ${Math.abs( qty )} units removed from inventory #${fromInv?.id} at ${fromLoc?.name} (${fromLoc?.code})`
+      text : `${user} completed maintenance work. ${Math.abs( qty )} units removed from inventory #${fromInv?.id} at ${
+        fromLoc?.name
+      } (${fromLoc?.code})`
     }
   }
 
@@ -259,7 +248,9 @@ function formatTransaction( tx ) {
 -------------------------- */
   if ( typeId === 106 ) {
     return {
-      text : `${user} created inventory #${toInv?.id ?? 'Unknown'} with initial quantity ${qty} units at ${toLoc?.name} (${toLoc?.code})`
+      text : `${user} created inventory #${toInv?.id ?? 'Unknown'} with initial quantity ${qty} units at ${
+        toLoc?.name
+      } (${toLoc?.code})`
     }
   }
 
@@ -268,7 +259,9 @@ function formatTransaction( tx ) {
 -------------------------- */
   if ( typeId === 107 ) {
     return {
-      text : `${user} updated available quantity to ${qty} units for inventory #${toInv?.id ?? 'Unknown'} at ${toLoc?.name} (${toLoc?.code})`
+      text : `${user} updated available quantity to ${qty} units for inventory #${toInv?.id ?? 'Unknown'} at ${
+        toLoc?.name
+      } (${toLoc?.code})`
     }
   }
 
@@ -279,7 +272,6 @@ function formatTransaction( tx ) {
     text : `${user} performed a transaction (${typeName}): ${tx.remark ?? ''}`
   }
 }
-
 </script>
 
 <style scoped>
@@ -340,11 +332,21 @@ function formatTransaction( tx ) {
 }
 
 /* Semantic icon colors */
-.icon-green  { color: var(--el-color-success); }
-.icon-red    { color: var(--el-color-danger); }
-.icon-orange { color: var(--el-color-warning); }
-.icon-blue   { color: var(--el-color-primary); }
-.icon-gray   { color: var(--el-text-color-secondary); }
+.icon-green {
+  color: var(--el-color-success);
+}
+.icon-red {
+  color: var(--el-color-danger);
+}
+.icon-orange {
+  color: var(--el-color-warning);
+}
+.icon-blue {
+  color: var(--el-color-primary);
+}
+.icon-gray {
+  color: var(--el-text-color-secondary);
+}
 
 /* Optional: remark styling */
 .timeline-remark {

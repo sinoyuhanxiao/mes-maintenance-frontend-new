@@ -237,15 +237,8 @@ defineOptions( {
   name : 'Parts'
 } )
 
-const {
-  list,
-  total,
-  loading,
-  fetchSpareParts,
-  resetFilters,
-  listQuery,
-  getMaterialInventoryTransactionLog
-} = useSparePart()
+const { list, total, loading, fetchSpareParts, resetFilters, listQuery, getMaterialInventoryTransactionLog } =
+  useSparePart()
 
 const route = useRoute()
 const selected = ref( null ) // selected spare part object

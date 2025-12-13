@@ -1,7 +1,7 @@
 <template>
   <div class="status-badge" :class="[`status-${status}`, { 'has-pulse': showPulse }]">
     <div class="status-dot"></div>
-    <div v-if="oeeValue !== null" class="oee-percentage">{{ oeeValue.toFixed( 1 ) }}%</div>
+    <div v-if="oeeValue !== null" class="oee-percentage">{{ oeeValue.toFixed(1) }}%</div>
   </div>
 </template>
 
@@ -12,7 +12,8 @@ defineProps( {
   status : {
     type : String,
     required : true,
-    validator : value => ['operational', 'warning', 'error', 'idle', 'excellent', 'good', 'fair', 'poor'].includes( value )
+    validator : value =>
+      ['operational', 'warning', 'error', 'idle', 'excellent', 'good', 'fair', 'poor'].includes( value )
   },
   showPulse : {
     type : Boolean,

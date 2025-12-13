@@ -42,9 +42,9 @@
         <div class="total-oee-header" @click="toggleBreakdown">
           <div class="total-oee-main">
             <div class="total-oee-label">Total Line OEE</div>
-            <div class="total-oee-value">{{ totalOEE.toFixed( 1 ) }}%</div>
+            <div class="total-oee-value">{{ totalOEE.toFixed(1) }}%</div>
           </div>
-          <el-icon class="expand-icon" :class="{ expanded : showBreakdown }">
+          <el-icon class="expand-icon" :class="{ expanded: showBreakdown }">
             <ArrowDown />
           </el-icon>
         </div>
@@ -52,15 +52,15 @@
           <div v-show="showBreakdown" class="total-oee-breakdown">
             <div class="breakdown-item">
               <span class="breakdown-label">Availability:</span>
-              <span class="breakdown-value">{{ totalAvailability.toFixed( 1 ) }}%</span>
+              <span class="breakdown-value">{{ totalAvailability.toFixed(1) }}%</span>
             </div>
             <div class="breakdown-item">
               <span class="breakdown-label">Performance:</span>
-              <span class="breakdown-value">{{ totalPerformance.toFixed( 1 ) }}%</span>
+              <span class="breakdown-value">{{ totalPerformance.toFixed(1) }}%</span>
             </div>
             <div class="breakdown-item">
               <span class="breakdown-label">Quality:</span>
-              <span class="breakdown-value">{{ totalQuality.toFixed( 1 ) }}%</span>
+              <span class="breakdown-value">{{ totalQuality.toFixed(1) }}%</span>
             </div>
           </div>
         </el-collapse-transition>
@@ -120,8 +120,8 @@
           </el-table-column>
           <el-table-column label="OEE (%)" min-width="120">
             <template #default="scope">
-              <div class="oee-cell" :class="getOEEClass( calculateMachineOEE( scope.row ) )">
-                {{ calculateMachineOEE( scope.row ).toFixed( 1 ) }}%
+              <div class="oee-cell" :class="getOEEClass(calculateMachineOEE(scope.row))">
+                {{ calculateMachineOEE(scope.row).toFixed(1) }}%
               </div>
             </template>
           </el-table-column>
@@ -179,8 +179,8 @@
           </el-table-column>
           <el-table-column label="OEE (%)" min-width="120">
             <template #default="scope">
-              <div class="oee-cell" :class="getOEEClass( calculateMachineOEE( scope.row ) )">
-                {{ calculateMachineOEE( scope.row ).toFixed( 1 ) }}%
+              <div class="oee-cell" :class="getOEEClass(calculateMachineOEE(scope.row))">
+                {{ calculateMachineOEE(scope.row).toFixed(1) }}%
               </div>
             </template>
           </el-table-column>
@@ -232,7 +232,7 @@ const e2eMachines = ref( [
   { id : 5, name : 'SAPP', availability : 94.8, performance : 93.6, quality : 97.7 }, // ~86.7% excellent!
   { id : 6, name : 'Battering', availability : 88.9, performance : 87.4, quality : 94.3 }, // ~73.2% (keep some lower)
   { id : 7, name : 'Frying', availability : 95.6, performance : 94.1, quality : 97.8 }, // ~88.0% excellent!
-  { id : 8, name : 'Freezing', availability : 93.4, performance : 92.7, quality : 96.2 }, // ~83.3% good
+  { id : 8, name : 'Freezing', availability : 93.4, performance : 92.7, quality : 96.2 } // ~83.3% good
 ] )
 
 // FPS Packaging Line Machines (6 machines from Image 2)
@@ -243,7 +243,7 @@ const packagingMachines = ref( [
   { id : 11, name : 'Case Packing', availability : 88.5, performance : 86.2, quality : 93.9 }, // ~71.6% (keep some lower)
   { id : 12, name : 'Case Handling', availability : 94.1, performance : 93.3, quality : 96.8 }, // ~85.0% excellent!
   { id : 13, name : 'Bag Inspection', availability : 87.6, performance : 84.9, quality : 92.7 }, // ~68.9% (keep some lower)
-  { id : 14, name : 'Bag Packaging', availability : 93.3, performance : 92.1, quality : 95.2 }, // ~81.8% good
+  { id : 14, name : 'Bag Packaging', availability : 93.3, performance : 92.1, quality : 95.2 } // ~81.8% good
 ] )
 
 // Calculate individual machine OEE
@@ -329,6 +329,7 @@ onMounted( () => {
 const simulateRandomChanges = () => {
   const randomAdjust = ( value, maxChange = 2, targetRange = { min : 85, max : 95 } ) => {
     // Bias towards target range to get more green equipment
+    // eslint-disable-next-line no-unused-vars
     const targetMid = ( targetRange.min + targetRange.max ) / 2
 
     // If value is below target, bias upward

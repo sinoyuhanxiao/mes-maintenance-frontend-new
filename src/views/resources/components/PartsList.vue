@@ -81,24 +81,33 @@
                   <!-- Stock and Price -->
                   <div class="card-meta">
                     <span class="meta-label">Stock:</span>
-                    <span class="meta-value" :class="{
-                      'stock-critical': item.current_stock <= 0,
-                      'stock-warning': item.current_stock > 0 && item.current_stock <= (item.reorder_point ?? 0),
-                      'stock-normal': item.current_stock > (item.reorder_point ?? 0)
-                    }">
+                    <span
+                      class="meta-value"
+                      :class="{
+                        'stock-critical': item.current_stock <= 0,
+                        'stock-warning': item.current_stock > 0 && item.current_stock <= (item.reorder_point ?? 0),
+                        'stock-normal': item.current_stock > (item.reorder_point ?? 0),
+                      }"
+                    >
                       {{ item.current_stock ?? 0 }} {{ item.quantity_uom.name }}
                     </span>
                   </div>
 
                   <div class="card-meta">
                     <span class="meta-label">Avg Price:</span>
-                    <span class="meta-value">{{ item.average_unit_cost?.avg ? '$' + item.average_unit_cost?.avg : '-' }}</span>
+                    <span class="meta-value">{{
+                      item.average_unit_cost?.avg ? '$' + item.average_unit_cost?.avg : '-'
+                    }}</span>
                   </div>
 
                   <!-- Status and Category Badges -->
                   <div class="card-badges">
                     <el-tag v-if="item.current_stock <= 0" type="danger" size="small">Out Of Stock</el-tag>
-                    <el-tag v-else-if="item.current_stock <= (item.reorder_point ?? 0)" type="warning" size="small">Low Stock</el-tag>
+                    <el-tag v-else-if="item.current_stock <= (item.reorder_point ?? 0)"
+type="warning"
+size="small"
+                      >Low Stock</el-tag
+                    >
                     <el-tag v-if="item.spare_parts_class" type="info" size="small">
                       {{ item.spare_parts_class?.name }}
                     </el-tag>
@@ -202,11 +211,10 @@ function formatFirstLocation( inventories ) {
 // Sync local page number with root components' page number
 watch(
   () => props.page,
-  ( newVal ) => {
+  newVal => {
     currentPage.value = newVal
   }
 )
-
 </script>
 
 <style scoped lang="scss">

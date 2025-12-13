@@ -95,7 +95,7 @@ const showOeeDrawer = ref( false )
 const machineOEEData = ref( {} )
 
 // Timer references for cleanup
-let oeeTimer = null
+const oeeTimer = null
 let productionTimer = null
 let alarmsTimer = null
 let workforceTimer = null
@@ -225,7 +225,7 @@ const handleOeeDrawerClose = () => {
 }
 
 // Handle OEE update from drawer
-const handleOeeUpdate = ( oeeData ) => {
+const handleOeeUpdate = oeeData => {
   // Store previous OEE for trend calculation
   liveMetrics.value.previousOee = liveMetrics.value.oee
 

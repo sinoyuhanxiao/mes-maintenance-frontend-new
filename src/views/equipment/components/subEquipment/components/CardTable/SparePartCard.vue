@@ -50,7 +50,13 @@
           <div class="sp-actions">
             <!-- Option A: two buttons with margin reset -->
             <el-tooltip content="View Parts Detail" placement="top">
-              <el-button class="sp-action-btn" size="small" type="text" :icon="View" @click="handlePartsViewDetailClicked( item.sparePartId )" />
+              <el-button
+                class="sp-action-btn"
+                size="small"
+                type="text"
+                :icon="View"
+                @click="handlePartsViewDetailClicked(item.sparePartId)"
+              />
             </el-tooltip>
 
             <el-tooltip content="Edit" placement="top">
@@ -121,12 +127,10 @@ function handlePartsViewDetailClicked( sparePartId ) {
   }
 
   // Navigate to maintenance resources parts page with parts ID as query parameter
-  router.push(
-    {
-      path : '/maintenance/resources/parts',
-      query : { partsId : sparePartId }
-    }
-  )
+  router.push( {
+    path : '/maintenance/resources/parts',
+    query : { partsId : sparePartId }
+  } )
 }
 </script>
 
