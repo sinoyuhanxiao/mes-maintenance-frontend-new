@@ -45,13 +45,16 @@ const createFallbackStep = () => ( {
     require_image : false,
     image : []
   },
-  tools : []
+  tools : [],
+  step_index : 0
 } )
 
 const normalizeTemplateStep = ( step, index ) => {
   try {
     const designerStep = transformApiStepToDesignerStep( step, index )
-    return transformStepForBackend( designerStep, false )
+    const backendStep = transformStepForBackend( designerStep, false )
+    backendStep.step_index = index // Ensure step_index is set
+    return backendStep
   } catch ( error ) {
     console.error( 'Failed to normalize template step:', error )
     return null
@@ -183,7 +186,9 @@ export const buildDisplayTaskFromDesigner = ( templateForm, categoryOption = nul
   delete backendPayload.template_id
 
   if ( !Array.isArray( backendPayload.steps ) || backendPayload.steps.length === 0 ) {
-    backendPayload.steps = [createFallbackStep()]
+    const fallbackStep = createFallbackStep()
+    fallbackStep.step_index = 0 // First step gets index 0
+    backendPayload.steps = [fallbackStep]
   }
 
   if ( categoryOption ) {

@@ -48,7 +48,7 @@ export const transformTemplateForBackend = frontendData => {
 
   // Transform steps from frontend format to backend format
   const transformedSteps = ( frontendData.steps || [] )
-    .map( step => {
+    .map( ( step, index ) => {
       if ( !step || typeof step !== 'object' ) {
         return null
       }
@@ -61,6 +61,9 @@ export const transformTemplateForBackend = frontendData => {
         required : Boolean( step.required ),
         remarks : step.remarks || ''
       }
+
+      // Add step_index based on array position (0-based)
+      backendStep.step_index = index
 
       // PRESERVE STEP ID if it exists (critical for editing existing tasks/work orders)
       // When editing a standalone task, step IDs must be preserved so the backend
@@ -275,16 +278,18 @@ export const transformTemplateForUpdate = ( frontendData, originalTemplate ) => 
   updatePayload.step_delete_list = []
 
   // Process current steps to identify adds and updates
-  currentSteps.forEach( step => {
+  currentSteps.forEach( ( step, index ) => {
     const stepId = step.step_id
 
     if ( !stepId || stepId.startsWith( 'step-' ) ) {
       // New step (temporary frontend ID) - add to step_add_list
       const newStep = transformStepForBackend( step, false ) // false = no ID needed for new steps
+      newStep.step_index = index // Set based on array position
       updatePayload.step_add_list.push( newStep )
     } else if ( originalStepsMap.has( stepId ) ) {
       // Existing step - add to step_update_list
       const updateStep = transformStepForBackend( step, true ) // true = include ID for updates
+      updateStep.step_index = index // Update position (handles reordering)
       // Validate step ID before setting
       if ( stepId && stepId !== 'null' && stepId !== 'undefined' ) {
         // The transformStepForBackend already sets the id field, so just add to list
@@ -324,6 +329,13 @@ export const transformStepForBackend = ( step, includeId = false ) => {
     type : 'template',
     required : Boolean( step.required ),
     remarks : step.remarks || ''
+  }
+
+  // Add step_index (0-based) from order field (1-based) or default to 0
+  if ( step.order !== undefined && step.order !== null ) {
+    backendStep.step_index = step.order - 1 // Convert 1-based to 0-based
+  } else {
+    backendStep.step_index = 0 // Default for steps without order
   }
 
   // Include ID for updates - use 'id' field for backend compatibility

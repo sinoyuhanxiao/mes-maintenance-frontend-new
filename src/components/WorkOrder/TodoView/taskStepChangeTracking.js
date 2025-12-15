@@ -62,7 +62,7 @@ export function calculateStepChangesForTask( currentTask, originalTask ) {
   }
 
   // 4. Process current steps to find adds and updates
-  currentSteps.forEach( step => {
+  currentSteps.forEach( ( step, index ) => {
     const stepId = step.id || step._id || step.step_id
 
     if ( !stepId || isTemporaryId( stepId ) ) {
@@ -70,12 +70,14 @@ export function calculateStepChangesForTask( currentTask, originalTask ) {
       const cleanStep = prepareStepForAdd( step )
       // Only add if not null (filters out auto-generated steps)
       if ( cleanStep ) {
+        cleanStep.step_index = index // Override with array position
         stepChanges.step_add_list.push( cleanStep )
       }
     } else if ( originalStepsMap.has( String( stepId ) ) ) {
       // Existing step - check if it was actually modified
       if ( isStepModified( step, originalStepsMap.get( String( stepId ) ) ) ) {
         const updateStep = prepareStepForUpdate( step )
+        updateStep.step_index = index // Override with current position
         stepChanges.step_update_list.push( updateStep )
       }
     }
@@ -189,7 +191,8 @@ function prepareStepForAdd( step ) {
     required : step.required || false,
     remarks : step.remarks || '',
     value : step.value || {},
-    tools : extractToolIds( step.tools )
+    tools : extractToolIds( step.tools ),
+    step_index : step.order !== undefined && step.order !== null ? step.order - 1 : 0
   }
 }
 
@@ -209,7 +212,8 @@ function prepareStepForUpdate( step ) {
     required : step.required || false,
     remarks : step.remarks || '',
     value : step.value || {},
-    tools : extractToolIds( step.tools )
+    tools : extractToolIds( step.tools ),
+    step_index : step.order !== undefined && step.order !== null ? step.order - 1 : 0
   }
 }
 
