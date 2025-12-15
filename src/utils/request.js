@@ -45,6 +45,7 @@ const REFRESH_URLS = ['/auth/refresh', '/auth/callback', '/auth/logout']
 const BASE_URL = ENV_UTILS.getApiBaseUrl()
 
 let isRefreshing = false
+let isLoggingOut = false
 let refreshPromise = null
 const refreshWaitQueue = []
 
@@ -103,6 +104,33 @@ async function doRefreshOnce() {
       refreshPromise = null
     } )
   return refreshPromise
+}
+
+async function handleAuthFailure( reason ) {
+  if ( isLoggingOut ) {
+    console.warn( `Blocking duplicate auth failure handling: ${reason}` )
+    return
+  }
+  isLoggingOut = true
+  console.warn( 'Authentication failed:', reason )
+  try {
+    const userStore = useUserStore()
+    await userStore.LOGIN_OUT()
+  } catch ( e ) {
+    console.error( 'Logout cleanup error', e )
+  } finally {
+    gotoCognitoLogin()
+  }
+}
+
+function getErrorMessage( data, status ) {
+  const backendMsg = data?.message || data?.error || data?.msg
+  if ( backendMsg ) return backendMsg
+
+  if ( status ) {
+    return new HttpRequest().checkStatus( status )
+  }
+  return 'Unknown error occurred'
 }
 
 // import qs from 'qs'
@@ -186,6 +214,44 @@ class HttpRequest {
     return errMessage
   }
 
+  /**
+   * Refresh and replay the original request (including the concurrent queue)
+   */
+  async tryRefreshAndRetry( instance, originalConfig ) {
+    // Avoid refreshing/calling back the refresh/call back mechanism to refresh itself
+    if ( isAuthWhitelisted( originalConfig ) ) {
+      return Promise.reject( new Error( 'Auth endpoint failed' ) )
+    }
+    // Avoiding an infinite loop
+    if ( originalConfig._retried ) {
+      return Promise.reject( new Error( 'Retry already attempted' ) )
+    }
+    originalConfig._retried = true
+
+    // If the page is being refreshed: Suspend the current request and replay it after the refresh is complete.
+    if ( isRefreshing ) {
+      return new Promise( ( resolve, reject ) => {
+        refreshWaitQueue.push( newToken => {
+          if ( !newToken ) {
+            reject( new Error( 'Refresh failed during queue wait' ) )
+          } else {
+            setAuthHeader( originalConfig, newToken )
+            resolve( instance( originalConfig ) )
+          }
+        } )
+      } )
+    }
+    // Start refreshing
+    try {
+      await doRefreshOnce()
+      const atNew = getAccessToken()
+      setAuthHeader( originalConfig, atNew )
+      return instance( originalConfig )
+    } catch ( error ) {
+      return Promise.reject( error )
+    }
+  }
+
   setInterceptors( instance ) {
     // Request Interceptor
     instance.interceptors.request.use(
@@ -206,13 +272,11 @@ class HttpRequest {
         }
         return config
       },
-      error => {
-        return Promise.reject( new Error( error ) )
-      }
+      error => Promise.reject( new Error( error ) )
     )
     // Response Interceptor
     instance.interceptors.response.use(
-      res => {
+      async( res ) => {
         const result = res.data
         const type = Object.prototype.toString.call( result )
         if ( type === '[object Blob]' || type === '[object ArrayBuffer]' ) {
@@ -220,20 +284,24 @@ class HttpRequest {
         }
         const { status } = result
         const isErrorToken = LOGIN_ERROR_CODE.find( item => item.status === status )
-        const isWhiteCode = WHITE_CODE_LIST.find( item => item.status === status )
-
         if ( isErrorToken ) {
-          return this.tryRefreshAndRetry( instance, res.config, result )
+          if ( isLoggingOut ) return Promise.reject( new Error( 'Logging out' ) )
+          try {
+            return await this.tryRefreshAndRetry( instance, res.config )
+          } catch ( e ) {
+            await handleAuthFailure( 'Soft 401 refresh failed' )
+            return Promise.reject( e )
+          }
         }
+
+        const isWhiteCode = WHITE_CODE_LIST.find( item => item.status === status )
         if ( !isWhiteCode ) {
           // Prioritize backend error message, fallback to generic error
-          const backendMessage = result.message || result.error || result.msg
-          const errorMessage = backendMessage || 'Unknown error occurred'
-
+          const errorMessage = getErrorMessage( result )
           ElMessage( {
             message : errorMessage,
             type : 'error',
-            duration : 3 * 1000
+            duration : 3000
           } )
           return Promise.reject( new Error( errorMessage ) )
         }
@@ -242,27 +310,26 @@ class HttpRequest {
       async error => {
         const cfg = error?.config || {}
         const httpStatus = error?.response?.status
+        const respData = error?.response?.data
 
-        if ( httpStatus === 401 && !isAuthWhitelisted( cfg ) ) {
+        if ( httpStatus === 401 ) {
+          if ( isAuthWhitelisted( cfg ) ) {
+            await handleAuthFailure( '401 on Whitelisted URL' )
+            return Promise.reject( new Error( 'Authentication expired' ) )
+          }
+          if ( isLoggingOut ) {
+            return Promise.reject( new Error( 'Already logging out' ) )
+          }
           try {
-            // "null" indicates an HTTP-level 401 error.
-            return await this.tryRefreshAndRetry( instance, cfg, null )
+            return await this.tryRefreshAndRetry( instance, cfg )
           } catch ( e ) {
-            // Refresh failed → Exit and jump to Cognito
-            const userStore = useUserStore()
-            await userStore.LOGIN_OUT()
-            gotoCognitoLogin()
+            await handleAuthFailure( 'Hard 401 refresh failed' )
             return Promise.reject( e )
           }
         }
-        // Other errors: Keep original prompt
-        let errorMessage = error.message
-        if ( error && error.response ) {
-          // Prioritize backend error message from response data
-          const backendMessage = error.response.data?.message || error.response.data?.error || error.response.data?.msg
-          // Use backend message if available, otherwise fall back to HTTP status message
-          errorMessage = backendMessage || this.checkStatus( error.response.status )
-        }
+        // Other errors: Keep the original prompt
+        const statusText = this.checkStatus( httpStatus )
+        const errorMessage = getErrorMessage( respData, httpStatus, statusText ) || error.message || 'Fail to connect to the server'
         const isTimeout = ( errorMessage || '' ).toLowerCase().includes( 'timeout' )
         const finalMessage = isTimeout ? 'Network Request Timeout' : errorMessage || 'Fail to connect to the server'
         ElMessage( {
@@ -273,53 +340,6 @@ class HttpRequest {
         return Promise.reject( new Error( finalMessage ) )
       }
     )
-  }
-
-  /**
-   * Refresh and replay the original request (including the concurrent queue)
-   */
-  async tryRefreshAndRetry( instance, originalConfig, resultPayloadOrNull ) {
-    // Avoid refreshing/calling back the refresh/call back mechanism to refresh itself
-    if ( isAuthWhitelisted( originalConfig ) ) {
-      const userStore = useUserStore()
-      await userStore.LOGIN_OUT()
-      gotoCognitoLogin()
-      return Promise.reject( new Error( 'Auth endpoint failed' ) )
-    }
-    // Avoiding an infinite loop
-    if ( originalConfig._retried ) {
-      const userStore = useUserStore()
-      await userStore.LOGIN_OUT()
-      gotoCognitoLogin()
-      return Promise.reject( new Error( 'Retry already attempted' ) )
-    }
-    originalConfig._retried = true
-
-    // If the page is being refreshed: Suspend the current request and replay it after the refresh is complete.
-    if ( isRefreshing ) {
-      return new Promise( ( resolve, reject ) => {
-        refreshWaitQueue.push( newToken => {
-          if ( !newToken ) {
-            reject( new Error( 'Refresh failed' ) )
-          } else {
-            setAuthHeader( originalConfig, newToken )
-            resolve( instance( originalConfig ) )
-          }
-        } )
-      } )
-    }
-    // Start refreshing
-    try {
-      await doRefreshOnce()
-      const atNew = getAccessToken()
-      setAuthHeader( originalConfig, atNew )
-      return instance( originalConfig )
-    } catch ( error ) {
-      const userStore = useUserStore()
-      await userStore.LOGIN_OUT()
-      gotoCognitoLogin()
-      return Promise.reject( error )
-    }
   }
 
   request( options ) {

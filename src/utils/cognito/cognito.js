@@ -2,7 +2,6 @@ export function gotoCognitoLogin() {
   const env = import.meta.env
 
   const COGNITO_DOMAIN = env.VITE_COGNITO_DOMAIN
-
   const CLIENT_ID = env.VITE_COGNITO_CLIENT_ID
   const REDIRECT_URI = encodeURIComponent( env.VITE_CALLBACK_URL )
   const RESPONSE_TYPE = 'code'
