@@ -140,6 +140,7 @@
                 v-model="templateForm.applicable_assets"
                 placeholder="Select applicable assets"
                 :data="equipmentTreeData"
+                :disabled="isStandaloneTask"
                 filterable
                 check-strictly
                 node-key="value"
