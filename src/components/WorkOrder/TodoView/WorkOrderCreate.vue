@@ -475,7 +475,7 @@
             {{ $t('workOrder.actions.cancel') }}
           </el-button>
           <el-button
-            v-show="false"
+            v-show="true"
             type="info"
             @click="logCurrentPayload"
             class="logs-button"
@@ -1451,8 +1451,19 @@ const preFillFromRequestData = requestData => {
   }
 
   // Pre-fill request_id to link work order with maintenance request
-  if ( requestData.id && !requestData.isRecreation && !requestData.isCopy ) {
-    form.request_id = requestData.id
+  // Set request_id if:
+  // - Not a recreation AND
+  // - Either not a copy, OR it's a copy and user wants to keep the link
+  // For work orders: use requestData.request.id (the actual request ID)
+  // For direct requests: use requestData.id (when creating from a request)
+  if ( !requestData.isRecreation && ( !requestData.isCopy || requestData.keepRequestLink ) ) {
+    if ( requestData.request?.id ) {
+      // Work order with linked request - use the request's ID
+      form.request_id = requestData.request.id
+    } else if ( requestData.id && !requestData.code ) {
+      // Direct request creation (has id but no work order code)
+      form.request_id = requestData.id
+    }
   }
 
   // Handle recreation/copy scenario - prefill comprehensive work order data
