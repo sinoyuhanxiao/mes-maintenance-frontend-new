@@ -1332,7 +1332,7 @@ const validEquipmentList = computed( () => {
   if ( !equipmentDetails.value || !Array.isArray( equipmentDetails.value ) ) {
     return []
   }
-  return equipmentDetails.value.filter( eq => eq && eq.id && eq.name )
+  return equipmentDetails.value.filter( eq => eq && eq.id && eq.name && eq.status !== 0 )
 } )
 
 const hasValidEquipment = computed( () => {
