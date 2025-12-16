@@ -611,6 +611,7 @@ import {
 } from '@/api/work-order'
 import { searchApprovalTree } from '@/api/approval'
 import { approveMaintenanceRequest } from '@/api/maintenance-requests'
+import { transformEquipmentTree } from '@/utils/equipmentTreeTransform'
 import { useRouter, useRoute } from 'vue-router'
 import { useTaskLibraryStore } from '@/store/modules/taskLibrary'
 import { useWorkOrderDraftStore } from '@/store/modules/workOrderDraft'
@@ -1912,7 +1913,7 @@ const rules = reactive( {
 // Tree props for tree selects
 const treeProps = {
   children : 'children',
-  label : 'name',
+  label : 'label',
   value : 'id'
 }
 
@@ -2021,7 +2022,9 @@ const loadFormData = async() => {
     }
 
     if ( equipmentRes.data ) {
-      assetTreeData.value = equipmentRes.data
+      // Transform equipment tree to exclude tier 5 (parts layer)
+      const rawData = Array.isArray( equipmentRes.data ) ? equipmentRes.data : [equipmentRes.data]
+      assetTreeData.value = transformEquipmentTree( rawData )
     }
 
     // Transform and set approval tree data

@@ -648,6 +648,7 @@ import {
 } from '@/api/work-order'
 import { searchApprovalTree } from '@/api/approval'
 import { getTaskEntryById } from '@/api/task-entry'
+import { transformEquipmentTree } from '@/utils/equipmentTreeTransform'
 import { useRouter, useRoute } from 'vue-router'
 import { useTaskLibraryStore } from '@/store/modules/taskLibrary'
 import { useWorkOrderDraftStore } from '@/store/modules/workOrderDraft'
@@ -1401,7 +1402,7 @@ const approvalTreeData = ref( [] )
 // Tree configuration
 const treeProps = {
   children : 'children',
-  label : 'name',
+  label : 'label',
   value : 'id'
 }
 
@@ -2643,7 +2644,10 @@ const loadFormData = async() => {
     priorityOptions.value = prioritiesResponse.data || []
     categoryOptions.value = categoriesResponse.data || []
     stateOptions.value = statesResponse.data || []
-    assetTreeData.value = equipmentResponse.data || []
+    // Transform equipment tree to exclude tier 5 (parts layer)
+    const rawEquipmentData = equipmentResponse.data || []
+    const equipmentArray = Array.isArray( rawEquipmentData ) ? rawEquipmentData : [rawEquipmentData]
+    assetTreeData.value = transformEquipmentTree( equipmentArray )
 
     // Set user options from API
     const users = usersResponse?.data?.content || []

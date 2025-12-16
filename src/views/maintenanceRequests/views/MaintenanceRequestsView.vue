@@ -376,6 +376,7 @@ import {
 import { debounce } from 'lodash-es'
 import { useMaintenanceRequests } from '@/composables/maintenanceRequests/useMaintenanceRequests'
 import { getEquipmentTree } from '@/api/equipment'
+import { transformEquipmentTree } from '@/utils/equipmentTreeTransform'
 import RequestCard from '../components/RequestCard.vue'
 import CreateRequestDialog from '../components/CreateRequestDialog.vue'
 import EditRequestDialog from '../components/EditRequestDialog.vue'
@@ -729,17 +730,17 @@ const fetchEquipmentTreeData = async() => {
     const response = await getEquipmentTree()
     const data = response.data?.data || response.data
 
-    const transformEquipmentNode = node => ( {
-      value : node.id,
-      label : node.name,
-      children : node.children?.length > 0 ? node.children.map( transformEquipmentNode ) : undefined
-    } )
-
+    let dataArray
     if ( Array.isArray( data ) ) {
-      equipmentTreeData.value = data.map( transformEquipmentNode )
+      dataArray = data
     } else if ( data?.equipment_nodes ) {
-      equipmentTreeData.value = data.equipment_nodes.map( transformEquipmentNode )
+      dataArray = data.equipment_nodes
+    } else {
+      dataArray = []
     }
+
+    // Transform equipment tree to exclude tier 5 (parts layer)
+    equipmentTreeData.value = transformEquipmentTree( dataArray )
   } catch ( error ) {
     // Error handled by equipment API
   }

@@ -43,7 +43,7 @@
           <div class="filter-controls">
             <el-tree-select
               v-model="assetFilter"
-              placeholder="Asset"
+              placeholder="Equipment"
               :data="equipmentTreeData"
               multiple
               filterable
@@ -477,6 +477,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useTaskLibrary } from '@/composables/designer/useTaskLibrary'
 import { getEquipmentTree } from '@/api/equipment.js'
 import { getAllCategories } from '@/api/common.js'
+import { transformEquipmentTree } from '@/utils/equipmentTreeTransform'
 import { useWorkOrderDraftStore } from '@/store/modules/workOrderDraft'
 import { buildDisplayTaskFromTemplate } from '@/components/WorkOrder/TodoView/taskPayloadHelpers'
 import TemplateCard from '../components/Library/TemplateCard.vue'
@@ -545,11 +546,6 @@ const containerHeight = computed( () => {
 const fetchEquipmentTreeData = async() => {
   try {
     const response = await getEquipmentTree()
-    const transformNode = node => ( {
-      value : node.id, // el-tree-select uses 'value' by default
-      label : node.name,
-      children : node.children && node.children.length > 0 ? node.children.map( transformNode ) : undefined
-    } )
     let dataArray
     if ( response.data?.data ) {
       dataArray = response.data.data
@@ -560,10 +556,11 @@ const fetchEquipmentTreeData = async() => {
     } else {
       dataArray = []
     }
-    equipmentTreeData.value = dataArray.map( node => transformNode( node ) )
+    // Transform equipment tree to exclude tier 5 (parts layer)
+    equipmentTreeData.value = transformEquipmentTree( dataArray )
   } catch ( error ) {
     console.error( 'Equipment tree load failed:', error )
-    ElMessage.error( 'Failed to load asset filter data.' )
+    ElMessage.error( 'Failed to load equipment filter data.' )
   }
 }
 
