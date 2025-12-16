@@ -135,11 +135,12 @@
               />
             </el-form-item>
 
-            <el-form-item label="Applicable Assets" prop="applicable_assets">
+            <el-form-item label="Applicable Equipment" prop="applicable_assets">
               <el-tree-select
                 v-model="templateForm.applicable_assets"
-                placeholder="Select applicable assets"
+                placeholder="Select applicable equipment"
                 :data="equipmentTreeData"
+                :disabled="isStandaloneTask"
                 filterable
                 check-strictly
                 node-key="value"
@@ -510,6 +511,7 @@ import {
 } from '@/components/WorkOrder/TodoView/taskPayloadHelpers'
 import { getEquipmentTree } from '@/api/equipment.js'
 import { getAllCategories } from '@/api/common.js'
+import { transformEquipmentTree } from '@/utils/equipmentTreeTransform'
 import VueDraggable from 'vuedraggable'
 import BaseStepCard from '../components/Designer/StepCards/BaseStepCard.vue'
 import FloatingPanel from '../components/Designer/FloatingPanel.vue'
@@ -1900,7 +1902,7 @@ const generateChangesSummary = ( originalTemplate, currentTemplate, referenceDat
     { key : 'description', label : 'Description' },
     { key : 'category', label : 'Category' },
     { key : 'estimated_minutes', label : 'Estimated Time' },
-    { key : 'applicable_assets', label : 'Applicable Assets' }
+    { key : 'applicable_assets', label : 'Applicable Equipment' }
   ]
 
   metadataFields.forEach( field => {
@@ -2085,11 +2087,6 @@ const fetchEquipmentTreeData = async() => {
   equipmentTreeLoading.value = true
   try {
     const response = await getEquipmentTree()
-    const transformNode = node => ( {
-      value : node.id, // el-tree-select uses 'value' by default
-      label : node.name,
-      children : node.children && node.children.length > 0 ? node.children.map( transformNode ) : undefined
-    } )
     let dataArray
     if ( response.data?.data ) {
       dataArray = response.data.data
@@ -2100,10 +2097,11 @@ const fetchEquipmentTreeData = async() => {
     } else {
       dataArray = []
     }
-    equipmentTreeData.value = dataArray.map( node => transformNode( node ) )
+    // Transform equipment tree to exclude tier 5 (parts layer)
+    equipmentTreeData.value = transformEquipmentTree( dataArray )
   } catch ( error ) {
     console.error( 'Equipment tree load failed:', error )
-    ElMessage.error( 'Failed to load asset data.' )
+    ElMessage.error( 'Failed to load equipment data.' )
   } finally {
     equipmentTreeLoading.value = false
   }

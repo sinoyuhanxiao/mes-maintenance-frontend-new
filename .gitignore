@@ -25,6 +25,7 @@ selenium-debug.log
 *.sln
 *.local
 docs/*
+/.trees
 
 # Debug components (development only)
 #src/components/WorkOrder/TodoView/JsonDebugDrawer.vue

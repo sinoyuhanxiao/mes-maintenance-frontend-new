@@ -58,7 +58,7 @@
         <div class="legend-items">
           <div class="legend-item">
             <span class="legend-dot excellent"></span>
-            <span>Excellent (≥85%)</span>
+            <span>Excellent (above 85%)</span>
           </div>
           <div class="legend-item">
             <span class="legend-dot good"></span>
@@ -70,7 +70,7 @@
           </div>
           <div class="legend-item">
             <span class="legend-dot poor"></span>
-            <span>Poor (<50%)</span>
+            <span>Poor (below 50%)</span>
           </div>
         </div>
       </div>

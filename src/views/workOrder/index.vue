@@ -406,6 +406,35 @@ watch(
   }
 )
 
+// Watch for refresh query parameter to refresh table after create/update
+watch(
+  () => route.query.refresh,
+  async newVal => {
+    if ( newVal ) {
+      // Refresh the work orders list
+      await fetchWorkOrders()
+      // Remove the refresh query parameter after a short delay to ensure the watch fires
+      await nextTick()
+      // eslint-disable-next-line no-unused-vars
+      const { refresh, ...rest } = route.query
+      router.replace( { path : route.path, query : { ...rest }} )
+    }
+  },
+  { immediate : true }
+)
+
+// Watch for route changes to detect navigation back from create/edit pages
+watch(
+  () => route.name,
+  async( newName, oldName ) => {
+    // If we're navigating to WorkOrderManagement from CreateWorkOrder or EditWorkOrder
+    if ( newName === 'WorkOrderManagement' && ( oldName === 'CreateWorkOrder' || oldName === 'EditWorkOrder' ) ) {
+      // Refresh the work orders list
+      await fetchWorkOrders()
+    }
+  }
+)
+
 // Lifecycle
 onMounted( async() => {
   try {

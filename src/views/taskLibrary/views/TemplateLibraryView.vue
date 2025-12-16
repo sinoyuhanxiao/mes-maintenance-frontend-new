@@ -43,7 +43,7 @@
           <div class="filter-controls">
             <el-tree-select
               v-model="assetFilter"
-              placeholder="Asset"
+              placeholder="Equipment"
               :data="equipmentTreeData"
               multiple
               filterable
@@ -238,10 +238,10 @@
                         >{{ selectedTemplate.steps?.length || 0 }} steps</span
                       >
                     </el-descriptions-item>
-                    <el-descriptions-item label="Created On">{{
+                    <el-descriptions-item label="Created At">{{
                       formatDate(selectedTemplate.created_at)
                     }}</el-descriptions-item>
-                    <el-descriptions-item label="Last Modified">{{
+                    <el-descriptions-item label="Last Updated">{{
                       formatDate(selectedTemplate.updated_at)
                     }}</el-descriptions-item>
                   </el-descriptions>
@@ -477,6 +477,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { useTaskLibrary } from '@/composables/designer/useTaskLibrary'
 import { getEquipmentTree } from '@/api/equipment.js'
 import { getAllCategories } from '@/api/common.js'
+import { transformEquipmentTree } from '@/utils/equipmentTreeTransform'
 import { useWorkOrderDraftStore } from '@/store/modules/workOrderDraft'
 import { buildDisplayTaskFromTemplate } from '@/components/WorkOrder/TodoView/taskPayloadHelpers'
 import TemplateCard from '../components/Library/TemplateCard.vue'
@@ -545,11 +546,6 @@ const containerHeight = computed( () => {
 const fetchEquipmentTreeData = async() => {
   try {
     const response = await getEquipmentTree()
-    const transformNode = node => ( {
-      value : node.id, // el-tree-select uses 'value' by default
-      label : node.name,
-      children : node.children && node.children.length > 0 ? node.children.map( transformNode ) : undefined
-    } )
     let dataArray
     if ( response.data?.data ) {
       dataArray = response.data.data
@@ -560,10 +556,11 @@ const fetchEquipmentTreeData = async() => {
     } else {
       dataArray = []
     }
-    equipmentTreeData.value = dataArray.map( node => transformNode( node ) )
+    // Transform equipment tree to exclude tier 5 (parts layer)
+    equipmentTreeData.value = transformEquipmentTree( dataArray )
   } catch ( error ) {
     console.error( 'Equipment tree load failed:', error )
-    ElMessage.error( 'Failed to load asset filter data.' )
+    ElMessage.error( 'Failed to load equipment filter data.' )
   }
 }
 
@@ -1170,13 +1167,14 @@ const getStepTypeLabel = type => {
 
 const formatDate = dateString => {
   if ( !dateString ) return 'N/A'
-  return new Date( dateString ).toLocaleDateString( 'en-US', {
-    year : 'numeric',
-    month : 'short',
-    day : 'numeric',
-    hour : '2-digit',
-    minute : '2-digit'
-  } )
+  const date = new Date( dateString )
+  const year = date.getFullYear()
+  const month = String( date.getMonth() + 1 ).padStart( 2, '0' )
+  const day = String( date.getDate() ).padStart( 2, '0' )
+  const hours = String( date.getHours() ).padStart( 2, '0' )
+  const minutes = String( date.getMinutes() ).padStart( 2, '0' )
+  const seconds = String( date.getSeconds() ).padStart( 2, '0' )
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
 
 const getRequiredStepsCount = () => {

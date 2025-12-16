@@ -42,7 +42,7 @@
               type="primary"
               plain
               size="default"
-              :disabled="disableActions"
+              :disabled="disableActions || isCompleted"
               @click="emit('edit', workOrder)"
               :aria-label="$t('workOrder.actions.edit')"
             >
@@ -57,7 +57,7 @@
               type="success"
               plain
               size="default"
-              :disabled="disableActions"
+              :disabled="disableActions || isCompleted"
               @click="handleStartWorkOrder"
               aria-label="Start Work Order"
             >
@@ -1206,6 +1206,10 @@ const isIncomplete = computed( () => {
   return props.workOrder?.state?.id === 13 || props.workOrder?.state?.name === 'Incomplete'
 } )
 
+const isCompleted = computed( () => {
+  return props.workOrder?.state?.id === 7 || props.workOrder?.state?.name?.toLowerCase() === 'completed'
+} )
+
 const hasAttachments = computed( () => {
   return props.workOrder?.image_list && props.workOrder.image_list.length > 0
 } )
@@ -1332,7 +1336,7 @@ const validEquipmentList = computed( () => {
   if ( !equipmentDetails.value || !Array.isArray( equipmentDetails.value ) ) {
     return []
   }
-  return equipmentDetails.value.filter( eq => eq && eq.id && eq.name )
+  return equipmentDetails.value.filter( eq => eq && eq.id && eq.name && eq.status !== 0 )
 } )
 
 const hasValidEquipment = computed( () => {

@@ -152,6 +152,45 @@
     <!-- PDF Preview Modal -->
     <PdfPreviewModal v-model:visible="showPdfPreview" :work-order="pdfPreviewData" @close="handlePdfPreviewClose" />
 
+    <!-- Copy Request Link Confirmation Dialog -->
+    <el-dialog
+      v-model="copyRequestLinkDialogVisible"
+      width="480px"
+      :before-close="() => (copyRequestLinkDialogVisible = false)"
+      class="copy-request-dialog"
+    >
+      <template #header>
+        <div class="copy-dialog-title">
+          <span>Copy Work Order</span>
+        </div>
+      </template>
+
+      <div class="copy-dialog-content">
+        <div class="copy-message">
+          <p>
+            Do you want to keep the link to the related request
+            <span class="request-name">
+              "{{ workOrderToCopy?.request?.name || 'Request' }} (#{{ workOrderToCopy?.request?.id }})"
+            </span>
+            in the copied work order?
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="copy-dialog-footer">
+          <el-button @click="handleCopyRequestLinkChoice(false)">
+            <el-icon><CloseBold /></el-icon>
+            Remove Link
+          </el-button>
+          <el-button type="primary" @click="handleCopyRequestLinkChoice(true)">
+            <el-icon><Link /></el-icon>
+            Keep Link
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
+
     <!-- Edit Confirmation Modal for Recurring Work Orders -->
     <el-dialog
       v-model="editDialogVisible"
@@ -201,7 +240,7 @@ import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { QuestionFilled, Warning, Edit } from '@element-plus/icons-vue'
+import { QuestionFilled, Warning, Edit, CloseBold, Link } from '@element-plus/icons-vue'
 import { getWorkOrderById } from '@/api/work-order'
 import { getTaskEntryById } from '@/api/task-entry'
 import WorkOrderCard from './WorkOrderCard.vue'
@@ -291,6 +330,8 @@ const pendingExecutionWorkOrder = ref( null )
 const workOrderInExecution = ref( null )
 const editDialogVisible = ref( false )
 const workOrderToEditChoice = ref( null )
+const copyRequestLinkDialogVisible = ref( false )
+const workOrderToCopy = ref( null )
 
 // Computed key that changes when we need to refresh from template designer
 const computedCreatePanelKey = computed( () => `${createPanelKey.value}-${createPanelRefreshCounter.value}` )
@@ -519,7 +560,7 @@ const handleEditConfirmation = async editType => {
 
 // Helper function to prepare work order for creation (used by both recreate and copy)
 const prepareWorkOrderForCreation = async( workOrder, options = {} ) => {
-  const { filterFailedOnly = false, isRecreation = false, isCopy = false } = options
+  const { filterFailedOnly = false, isRecreation = false, isCopy = false, keepRequestLink = false } = options
 
   const canProceed = await checkUnsavedChanges()
   if ( !canProceed ) {
@@ -597,6 +638,7 @@ const prepareWorkOrderForCreation = async( workOrder, options = {} ) => {
     // Add copy-specific fields
     if ( isCopy ) {
       preparedData.isCopy = true
+      preparedData.keepRequestLink = keepRequestLink
     }
 
     requestDataForCreate.value = preparedData
@@ -612,6 +654,7 @@ const prepareWorkOrderForCreation = async( workOrder, options = {} ) => {
     }
     if ( isCopy ) {
       fallbackData.isCopy = true
+      fallbackData.keepRequestLink = keepRequestLink
     }
 
     requestDataForCreate.value = fallbackData
@@ -629,10 +672,51 @@ const handleRecreate = async workOrder => {
 }
 
 const handleCopy = async workOrder => {
-  await prepareWorkOrderForCreation( workOrder, {
-    filterFailedOnly : false,
-    isCopy : true
-  } )
+  try {
+    // Fetch full work order data to ensure we have the complete request information
+    const response = await getWorkOrderById( workOrder.id )
+    const fullWorkOrderData = response?.data || workOrder
+
+    // Check if the work order has a related request
+    if ( fullWorkOrderData.request && fullWorkOrderData.request.id ) {
+      // Show dialog to ask user if they want to keep the request link
+      workOrderToCopy.value = fullWorkOrderData
+      copyRequestLinkDialogVisible.value = true
+    } else {
+      // No request link, proceed with normal copy
+      await prepareWorkOrderForCreation( fullWorkOrderData, {
+        filterFailedOnly : false,
+        isCopy : true,
+        keepRequestLink : false
+      } )
+    }
+  } catch ( error ) {
+    console.error( 'Failed to fetch work order details:', error )
+    // Fallback to checking the passed work order data
+    if ( workOrder.request && workOrder.request.id ) {
+      workOrderToCopy.value = workOrder
+      copyRequestLinkDialogVisible.value = true
+    } else {
+      await prepareWorkOrderForCreation( workOrder, {
+        filterFailedOnly : false,
+        isCopy : true,
+        keepRequestLink : false
+      } )
+    }
+  }
+}
+
+const handleCopyRequestLinkChoice = async keepLink => {
+  copyRequestLinkDialogVisible.value = false
+
+  if ( workOrderToCopy.value ) {
+    await prepareWorkOrderForCreation( workOrderToCopy.value, {
+      filterFailedOnly : false,
+      isCopy : true,
+      keepRequestLink : keepLink
+    } )
+    workOrderToCopy.value = null
+  }
 }
 
 const handleDelete = workOrder => {
@@ -1442,6 +1526,65 @@ defineOptions( {
         background-color: var(--el-color-primary-light-9);
         border-color: var(--el-color-primary-light-5);
         color: var(--el-color-primary);
+      }
+    }
+  }
+}
+
+// Copy Request Dialog Styles
+.copy-request-dialog {
+  :deep(.el-dialog__header) {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--el-border-color-lighter);
+  }
+
+  :deep(.el-dialog__body) {
+    padding: 24px;
+  }
+
+  :deep(.el-dialog__footer) {
+    padding: 16px 24px;
+    border-top: 1px solid var(--el-border-color-lighter);
+  }
+
+  .copy-dialog-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--el-text-color-primary);
+  }
+
+  .copy-dialog-content {
+    display: flex;
+    align-items: flex-start;
+
+    .copy-message {
+      flex: 1;
+
+      p {
+        margin: 0;
+        font-size: 14px;
+        color: var(--el-text-color-regular);
+        line-height: 1.6;
+
+        .request-name {
+          color: var(--el-color-primary);
+          font-weight: 500;
+        }
+      }
+    }
+  }
+
+  .copy-dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+
+    .el-button {
+      .el-icon {
+        margin-right: 4px;
       }
     }
   }
