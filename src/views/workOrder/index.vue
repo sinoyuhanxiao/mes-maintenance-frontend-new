@@ -409,7 +409,7 @@ watch(
 // Watch for refresh query parameter to refresh table after create/update
 watch(
   () => route.query.refresh,
-  async( newVal ) => {
+  async newVal => {
     if ( newVal ) {
       // Refresh the work orders list
       await fetchWorkOrders()

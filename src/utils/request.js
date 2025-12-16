@@ -276,7 +276,7 @@ class HttpRequest {
     )
     // Response Interceptor
     instance.interceptors.response.use(
-      async( res ) => {
+      async res => {
         const result = res.data
         const type = Object.prototype.toString.call( result )
         if ( type === '[object Blob]' || type === '[object ArrayBuffer]' ) {
@@ -329,7 +329,8 @@ class HttpRequest {
         }
         // Other errors: Keep the original prompt
         const statusText = this.checkStatus( httpStatus )
-        const errorMessage = getErrorMessage( respData, httpStatus, statusText ) || error.message || 'Fail to connect to the server'
+        const errorMessage =
+          getErrorMessage( respData, httpStatus, statusText ) || error.message || 'Fail to connect to the server'
         const isTimeout = ( errorMessage || '' ).toLowerCase().includes( 'timeout' )
         const finalMessage = isTimeout ? 'Network Request Timeout' : errorMessage || 'Fail to connect to the server'
         ElMessage( {

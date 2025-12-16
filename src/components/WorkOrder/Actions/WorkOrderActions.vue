@@ -4,7 +4,14 @@
       {{ $t('workOrder.actions.view') }}
     </el-button>
 
-    <el-button type="primary" plain size="small" :disabled="isCompleted" @click="$emit('edit')" :aria-label="$t('workOrder.actions.edit')">
+    <el-button
+      type="primary"
+      plain
+      size="small"
+      :disabled="isCompleted"
+      @click="$emit('edit')"
+      :aria-label="$t('workOrder.actions.edit')"
+    >
       {{ $t('workOrder.actions.edit') }}
     </el-button>
 

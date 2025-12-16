@@ -27,9 +27,7 @@ export const transformEquipmentNode = ( node, level = 0 ) => {
     return { ...base, children : undefined }
   }
 
-  const kids = Array.isArray( node.children )
-    ? node.children.map( c => transformEquipmentNode( c, level + 1 ) )
-    : undefined
+  const kids = Array.isArray( node.children ) ? node.children.map( c => transformEquipmentNode( c, level + 1 ) ) : undefined
 
   return { ...base, children : kids && kids.length ? kids : undefined }
 }
