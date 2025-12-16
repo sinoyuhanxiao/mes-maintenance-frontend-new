@@ -73,15 +73,19 @@ const loadInitialData = async() => {
   }
 }
 
-const handleWorkOrderCreated = workOrder => {
+const handleWorkOrderCreated = async workOrder => {
   ElMessage.success( 'Work order created successfully' )
-  // Navigate to the work order table view
-  router.push( '/maintenance/work-orders/table' )
+  // Close the current tag view
+  await tagsViewStore.DEL_VIEW( route )
+  // Navigate to the work order table view with refresh flag
+  router.push( { name : 'WorkOrderManagement', query : { refresh : Date.now() }} )
 }
 
-const handleBackToDetail = () => {
+const handleBackToDetail = async() => {
+  // Close the current tag view
+  await tagsViewStore.DEL_VIEW( route )
   // Navigate back to work order table
-  router.push( '/maintenance/work-orders/table' )
+  router.push( { name : 'WorkOrderManagement' } )
 }
 
 // Lifecycle
