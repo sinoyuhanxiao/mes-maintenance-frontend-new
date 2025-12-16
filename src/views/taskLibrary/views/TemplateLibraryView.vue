@@ -238,10 +238,10 @@
                         >{{ selectedTemplate.steps?.length || 0 }} steps</span
                       >
                     </el-descriptions-item>
-                    <el-descriptions-item label="Created On">{{
+                    <el-descriptions-item label="Created At">{{
                       formatDate(selectedTemplate.created_at)
                     }}</el-descriptions-item>
-                    <el-descriptions-item label="Last Modified">{{
+                    <el-descriptions-item label="Last Updated">{{
                       formatDate(selectedTemplate.updated_at)
                     }}</el-descriptions-item>
                   </el-descriptions>
@@ -1167,13 +1167,14 @@ const getStepTypeLabel = type => {
 
 const formatDate = dateString => {
   if ( !dateString ) return 'N/A'
-  return new Date( dateString ).toLocaleDateString( 'en-US', {
-    year : 'numeric',
-    month : 'short',
-    day : 'numeric',
-    hour : '2-digit',
-    minute : '2-digit'
-  } )
+  const date = new Date( dateString )
+  const year = date.getFullYear()
+  const month = String( date.getMonth() + 1 ).padStart( 2, '0' )
+  const day = String( date.getDate() ).padStart( 2, '0' )
+  const hours = String( date.getHours() ).padStart( 2, '0' )
+  const minutes = String( date.getMinutes() ).padStart( 2, '0' )
+  const seconds = String( date.getSeconds() ).padStart( 2, '0' )
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
 }
 
 const getRequiredStepsCount = () => {
