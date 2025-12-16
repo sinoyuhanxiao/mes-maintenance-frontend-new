@@ -4,7 +4,7 @@
       {{ $t('workOrder.actions.view') }}
     </el-button>
 
-    <el-button type="primary" plain size="small" @click="$emit('edit')" :aria-label="$t('workOrder.actions.edit')">
+    <el-button type="primary" plain size="small" :disabled="isCompleted" @click="$emit('edit')" :aria-label="$t('workOrder.actions.edit')">
       {{ $t('workOrder.actions.edit') }}
     </el-button>
 
@@ -21,8 +21,10 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+
 // Props
-defineProps( {
+const props = defineProps( {
   row : {
     type : Object,
     required : true
@@ -35,6 +37,11 @@ defineProps( {
 
 // Emits
 defineEmits( ['view', 'edit', 'delete'] )
+
+// Computed
+const isCompleted = computed( () => {
+  return props.row?.state?.id === 13 || props.row?.state?.name?.toLowerCase() === 'completed'
+} )
 
 defineOptions( {
   name : 'WorkOrderActions'

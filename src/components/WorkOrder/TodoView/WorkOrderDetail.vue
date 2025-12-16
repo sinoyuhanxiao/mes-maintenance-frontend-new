@@ -42,7 +42,7 @@
               type="primary"
               plain
               size="default"
-              :disabled="disableActions"
+              :disabled="disableActions || isCompleted"
               @click="emit('edit', workOrder)"
               :aria-label="$t('workOrder.actions.edit')"
             >
@@ -57,7 +57,7 @@
               type="success"
               plain
               size="default"
-              :disabled="disableActions"
+              :disabled="disableActions || isCompleted"
               @click="handleStartWorkOrder"
               aria-label="Start Work Order"
             >
@@ -1204,6 +1204,10 @@ const headerElement = ref( null )
 // Computed
 const isIncomplete = computed( () => {
   return props.workOrder?.state?.id === 13 || props.workOrder?.state?.name === 'Incomplete'
+} )
+
+const isCompleted = computed( () => {
+  return props.workOrder?.state?.id === 7 || props.workOrder?.state?.name?.toLowerCase() === 'completed'
 } )
 
 const hasAttachments = computed( () => {
